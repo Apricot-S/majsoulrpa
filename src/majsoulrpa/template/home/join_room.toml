@@ -3,4 +3,4 @@ left = 1225
 top = 530
 width = 340
 height = 90
-threshold = 0.99
+threshold = 0.95

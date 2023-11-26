@@ -16,7 +16,7 @@ MIN_ZOOM_RATIO: Final[float] = 2.0 / 3
 MAX_ZOOM_RATIO: Final[float] = 2.0
 
 _STD_EDGE_SIGMA: Final[float] = 0.2
-_STD_THRESHOLD: Final[float] = 0.99
+_STD_THRESHOLD: Final[float] = 0.95
 
 _PATH_TEMPLATE: Final[Path] = Path(__file__).parents[1]
 

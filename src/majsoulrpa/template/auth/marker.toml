@@ -2,4 +2,4 @@ left = 520
 top = 230
 width = 345
 height = 58
-threshold = 0.99
+threshold = 0.95
