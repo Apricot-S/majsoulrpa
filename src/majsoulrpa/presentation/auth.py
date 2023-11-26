@@ -68,6 +68,7 @@ class AuthPresentation(PresentationBase):
             int(_TEXT_BOX_EMAIL_ADDRESS_WIDTH * self._browser.zoom_ratio),
             int(_TEXT_BOX_EMAIL_ADDRESS_HEIGHT * self._browser.zoom_ratio),
         )
+        time.sleep(0.1)
 
         # Enter an email address in the text box.
         self._browser.press_hotkey("Control", "KeyA")
@@ -113,6 +114,7 @@ class AuthPresentation(PresentationBase):
             int(_TEXT_BOX_AUTH_CODE_WIDTH * self._browser.zoom_ratio),
             int(_TEXT_BOX_AUTH_CODE_HEIGHT * self._browser.zoom_ratio),
         )
+        time.sleep(0.1)
 
         # Enter an auth code in the text box.
         self._browser.press_hotkey("Control", "KeyA")
