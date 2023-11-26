@@ -214,4 +214,7 @@ $RECYCLE.BIN/
 # VSCode
 .vscode/
 
+# config for example
+example/config.toml
+
 # End of https://www.toptal.com/developers/gitignore/api/windows,python,venv
