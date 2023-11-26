@@ -1,0 +1,2 @@
+include src/majsoulrpa/py.typed
+recursive-include src/majsoulrpa/template *

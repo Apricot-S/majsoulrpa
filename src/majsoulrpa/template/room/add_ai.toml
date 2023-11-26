@@ -1,0 +1,6 @@
+# Room - Add AI
+left = 1630
+top = 643
+width = 222
+height = 84
+threshold = 0.98

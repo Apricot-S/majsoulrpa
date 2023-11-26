@@ -1,0 +1,6 @@
+# Friendly Match
+left = 1110
+top = 705
+width = 520
+height = 95
+threshold = 0.99
