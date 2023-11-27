@@ -1,4 +1,4 @@
-# ruff: noqa: INP001
+# ruff: noqa: INP001, TRY004
 import datetime
 import time
 from logging import INFO, StreamHandler, basicConfig, getLogger
@@ -8,6 +8,7 @@ from majsoulrpa.presentation import (
     AuthPresentation,
     HomePresentation,
     LoginPresentation,
+    RoomHostPresentation,
 )
 from majsoulrpa.yostar_login import YostarLogin
 
@@ -24,42 +25,57 @@ if __name__ == "__main__":
     with RPA(initial_left=myconfig["initial_position"]["left"],
              initial_top=myconfig["initial_position"]["top"],
              viewport_height=myconfig["viewport_height"]) as rpa:
+
         logger.info("RPA start.")
         presentation = rpa.wait(timeout=20.0)
 
         login_start_time=datetime.datetime.now(datetime.UTC)
         logger.info("Login start.")
-        if isinstance(presentation, LoginPresentation):
-            presentation.login(timeout=60.0)
-            if presentation.new_presentation is None:
-                msg = "Could not transit to 'auth'."
-                raise RuntimeError
-            presentation = presentation.new_presentation
+        if not isinstance(presentation, LoginPresentation):
+            msg = "Could not transit to 'login'."
+            raise RuntimeError(msg)
+        presentation.login(timeout=60.0)
+        if presentation.new_presentation is None:
+            msg = "Could not transit to 'auth'."
+            raise RuntimeError(msg)
+        presentation = presentation.new_presentation
         logger.info("Login end.")
 
         logger.info("Auth start.")
-        if isinstance(presentation, AuthPresentation):
-            presentation.enter_email_address(myconfig["email_address"])
-
-            auth_code = YostarLogin(myconfig).get_auth_code(
-                start_time=login_start_time,
-                timeout=20.0,
-            )
-
-            presentation.enter_auth_code(auth_code, timeout=60.0)
-            if presentation.new_presentation is None:
-                msg = "Could not transit to 'home'."
-                raise RuntimeError
-            presentation = presentation.new_presentation
+        if not isinstance(presentation, AuthPresentation):
+            msg = "Could not transit to 'auth'."
+            raise RuntimeError(msg)
+        presentation.enter_email_address(myconfig["email_address"])
+        auth_code = YostarLogin(myconfig).get_auth_code(
+            start_time=login_start_time, timeout=20.0,
+        )
+        presentation.enter_auth_code(auth_code, timeout=60.0)
+        if presentation.new_presentation is None:
+            msg = "Could not transit to 'home'."
+            raise RuntimeError
+        presentation = presentation.new_presentation
         logger.info("Auth end.")
 
         logger.info("Home start.")
         if not isinstance(presentation, HomePresentation):
-            msg = "Not transitioning to the home screen."
-            raise TypeError(msg)
+            msg = "Could not transit to 'home"
+            raise RuntimeError(msg)
         presentation.create_room()
+        if presentation.new_presentation is None:
+            msg = "Could not transit to 'room'."
+            raise RuntimeError(msg)
+        presentation = presentation.new_presentation
+        logger.info("Home end.")
 
-        time.sleep(7.0)
+        if not isinstance(presentation, RoomHostPresentation):
+            msg = "Could not transit to 'room'."
+            raise RuntimeError(msg)
+        logger.info(f"room id: {presentation.room_id}")  # noqa: G004
+        while presentation.num_ais < 3:
+            presentation.add_ai(timeout=10.0)
+        presentation.start(timeout=60.0)
+
+        time.sleep(30.0)
 
     logger.info("RPA close.")
     logger.info("program end.")
