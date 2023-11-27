@@ -31,7 +31,7 @@ class RoomPlayer(Player):
         self._is_ready = is_ready
 
 
-class RoomPresentation(PresentationBase):
+class RoomPresentationBase(PresentationBase):
 
     def __init__(  # noqa: PLR0913
         self, browser: BrowserBase, db_client: DBClientBase,
