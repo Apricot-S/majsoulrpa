@@ -1,6 +1,7 @@
 from typing import Optional
 
-from majsoulrpa._impl import BrowserBase, DBClientBase
+from majsoulrpa._impl.browser import BrowserBase
+from majsoulrpa._impl.db_client import DBClientBase
 
 
 class ErrorBase(Exception):  # noqa: N818

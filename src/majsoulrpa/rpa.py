@@ -9,7 +9,8 @@ from typing import Final, Self
 if platform.system() == "Windows":
     from subprocess import CREATE_NEW_CONSOLE
 
-from ._impl import BrowserBase, DBClient, DBClientBase, DesktopBrowser
+from ._impl.browser import BrowserBase, DesktopBrowser
+from ._impl.db_client import DBClient, DBClientBase
 from .presentation import AuthPresentation, HomePresentation, LoginPresentation
 from .presentation.presentation_base import (
     PresentationBase,

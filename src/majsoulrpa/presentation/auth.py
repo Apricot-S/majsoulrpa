@@ -2,7 +2,9 @@ import datetime
 import time
 from typing import Final
 
-from majsoulrpa._impl import BrowserBase, DBClientBase, Template
+from majsoulrpa._impl.browser import BrowserBase
+from majsoulrpa._impl.db_client import DBClientBase
+from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType
 
 from .home import HomePresentation
