@@ -57,8 +57,6 @@ if __name__ == "__main__":
         if not isinstance(presentation, HomePresentation):
             msg = "Not transitioning to the home screen."
             raise TypeError(msg)
-        log = f"account_id: {rpa.get_account_id()}"
-        logger.info(log)
         presentation.create_room()
 
         time.sleep(7.0)
