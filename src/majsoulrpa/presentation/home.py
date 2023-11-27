@@ -11,6 +11,7 @@ from .presentation_base import (
     PresentationNotDetected,
     Timeout,
 )
+from .room import RoomHostPresentation
 
 logger = getLogger(__name__)
 
@@ -266,3 +267,13 @@ class HomePresentation(PresentationBase):
 
         # Click "Create"
         template.click(self._browser)
+
+        # Wait until room screen is displayed.
+        now = datetime.datetime.now(datetime.UTC)
+        RoomHostPresentation._wait(self._browser, deadline - now)  # noqa: SLF001
+
+        now = datetime.datetime.now(datetime.UTC)
+        p = RoomHostPresentation._create(  # noqa: SLF001
+            self._browser, self._db_client, deadline - now,
+        )
+        self._set_new_presentation(p)
