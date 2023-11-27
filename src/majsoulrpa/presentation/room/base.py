@@ -126,7 +126,7 @@ class RoomPresentationBase(PresentationBase):
         return self._players
 
     @property
-    def num_cpus(self) -> int:
+    def num_ais(self) -> int:
         return self._num_ais
 
     def leave(self, timeout: TimeoutType = 10.0) -> None:
