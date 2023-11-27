@@ -10,3 +10,4 @@ from .presentation_base import (
     StalePresentation,
     Timeout,
 )
+from .room import RoomHostPresentation
