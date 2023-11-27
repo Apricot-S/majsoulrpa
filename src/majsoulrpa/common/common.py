@@ -1,14 +1,22 @@
 import datetime
-from dataclasses import dataclass
 from typing import TypeAlias
 
 TimeoutType: TypeAlias = int | float | datetime.timedelta
 
 
-@dataclass(frozen=True)
 class Player:
-    account_id: int
-    name: str
+
+    def __init__(self, account_id: int, name: str) -> None:
+        self._account_id = account_id
+        self._name = name
+
+    @property
+    def account_id(self) -> int:
+        return self._account_id
+
+    @property
+    def name(self) -> str:
+        return self._name
 
 
 _LEVEL_ID_MAP = {
