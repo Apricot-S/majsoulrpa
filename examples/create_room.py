@@ -71,7 +71,7 @@ if __name__ == "__main__":
             msg = "Could not transit to 'room'."
             raise RuntimeError(msg)
         logger.info(f"room id: {presentation.room_id}")  # noqa: G004
-        while presentation.num_ais < 3:
+        while presentation.num_ais < 3:  # noqa: PLR2004
             presentation.add_ai(timeout=10.0)
         presentation.start(timeout=60.0)
 
