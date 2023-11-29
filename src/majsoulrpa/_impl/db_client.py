@@ -39,7 +39,7 @@ class DBClientBase(metaclass=ABCMeta):
     # List of WebSocket messages that can obtain account id
     _ACCOUNT_ID_MESSAGES: ClassVar[dict[str, list[str]]] = {
         ".lq.Lobby.oauth2Login": ["account_id"],
-        ".lq.Lobby.createRoom": ["room', 'owner_id"],
+        ".lq.Lobby.createRoom": ["room", "owner_id"],
     }
 
     @abstractmethod
