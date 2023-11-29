@@ -1,46 +1,42 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
-[project]
+
+[tool.poetry]
+version = "0.0.1"
 name = "majsoulrpa"
 description = "A RPA framework for Mahjong Soul (雀魂)"
-readme = "README.md"
-license = {file = "LICENSE"}
-requires-python = ">=3.11"
-keywords = ["mahjong", "Mahjong Soul", "Majsoul", "automation", "RPA"]
-authors = [
-    {name = "Apricot-S"}
-]
+license = "MIT"
+authors = ["Apricot-S"]
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.11",
     "License :: OSI Approved :: MIT License",
 ]
-dependencies = [
-    "imapclient",
-    "mitmproxy",
-    "opencv-python",
-    "playwright",
-    "protobuf",
-    "PyGetWindow",
-]
-dynamic = ["version"]
+readme = "README.md"
+keywords = ["mahjong", "Mahjong Soul", "Majsoul", "automation", "RPA"]
+packages = [{include = "majsoulrpa", from = "src"}]
 
-[project.optional-dependencies]
-dev = [
-    "build",
-    "isort",
-    "mypy",
-    "ruff",
-    "types-protobuf"
-]
+# add MANIFEST.in settings
+include = ["src/majsoulrpa", "src/majsoulrpa/template/**/*", "src/majsoulrpa/py.typed"]
 
-[tool.setuptools]
-package-dir = {"" = "src"}
+[tool.poetry.dependencies]
+python = "^3.11"
+imapclient = "*"
+mitmproxy = "*"
+opencv-python = "*"
+playwright = "*"
+protobuf = "*"
+PyGetWindow = "*"
 
-[tool.setuptools.dynamic]
-version = {attr = "majsoulrpa._version.__version__"}
+[tool.poetry.dev-dependencies]
+build = "*"
+isort = "*"
+mypy = "*"
+ruff = "*"
+types-protobuf = "*"
+
 
 [tool.isort]
 include_trailing_comma = "True"
