@@ -18,8 +18,11 @@ readme = "README.md"
 keywords = ["mahjong", "Mahjong Soul", "Majsoul", "automation", "RPA"]
 packages = [{include = "majsoulrpa", from = "src"}]
 
-# add MANIFEST.in settings
-include = ["src/majsoulrpa", "src/majsoulrpa/template/**/*", "src/majsoulrpa/py.typed"]
+include = [
+    "src/majsoulrpa",
+    "src/majsoulrpa/template/**/*",
+    "src/majsoulrpa/py.typed",
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -32,7 +35,6 @@ PyGetWindow = "*"
 
 [tool.poetry.dev-dependencies]
 build = "*"
-isort = "*"
 mypy = "*"
 ruff = "*"
 types-protobuf = "*"
@@ -61,7 +63,3 @@ select = [
 
 [tool.ruff.per-file-ignores]
 "./tests/*" = ["S101"]
-
-[tool.pytest.ini_options]
-pythonpath = "src"
-testpaths = ["tests",]
