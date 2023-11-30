@@ -4,7 +4,6 @@ from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.db_client import DBClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import Player, TimeoutType
-from majsoulrpa.presentation.home import HomePresentation
 from majsoulrpa.presentation.presentation_base import (
     InconsistentMessage,
     InvalidOperation,
@@ -141,6 +140,8 @@ class RoomPresentationBase(PresentationBase):
             msg = "Could not leave the room."
             raise InvalidOperation(msg, self._browser.get_screenshot())
         template.click(self._browser)
+
+        from majsoulrpa.presentation.home import HomePresentation
 
         # Wait until the home screen is displayed.
         HomePresentation._wait(self._browser, timeout)  # noqa: SLF001
