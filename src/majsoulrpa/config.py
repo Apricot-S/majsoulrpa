@@ -15,9 +15,6 @@ def _validate_config(config: dict[str, Any]) -> None:
             raise TypeError(msg)
 
     validate_dict(config, "email_address", str)
-    validate_dict(config, "smtp_server", str)
-    validate_dict(config, "app_password", str)
-    validate_dict(config, "mail_folder", str)
     validate_dict(config, "viewport_height", int)
     validate_dict(config, "initial_position", dict)
     validate_dict(config["initial_position"], "left", int)

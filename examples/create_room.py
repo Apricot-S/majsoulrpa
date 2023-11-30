@@ -10,7 +10,6 @@ from majsoulrpa.presentation import (
     LoginPresentation,
     RoomHostPresentation,
 )
-from majsoulrpa.yostar_login import YostarLogin
 
 LOG_LEVEL = INFO
 stream_handler = StreamHandler()
@@ -46,9 +45,7 @@ if __name__ == "__main__":
             msg = "Could not transit to 'auth'."
             raise RuntimeError(msg)
         presentation.enter_email_address(myconfig["email_address"])
-        auth_code = YostarLogin(myconfig).get_auth_code(
-            start_time=login_start_time, timeout=20.0,
-        )
+        auth_code = input("verification code: ")
         presentation.enter_auth_code(auth_code, timeout=60.0)
         if presentation.new_presentation is None:
             msg = "Could not transit to 'home'."
