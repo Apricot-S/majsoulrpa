@@ -17,6 +17,7 @@ from .presentation.presentation_base import (
     PresentationNotDetected,
     Timeout,
 )
+from .presentation.presentation_creator import PresentationCreator
 
 logger = getLogger(__name__)
 
@@ -33,14 +34,15 @@ class RPA:
         self._id = uuid.uuid4()
         self._proxy_port = proxy_port
         self._db_port = db_port
+        self._initial_left = initial_left
+        self._initial_top = initial_top
+        self._viewport_height = viewport_height
+
         self._db_process: Popen[bytes] | None = None
         self._mitmproxy_process: Popen[bytes] | None = None
         self._browser: BrowserBase | None = None
         self._db_client: DBClientBase | None = None
-
-        self._initial_left = initial_left
-        self._initial_top = initial_top
-        self._viewport_height = viewport_height
+        self._creator = PresentationCreator()
 
     def __enter__(self) -> Self:
         # Run DB server process
@@ -145,14 +147,18 @@ class RPA:
         p: PresentationBase | None = None
         while True:
             try:
-                p = LoginPresentation(self._browser, self._db_client)
+                p = LoginPresentation(
+                    self._browser, self._db_client, self._creator,
+                )
             except PresentationNotDetected:
                 pass
             else:
                 return p
 
             try:
-                p = AuthPresentation(self._browser, self._db_client)
+                p = AuthPresentation(
+                    self._browser, self._db_client, self._creator,
+                )
             except PresentationNotDetected:
                 pass
             else:
@@ -167,7 +173,8 @@ class RPA:
                 )
                 now = datetime.datetime.now(datetime.UTC)
                 p = HomePresentation(
-                    self._browser, self._db_client, deadline - now,
+                    self._browser, self._db_client, self._creator,
+                    deadline - now,
                 )
             except PresentationNotDetected:
                 pass

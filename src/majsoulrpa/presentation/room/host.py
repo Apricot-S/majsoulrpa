@@ -12,6 +12,7 @@ from majsoulrpa.common import TimeoutType
 from majsoulrpa.presentation.presentation_base import (
     InconsistentMessage,
     InvalidOperation,
+    PresentationCreatorBase,
     PresentationNotDetected,
     PresentationNotUpdated,
     Timeout,
@@ -26,11 +27,13 @@ class RoomHostPresentation(RoomPresentationBase):
 
     def __init__(  # noqa: PLR0913
         self, browser: BrowserBase, db_client: DBClientBase,
+        creator: PresentationCreatorBase,
         room_id: int, max_num_players: int,
         players: Iterable[RoomPlayer], num_ais: int,
     ) -> None:
         super().__init__(
-            browser, db_client, room_id, max_num_players, players, num_ais,
+            browser, db_client, creator,
+            room_id, max_num_players, players, num_ais,
         )
 
     @staticmethod
@@ -42,6 +45,7 @@ class RoomHostPresentation(RoomPresentationBase):
     @classmethod
     def _create(
         cls, browser: BrowserBase, db_client: DBClientBase,
+        creator: PresentationCreatorBase,
         timeout: TimeoutType,
     ) -> Self:
         if isinstance(timeout, int | float):
@@ -94,12 +98,14 @@ class RoomHostPresentation(RoomPresentationBase):
         num_ais = room["robot_count"]
 
         return cls(
-            browser, db_client, room_id, max_num_players, players, num_ais,
+            browser, db_client, creator,
+            room_id, max_num_players, players, num_ais,
         )
 
     @classmethod
-    def _return_from_match(
+    def _return_from_match(  # noqa: PLR0913
         cls, browser: BrowserBase, db_client: DBClientBase,
+        creator: PresentationCreatorBase,
         prev_presentation: Self, timeout: TimeoutType,
     ) -> Self:
         if isinstance(timeout, int | float):
@@ -134,11 +140,9 @@ class RoomHostPresentation(RoomPresentationBase):
             raise InconsistentMessage(name, browser.get_screenshot())
 
         return cls(
-            browser, db_client,
-            prev_presentation.room_id,
-            prev_presentation.max_num_players,
-            prev_presentation.players,
-            prev_presentation.num_ais,
+            browser, db_client, creator,
+            prev_presentation.room_id, prev_presentation.max_num_players,
+            prev_presentation.players, prev_presentation.num_ais,
         )
 
     def _update(self, timeout: TimeoutType) -> bool:

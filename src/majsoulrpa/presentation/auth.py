@@ -7,10 +7,11 @@ from majsoulrpa._impl.db_client import DBClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType
 
-from .home import HomePresentation
 from .presentation_base import (
     InvalidOperation,
+    Presentation,
     PresentationBase,
+    PresentationCreatorBase,
     PresentationNotDetected,
     Timeout,
 )
@@ -33,8 +34,11 @@ _TEXT_BOX_AUTH_CODE_HEIGHT: Final[int] = 35
 
 class AuthPresentation(PresentationBase):
 
-    def __init__(self, browser: BrowserBase, db_client: DBClientBase) -> None:
-        super().__init__(browser=browser, db_client=db_client)
+    def __init__(
+        self, browser: BrowserBase, db_client: DBClientBase,
+        creator: PresentationCreatorBase,
+    ) -> None:
+        super().__init__(browser, db_client, creator)
 
         self._entered_email_address: bool = False
 
@@ -151,7 +155,10 @@ class AuthPresentation(PresentationBase):
 
         # Wait until the home screen is displayed.
         timeout = deadline - datetime.datetime.now(datetime.UTC)
-        HomePresentation._wait(self._browser, timeout)  # noqa: SLF001
+        self._creator.wait(self._browser, timeout, Presentation.HOME)
 
-        p = HomePresentation(self._browser, self._db_client, 60.0)
-        self._set_new_presentation(p)
+        new_presentation = self._creator.create_new_presentation(
+            Presentation.AUTH, Presentation.HOME,
+            self._browser, self._db_client, timeout=60.0,
+        )
+        self._set_new_presentation(new_presentation)

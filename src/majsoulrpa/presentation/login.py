@@ -1,14 +1,15 @@
 import datetime
+from typing import NoReturn
 
 from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.db_client import DBClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType
 
-from .auth import AuthPresentation
-from .home import HomePresentation
 from .presentation_base import (
+    Presentation,
     PresentationBase,
+    PresentationCreatorBase,
     PresentationNotDetected,
     Timeout,
 )
@@ -16,8 +17,11 @@ from .presentation_base import (
 
 class LoginPresentation(PresentationBase):
 
-    def __init__(self, browser: BrowserBase, db_client: DBClientBase) -> None:
-        super().__init__(browser=browser, db_client=db_client)
+    def __init__(
+        self, browser: BrowserBase, db_client: DBClientBase,
+        creator: PresentationCreatorBase,
+    ) -> None:
+        super().__init__(browser, db_client, creator)
 
         template = Template.open_file("template/login/marker",
                                       browser.zoom_ratio)
@@ -25,6 +29,10 @@ class LoginPresentation(PresentationBase):
         if not template.match(sct):
             msg = "Could not detect 'LoginPresentation'."
             raise PresentationNotDetected(msg, sct)
+
+    @staticmethod
+    def _wait(browser: BrowserBase, timeout: TimeoutType) -> NoReturn:  # noqa: ARG004
+        raise AssertionError
 
     def login(self, timeout: TimeoutType = 60.0) -> None:
         self._assert_not_stale()
@@ -43,10 +51,13 @@ class LoginPresentation(PresentationBase):
                 msg = "Timeout in transition from 'login'."
                 raise Timeout(msg, self._browser.get_screenshot())
 
-            p: PresentationBase | None = None
+            new_presentation: PresentationBase | None = None
             try:
-                p = AuthPresentation(self._browser, self._db_client)
-                self._set_new_presentation(p)
+                new_presentation = self._creator.create_new_presentation(
+                    Presentation.LOGIN, Presentation.AUTH,
+                    self._browser, self._db_client,
+                )
+                self._set_new_presentation(new_presentation)
             except PresentationNotDetected:
                 pass
             else:
@@ -54,10 +65,11 @@ class LoginPresentation(PresentationBase):
 
             try:
                 now = datetime.datetime.now(datetime.UTC)
-                p = HomePresentation(
-                    self._browser, self._db_client, deadline - now,
+                new_presentation = self._creator.create_new_presentation(
+                    Presentation.LOGIN, Presentation.HOME,
+                    self._browser, self._db_client, timeout=(deadline - now),
                 )
-                self._set_new_presentation(p)
+                self._set_new_presentation(new_presentation)
             except PresentationNotDetected:
                 pass
             else:

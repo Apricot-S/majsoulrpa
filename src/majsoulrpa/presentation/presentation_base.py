@@ -1,7 +1,10 @@
+from abc import ABCMeta, abstractmethod
+from enum import Enum, auto
 from typing import Optional
 
 from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.db_client import DBClientBase
+from majsoulrpa.common import TimeoutType
 
 
 class ErrorBase(Exception):  # noqa: N818
@@ -53,11 +56,44 @@ class BrowserRefreshRequest(ErrorBase):
         self._browser.refresh()
 
 
-class PresentationBase:
+class Presentation(Enum):
+    LOGIN = auto()
+    AUTH = auto()
+    HOME = auto()
+    TOURNAMENT = auto()
+    ROOMBASE = auto()
+    ROOMHOST = auto()
+    MATCH = auto()
 
-    def __init__(self, browser: BrowserBase, db_client: DBClientBase) -> None:
+
+class PresentationCreatorBase(metaclass=ABCMeta):
+
+    @staticmethod
+    @abstractmethod
+    def wait(
+        browser: BrowserBase, timeout: TimeoutType, presentation: Presentation,
+    ) -> None:
+        pass
+
+    @abstractmethod
+    def create_new_presentation(
+        self,
+        current_presentation: Presentation, next_presentation: Presentation,
+        browser: BrowserBase, db_client: DBClientBase,
+        **kwargs,
+    ) -> "PresentationBase":
+        pass
+
+
+class PresentationBase(metaclass=ABCMeta):
+
+    def __init__(
+        self, browser: BrowserBase, db_client: DBClientBase,
+        creator: PresentationCreatorBase,
+    ) -> None:
         self._browser = browser
         self._db_client = db_client
+        self._creator: PresentationCreatorBase = creator
         self._new_presentation: "PresentationBase" | None = None
 
     def _set_new_presentation(self,
@@ -71,6 +107,11 @@ class PresentationBase:
         if self._new_presentation is not None:
             msg = "The presentation has been already stale."
             raise AssertionError(msg)
+
+    @staticmethod
+    @abstractmethod
+    def _wait(browser: BrowserBase, timeout: TimeoutType) -> None:
+        pass
 
     @property
     def new_presentation(self) -> Optional["PresentationBase"]:

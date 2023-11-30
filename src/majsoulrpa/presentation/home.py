@@ -9,7 +9,9 @@ from majsoulrpa.common import TimeoutType
 
 from .presentation_base import (
     InconsistentMessage,
+    Presentation,
     PresentationBase,
+    PresentationCreatorBase,
     PresentationNotDetected,
     Timeout,
 )
@@ -102,9 +104,9 @@ class HomePresentation(PresentationBase):
 
     def __init__(  # noqa: PLR0912, PLR0915, C901
         self, browser: BrowserBase, db_client: DBClientBase,
-        timeout: TimeoutType,
+        creator: PresentationCreatorBase, timeout: TimeoutType,
     ) -> None:
-        super().__init__(browser, db_client)
+        super().__init__(browser, db_client, creator)
 
         if isinstance(timeout, int | float):
             timeout = datetime.timedelta(seconds=timeout)
@@ -269,14 +271,14 @@ class HomePresentation(PresentationBase):
         # Click "Create"
         template.click(self._browser)
 
-        from .room import RoomHostPresentation
-
         # Wait until room screen is displayed.
         now = datetime.datetime.now(datetime.UTC)
-        RoomHostPresentation._wait(self._browser, deadline - now)  # noqa: SLF001
+        self._creator.wait(self._browser, deadline - now,
+                           Presentation.ROOMHOST)
 
         now = datetime.datetime.now(datetime.UTC)
-        p = RoomHostPresentation._create(  # noqa: SLF001
-            self._browser, self._db_client, deadline - now,
+        new_presentation = self._creator.create_new_presentation(
+            Presentation.HOME, Presentation.ROOMHOST,
+            self._browser, self._db_client, timeout=(deadline - now),
         )
-        self._set_new_presentation(p)
+        self._set_new_presentation(new_presentation)

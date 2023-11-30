@@ -7,7 +7,9 @@ from majsoulrpa.common import Player, TimeoutType
 from majsoulrpa.presentation.presentation_base import (
     InconsistentMessage,
     InvalidOperation,
+    Presentation,
     PresentationBase,
+    PresentationCreatorBase,
 )
 
 
@@ -36,10 +38,11 @@ class RoomPresentationBase(PresentationBase):
 
     def __init__(  # noqa: PLR0913
         self, browser: BrowserBase, db_client: DBClientBase,
+        creator: PresentationCreatorBase,
         room_id: int, max_num_players: int, players: Iterable[RoomPlayer],
         num_ais: int,
     ) -> None:
-        super().__init__(browser, db_client)
+        super().__init__(browser, db_client, creator)
 
         self._room_id = room_id
         self._max_num_players = max_num_players
@@ -141,10 +144,11 @@ class RoomPresentationBase(PresentationBase):
             raise InvalidOperation(msg, self._browser.get_screenshot())
         template.click(self._browser)
 
-        from majsoulrpa.presentation.home import HomePresentation
-
         # Wait until the home screen is displayed.
-        HomePresentation._wait(self._browser, timeout)  # noqa: SLF001
+        self._creator.wait(self._browser, timeout, Presentation.HOME)
 
-        p = HomePresentation(self._browser, self._db_client, timeout)
-        self._set_new_presentation(p)
+        new_presentation = self._creator.create_new_presentation(
+            Presentation.ROOMBASE, Presentation.HOME,
+            self._browser, self._db_client, timeout=timeout,
+        )
+        self._set_new_presentation(new_presentation)
