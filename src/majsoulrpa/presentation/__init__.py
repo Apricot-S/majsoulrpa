@@ -5,7 +5,6 @@ from .login import LoginPresentation
 from .presentation_base import (
     InconsistentMessage,
     InvalidOperation,
-    Presentation,
     PresentationNotDetected,
     PresentationNotUpdated,
     StalePresentation,
