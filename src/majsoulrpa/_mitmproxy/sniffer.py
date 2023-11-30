@@ -16,6 +16,8 @@ logger = getLogger(__name__)
 _NUM_SERVER_PORT: Final[int] = 37247
 
 _message_queue: dict[int, dict] = {}
+_message_pattern = re.compile(b"^(?:\x01|\x02..)\n.(.*?)\x12", flags=re.DOTALL)
+_response_pattern = re.compile(b"^\x03..\n\x00\x12", flags=re.DOTALL)
 _client = xmlrpc.client.ServerProxy(f"http://localhost:{_NUM_SERVER_PORT}")
 
 
@@ -41,7 +43,7 @@ def websocket_message(flow: mitmproxy.http.HTTPFlow) -> None:  # noqa: C901, PLR
 
     content = message.content
 
-    m = re.search(b"^(?:\x01|\x02..)\n.(.*?)\x12", content, flags=re.DOTALL)
+    m = _message_pattern.search(content)
     if m is not None:
         type_ = content[0]
         assert type_ in [1, 2]
@@ -90,7 +92,7 @@ def websocket_message(flow: mitmproxy.http.HTTPFlow) -> None:  # noqa: C901, PLR
     else:
         # Response message.
         # Find the corresponding request message from the queue.
-        m = re.search(b"^\x03..\n\x00\x12", content, flags=re.DOTALL)
+        m = _response_pattern.search(content)
         if m is None:
             msg = (
                 "An unknown WebSocket message:\n"
