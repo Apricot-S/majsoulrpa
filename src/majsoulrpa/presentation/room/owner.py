@@ -124,7 +124,7 @@ class RoomOwnerPresentation(RoomPresentationBase):
             message = db_client.dequeue_message(deadline - now)
             if message is None:
                 break
-            direction, name, request, response, timestamp = message
+            _, name, _, _, _ = message
 
             match name:
                 case (".lq.Lobby.heatbeat"
