@@ -23,7 +23,7 @@ from .base import RoomPlayer, RoomPresentationBase
 logger = getLogger(__name__)
 
 
-class RoomHostPresentation(RoomPresentationBase):
+class RoomOwnerPresentation(RoomPresentationBase):
 
     def __init__(  # noqa: PLR0913
         self, browser: BrowserBase, db_client: DBClientBase,

@@ -8,7 +8,7 @@ from majsoulrpa.presentation import (
     AuthPresentation,
     HomePresentation,
     LoginPresentation,
-    RoomHostPresentation,
+    RoomOwnerPresentation,
 )
 
 LOG_LEVEL = INFO
@@ -64,7 +64,7 @@ if __name__ == "__main__":
         presentation = presentation.new_presentation
         logger.info("Home end.")
 
-        if not isinstance(presentation, RoomHostPresentation):
+        if not isinstance(presentation, RoomOwnerPresentation):
             msg = "Could not transit to 'room'."
             raise RuntimeError(msg)
         logger.info(f"room id: {presentation.room_id}")  # noqa: G004

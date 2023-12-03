@@ -274,11 +274,11 @@ class HomePresentation(PresentationBase):
         # Wait until room screen is displayed.
         now = datetime.datetime.now(datetime.UTC)
         self._creator.wait(self._browser, deadline - now,
-                           Presentation.ROOMHOST)
+                           Presentation.ROOMOWNER)
 
         now = datetime.datetime.now(datetime.UTC)
         new_presentation = self._creator.create_new_presentation(
-            Presentation.HOME, Presentation.ROOMHOST,
+            Presentation.HOME, Presentation.ROOMOWNER,
             self._browser, self._db_client, timeout=(deadline - now),
         )
         self._set_new_presentation(new_presentation)

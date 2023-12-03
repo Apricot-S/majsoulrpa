@@ -13,7 +13,7 @@ from .presentation_base import (
     PresentationBase,
     PresentationCreatorBase,
 )
-from .room import RoomHostPresentation
+from .room import RoomOwnerPresentation
 
 
 class PresentationCreator(PresentationCreatorBase):
@@ -34,8 +34,8 @@ class PresentationCreator(PresentationCreatorBase):
                 HomePresentation._wait(browser, timeout)
             case Presentation.TOURNAMENT:
                 raise NotImplementedError
-            case Presentation.ROOMHOST:
-                RoomHostPresentation._wait(browser, timeout)
+            case Presentation.ROOMOWNER:
+                RoomOwnerPresentation._wait(browser, timeout)
             case Presentation.MATCH:
                 raise NotImplementedError
             case _:
@@ -60,13 +60,13 @@ class PresentationCreator(PresentationCreatorBase):
                                         kwargs["timeout"])
             case Presentation.TOURNAMENT:
                 raise NotImplementedError
-            case Presentation.ROOMHOST:
+            case Presentation.ROOMOWNER:
                 match current_presentation:
                     case Presentation.HOME:
                         if not isinstance(kwargs.get("timeout"),
                                           int | float | datetime.timedelta):
                             raise TypeError
-                        return RoomHostPresentation._create(
+                        return RoomOwnerPresentation._create(
                             browser, db_client, self, kwargs["timeout"],
                         )
                     case _:

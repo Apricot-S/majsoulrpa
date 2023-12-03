@@ -62,7 +62,7 @@ class Presentation(Enum):
     HOME = auto()
     TOURNAMENT = auto()
     ROOMBASE = auto()
-    ROOMHOST = auto()
+    ROOMOWNER = auto()
     MATCH = auto()
 
 
