@@ -176,7 +176,7 @@ class RoomOwnerPresentation(RoomPresentationBase):
         # the effect interferes with template matching
         # when you click "Add AI" consecutively,
         # so wait until the effect disappears.
-        time.sleep(2.0)
+        time.sleep(1.5)
 
         # Wait until WebSocket messages come in and
         # the number of AIs actually increases.
