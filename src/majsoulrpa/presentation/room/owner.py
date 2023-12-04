@@ -12,6 +12,7 @@ from majsoulrpa.common import TimeoutType
 from majsoulrpa.presentation.presentation_base import (
     InconsistentMessage,
     InvalidOperation,
+    Presentation,
     PresentationCreatorBase,
     PresentationNotDetected,
     PresentationNotUpdated,
@@ -201,3 +202,14 @@ class RoomOwnerPresentation(RoomPresentationBase):
             if template.match(self._browser.get_screenshot()):
                 break
         template.click(self._browser)
+
+        now = datetime.datetime.now(datetime.UTC)
+        self._creator.wait(self._browser, deadline - now, Presentation.MATCH)
+
+        now = datetime.datetime.now(datetime.UTC)
+        new_presentation = self._creator.create_new_presentation(
+            Presentation.ROOMOWNER, Presentation.MATCH,
+            self._browser, self._db_client,
+            prev_presentation=Presentation.ROOMOWNER, timeout=(deadline - now),
+        )
+        self._set_new_presentation(new_presentation)

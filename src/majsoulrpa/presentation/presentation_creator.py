@@ -8,6 +8,8 @@ from majsoulrpa.common import TimeoutType
 from .auth import AuthPresentation
 from .home import HomePresentation
 from .login import LoginPresentation
+from .match import MatchPresentation
+from .match.state import MatchState
 from .presentation_base import (
     Presentation,
     PresentationBase,
@@ -37,7 +39,7 @@ class PresentationCreator(PresentationCreatorBase):
             case Presentation.ROOMOWNER:
                 RoomOwnerPresentation._wait(browser, timeout)
             case Presentation.MATCH:
-                raise NotImplementedError
+                MatchPresentation._wait(browser, timeout)
             case _:
                 raise AssertionError
 
@@ -62,7 +64,7 @@ class PresentationCreator(PresentationCreatorBase):
                 raise NotImplementedError
             case Presentation.ROOMOWNER:
                 match current_presentation:
-                    case Presentation.HOME:
+                    case Presentation.HOME | Presentation.MATCH:
                         if not isinstance(kwargs.get("timeout"),
                                           int | float | datetime.timedelta):
                             raise TypeError
@@ -72,6 +74,28 @@ class PresentationCreator(PresentationCreatorBase):
                     case _:
                         raise NotImplementedError
             case Presentation.MATCH:
-                raise NotImplementedError
+                if not isinstance(kwargs.get("prev_presentation"),
+                                  Presentation):
+                    raise TypeError
+                if not isinstance(kwargs.get("timeout"),
+                                  int | float | datetime.timedelta):
+                    raise TypeError
+                match current_presentation:
+                    case Presentation.ROOMOWNER:
+                        return MatchPresentation(
+                            browser, db_client, self,
+                            current_presentation, kwargs["timeout"],
+                        )
+                    case Presentation.MATCH:
+                        if not isinstance(kwargs.get("match_state"),
+                                          MatchState):
+                            raise TypeError
+                        return MatchPresentation(
+                            browser, db_client, self,
+                            current_presentation, kwargs["timeout"],
+                            match_state=kwargs["match_state"],
+                        )
+                    case _:
+                        raise NotImplementedError
             case _:
                 raise AssertionError
