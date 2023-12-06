@@ -91,7 +91,7 @@ class MatchPresentation(PresentationBase):
         ".lq.PlayerLeaving",
     )
 
-    def _on_common_message(self, message: Message) -> None:  # noqa: PLR0911
+    def _on_common_message(self, message: Message) -> None:
         _, name, request, _, _ = message
 
         match name:
