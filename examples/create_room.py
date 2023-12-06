@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
         logger.info("Match start.")
         if not isinstance(presentation, MatchPresentation):
-            msg = "Could not transit to 'room'."
+            msg = "Could not transit to 'match'."
             raise RuntimeError(msg)
 
         seat = None
