@@ -1,5 +1,7 @@
+import datetime
 from abc import ABCMeta, abstractmethod
 from enum import Enum, auto
+from pathlib import Path
 from typing import Optional
 
 from majsoulrpa._impl.browser import BrowserBase
@@ -9,6 +11,15 @@ from majsoulrpa.common import TimeoutType
 
 class ErrorBase(Exception):  # noqa: N818
     def __init__(self, message: str, screenshot: bytes | None) -> None:
+        if screenshot is not None:
+            now = datetime.datetime.now(datetime.UTC)
+            ss_name = now.strftime("%Y-%m-%d-%H-%M-%S.png")
+            with Path(ss_name).open("wb") as fp:
+                fp.write(screenshot)
+        else:
+            ss_name = None
+
+        super().__init__(message, ss_name)
         self._message = message
         self._screenshot = screenshot
 
@@ -20,7 +31,8 @@ class Timeout(ErrorBase):
 
 class PresentationNotDetected(ErrorBase):
     def __init__(self, message: str, screenshot: bytes) -> None:
-        super().__init__(message, screenshot)
+        super().__init__(message, None)
+        self._screenshot = screenshot
 
 
 class StalePresentation(ErrorBase):
