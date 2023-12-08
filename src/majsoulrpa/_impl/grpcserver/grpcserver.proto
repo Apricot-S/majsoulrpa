@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package grpcserver;
+
+service GRPCServer {
+    rpc PushMessage(Message) returns (NoneResponse);
+    rpc PopMessage(Timeout) returns (Message);
+}
+
+message NoneResponse {}
+
+message Message {
+    bytes content = 1;
+}
+
+message Timeout {
+    double seconds = 1;
+}

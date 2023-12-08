@@ -32,6 +32,7 @@ opencv-python = "*"
 playwright = "*"
 protobuf = "*"
 PyGetWindow = "*"
+grpcio = "^1.60.0"
 
 [tool.poetry.dev-dependencies]
 build = "*"

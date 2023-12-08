@@ -21,7 +21,7 @@ from .presentation.presentation_creator import PresentationCreator
 
 logger = getLogger(__name__)
 
-_SERVER_PATH: Final = Path(__file__).parent / "_impl/db_server.py"
+_SERVER_PATH: Final = Path(__file__).parent / "_impl/grpc_server.py"
 _SNIFFER_PATH: Final = Path(__file__).parent / "_mitmproxy/sniffer.py"
 
 class RPA:

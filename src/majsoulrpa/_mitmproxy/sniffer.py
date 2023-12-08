@@ -4,12 +4,14 @@ import base64
 import datetime
 import json
 import re
-import xmlrpc.client
 from logging import getLogger
 from typing import Final
 
+import grpc
 import mitmproxy.http
 import wsproto.frame_protocol
+from majsoulrpa._impl.grpcserver.grpcserver_pb2 import Message
+from majsoulrpa._impl.grpcserver.grpcserver_pb2_grpc import GRPCServerStub
 
 logger = getLogger(__name__)
 
@@ -18,7 +20,8 @@ _NUM_SERVER_PORT: Final[int] = 37247
 _message_queue: dict[int, dict] = {}
 _message_pattern = re.compile(b"^(?:\x01|\x02..)\n.(.*?)\x12", flags=re.DOTALL)
 _response_pattern = re.compile(b"^\x03..\n\x00\x12", flags=re.DOTALL)
-_client = xmlrpc.client.ServerProxy(f"http://localhost:{_NUM_SERVER_PORT}")
+_channel = grpc.insecure_channel(f"localhost:{_NUM_SERVER_PORT}")
+_client = GRPCServerStub(_channel)
 
 
 def websocket_message(flow: mitmproxy.http.HTTPFlow) -> None:  # noqa: C901, PLR0912, PLR0915
@@ -151,4 +154,5 @@ def websocket_message(flow: mitmproxy.http.HTTPFlow) -> None:  # noqa: C901, PLR
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_in_executor(None, _client.rpush, data_bytes)
+    loop.run_in_executor(None, _client.PushMessage,
+                         Message(content=data_bytes))

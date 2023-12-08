@@ -5,11 +5,13 @@ import subprocess
 from abc import ABCMeta, abstractmethod
 from collections import deque
 from typing import Any, ClassVar, TypeAlias
-from xmlrpc.client import ServerProxy
 
 import google.protobuf.json_format
+import grpc
 from google.protobuf.message_factory import GetMessageClass
 
+from majsoulrpa._impl.grpcserver import grpcserver_pb2
+from majsoulrpa._impl.grpcserver.grpcserver_pb2_grpc import GRPCServerStub
 from majsoulrpa.common import TimeoutType
 
 from .proto import liqi_pb2
@@ -56,13 +58,10 @@ class DBClientBase(metaclass=ABCMeta):
 
 class DBClient(DBClientBase):
 
-    def __init__(self, host: str = "XML-RPC", port: int = 37247) -> None:
+    def __init__(self, host: str = "gRPC", port: int = 37247) -> None:
         super().__init__(host, port)
-        self._client = ServerProxy(
-            f"http://localhost:{port}",
-            allow_none=True,
-            use_builtin_types=True,
-        )
+        self._channel = grpc.insecure_channel(f"localhost:{port}")
+        self._client = GRPCServerStub(self._channel)
 
     def dequeue_message(self, timeout: TimeoutType) -> Message | None:  # noqa: C901, PLR0912, PLR0915
         if isinstance(timeout, int | float):
@@ -74,9 +73,10 @@ class DBClient(DBClientBase):
         if len(self._put_back_messages) > 0:
             return self._put_back_messages.popleft()
 
-        message_bytes: bytes | None = \
-            self._client.blpop(timeout.total_seconds()) # type: ignore[assignment]
-        if message_bytes is None:
+        message_bytes: bytes = self._client.PopMessage(
+                grpcserver_pb2.Timeout(seconds=timeout.total_seconds()),
+            ).content
+        if message_bytes == b"":
             return None
 
         message_str = message_bytes.decode(encoding="utf-8")
