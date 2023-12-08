@@ -1,7 +1,7 @@
 # ruff: noqa: N802, T201
 import argparse
+import asyncio
 from concurrent import futures
-from queue import Empty, SimpleQueue
 
 import grpc
 
@@ -20,12 +20,14 @@ class GRPCServer(GRPCServerServicer):
 
     def __init__(self) -> None:
         super().__init__()
-        self._message_queue: SimpleQueue = SimpleQueue()
+        self._message_queue: asyncio.Queue = asyncio.Queue()
+        self._loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self._loop)
 
     def PushMessage(
         self, request: Message, context: grpc.ServicerContext,  # noqa: ARG002
     ) -> NoneResponse:
-        self._message_queue.put(request.content)
+        self._loop.run_until_complete(self._message_queue.put(request.content))
         size = self._message_queue.qsize()
         print(f"Pushed. Size of message_queue: {size}")
         return NoneResponse()
@@ -34,8 +36,10 @@ class GRPCServer(GRPCServerServicer):
         self, request: Timeout, context: grpc.ServicerContext,  # noqa: ARG002
     ) -> Message:
         try:
-            content = self._message_queue.get(timeout=request.seconds)
-        except Empty:
+            content = self._loop.run_until_complete(
+                asyncio.wait_for(self._message_queue.get(), request.seconds),
+            )
+        except TimeoutError:
             size = self._message_queue.qsize()
             print(f"Empty. Size of message_queue: {size}")
             return Message(content=None)
