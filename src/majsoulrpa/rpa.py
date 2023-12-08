@@ -1,5 +1,6 @@
 import datetime
 import platform
+import sys
 import uuid
 from logging import getLogger
 from pathlib import Path
@@ -48,9 +49,11 @@ class RPA:
         # Run DB server process
         server_args: list[str | Path] = []
         if self._proxy_port is None:
-            server_args = ["py", _SERVER_PATH]
+            server_args = [sys.executable, _SERVER_PATH]
         else:
-            server_args = ["py", _SERVER_PATH, "--port", f"{self._db_port}"]
+            server_args = [
+                sys.executable, _SERVER_PATH, "--port", f"{self._db_port}",
+            ]
 
         match platform.system():
             case "Windows":
