@@ -183,7 +183,7 @@ class RoomOwnerPresentation(RoomPresentationBase):
         # the number of AIs actually increases.
         while self.num_ais <= old_num_ais:
             now = datetime.datetime.now(datetime.UTC)
-            with contextlib.suppress(PresentationNotDetected):
+            with contextlib.suppress(PresentationNotUpdated):
                 self._update(deadline - now)
 
     def start(self, timeout: TimeoutType = 60.0) -> None:
