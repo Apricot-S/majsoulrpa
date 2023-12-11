@@ -5,7 +5,7 @@ from typing import Any
 import google.protobuf.json_format
 from google.protobuf.message_factory import GetMessageClass
 
-from majsoulrpa._impl.proto import liqi_pb2
+from majsoulrpa._impl.protobuf_liqi import liqi_pb2
 
 _MESSAGE_TYPE_MAP = {}
 for tdesc in liqi_pb2.DESCRIPTOR.message_types_by_name.values():
