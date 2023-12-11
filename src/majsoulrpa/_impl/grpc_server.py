@@ -1,9 +1,9 @@
 # ruff: noqa: N802, T201
 import argparse
 import asyncio
-from concurrent import futures
+import functools
 
-import grpc
+import grpc  # type:ignore[import-untyped]
 
 from majsoulrpa._impl.grpcserver.grpcserver_pb2 import (
     Message,
@@ -20,41 +20,50 @@ class GRPCServer(GRPCServerServicer):
 
     def __init__(self) -> None:
         super().__init__()
-        self._message_queue: asyncio.Queue = asyncio.Queue()
+        self._message_queue: asyncio.Queue[bytes] = asyncio.Queue()
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
 
-    def PushMessage(
-        self, request: Message, context: grpc.ServicerContext,  # noqa: ARG002
-    ) -> NoneResponse:
-        self._loop.run_until_complete(self._message_queue.put(request.content))
-        size = self._message_queue.qsize()
-        print(f"Pushed. Size of message_queue: {size}")
+    def _print_size(self, comment: str, future=None) -> None:  # noqa: ARG002, ANN001
+        print(f"{comment} message_queue size: {self._message_queue.qsize()}")
+
+    async def _push_message_impl(self, content: bytes) -> None:
+        coro = self._message_queue.put(content)
+        task = self._loop.create_task(coro)
+        print_size = functools.partial(self._print_size, "Pushed.")
+        task.add_done_callback(print_size)
+        await task
+
+    def PushMessage(self, request: Message, context) -> NoneResponse:  # noqa: ARG002, ANN001
+        asyncio.run_coroutine_threadsafe(
+            self._push_message_impl(request.content), self._loop,
+        )
         return NoneResponse()
 
-    def PopMessage(
-        self, request: Timeout, context: grpc.ServicerContext,  # noqa: ARG002
-    ) -> Message:
+    async def _pop_message_impl(self, timeout: float) -> bytes:
         try:
-            content = self._loop.run_until_complete(
-                asyncio.wait_for(self._message_queue.get(), request.seconds),
-            )
+            coro = asyncio.wait_for(self._message_queue.get(), timeout)
+            result = await self._loop.create_task(coro)
         except TimeoutError:
-            size = self._message_queue.qsize()
-            print(f"Empty. Size of message_queue: {size}")
-            return Message(content=None)
+            self._print_size("Empty.")
+            return b""
         else:
-            size = self._message_queue.qsize()
-            print(f"Popped. Size of message_queue: {size}")
-            return Message(content=content)
+            self._print_size("Poped.")
+            return result
+
+    def PopMessage(self, request: Timeout, context) -> Message:  # noqa: ARG002, ANN001
+        result = self._loop.run_until_complete(
+            self._pop_message_impl(request.seconds),
+        )
+        return Message(content=result)
 
 
-def serve(port: int = 37247) -> None:
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
+async def serve(port: int = 37247) -> None:
+    server = grpc.aio.server()
     add_GRPCServerServicer_to_server(GRPCServer(), server)
     server.add_insecure_port(f"[::]:{port}")
-    server.start()
-    server.wait_for_termination()
+    await server.start()
+    await server.wait_for_termination()
 
 
 if __name__ == "__main__":
@@ -65,4 +74,4 @@ if __name__ == "__main__":
         msg = "Port number must be in the range 1024 to 49151."
         raise ValueError(msg)
     print(f"Listening on port {port}...")
-    serve(port)
+    asyncio.run(serve(port))
