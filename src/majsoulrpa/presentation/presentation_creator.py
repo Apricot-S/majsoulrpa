@@ -24,9 +24,6 @@ class PresentationCreator(PresentationCreatorBase):
     def wait(
         browser: BrowserBase, timeout: TimeoutType, presentation: Presentation,
     ) -> None:
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-
         match presentation:
             case Presentation.LOGIN:
                 LoginPresentation._wait(browser, timeout)
