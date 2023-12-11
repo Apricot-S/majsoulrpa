@@ -14,7 +14,7 @@ class ChiPengGangEvent(EventBase):
         super().__init__(timestamp)
         self._seat = data["seat"]
         self._type = ("チー", "ポン", "大明槓")[data["type"]]
-        self._from = data["from"][-1]
+        self._from = data["froms"][-1]
         self._tiles = data["tiles"]
 
     @property
