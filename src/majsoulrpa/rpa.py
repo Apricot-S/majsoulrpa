@@ -1,14 +1,10 @@
 import datetime
-import platform
 import sys
 import uuid
 from logging import getLogger
 from pathlib import Path
 from subprocess import Popen
 from typing import Final, Self
-
-if platform.system() == "Windows":
-    from subprocess import CREATE_NEW_CONSOLE
 
 from ._impl.browser import BrowserBase, DesktopBrowser
 from ._impl.db_client import DBClient, DBClientBase
@@ -55,34 +51,18 @@ class RPA:
                 sys.executable, _SERVER_PATH, "--port", f"{self._db_port}",
             ]
 
-        match platform.system():
-            case "Windows":
-                self._db_process = Popen(
-                    server_args, creationflags=CREATE_NEW_CONSOLE,  # noqa: S603
-                )
-            case "Linux":
-                raise NotImplementedError
-            case _:
-                raise NotImplementedError
+        self._db_process = Popen(server_args)  # noqa: S603
 
         # Run network sniffering process
         sniffer_args: list[str | Path] = []
         if self._proxy_port is None:
-            sniffer_args = ["mitmdump", "-s", _SNIFFER_PATH]
+            sniffer_args = ["mitmdump", "-qs", _SNIFFER_PATH]
         else:
             sniffer_args = [
-                "mitmdump", "-s", _SNIFFER_PATH, "-p", f"{self._proxy_port}",
+                "mitmdump", "-qs", _SNIFFER_PATH, "-p", f"{self._proxy_port}",
             ]
 
-        match platform.system():
-            case "Windows":
-                self._mitmproxy_process = Popen(
-                    sniffer_args, creationflags=CREATE_NEW_CONSOLE,  # noqa: S603
-                )
-            case "Linux":
-                raise NotImplementedError
-            case _:
-                raise NotImplementedError
+        self._mitmproxy_process = Popen(sniffer_args)  # noqa: S603
 
         # Construct a class instance that abstracts browser operations
         if self._proxy_port is None:
