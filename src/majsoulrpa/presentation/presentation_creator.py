@@ -75,6 +75,12 @@ class PresentationCreator(PresentationCreatorBase):
                                   int | float | datetime.timedelta):
                     raise TypeError
                 match current_presentation:
+                    case Presentation.AUTH:
+                        # TODO: What to do when a suspended match is resumed.
+                        return MatchPresentation(
+                            browser, db_client, self,
+                            current_presentation, kwargs["timeout"],
+                        )
                     case Presentation.ROOMOWNER:
                         return MatchPresentation(
                             browser, db_client, self,
