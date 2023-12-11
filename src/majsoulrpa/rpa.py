@@ -47,25 +47,17 @@ class RPA:
 
     def __enter__(self) -> Self:
         # Run DB server process
-        server_args: list[str | Path] = []
-        if self._proxy_port is None:
-            server_args = [sys.executable, _SERVER_PATH]
-        else:
-            server_args = [
-                sys.executable, _SERVER_PATH, "--port", f"{self._db_port}",
-            ]
-
+        server_args: list[str | Path] = [sys.executable, _SERVER_PATH]
+        if self._proxy_port is not None:
+            server_args.extend(["--port", f"{self._db_port}"])
         self._db_process = Popen(server_args)  # noqa: S603
 
         # Run network sniffering process
-        sniffer_args: list[str | Path] = []
-        if self._proxy_port is None:
-            sniffer_args = ["mitmdump", "-qs", _SNIFFER_PATH]
-        else:
-            sniffer_args = [
-                "mitmdump", "-qs", _SNIFFER_PATH, "-p", f"{self._proxy_port}",
-            ]
-
+        sniffer_args: list[str | Path] = ["mitmdump", "-qs", _SNIFFER_PATH]
+        if self._proxy_port is not None:
+            sniffer_args.extend(["-p", f"{self._proxy_port}"])
+        if self._db_port is not None:
+            sniffer_args.extend(["--set", f"server_port={self._db_port}"])
         self._mitmproxy_process = Popen(sniffer_args)  # noqa: S603
 
         # Construct a class instance that abstracts browser operations
