@@ -165,10 +165,12 @@ class HomePresentation(PresentationBase):
                       | ".lq.Lobby.loginSuccess"
                       | ".lq.Lobby.fetchCharacterInfo"
                       | ".lq.Lobby.fetchAllCommonViews"
-                      | ".lq.Lobby.fetchCollectedGameRecordList"):
+                      | ".lq.Lobby.fetchCollectedGameRecordList"
+                      | ".lq.Lobby.modifyRoom"):
                     logger.info(message)
                     continue
-                case ".lq.Lobby.fetchDailyTask":
+                case (".lq.Lobby.fetchDailyTask"
+                      | ".lq.Lobby.leaveRoom"):
                     logger.info(message)
 
                     break_ = False
