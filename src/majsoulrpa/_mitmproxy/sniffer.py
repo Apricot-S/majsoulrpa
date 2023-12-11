@@ -9,8 +9,8 @@ from typing import Final
 import grpc  # type:ignore[import-untyped]
 import mitmproxy.http
 import wsproto.frame_protocol
-from majsoulrpa._impl.grpcserver.grpcserver_pb2 import Message
-from majsoulrpa._impl.grpcserver.grpcserver_pb2_grpc import GRPCServerStub
+from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2 import Message
+from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import GRPCServerStub
 
 logger = getLogger(__name__)
 
