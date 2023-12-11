@@ -5,7 +5,7 @@ from typing import Final
 from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.db_client import DBClientBase
 from majsoulrpa._impl.template import Template
-from majsoulrpa.common import TimeoutType
+from majsoulrpa.common import TimeoutType, timeout_to_deadline, to_timedelta
 
 from .presentation_base import (
     InvalidOperation,
@@ -64,9 +64,6 @@ class AuthPresentation(PresentationBase):
             msg = "Email address has been already entered."
             raise InvalidOperation(msg, self._browser.get_screenshot())
 
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-
         # Click the "Enter email address" text box to focus it.
         self._browser.click_region(
             int(_TEXT_BOX_EMAIL_ADDRESS_LEFT * self._browser.zoom_ratio),
@@ -108,9 +105,7 @@ class AuthPresentation(PresentationBase):
             msg = "Email address has not been entered yet."
             raise InvalidOperation(msg, self._browser.get_screenshot())
 
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
 
         # Click the "Enter the verification code sent to your email"
         # text box to focus it.

@@ -9,7 +9,7 @@ from majsoulrpa import common
 from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.db_client import DBClientBase, Message
 from majsoulrpa._impl.template import Template, screenshot_to_opencv
-from majsoulrpa.common import TimeoutType
+from majsoulrpa.common import TimeoutType, timeout_to_deadline, to_timedelta
 from majsoulrpa.presentation.match.event import (
     AngangJiagangEvent,
     ChiPengGangEvent,
@@ -58,9 +58,7 @@ class MatchPresentation(PresentationBase):
 
     @staticmethod
     def _wait(browser: BrowserBase, timeout: TimeoutType = 60.0) -> None:
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout."
@@ -156,9 +154,6 @@ class MatchPresentation(PresentationBase):
     ) -> None:
         super().__init__(browser, db_client, creator)
 
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-
         self._prev_presentation = prev_presentation
         self._step = 0
         self._events = []
@@ -183,7 +178,7 @@ class MatchPresentation(PresentationBase):
             msg = "Could not detect 'match_main'."
             raise PresentationNotDetected(msg, sct)
 
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
 
         while True:
             now = datetime.datetime.now(datetime.UTC)
@@ -435,13 +430,9 @@ class MatchPresentation(PresentationBase):
         self, left: int, top: int, width: int, height: int,
         interval: TimeoutType, timeout: TimeoutType, edge_sigma: float = 2.0,
     ) -> None:
-        if isinstance(interval, int | float):
-            interval = datetime.timedelta(seconds=interval)
+        interval = to_timedelta(interval)
 
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout."
@@ -471,9 +462,7 @@ class MatchPresentation(PresentationBase):
         self._db_client.put_back(message)
 
     def _reset_to_prev_presentation(self, timeout: TimeoutType) -> None:
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
 
         # If there is an additional "confirm" button
         # such as when receiving rewards, click it.
@@ -582,9 +571,7 @@ class MatchPresentation(PresentationBase):
         if expected_step < 0:
             raise ValueError(expected_step)
 
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
 
         messages: list[Message] = []
         while True:
@@ -948,9 +935,7 @@ class MatchPresentation(PresentationBase):
             raise InconsistentMessage(action)
 
     def _wait_impl(self, timeout: TimeoutType = 300.0) -> None:
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
 
         while True:
             now = datetime.datetime.now(datetime.UTC)
@@ -1256,9 +1241,7 @@ class MatchPresentation(PresentationBase):
     ) -> None:
         self._assert_not_stale()
 
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
 
         if self._operation_list is None:
             msg = "No operation exists for now."

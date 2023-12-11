@@ -8,7 +8,7 @@ from typing import Self
 from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.db_client import DBClientBase
 from majsoulrpa._impl.template import Template
-from majsoulrpa.common import TimeoutType
+from majsoulrpa.common import TimeoutType, timeout_to_deadline
 from majsoulrpa.presentation.presentation_base import (
     InconsistentMessage,
     InvalidOperation,
@@ -109,9 +109,7 @@ class RoomOwnerPresentation(RoomPresentationBase):
         creator: PresentationCreatorBase,
         prev_presentation: Self, timeout: TimeoutType,
     ) -> Self:
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
 
         now = datetime.datetime.now(datetime.UTC)
         cls._wait(browser, deadline - now)
@@ -157,9 +155,7 @@ class RoomOwnerPresentation(RoomPresentationBase):
     def add_ai(self, timeout: TimeoutType = 10.0) -> None:
         self._assert_not_stale()
 
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
 
         # Check if you can click "Add AI".
         template = Template.open_file("template/room/add_ai",
@@ -189,9 +185,7 @@ class RoomOwnerPresentation(RoomPresentationBase):
     def start(self, timeout: TimeoutType = 60.0) -> None:
         self._assert_not_stale()
 
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
 
         template = Template.open_file("template/room/start",
                                       self._browser.zoom_ratio)

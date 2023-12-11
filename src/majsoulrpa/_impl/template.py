@@ -7,7 +7,7 @@ from typing import Final, Self
 import cv2
 import numpy as np
 
-from majsoulrpa.common import TimeoutType
+from majsoulrpa.common import TimeoutType, timeout_to_deadline
 from majsoulrpa.presentation.presentation_base import Timeout
 
 from .browser import STD_HEIGHT, STD_WIDTH, BrowserBase
@@ -169,10 +169,7 @@ class Template:
                 break
 
     def wait_for(self, browser: BrowserBase, timeout: TimeoutType) -> None:
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
         self.wait_until(browser, deadline)
 
     def click(
@@ -203,10 +200,7 @@ class Template:
         self, browser: BrowserBase, timeout: TimeoutType,
         edge_sigma: float = _STD_EDGE_SIGMA,
     ) -> None:
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
         self.wait_until_then_click(browser, deadline, edge_sigma)
 
     @staticmethod
@@ -245,9 +239,7 @@ class Template:
         templates: Iterable["Template"], browser: BrowserBase,
         timeout: TimeoutType, edge_sigma: float = _STD_EDGE_SIGMA,
     ) -> None:
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
         Template.wait_until_one_of_then_click(
             templates, browser, deadline, edge_sigma,
         )

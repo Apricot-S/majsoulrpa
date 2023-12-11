@@ -9,7 +9,7 @@ import grpc  # type:ignore[import-untyped]
 
 from majsoulrpa._impl.protobuf_grpc import grpcserver_pb2
 from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import GRPCServerStub
-from majsoulrpa.common import TimeoutType
+from majsoulrpa.common import TimeoutType, to_timedelta
 
 from .db_client import DBClientBase, Message
 from .proto import liqi_pb2
@@ -23,8 +23,7 @@ class GRPCClient(DBClientBase):
         self._client = GRPCServerStub(self._channel)
 
     def dequeue_message(self, timeout: TimeoutType) -> Message | None:  # noqa: C901, PLR0912, PLR0915
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
+        timeout = to_timedelta(timeout)
 
         if timeout.total_seconds() <= 0.0:  # noqa: PLR2004
             return None

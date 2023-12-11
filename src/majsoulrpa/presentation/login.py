@@ -4,7 +4,7 @@ from typing import NoReturn
 from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.db_client import DBClientBase
 from majsoulrpa._impl.template import Template
-from majsoulrpa.common import TimeoutType
+from majsoulrpa.common import TimeoutType, timeout_to_deadline
 
 from .presentation_base import (
     Presentation,
@@ -37,14 +37,11 @@ class LoginPresentation(PresentationBase):
     def login(self, timeout: TimeoutType = 60.0) -> None:
         self._assert_not_stale()
 
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-
         template = Template.open_file("template/login/marker",
                                       self._browser.zoom_ratio)
         template.click(self._browser)
 
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
         while True:
             now = datetime.datetime.now(datetime.UTC)
             if now > deadline:

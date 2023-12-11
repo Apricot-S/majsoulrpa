@@ -5,7 +5,7 @@ from logging import getLogger
 from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.db_client import DBClientBase
 from majsoulrpa._impl.template import Template
-from majsoulrpa.common import TimeoutType
+from majsoulrpa.common import TimeoutType, timeout_to_deadline
 
 from .presentation_base import (
     InconsistentMessage,
@@ -36,9 +36,7 @@ class HomePresentation(PresentationBase):
     ) -> None:
         """Close home screen notifications if they are visible.
         """
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
 
         notification_close = Template.open_file(
             "template/home/notification_close", browser.zoom_ratio,
@@ -80,9 +78,7 @@ class HomePresentation(PresentationBase):
 
     @staticmethod
     def _wait(browser: BrowserBase, timeout: TimeoutType) -> None:
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
 
         template = Template.open_file("template/home/marker0",
                                       browser.zoom_ratio)
@@ -108,9 +104,7 @@ class HomePresentation(PresentationBase):
     ) -> None:
         super().__init__(browser, db_client, creator)
 
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
 
         sct = browser.get_screenshot()
         if not HomePresentation._match_markers(sct, browser.zoom_ratio):
@@ -241,9 +235,7 @@ class HomePresentation(PresentationBase):
     def create_room(self, timeout: TimeoutType = 60.0) -> None:
         self._assert_not_stale()
 
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
 
         # Click "Friendly Match".
         template = Template.open_file("template/home/marker3",

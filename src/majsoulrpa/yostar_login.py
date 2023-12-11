@@ -11,7 +11,7 @@ from typing import Any, Final
 
 from imapclient import IMAPClient  #type: ignore[import-untyped]
 
-from .common import TimeoutType
+from .common import TimeoutType, to_timedelta
 
 logger = getLogger(__name__)
 
@@ -122,8 +122,7 @@ class YostarLogin:
     def get_auth_code(
         self, *, start_time: datetime.datetime, timeout: TimeoutType,
     ) -> str:
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
+        timeout = to_timedelta(timeout)
 
         while True:
             auth_code = self._get_auth_code(start_time=start_time)

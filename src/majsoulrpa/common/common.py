@@ -4,6 +4,18 @@ from typing import TypeAlias
 TimeoutType: TypeAlias = int | float | datetime.timedelta
 
 
+def to_timedelta(seconds: TimeoutType) -> datetime.timedelta:
+    if isinstance(seconds, datetime.timedelta):
+        return seconds
+    if isinstance(seconds, int | float):
+        return datetime.timedelta(seconds=seconds)
+    raise TypeError
+
+
+def timeout_to_deadline(timeout: TimeoutType) -> datetime.datetime:
+    return datetime.datetime.now(datetime.UTC) + to_timedelta(timeout)
+
+
 class Player:
 
     def __init__(self, account_id: int, name: str) -> None:

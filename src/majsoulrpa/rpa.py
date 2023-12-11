@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Final, Self
 
 from ._impl.browser import BrowserBase, DesktopBrowser
 from ._impl.grpc_client import GRPCClient
+from .common import timeout_to_deadline
 from .presentation import AuthPresentation, HomePresentation, LoginPresentation
 from .presentation.presentation_base import (
     PresentationBase,
@@ -120,8 +121,7 @@ class RPA:
         pass
 
     def wait(self, timeout: float) -> PresentationBase:  # noqa: PLR0912, C901
-        start_time = datetime.datetime.now(datetime.UTC)
-        deadline = start_time + datetime.timedelta(seconds=timeout)
+        deadline = timeout_to_deadline(timeout)
 
         if self._browser is None:
             msg = "Browser has not been launched yet."
