@@ -1,7 +1,6 @@
 # ruff: noqa: N802, T201
 import argparse
 import asyncio
-import functools
 
 import grpc  # type:ignore[import-untyped]
 
@@ -24,23 +23,18 @@ class GRPCServer(GRPCServerServicer):
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
 
-    def _print_size(self, comment: str, future=None) -> None:  # noqa: ARG002, ANN001
+    def _print_size(self, comment: str) -> None:
         print(f"{comment} message_queue size: {self._message_queue.qsize()}")
 
-    async def _push_message_impl(self, content: bytes) -> None:
-        coro = self._message_queue.put(content)
-        task = self._loop.create_task(coro)
-        print_size = functools.partial(self._print_size, "Pushed.")
-        task.add_done_callback(print_size)
-        await task
+    def _push_impl(self, content: bytes) -> None:
+        self._message_queue.put_nowait(content)
+        self._print_size("Pushed.")
 
     def PushMessage(self, request: Message, context) -> NoneResponse:  # noqa: ARG002, ANN001
-        asyncio.run_coroutine_threadsafe(
-            self._push_message_impl(request.content), self._loop,
-        )
+        self._loop.run_in_executor(None, self._push_impl, request.content)
         return NoneResponse()
 
-    async def _pop_message_impl(self, timeout: float) -> bytes:
+    async def _pop_impl(self, timeout: float) -> bytes:
         try:
             coro = asyncio.wait_for(self._message_queue.get(), timeout)
             result = await self._loop.create_task(coro)
@@ -52,9 +46,7 @@ class GRPCServer(GRPCServerServicer):
             return result
 
     def PopMessage(self, request: Timeout, context) -> Message:  # noqa: ARG002, ANN001
-        result = self._loop.run_until_complete(
-            self._pop_message_impl(request.seconds),
-        )
+        result = self._loop.run_until_complete(self._pop_impl(request.seconds))
         return Message(content=result)
 
 
