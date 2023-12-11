@@ -1,5 +1,4 @@
 # ruff: noqa: S101, INP001
-import asyncio
 import base64
 import datetime
 import json
@@ -7,7 +6,7 @@ import re
 from logging import getLogger
 from typing import Final
 
-import grpc
+import grpc  # type:ignore[import-untyped]
 import mitmproxy.http
 import wsproto.frame_protocol
 from majsoulrpa._impl.grpcserver.grpcserver_pb2 import Message
@@ -152,7 +151,4 @@ def websocket_message(flow: mitmproxy.http.HTTPFlow) -> None:  # noqa: C901, PLR
     data_str = json.dumps(data, allow_nan=False, separators=(",", ":"))
     data_bytes = data_str.encode(encoding="utf-8")
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_in_executor(None, _client.PushMessage,
-                         Message(content=data_bytes))
+    _client.PushMessage(Message(content=data_bytes))
