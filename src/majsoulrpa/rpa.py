@@ -4,10 +4,10 @@ import uuid
 from logging import getLogger
 from pathlib import Path
 from subprocess import Popen
-from typing import Final, Self
+from typing import TYPE_CHECKING, Final, Self
 
 from ._impl.browser import BrowserBase, DesktopBrowser
-from ._impl.db_client import DBClient, DBClientBase
+from ._impl.grpc_client import GRPCClient
 from .presentation import AuthPresentation, HomePresentation, LoginPresentation
 from .presentation.presentation_base import (
     PresentationBase,
@@ -15,6 +15,9 @@ from .presentation.presentation_base import (
     Timeout,
 )
 from .presentation.presentation_creator import PresentationCreator
+
+if TYPE_CHECKING:
+    from ._impl.db_client import DBClientBase
 
 logger = getLogger(__name__)
 
@@ -78,9 +81,9 @@ class RPA:
 
         # Construct a class instance that abstracts DB client
         if self._db_port is None:
-            self._db_client = DBClient()
+            self._db_client = GRPCClient()
         else:
-            self._db_client = DBClient("localhost", self._db_port)
+            self._db_client = GRPCClient("localhost", self._db_port)
 
         return self
 
