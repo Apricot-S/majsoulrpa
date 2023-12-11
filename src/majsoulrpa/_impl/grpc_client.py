@@ -22,6 +22,9 @@ class GRPCClient(DBClientBase):
         self._channel = grpc.insecure_channel(f"localhost:{port}")
         self._client = GRPCServerStub(self._channel)
 
+    def __del__(self) -> None:
+        self._channel.close()
+
     def dequeue_message(self, timeout: TimeoutType) -> Message | None:  # noqa: C901, PLR0912, PLR0915
         timeout = to_timedelta(timeout)
 
