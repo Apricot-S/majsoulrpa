@@ -7,7 +7,7 @@ from google.protobuf.message_factory import GetMessageClass
 
 from majsoulrpa.common import TimeoutType
 
-from .proto import liqi_pb2
+from .protobuf_liqi import liqi_pb2
 
 Message: TypeAlias = tuple[str, str, object, object | None, datetime.datetime]
 

@@ -12,7 +12,7 @@ from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import GRPCServerStub
 from majsoulrpa.common import TimeoutType, to_timedelta
 
 from .db_client import DBClientBase, Message
-from .proto import liqi_pb2
+from .protobuf_liqi import liqi_pb2
 
 
 class GRPCClient(DBClientBase):
