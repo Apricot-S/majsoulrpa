@@ -23,14 +23,16 @@ if __name__ == "__main__":
     logger.info("program start.")
     myconfig = config.get_config("examples/config.toml")
 
-    with RPA(initial_left=myconfig["initial_position"]["left"],
-             initial_top=myconfig["initial_position"]["top"],
-             viewport_height=myconfig["viewport_height"]) as rpa:
+    with RPA(
+        initial_left=myconfig["initial_position"]["left"],
+        initial_top=myconfig["initial_position"]["top"],
+        viewport_height=myconfig["viewport_height"],
+    ) as rpa:
 
         logger.info("RPA start.")
         presentation = rpa.wait(timeout=20.0)
 
-        login_start_time=datetime.datetime.now(datetime.UTC)
+        login_start_time = datetime.datetime.now(datetime.UTC)
         logger.info("Login start.")
         if not isinstance(presentation, LoginPresentation):
             msg = "Could not transit to 'login'."
