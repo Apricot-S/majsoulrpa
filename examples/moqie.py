@@ -1,7 +1,7 @@
 # ruff: noqa: INP001, T201, TRY004, S101
 import datetime
 import time
-from logging import INFO, StreamHandler, basicConfig, getLogger
+from logging import WARNING, StreamHandler, basicConfig, getLogger
 
 from majsoulrpa import RPA, config
 from majsoulrpa.presentation import (
@@ -13,7 +13,7 @@ from majsoulrpa.presentation import (
 from majsoulrpa.presentation.match import MatchPresentation
 from majsoulrpa.presentation.match.operation import DapaiOperation
 
-LOG_LEVEL = INFO
+LOG_LEVEL = WARNING
 stream_handler = StreamHandler()
 stream_handler.setLevel(LOG_LEVEL)
 basicConfig(level=LOG_LEVEL, handlers=[stream_handler])
