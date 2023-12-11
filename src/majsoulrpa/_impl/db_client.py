@@ -7,7 +7,7 @@ from collections import deque
 from typing import Any, ClassVar, TypeAlias
 
 import google.protobuf.json_format
-import grpc
+import grpc  # type:ignore[import-untyped]
 from google.protobuf.message_factory import GetMessageClass
 
 from majsoulrpa._impl.grpcserver import grpcserver_pb2
