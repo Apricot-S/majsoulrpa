@@ -7,8 +7,8 @@ from typing import Any
 import google.protobuf.json_format
 import grpc  # type:ignore[import-untyped]
 
-from majsoulrpa._impl.grpcserver import grpcserver_pb2
-from majsoulrpa._impl.grpcserver.grpcserver_pb2_grpc import GRPCServerStub
+from majsoulrpa._impl.protobuf_grpc import grpcserver_pb2
+from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import GRPCServerStub
 from majsoulrpa.common import TimeoutType
 
 from .db_client import DBClientBase, Message

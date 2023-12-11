@@ -4,12 +4,12 @@ import asyncio
 
 import grpc  # type:ignore[import-untyped]
 
-from majsoulrpa._impl.grpcserver.grpcserver_pb2 import (
+from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2 import (
     Message,
     NoneResponse,
     Timeout,
 )
-from majsoulrpa._impl.grpcserver.grpcserver_pb2_grpc import (
+from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import (
     GRPCServerServicer,
     add_GRPCServerServicer_to_server,
 )

@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from majsoulrpa._impl.grpcserver import grpcserver_pb2 as grpcserver_dot_grpcserver__pb2
+from majsoulrpa._impl.protobuf_grpc import grpcserver_pb2 as grpcserver_dot_grpcserver__pb2
 
 
 class GRPCServerStub(object):
