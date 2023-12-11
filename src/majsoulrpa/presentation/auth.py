@@ -132,6 +132,10 @@ class AuthPresentation(PresentationBase):
 
         templates = (
             "template/home/marker0",
+            "template/match/marker0",
+            "template/match/marker1",
+            "template/match/marker2",
+            "template/match/marker3",
         )
 
         while True:
@@ -145,8 +149,17 @@ class AuthPresentation(PresentationBase):
             )
             if index in (0,):
                 break
-
-            time.sleep(0.5)
+            if index in (1, 2, 3, 4):
+                # TODO: What to do when a suspended match is resumed.
+                timeout = deadline - datetime.datetime.now(datetime.UTC)
+                self._creator.wait(self._browser, timeout, Presentation.MATCH)
+                timeout = deadline - datetime.datetime.now(datetime.UTC)
+                new_presentation = self._creator.create_new_presentation(
+                    Presentation.AUTH, Presentation.MATCH,
+                    self._browser, self._db_client, timeout=timeout,
+                )
+                self._set_new_presentation(new_presentation)
+                return
 
         # Wait until the home screen is displayed.
         timeout = deadline - datetime.datetime.now(datetime.UTC)
