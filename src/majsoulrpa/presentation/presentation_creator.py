@@ -71,9 +71,6 @@ class PresentationCreator(PresentationCreatorBase):
                     case _:
                         raise NotImplementedError
             case Presentation.MATCH:
-                if not isinstance(kwargs.get("prev_presentation"),
-                                  Presentation):
-                    raise TypeError
                 if not isinstance(kwargs.get("timeout"),
                                   int | float | datetime.timedelta):
                     raise TypeError
