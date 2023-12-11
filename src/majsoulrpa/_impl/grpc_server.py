@@ -1,4 +1,4 @@
-# ruff: noqa: N802, T201
+# ruff: noqa: N802
 import argparse
 import asyncio
 
@@ -23,12 +23,8 @@ class GRPCServer(GRPCServerServicer):
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
 
-    def _print_size(self, comment: str) -> None:
-        print(f"{comment} message_queue size: {self._message_queue.qsize()}")
-
     def _push_impl(self, content: bytes) -> None:
         self._message_queue.put_nowait(content)
-        self._print_size("Pushed.")
 
     def PushMessage(self, request: Message, context) -> NoneResponse:  # noqa: ARG002, ANN001
         self._loop.run_in_executor(None, self._push_impl, request.content)
@@ -39,10 +35,8 @@ class GRPCServer(GRPCServerServicer):
             coro = asyncio.wait_for(self._message_queue.get(), timeout)
             result = await self._loop.create_task(coro)
         except TimeoutError:
-            self._print_size("Empty.")
             return b""
         else:
-            self._print_size("Poped.")
             return result
 
     def PopMessage(self, request: Timeout, context) -> Message:  # noqa: ARG002, ANN001
@@ -65,5 +59,4 @@ if __name__ == "__main__":
     if (port < 1024) or (port > 49151):  # noqa: PLR2004
         msg = "Port number must be in the range 1024 to 49151."
         raise ValueError(msg)
-    print(f"Listening on port {port}...")
     asyncio.run(serve(port))
