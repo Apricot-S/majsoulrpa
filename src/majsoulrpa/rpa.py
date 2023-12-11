@@ -48,7 +48,7 @@ class RPA:
     def __enter__(self) -> Self:
         # Run DB server process
         server_args: list[str | Path] = [sys.executable, _SERVER_PATH]
-        if self._proxy_port is not None:
+        if self._db_port is not None:
             server_args.extend(["--port", f"{self._db_port}"])
         self._db_process = Popen(server_args)  # noqa: S603
 
