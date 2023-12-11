@@ -35,7 +35,7 @@ def _get_random_point_in_region(
 
     This function does not validate parameters.
     """
-    def _impl_get_point(distance_origin: int, length_region: int) -> int:
+    def _get_point_impl(distance_origin: int, length_region: int) -> int:
         mu = distance_origin + length_region/2.0
         sigma = (mu - distance_origin) / edge_sigma
         while True:
@@ -45,8 +45,8 @@ def _get_random_point_in_region(
                 break
         return p
 
-    x = _impl_get_point(left, width)
-    y = _impl_get_point(top, height)
+    x = _get_point_impl(left, width)
+    y = _get_point_impl(top, height)
 
     return (x, y)
 
