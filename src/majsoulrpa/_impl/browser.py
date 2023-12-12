@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
 from fractions import Fraction
 from logging import getLogger
-from typing import Any, Final
+from typing import Final
 
 import pywinctl as pwc
 from playwright.sync_api import sync_playwright
