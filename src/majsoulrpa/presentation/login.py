@@ -1,5 +1,5 @@
 import datetime
-from typing import NoReturn
+from typing import Never
 
 from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.db_client import DBClientBase
@@ -31,7 +31,7 @@ class LoginPresentation(PresentationBase):
             raise PresentationNotDetected(msg, sct)
 
     @staticmethod
-    def _wait(browser: BrowserBase, timeout: TimeoutType) -> NoReturn:  # noqa: ARG004
+    def _wait(browser: BrowserBase, timeout: TimeoutType) -> Never:  # noqa: ARG004
         raise AssertionError
 
     def login(self, timeout: TimeoutType = 60.0) -> None:
