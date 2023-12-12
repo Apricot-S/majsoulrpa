@@ -722,7 +722,7 @@ class MatchPresentation(PresentationBase):
                     continue
 
             if name == ".lq.FastTest.confirmNewRound":
-                # At the end of the game (if there is a next game)
+                # At the end of the round (if there is a next round)
                 logger.info(message)
                 while True:
                     # Wait for 'ActionNewRound' message.
