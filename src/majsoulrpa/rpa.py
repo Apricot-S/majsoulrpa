@@ -124,6 +124,8 @@ class RPA:
 
         p: PresentationBase | None = None
         while True:
+            self._browser.check_single()
+
             try:
                 p = LoginPresentation(
                     self._browser, self._db_client, self._creator,
