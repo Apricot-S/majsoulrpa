@@ -47,7 +47,7 @@ class GRPCServer(GRPCServerServicer):
 async def serve(port: int = 37247) -> None:
     server = grpc.aio.server()
     add_GRPCServerServicer_to_server(GRPCServer(), server)
-    server.add_insecure_port(f"[::]:{port}")
+    server.add_insecure_port(f"localhost:{port}")
     await server.start()
     await server.wait_for_termination()
 
