@@ -2,6 +2,7 @@
 import datetime
 import time
 from logging import getLogger
+from typing import TYPE_CHECKING
 
 import cv2
 
@@ -28,6 +29,7 @@ from majsoulrpa.presentation.match.operation import (
     JiagangOperation,
     JiuzhongjiupaiOperation,
     LiqiOperation,
+    OperationBase,
     OperationList,
     PengOperation,
     RongOperation,
@@ -50,6 +52,9 @@ from majsoulrpa.presentation.presentation_base import (
 )
 
 from . import _common
+
+if TYPE_CHECKING:
+    from majsoulrpa.presentation.match.event._base import EventBase
 
 logger = getLogger(__name__)
 
@@ -156,7 +161,7 @@ class MatchPresentation(PresentationBase):
 
         self._prev_presentation = prev_presentation
         self._step = 0
-        self._events = []
+        self._events: list[EventBase] = []
         if match_state is None:
             match_state = MatchState()
         self._match_state = match_state
@@ -323,7 +328,7 @@ class MatchPresentation(PresentationBase):
                                 OperationList(data["operation"])
                         return
 
-                    raise InconsistentMessage(action_info, sct)
+                    raise InconsistentMessage(str(action_info), sct)
 
             # The conditional statement regarding '.lq.FastTest.authGame'
             # must come before this conditional statement.
@@ -331,7 +336,7 @@ class MatchPresentation(PresentationBase):
                 self._on_common_message(message)
                 continue
 
-            raise InconsistentMessage(message, sct)
+            raise InconsistentMessage(str(message), sct)
 
     @property
     def uuid(self) -> str:
@@ -554,7 +559,8 @@ class MatchPresentation(PresentationBase):
                     self._reset_to_prev_presentation(deadline - now)
                     return
 
-            raise InconsistentMessage(message, self._browser.get_screenshot())
+            raise InconsistentMessage(str(message),
+                                      self._browser.get_screenshot())
 
     def _workaround_for_reordered_actions(
         self, message: Message, expected_step: int, timeout: TimeoutType,
@@ -590,7 +596,7 @@ class MatchPresentation(PresentationBase):
                     "step": step, "action_name": action_name, "data": data,
                 }
                 if step < expected_step:
-                    raise InconsistentMessage(action_info,
+                    raise InconsistentMessage(str(action_info),
                                               self._browser.get_screenshot())
                 while len(messages) <= step - expected_step:
                     messages.append(None)
@@ -623,7 +629,7 @@ class MatchPresentation(PresentationBase):
                     "actions": action_infos,
                     "message": message,
                 }
-                raise InconsistentMessage(error_message,
+                raise InconsistentMessage(str(error_message),
                                           self._browser.get_screenshot())
 
             now = datetime.datetime.now(datetime.UTC)
@@ -645,7 +651,8 @@ class MatchPresentation(PresentationBase):
             raise ValueError(msg)
         _, name, request, _, _ = message
         if name != ".lq.ActionPrototype":
-            raise InconsistentMessage(message, self._browser.get_screenshot())
+            raise InconsistentMessage(str(message),
+                                      self._browser.get_screenshot())
 
         step, action_name, _ = _common.parse_action(request)
         if step != 0:
@@ -740,9 +747,9 @@ class MatchPresentation(PresentationBase):
                             self._db_client.put_back(message)
                             break
                         raise InconsistentMessage(
-                            action_info, self._browser.get_screenshot()
+                            str(action_info), self._browser.get_screenshot(),
                         )
-                    raise InconsistentMessage(message,
+                    raise InconsistentMessage(str(message),
                                               self._browser.get_screenshot())
 
                 now = datetime.datetime.now(datetime.UTC)
@@ -808,7 +815,7 @@ class MatchPresentation(PresentationBase):
                         # response message is not returned?
                         logger.warning(message)
                         break
-                    raise InconsistentMessage(next_message,
+                    raise InconsistentMessage(str(next_message),
                                               self._browser.get_screenshot())
                 # After backfilling 'ActionNewRound' into
                 # the message queue of the DB server,
@@ -837,7 +844,8 @@ class MatchPresentation(PresentationBase):
                 self._on_end_of_match(deadline)
                 return
 
-            raise InconsistentMessage(message, self._browser.get_screenshot())
+            raise InconsistentMessage(str(message),
+                                      self._browser.get_screenshot())
 
     def _on_sync_game(self, message: Message) -> None:
         direction, name, request, response, timestamp = message
@@ -853,16 +861,16 @@ class MatchPresentation(PresentationBase):
 
         actions: list[object] = game_restore["actions"]
         if len(actions) == 0:
-            raise InconsistentMessage(message)
+            raise InconsistentMessage(str(message))
         if len(actions) != response["step"]:
-            raise InconsistentMessage(message)
+            raise InconsistentMessage(str(message))
 
         action = actions.pop(0)
         step, name, data = _common.parse_action(action, restore=True)
         if step != 0:
-            raise InconsistentMessage(action)
+            raise InconsistentMessage(str(action))
         if name != "ActionNewRound":
-            raise InconsistentMessage(action)
+            raise InconsistentMessage(str(action))
         self._step = 0
         self._events.clear()
         self._events.append(NewRoundEvent(data, timestamp))
@@ -877,7 +885,7 @@ class MatchPresentation(PresentationBase):
         for action in actions:
             step, name, data = _common.parse_action(action, restore=True)
             if step != self._step:
-                raise InconsistentMessage(action)
+                raise InconsistentMessage(str(action))
 
             if name == "ActionDealTile":
                 self._events.append(ZimoEvent(data, timestamp))
@@ -924,15 +932,15 @@ class MatchPresentation(PresentationBase):
                 continue
 
             if name == "ActionHule":
-                raise InconsistentMessage(action)
+                raise InconsistentMessage(str(action))
 
             if name == "ActionNoTile":
-                raise InconsistentMessage(action)
+                raise InconsistentMessage(str(action))
 
             if name == "ActionLiuJu":
-                raise InconsistentMessage(action)
+                raise InconsistentMessage(str(action))
 
-            raise InconsistentMessage(action)
+            raise InconsistentMessage(str(action))
 
     def _wait_impl(self, timeout: TimeoutType = 300.0) -> None:
         deadline = timeout_to_deadline(timeout)
@@ -1236,7 +1244,7 @@ class MatchPresentation(PresentationBase):
                                   timeout=25.0, edge_sigma=1.0)
 
     def select_operation(
-        self, operation: object, index: int | None = None,
+        self, operation: OperationBase | None, index: int | None = None,
         timeout: TimeoutType = 300.0,
     ) -> None:
         self._assert_not_stale()
