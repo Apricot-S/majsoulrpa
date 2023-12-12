@@ -1,9 +1,18 @@
 # ruff: noqa: PLR2004, S101
+from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable, Iterator, Mapping
 from typing import Any
 
 
-class DapaiOperation:
+class OperationBase(metaclass=ABCMeta):
+
+    @property
+    @abstractmethod
+    def type_(self) -> str:
+        pass
+
+
+class DapaiOperation(OperationBase):
 
     def __init__(self, forbidden_tiles: Iterable[str]) -> None:
         self._forbidden_tiles = list(forbidden_tiles)
@@ -17,7 +26,7 @@ class DapaiOperation:
         return self._forbidden_tiles
 
 
-class ChiOperation:
+class ChiOperation(OperationBase):
 
     def __init__(self, combinations: Iterable[str]) -> None:
         self._combinations: list[tuple[str, str]] = []
@@ -35,7 +44,7 @@ class ChiOperation:
         return self._combinations
 
 
-class PengOperation:
+class PengOperation(OperationBase):
 
     def __init__(self, combinations: Iterable[str]) -> None:
         self._combinations: list[tuple[str, str]] = []
@@ -53,7 +62,7 @@ class PengOperation:
         return self._combinations
 
 
-class AngangOperation:
+class AngangOperation(OperationBase):
     def __init__(self, combinations: Iterable[str]) -> None:
         self._combinations: list[tuple[str, str, str, str]] = []
         for combination in combinations:
@@ -70,7 +79,7 @@ class AngangOperation:
         return self._combinations
 
 
-class DaminggangOperation:
+class DaminggangOperation(OperationBase):
 
     def __init__(self, combinations: Iterable[str]) -> None:
         self._combinations: list[tuple[str, str, str]] = []
@@ -88,7 +97,7 @@ class DaminggangOperation:
         return self._combinations
 
 
-class JiagangOperation:
+class JiagangOperation(OperationBase):
 
     def __init__(self, combinations: Iterable[str]) -> None:
         self._combinations: list[tuple[str, str, str, str]] = []
@@ -106,7 +115,7 @@ class JiagangOperation:
         return self._combinations
 
 
-class LiqiOperation:
+class LiqiOperation(OperationBase):
 
     def __init__(self, combinations: Iterable[str]) -> None:
         self._candidate_dapai_list = list(combinations)
@@ -120,7 +129,7 @@ class LiqiOperation:
         return self._candidate_dapai_list
 
 
-class ZimohuOperation:
+class ZimohuOperation(OperationBase):
 
     def __init__(self) -> None:
         pass
@@ -130,7 +139,7 @@ class ZimohuOperation:
         return "自摸和"
 
 
-class RongOperation:
+class RongOperation(OperationBase):
     def __init__(self) -> None:
         pass
 
@@ -139,7 +148,7 @@ class RongOperation:
         return "ロン"
 
 
-class JiuzhongjiupaiOperation:
+class JiuzhongjiupaiOperation(OperationBase):
     def __init__(self) -> None:
         pass
 
