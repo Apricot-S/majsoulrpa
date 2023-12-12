@@ -31,8 +31,8 @@ mitmproxy = "*"
 opencv-python = "*"
 playwright = "*"
 protobuf = "*"
-PyGetWindow = "*"
 grpcio = "^1.60.0"
+pywinctl = "^0.3"
 
 [tool.poetry.dev-dependencies]
 build = "*"
