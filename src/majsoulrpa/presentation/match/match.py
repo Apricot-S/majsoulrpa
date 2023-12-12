@@ -285,7 +285,7 @@ class MatchPresentation(PresentationBase):
                             account_id, nickname, level4, level3, character,
                         )
                     players = []
-                    for i in range(4):
+                    for i in range(len(response["seat_list"])):
                         account_id = response["seat_list"][i]
                         if account_id == db_client.account_id:
                             self._match_state._set_seat(i)  # noqa: SLF001
