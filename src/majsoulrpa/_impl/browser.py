@@ -1,4 +1,3 @@
-import platform
 import random
 import time
 from abc import ABCMeta, abstractmethod
@@ -7,9 +6,7 @@ from fractions import Fraction
 from logging import getLogger
 from typing import Any, Final
 
-if platform.system() == "Windows":
-    import pygetwindow  #type: ignore[import-untyped]
-
+import pywinctl as pwc
 from playwright.sync_api import sync_playwright
 
 logger = getLogger(__name__)
@@ -53,30 +50,21 @@ def _get_random_point_in_region(
 
 class BrowserBase(metaclass=ABCMeta):
 
-    def __init__(self) -> None:
-        self._window: Any = None
-
-    def is_singleton(self) -> None:
+    def check_single(self) -> None:
         """Check if only one target window exists.
 
         Throws a runtime error if the target does not exist or
         if two or more targets exist.
         """
-        if platform.system() == "Windows":
-            if self._window is None:
-                windows = [
-                    w for w in pygetwindow.getAllWindows() \
-                        if w.title.startwith(TITLE_MAJSOUL)
-                ]
-                if len(windows) == 0:
-                    msg = "No window for Mahjong Soul is found."
-                    raise RuntimeError(msg)
-                if len(windows) > 1:
-                    msg = "Multiple windows for Mahjong Soul are found."
-                    raise RuntimeError(msg)
-                self._window = windows[0]
-        else:
-            raise NotImplementedError(platform.system())
+        windows = [
+            w for w in pwc.getAllWindows() if w.title.startswith(TITLE_MAJSOUL)
+        ]
+        if len(windows) == 0:
+            msg = "No window for Mahjong Soul is found."
+            raise RuntimeError(msg)
+        if len(windows) > 1:
+            msg = "Multiple windows for Mahjong Soul are found."
+            raise RuntimeError(msg)
 
     @property
     @abstractmethod
