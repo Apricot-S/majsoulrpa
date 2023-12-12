@@ -76,57 +76,58 @@ if __name__ == "__main__":
         while presentation.num_ais < 3:  # noqa: PLR2004
             presentation.add_ai(timeout=10.0)
 
-        presentation.start(timeout=60.0)
-        if presentation.new_presentation is None:
-            msg = "Could not transit to 'match'."
-            raise RuntimeError(msg)
-        presentation = presentation.new_presentation
-        logger.info("Room end.")
+        if input("Do you want to start match? y/n: ") == "y":
+            presentation.start(timeout=60.0)
+            if presentation.new_presentation is None:
+                msg = "Could not transit to 'match'."
+                raise RuntimeError(msg)
+            presentation = presentation.new_presentation
+            logger.info("Room end.")
 
-        logger.info("Match start.")
-        if not isinstance(presentation, MatchPresentation):
-            msg = "Could not transit to 'match'."
-            raise RuntimeError(msg)
+            logger.info("Match start.")
+            if not isinstance(presentation, MatchPresentation):
+                msg = "Could not transit to 'match'."
+                raise RuntimeError(msg)
 
-        seat = None
-        for i, player in enumerate(presentation.players):
-            if player.account_id == rpa.get_account_id():
-                assert seat is None
-                seat = i
-            print(f"{player.name} ({player.level4}, {player.character})")
-        assert seat is not None
-        changs = ["東", "南", "西", "北"]
-        print(f"{changs[presentation.chang]}{presentation.ju + 1}局"
-              f"{presentation.ben}本場 (供託{presentation.liqibang}本)")
-        print(f'スコア: {",".join([str(s) for s in presentation.scores])}')
-        print(f"表ドラ表示牌: {presentation.dora_indicators[0]}")
-        print(f"自風: {changs[seat]}")
-        print(f'手牌: {",".join(presentation.shoupai)}')
-        if presentation.zimopai is not None:
-            print(f"自摸牌: {presentation.zimopai}")
+            seat = None
+            for i, player in enumerate(presentation.players):
+                if player.account_id == rpa.get_account_id():
+                    assert seat is None
+                    seat = i
+                print(f"{player.name} ({player.level4}, {player.character})")
+            assert seat is not None
+            changs = ["東", "南", "西", "北"]
+            print(f"{changs[presentation.chang]}{presentation.ju + 1}局"
+                f"{presentation.ben}本場 (供託{presentation.liqibang}本)")
+            print(f'スコア: {",".join([str(s) for s in presentation.scores])}')
+            print(f"表ドラ表示牌: {presentation.dora_indicators[0]}")
+            print(f"自風: {changs[seat]}")
+            print(f'手牌: {",".join(presentation.shoupai)}')
+            if presentation.zimopai is not None:
+                print(f"自摸牌: {presentation.zimopai}")
 
-        while True:
-            ops = presentation.operation_list
-            if ops is not None:
-                moqie = False
-                for op in ops:
-                    if isinstance(op, DapaiOperation):
-                        moqie = True
-                        break
-                if moqie:
-                    time.sleep(0.1)
-                    presentation.select_operation(op, 13)
+            while True:
+                ops = presentation.operation_list
+                if ops is not None:
+                    moqie = False
+                    for op in ops:
+                        if isinstance(op, DapaiOperation):
+                            moqie = True
+                            break
+                    if moqie:
+                        time.sleep(0.1)
+                        presentation.select_operation(op, 13)
+                    else:
+                        presentation.select_operation(None)
                 else:
-                    presentation.select_operation(None)
-            else:
-                presentation.wait()
+                    presentation.wait()
 
-            if presentation.new_presentation is not None:
-                presentation = presentation.new_presentation
-                if isinstance(presentation, MatchPresentation):
-                    continue
-                assert isinstance(presentation, RoomOwnerPresentation)
-                break
+                if presentation.new_presentation is not None:
+                    presentation = presentation.new_presentation
+                    if isinstance(presentation, MatchPresentation):
+                        continue
+                    assert isinstance(presentation, RoomOwnerPresentation)
+                    break
 
         presentation.leave()
 
