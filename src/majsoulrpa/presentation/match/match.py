@@ -1190,40 +1190,27 @@ class MatchPresentation(PresentationBase):
 
         if (self.zimopai is not None) and index == num_tiles - 1:
             # Moqie
-            if index == 13:
-                left = 1487
-                top = 922
-                width = 89
-                height = 149
-            elif index == 10:
-                left = 1203
-                top = 922
-                width = 89
-                height = 149
-            elif index == 7:
-                left = 918
-                top = 922
-                width = 89
-                height = 149
-            elif index == 4:
-                left = 633
-                top = 922
-                width = 90
-                height = 149
-            elif index == 1:
-                left = 224
-                top = 922
-                width = 89
-                height = 149
-            else:
-                raise AssertionError
+            match index:
+                case 13:
+                    left = 1487
+                case 10:
+                    left = 1203
+                case 7:
+                    left = 918
+                case 4:
+                    left = 633
+                case 1:
+                    left = 224
+                case _:
+                    raise AssertionError
         else:
             # Discard from hand
             # Coordinates of hand
             left = round(224 + index * 94.91)
-            top = 922
-            width = round(312 + index * 94.91) - left + 1
-            height = 149
+
+        top = 922
+        height = 149
+        width = 89
 
         # Click 10% inside the tile because you can touch
         # the adjacent tile at the very edge of the tile.
