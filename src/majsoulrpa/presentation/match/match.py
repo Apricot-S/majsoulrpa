@@ -707,7 +707,7 @@ class MatchPresentation(PresentationBase):
                 case ".lq.FastTest.inputOperation":
                     # The response message of
                     # '.lq.FastTest.inputOperation' may be
-                    # returned late, so there isa workaround for this.
+                    # returned late, so there is a workaround for this.
                     logger.info(message)
                     continue
                 case ".lq.FastTest.inputChiPengGang":
