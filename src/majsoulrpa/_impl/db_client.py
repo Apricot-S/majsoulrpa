@@ -1,7 +1,7 @@
 import datetime
 from abc import ABCMeta, abstractmethod
 from collections import deque
-from typing import ClassVar, TypeAlias
+from typing import Any, ClassVar, TypeAlias
 
 from google.protobuf.message_factory import GetMessageClass
 
@@ -9,7 +9,9 @@ from majsoulrpa.common import TimeoutType
 
 from .protobuf_liqi import liqi_pb2
 
-Message: TypeAlias = tuple[str, str, object, object | None, datetime.datetime]
+Message: TypeAlias = tuple[
+    str, str, dict[str, Any], dict[str, Any] | None, datetime.datetime,
+]
 
 
 class DBClientBase(metaclass=ABCMeta):
