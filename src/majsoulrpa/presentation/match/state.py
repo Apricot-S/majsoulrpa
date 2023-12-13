@@ -99,13 +99,15 @@ class RoundState:
             self._zimopai = data["tiles"][13]
         else:
             self._zimopai = None
-        self._he: list[list] = [[]] * 4
-        self._fulu: list[list] = [[]] * 4
-        self._liqi = [False] * 4
-        self._wliqi = [False] * 4
-        self._first_draw = [True] * 4
-        self._yifa = [False] * 4
-        self._lingshang_zimo = [False] * 4
+        self._num_player = len(self._scores)
+        self._he: list[list] = [[]] * self._num_player
+        self._fulu: list[list] = [[]] * self._num_player
+        # TODO: list of babei
+        self._liqi = [False] * self._num_player
+        self._wliqi = [False] * self._num_player
+        self._first_draw = [True] * self._num_player
+        self._yifa = [False] * self._num_player
+        self._lingshang_zimo = [False] * self._num_player
         self._prev_dapai_seat = None
         self._prev_dapai = None
 
@@ -238,8 +240,8 @@ class RoundState:
             self._scores[liqi["seat"]] = liqi["score"]
             self._liqibang += 1
 
-        self._first_draw = [False] * 4
-        self._yifa = [False] * 4
+        self._first_draw = [False] * self._num_player
+        self._yifa = [False] * self._num_player
         if type_ == "大明槓":
             self._lingshang_zimo[seat] = True
 
@@ -332,14 +334,58 @@ class RoundState:
             # Display new dora.
             self._dora_indicators = data["doras"]
 
-        self._first_draw = [False] * 4
-        self._yifa = [False] * 4
+        self._first_draw = [False] * self._num_player
+        self._yifa = [False] * self._num_player
         self._lingshang_zimo[seat] = True
 
         # Since there is a Qianggang,
         # Angang and Jiagang are considered discarded tiles.
         self._prev_dapai_seat = seat
         self._prev_dapai = data["tiles"][-1]
+
+    def _on_babei(self, data: Mapping[str, Any]) -> None:
+        assert self._prev_dapai_seat is None
+        assert self._prev_dapai is None
+
+        seat = data["seat"]
+
+        assert (seat == self._match_state.seat) == (self._zimopai is not None)
+
+        bei = "4z"
+
+        if seat == self._match_state.seat:
+            # Remove the melds from the hand or drawn tile.
+            count = 0
+            if bei in self._shoupai:
+                self._shoupai.remove(bei)
+                count += 1
+
+            if count != 1:
+                if count != 0:
+                    msg = "An inconsistent message"
+                    raise InconsistentMessage(msg)
+                if self._zimopai is None:
+                    msg = "An inconsistent message"
+                    raise InconsistentMessage(msg)
+                if self._zimopai != bei:
+                    msg = "An inconsistent message"
+                    raise InconsistentMessage(msg)
+                self._zimopai = None
+                count += 1
+            assert count == 1
+
+            if self._zimopai is not None:
+                # Incorporate the drawn tile into the hand.
+                self._hand_in()
+
+        self._first_draw = [False] * self._num_player
+        self._yifa = [False] * self._num_player
+        self._lingshang_zimo[seat] = True
+
+        # Since there is a Qianggang,
+        # Babei is considered discarded tiles.
+        self._prev_dapai_seat = seat
+        self._prev_dapai = bei
 
     @property
     def chang(self) -> int:

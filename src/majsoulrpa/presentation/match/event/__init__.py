@@ -2,6 +2,7 @@
 from majsoulrpa.presentation.match.event.angangjiagang import (
     AngangJiagangEvent,
 )
+from majsoulrpa.presentation.match.event.babei import BabeiEvent
 from majsoulrpa.presentation.match.event.chipenggang import ChiPengGangEvent
 from majsoulrpa.presentation.match.event.dapai import DapaiEvent
 from majsoulrpa.presentation.match.event.hule import HuleEvent

@@ -13,6 +13,7 @@ from majsoulrpa._impl.template import Template, screenshot_to_opencv
 from majsoulrpa.common import TimeoutType, timeout_to_deadline, to_timedelta
 from majsoulrpa.presentation.match.event import (
     AngangJiagangEvent,
+    BabeiEvent,
     ChiPengGangEvent,
     DapaiEvent,
     HuleEvent,
@@ -23,6 +24,7 @@ from majsoulrpa.presentation.match.event import (
 )
 from majsoulrpa.presentation.match.operation import (
     AngangOperation,
+    BabeiOperation,
     ChiOperation,
     DaminggangOperation,
     DapaiOperation,
@@ -848,7 +850,7 @@ class MatchPresentation(PresentationBase):
                                       self._browser.get_screenshot())
 
     def _on_sync_game(self, message: Message) -> None:
-        direction, name, request, response, timestamp = message
+        direction, name, _, response, timestamp = message
         if direction != "outbound":
             raise ValueError(message)
         if name != ".lq.FastTest.syncGame":
@@ -923,6 +925,17 @@ class MatchPresentation(PresentationBase):
             if name == "ActionAnGangAddGang":
                 self._events.append(AngangJiagangEvent(data, timestamp))
                 self._round_state._on_angang_jiagang(data)  # noqa: SLF001
+                if (("operation" in data)
+                        and len(data["operation"]["operation_list"]) > 0):
+                    self._operation_list = OperationList(data["operation"])
+                else:
+                    self._operation_list = None
+                self._step += 1
+                continue
+
+            if name == "ActionBaBei":
+                self._events.append(BabeiEvent(data, timestamp))
+                self._round_state._on_babei(data)  # noqa: SLF001
                 if (("operation" in data)
                         and len(data["operation"]["operation_list"]) > 0):
                     self._operation_list = OperationList(data["operation"])
@@ -1020,6 +1033,16 @@ class MatchPresentation(PresentationBase):
                     logger.info(action_info)
                     self._events.append(AngangJiagangEvent(data, timestamp))
                     self._round_state._on_angang_jiagang(data)  # noqa: SLF001
+                    if "operation" in data:
+                        if len(data["operation"]["operation_list"]) == 0:
+                            return
+                        self._operation_list = OperationList(data["operation"])
+                    return
+
+                if action_name == "ActionBaBei":
+                    logger.info(action_info)
+                    self._events.append(BabeiEvent(data, timestamp))
+                    self._round_state._on_babei(data)  # noqa: SLF001
                     if "operation" in data:
                         if len(data["operation"]["operation_list"]) == 0:
                             return
@@ -1717,6 +1740,28 @@ class MatchPresentation(PresentationBase):
                     msg, self._browser, self._browser.get_screenshot(),
                 ) from e
 
+            self._operation_list = None
+            now = datetime.datetime.now(datetime.UTC)
+            self._wait_impl(deadline - now)
+            return
+
+        if isinstance(operation, BabeiOperation):
+            template = Template.open_file("template/match/babei",
+                                          self._browser.zoom_ratio)
+            try:
+                template.wait_for_then_click(self._browser, timeout=10.0)
+            except Timeout as e:
+                ss = self._browser.get_screenshot()
+                now = datetime.datetime.now(datetime.UTC)
+                img = screenshot_to_opencv(ss)
+                cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
+                raise NotImplementedError from e
+
+            # Some of the tiles in your hand may slide right
+            # after the Babei, so if you don't add a wait time for
+            # the slide to finish, you may click on an unintended tile
+            # when selecting a discarded tile.
+            time.sleep(1.0)
             self._operation_list = None
             now = datetime.datetime.now(datetime.UTC)
             self._wait_impl(deadline - now)

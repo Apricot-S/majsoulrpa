@@ -157,12 +157,21 @@ class JiuzhongjiupaiOperation(OperationBase):
         return "九種九牌"
 
 
+class BabeiOperation(OperationBase):
+    def __init__(self) -> None:
+        pass
+
+    @property
+    def type_(self) -> str:
+        return "北抜き"
+
+
 class OperationList:
     def __init__(self, operation_list: Mapping[str, Any]) -> None:
         self._basic_time = operation_list["time_fixed"]
         self._extra_time = operation_list["time_add"]
-        self._operations = []
-        op: Any = None
+        self._operations: list[OperationBase] = []
+        op: OperationBase | None = None
         for operation in operation_list["operation_list"]:
             match operation["type"]:
                 case 1:
@@ -195,6 +204,9 @@ class OperationList:
                 case 10:
                     op = JiuzhongjiupaiOperation()
                     self._operations.append(op)
+                case 11:
+                    op = BabeiOperation()
+                    self._operations.append(op)
                 case _:
                     msg = f'type == {operation["type"]}'
                     raise ValueError(msg)
@@ -207,5 +219,5 @@ class OperationList:
     def extra_time(self) -> int:
         return self._extra_time // 1000
 
-    def __iter__(self) -> Iterator[Any]:
+    def __iter__(self) -> Iterator[OperationBase]:
         return iter(self._operations)
