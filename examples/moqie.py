@@ -109,6 +109,7 @@ if __name__ == "__main__":
             while True:
                 ops = presentation.operation_list
                 if ops is not None:
+                    op = None
                     moqie = False
                     for op in ops:
                         if isinstance(op, DapaiOperation):
