@@ -40,12 +40,12 @@ class PresentationCreator(PresentationCreatorBase):
             case _:
                 raise AssertionError
 
-    def create_new_presentation(
+    def create_new_presentation(  # noqa: PLR0911
         self,
         current_presentation: Presentation, next_presentation: Presentation,
         browser: BrowserBase, db_client: DBClientBase,
         **kwargs,
-    ) -> "PresentationBase":
+    ) -> PresentationBase:
         match next_presentation:
             case Presentation.LOGIN:
                 return LoginPresentation(browser, db_client, self)
