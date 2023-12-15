@@ -108,8 +108,8 @@ class RoundState:
         self._first_draw = [True] * self._num_player
         self._yifa = [False] * self._num_player
         self._lingshang_zimo = [False] * self._num_player
-        self._prev_dapai_seat = None
-        self._prev_dapai = None
+        self._prev_dapai_seat: int | None = None
+        self._prev_dapai: str | None = None
 
     _pattern1 = re.compile("^([1-9])([mpsz])$")
     _pattern2 = re.compile("^0([mps])$")
