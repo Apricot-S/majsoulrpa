@@ -13,7 +13,9 @@ class ErrorBase(Exception):  # noqa: N818
     def __init__(self, message: str, screenshot: bytes | None) -> None:
         if screenshot is not None:
             now = datetime.datetime.now(datetime.UTC)
-            ss_name = now.strftime("%Y-%m-%d-%H-%M-%S.png")
+            ss_name = now.strftime(
+                f"%Y-%m-%d-%H-%M-%S-{self.__class__.__name__}.png",
+            )
             with Path(ss_name).open("wb") as fp:
                 fp.write(screenshot)
         else:
