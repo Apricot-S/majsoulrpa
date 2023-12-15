@@ -109,9 +109,6 @@ class RPA:
             raise RuntimeError(msg)
         return self._browser.get_screenshot()
 
-    def activate_browser(self) -> None:
-        pass
-
     def wait(self, timeout: float) -> PresentationBase:  # noqa: PLR0912, C901
         deadline = timeout_to_deadline(timeout)
 
