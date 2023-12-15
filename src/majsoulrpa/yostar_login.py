@@ -3,6 +3,7 @@ import email.policy
 import re
 import ssl
 import time
+from abc import ABCMeta, abstractmethod
 from email.message import EmailMessage
 from email.parser import BytesParser
 from email.utils import mktime_tz, parsedate_tz
@@ -19,7 +20,38 @@ YOSTAR_EMAIL_ADDRESS: Final[str] = "info@passport.yostar.co.jp"
 YOSTAR_EMAIL_SUBJECT: Final[str] = "Eメールアドレスの確認"
 
 
-class YostarLogin:
+class YostarLoginBase(metaclass=ABCMeta):
+
+    @abstractmethod
+    def __init__(self, config: dict[str, Any]) -> None:
+        pass
+
+    @abstractmethod
+    def get_email_address(self) -> str:
+        pass
+
+    # The authentication code is a 6-digit number
+    # sandwiched between HTML tags,
+    # so it can search for the authentication code
+    # using the following regular expression.
+    _PATTERN: Final = re.compile(r">(\d{6})<")
+
+    def _extract_auth_code_from_content(self, content: str) -> str | None:
+        auth_code = YostarLoginBase._PATTERN.search(content)
+        if auth_code is None:
+            return None
+        log_msg = f"The auth code was successfully obtained.: {auth_code}"
+        logger.debug(log_msg)
+        return auth_code.group(1)
+
+    @abstractmethod
+    def get_auth_code(
+        self, *, start_time: datetime.datetime, timeout: TimeoutType = 1800,
+    ) -> str:
+        pass
+
+
+class YostarLoginIMAP(YostarLoginBase):
 
     def __init__(self, config: dict[str, Any]) -> None:
         self._email_address = config["email_address"]
@@ -107,22 +139,19 @@ class YostarLogin:
             if target_content is None:
                 return None
 
-            # The authentication code is a 6-digit number
-            # sandwiched between HTML tags,
-            # so it can search for the authentication code
-            # using the following regular expression.
-            auth_code = re.search(r">(\d{6})<", target_content)
-            if auth_code is None:
-                return None
-            log_msg = f"The auth code was successfully obtained.: {auth_code}"
-            logger.debug(log_msg)
-
-            return auth_code.group(1)
+            return self._extract_auth_code_from_content(target_content)
 
     def get_auth_code(
-        self, *, start_time: datetime.datetime, timeout: TimeoutType,
+        self, *, start_time: datetime.datetime, timeout: TimeoutType = 1800,
     ) -> str:
         timeout = to_timedelta(timeout)
+
+        if timeout > datetime.timedelta(seconds=1800):
+            msg = (
+                "Timeout is longer than verification code expiration. "
+                "Set the timeout to 30 minutes or less."
+            )
+            ValueError(msg)
 
         while True:
             auth_code = self._get_auth_code(start_time=start_time)
@@ -131,7 +160,7 @@ class YostarLogin:
 
             now = datetime.datetime.now(tz=datetime.UTC)
             if now > (start_time + timeout):
-                msg = "Extraction of the authentication has timed out."
+                msg = "Verification code extraction timed out."
                 raise RuntimeError(msg)
 
             time.sleep(3.0)
