@@ -102,7 +102,7 @@ class RoundState:
         self._num_player = len(self._scores)
         self._he: list[list] = [[]] * self._num_player
         self._fulu: list[list] = [[]] * self._num_player
-        # TODO: list of babei
+        self._num_babei: list[int] = [0] * self._num_player
         self._liqi = [False] * self._num_player
         self._wliqi = [False] * self._num_player
         self._first_draw = [True] * self._num_player
@@ -380,6 +380,7 @@ class RoundState:
 
         self._first_draw = [False] * self._num_player
         self._yifa = [False] * self._num_player
+        self._num_babei[seat] += 1
         self._lingshang_zimo[seat] = True
 
         # Since there is a Qianggang,
@@ -457,6 +458,11 @@ class RoundState:
                     type_ not in ("大明槓", "暗槓", "加槓") or len(tiles) == 4
                 )
         return self._fulu
+
+    @property
+    def num_babei(self) -> list[int]:
+        assert len(self._num_babei) == 3
+        return self._num_babei
 
     @property
     def liqi(self) -> list[bool]:
