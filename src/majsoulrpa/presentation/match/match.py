@@ -352,75 +352,129 @@ class MatchPresentation(PresentationBase):
 
     @property
     def chang(self) -> int:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.chang
 
     @property
     def ju(self) -> int:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.ju
 
     @property
     def ben(self) -> int:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.ben
 
     @property
     def liqibang(self) -> int:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.liqibang
 
     @property
     def dora_indicators(self) -> list[str]:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.dora_indicators
 
     @property
     def left_tile_count(self) -> int:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.left_tile_count
 
     @property
     def scores(self) -> list[int]:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.scores
 
     @property
     def shoupai(self) -> list[str]:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.shoupai
 
     @property
     def zimopai(self) -> str | None:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.zimopai
 
     @property
     def he(self) -> list[list[tuple[str, bool]]]:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.he
 
     @property
     def fulu(self) \
             -> list[list[tuple[str, int | None, int | None, list[str]]]]:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.fulu
 
     @property
     def liqi(self) -> list[bool]:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.liqi
 
     @property
     def wliqi(self) -> list[bool]:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.wliqi
 
     @property
     def first_draw(self) -> bool:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.first_draw[self.seat]
 
     @property
     def yifa(self) -> list[bool]:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.yifa
 
     @property
     def lingshang_zimo(self) -> bool:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.lingshang_zimo[self.seat]
 
     @property
     def prev_dapai_seat(self) -> int | None:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.prev_dapai_seat
 
     @property
-    def prev_dapai(self) -> int | None:
+    def prev_dapai(self) -> str | None:
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
         return self._round_state.prev_dapai
 
     @property
@@ -1292,23 +1346,14 @@ class MatchPresentation(PresentationBase):
                     raise InvalidOperation(msg, self._browser.get_screenshot())
                 self._dapai(index, operation.forbidden_tiles)
             case ChiOperation():
-                if index is None:
-                    msg = "Index not specified."
-                    raise InvalidOperation(msg, self._browser.get_screenshot())
                 self._operate_chi(operation, index, deadline)
             case PengOperation():
-                if index is None:
-                    msg = "Index not specified."
-                    raise InvalidOperation(msg, self._browser.get_screenshot())
                 self._operate_peng(operation, index, deadline)
             case AngangOperation():
                 self._operate_angang(operation)
             case DaminggangOperation():
                 self._operate_daminggang(operation, deadline)
             case JiagangOperation():
-                if index is None:
-                    msg = "Index not specified."
-                    raise InvalidOperation(msg, self._browser.get_screenshot())
                 self._operate_jiagang(operation, index)
             case LiqiOperation():
                 if index is None:
@@ -1349,12 +1394,32 @@ class MatchPresentation(PresentationBase):
         # the "Skip" button.). Once the skip is complete,
         # click the "No Chii/Pon/Kan" button again to return
         # to the state where the you can fulu.
-        # TODO: To skip Zimohu/Rong, you need to click the "Skip" button.
-        left = round(14 * self._browser.zoom_ratio)
-        top = round(623 * self._browser.zoom_ratio)
-        width = round(43 * self._browser.zoom_ratio)
-        height = round(43 * self._browser.zoom_ratio)
-        self._browser.click_region(left, top, width, height, edge_sigma=1.0)
+        if self._round_state is None:
+            msg = "Round state is not initialized."
+            raise RuntimeError(msg)
+
+        should_click_skip: bool = False
+        if self._round_state.liqi[self.seat]:
+            should_click_skip = True
+        elif self._operation_list is not None:
+            for op in self._operation_list:
+                if isinstance(op, ZimohuOperation | RongOperation):
+                    should_click_skip = True
+                    break
+
+        if should_click_skip:
+            left = round(1246 * self._browser.zoom_ratio)
+            top = round(823 * self._browser.zoom_ratio)
+            width = round(150 * self._browser.zoom_ratio)
+            height = round(38 * self._browser.zoom_ratio)
+            time.sleep(0.5)
+            self._browser.click_region(left, top, width, height)
+        else:
+            left = round(14 * self._browser.zoom_ratio)
+            top = round(623 * self._browser.zoom_ratio)
+            width = round(43 * self._browser.zoom_ratio)
+            height = round(43 * self._browser.zoom_ratio)
+            self._browser.click_region(left, top, width, height, edge_sigma=1)
 
         while True:
             now = datetime.datetime.now(datetime.UTC)
@@ -1362,13 +1427,15 @@ class MatchPresentation(PresentationBase):
             if message is None:
                 msg = "Timeout"
                 raise Timeout(msg, self._browser.get_screenshot())
-            _, name, request, _, _ = message
+            _, name, _, _, _ = message
             if name in MatchPresentation._COMMON_MESSAGE_NAMES:
                 self._on_common_message(message)
                 continue
             if name == ".lq.FastTest.inputOperation":
-                raise InconsistentMessage(str(message),
-                                          self._browser.get_screenshot())
+                if not should_click_skip:
+                    raise InconsistentMessage(str(message),
+                                              self._browser.get_screenshot())
+                break
             if name == ".lq.FastTest.inputChiPengGang":
                 break
             if name == ".lq.ActionPrototype":
@@ -1376,11 +1443,13 @@ class MatchPresentation(PresentationBase):
 
         # Backfill prefetched messages.
         self._db_client.put_back(message)
-        self._browser.click_region(left, top, width, height, edge_sigma=1.0)
+
+        if not should_click_skip:
+            self._browser.click_region(left, top, width, height, edge_sigma=1)
 
     def _operate_chi(self,
         operation: ChiOperation,
-        index: int,
+        index: int | None,
         deadline: datetime.datetime,
     ) -> None:
         template = Template.open_file("template/match/chi",
@@ -1440,10 +1509,12 @@ class MatchPresentation(PresentationBase):
                 raise InconsistentMessage(
                     str(message), self._browser.get_screenshot(),
                 ) from e
+
         if len(operation.combinations) >= 2:
             if index is None:
                 msg = "Must specify an index."
                 raise InvalidOperation(msg, self._browser.get_screenshot())
+
             if len(operation.combinations) == 2:
                 if index == 0:
                     left = 780
@@ -1510,7 +1581,7 @@ class MatchPresentation(PresentationBase):
     def _operate_peng(
         self,
         operation: PengOperation,
-        index: int,
+        index: int | None,
         deadline: datetime.datetime,
     ) -> None:
         template = Template.open_file("template/match/peng",
@@ -1571,6 +1642,10 @@ class MatchPresentation(PresentationBase):
                 ) from e
 
         if len(operation.combinations) >= 2:
+            if index is None:
+                msg = "Must specify an index."
+                raise InvalidOperation(msg, self._browser.get_screenshot())
+
             if len(operation.combinations) == 2:
                 if index == 0:
                     left = 780
@@ -1657,7 +1732,7 @@ class MatchPresentation(PresentationBase):
     def _operate_jiagang(
         self,
         operation: JiagangOperation,
-        index: int,
+        index: int | None,
     ) -> None:
         template = Template.open_file("template/match/gang",
                                       self._browser.zoom_ratio)
@@ -1671,6 +1746,10 @@ class MatchPresentation(PresentationBase):
             raise NotImplementedError from e
 
         if len(operation.combinations) >= 2:
+            if index is None:
+                msg = "Must specify an index."
+                raise InvalidOperation(msg, self._browser.get_screenshot())
+
             if len(operation.combinations) == 2:
                 if index == 0:
                     left = 600
@@ -1724,6 +1803,8 @@ class MatchPresentation(PresentationBase):
         else:
             msg = f"{index}: out-of-range index"
             raise InvalidOperation(msg, self._browser.get_screenshot())
+
+        time.sleep(0.5)
         self._dapai(index, [])
 
     def _operate_hu(self, deadline: datetime.datetime) -> None:
