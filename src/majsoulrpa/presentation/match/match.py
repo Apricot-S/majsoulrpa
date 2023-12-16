@@ -2,7 +2,6 @@
 import datetime
 import time
 from logging import getLogger
-from typing import TYPE_CHECKING
 
 import cv2
 
@@ -22,6 +21,7 @@ from majsoulrpa.presentation.match.event import (
     NoTileEvent,
     ZimoEvent,
 )
+from majsoulrpa.presentation.match.event._base import EventBase
 from majsoulrpa.presentation.match.operation import (
     AngangOperation,
     BabeiOperation,
@@ -54,9 +54,6 @@ from majsoulrpa.presentation.presentation_base import (
 )
 
 from . import _common
-
-if TYPE_CHECKING:
-    from majsoulrpa.presentation.match.event._base import EventBase
 
 logger = getLogger(__name__)
 
@@ -278,7 +275,8 @@ class MatchPresentation(PresentationBase):
                         try:
                             character = common.id_to_character(charid)
                         except KeyError:
-                            # キャラクタ ID が不明なキャラクタと遭遇した場合
+                            # When encountering a character whose
+                            # character ID is unknown
                             logger.warning(
                                 "%s: %s: charid = %s", uuid, nickname, charid,
                             )
@@ -430,7 +428,7 @@ class MatchPresentation(PresentationBase):
         return self._operation_list
 
     @property
-    def events(self) -> list[object]:
+    def events(self) -> list[EventBase]:
         return self._events
 
     def _robust_click_region(
@@ -1277,499 +1275,505 @@ class MatchPresentation(PresentationBase):
                 msg = "An invalid operation."
                 raise InvalidOperation(msg, self._browser.get_screenshot())
 
-        if operation is None:
-            # Skip options. Skip's UI interaction with her needs
-            # to be done as quickly as possible to avoid lag reading.
-            # Therefore, if you want to skip Chi Peng Gang Rong
-            # against another player's tiles, you can do so by
-            # clicking the "No Chii/Pon/Kan" button
-            # (Clicking the "No Chii/Pon/Kan" button even after
-            # the options appear has the same effect as clicking
-            # the "Skip" button.). Once the skip is complete,
-            # click the "No Chii/Pon/Kan" button again to return
-            # to the state where the you can fulu.
-            # TODO: To skip Zimohu/Rong, you need to click the "Skip" button.
-            left = round(14 * self._browser.zoom_ratio)
-            top = round(623 * self._browser.zoom_ratio)
-            width = round(43 * self._browser.zoom_ratio)
-            height = round(43 * self._browser.zoom_ratio)
-            self._browser.click_region(left, top, width, height, edge_sigma=1)
+        match operation:
+            case None:
+                self._skip_operation(deadline)
+            case DapaiOperation():
+                # Dapai
+                if self.ju == self.seat and self.first_draw:
+                    # When you are the parent, the tiles are moving
+                    # due to the effect of the tile deal, so if you
+                    # don't wait until the effect ends before playing
+                    # the tiles, you may end up clicking on an
+                    # unintended tile and discarding it.
+                    time.sleep(1.0)
+                if index is None:
+                    msg = "Index not specified."
+                    raise InvalidOperation(msg, self._browser.get_screenshot())
+                self._dapai(index, operation.forbidden_tiles)
+            case ChiOperation():
+                if index is None:
+                    msg = "Index not specified."
+                    raise InvalidOperation(msg, self._browser.get_screenshot())
+                self._operate_chi(operation, index, deadline)
+            case PengOperation():
+                if index is None:
+                    msg = "Index not specified."
+                    raise InvalidOperation(msg, self._browser.get_screenshot())
+                self._operate_peng(operation, index, deadline)
+            case AngangOperation():
+                self._operate_angang(operation)
+            case DaminggangOperation():
+                self._operate_daminggang(operation, deadline)
+            case JiagangOperation():
+                if index is None:
+                    msg = "Index not specified."
+                    raise InvalidOperation(msg, self._browser.get_screenshot())
+                self._operate_jiagang(operation, index)
+            case LiqiOperation():
+                if index is None:
+                    msg = "Index not specified."
+                    raise InvalidOperation(msg, self._browser.get_screenshot())
+                self._operate_liqi(operation, index)
+            case ZimohuOperation():
+                self._operate_hu(deadline)
+                return
+            case RongOperation():
+                self._operate_hu(deadline)
+                return
+            case JiuzhongjiupaiOperation():
+                self._operate_jiuzhongjiupai()
+            case BabeiOperation():
+                self._operate_babei()
+            case _:
+                msg = (
+                    "An invalid operation.\n"
+                    f"operation: {operation}\n"
+                    f"index: {index}"
+                )
+                raise InvalidOperation(msg, self._browser.get_screenshot())
+
+        self._operation_list = None
+        now = datetime.datetime.now(datetime.UTC)
+        self._wait_impl(deadline - now)
+        return
+
+    def _skip_operation(self, deadline: datetime.datetime) -> None:
+        # Skip options. Skip's UI interaction with her needs
+        # to be done as quickly as possible to avoid lag reading.
+        # Therefore, if you want to skip Chi Peng Gang Rong
+        # against another player's tiles, you can do so by
+        # clicking the "No Chii/Pon/Kan" button
+        # (Clicking the "No Chii/Pon/Kan" button even after
+        # the options appear has the same effect as clicking
+        # the "Skip" button.). Once the skip is complete,
+        # click the "No Chii/Pon/Kan" button again to return
+        # to the state where the you can fulu.
+        # TODO: To skip Zimohu/Rong, you need to click the "Skip" button.
+        left = round(14 * self._browser.zoom_ratio)
+        top = round(623 * self._browser.zoom_ratio)
+        width = round(43 * self._browser.zoom_ratio)
+        height = round(43 * self._browser.zoom_ratio)
+        self._browser.click_region(left, top, width, height, edge_sigma=1.0)
+
+        while True:
+            now = datetime.datetime.now(datetime.UTC)
+            message = self._db_client.dequeue_message(deadline - now)
+            if message is None:
+                msg = "Timeout"
+                raise Timeout(msg, self._browser.get_screenshot())
+            _, name, request, _, _ = message
+            if name in MatchPresentation._COMMON_MESSAGE_NAMES:
+                self._on_common_message(message)
+                continue
+            if name == ".lq.FastTest.inputOperation":
+                raise InconsistentMessage(str(message),
+                                          self._browser.get_screenshot())
+            if name == ".lq.FastTest.inputChiPengGang":
+                break
+            if name == ".lq.ActionPrototype":
+                break
+
+        # Backfill prefetched messages.
+        self._db_client.put_back(message)
+        self._browser.click_region(left, top, width, height, edge_sigma=1.0)
+
+    def _operate_chi(self,
+        operation: ChiOperation,
+        index: int,
+        deadline: datetime.datetime,
+    ) -> None:
+        template = Template.open_file("template/match/chi",
+                                      self._browser.zoom_ratio)
+        try:
+            # If you do not set the 'timeout' to a short value,
+            # you will not be able to respond to the hule screen
+            # when you are interrupted by Rong from other player.
+            template.wait_for_then_click(self._browser, timeout=5.0)
+        except Timeout as e:
+            # Possibly interfered with by Peng, Gang, or Rong
+            # from other player.
             while True:
                 now = datetime.datetime.now(datetime.UTC)
                 message = self._db_client.dequeue_message(deadline - now)
                 if message is None:
-                    msg = "Timeout"
-                    raise Timeout(msg, self._browser.get_screenshot())
+                    ss = self._browser.get_screenshot()
+                    now = datetime.datetime.now(datetime.UTC)
+                    img = screenshot_to_opencv(ss)
+                    cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
+                    raise NotImplementedError from e
                 _, name, request, _, _ = message
                 if name in MatchPresentation._COMMON_MESSAGE_NAMES:
                     self._on_common_message(message)
                     continue
-                if name == ".lq.FastTest.inputOperation":
-                    raise InconsistentMessage(str(message),
-                                              self._browser.get_screenshot())
-                if name == ".lq.FastTest.inputChiPengGang":
-                    break
                 if name == ".lq.ActionPrototype":
-                    break
-            # Backfill prefetched messages.
-            self._db_client.put_back(message)
-            self._browser.click_region(left, top, width, height, edge_sigma=1)
-
-            self._operation_list = None
-            now = datetime.datetime.now(datetime.UTC)
-            self._wait_impl(deadline - now)
-            return
-
-        if isinstance(operation, DapaiOperation):
-            # Dapai
-            if self.ju == self.seat and self.first_draw:
-                # When you are the parent, the tiles are moving due to
-                # the effect of the tile deal, so if you do not wait
-                # until the effect ends before playing the tiles,
-                # you may end up clicking on an unintended tile
-                # and discarding it.
-                time.sleep(1.0)
-            if index is None:
-                msg = "Index not specified."
-                raise InvalidOperation(msg, self._browser.get_screenshot())
-            self._dapai(index, operation.forbidden_tiles)
-            self._operation_list = None
-            now = datetime.datetime.now(datetime.UTC)
-            self._wait_impl(deadline - now)
-            return
-
-        if isinstance(operation, ChiOperation):
-            template = Template.open_file("template/match/chi",
-                                          self._browser.zoom_ratio)
-            try:
-                # If you do not set the 'timeout' to a short value,
-                # you will not be able to respond to the hule screen
-                # when you are interrupted by Rong from other player.
-                template.wait_for_then_click(self._browser, timeout=5.0)
-            except Timeout as e:
-                # Possibly interfered with by Peng, Gang, or Rong
-                # from other player.
-                while True:
+                    _, action_name, _ = _common.parse_action(request)
+                    if action_name in ("ActionChiPengGang", "ActionHule"):
+                        # You were being disturbed by
+                        # Peng, Gang, or Rong from other player.
+                        # Backfill prefetched messages.
+                        self._db_client.put_back(message)
+                        self._operation_list = None
+                        now = datetime.datetime.now(datetime.UTC)
+                        self._wait_impl(deadline - now)
+                        return
+                    ss = self._browser.get_screenshot()
                     now = datetime.datetime.now(datetime.UTC)
-                    message = self._db_client.dequeue_message(deadline - now)
-                    if message is None:
-                        ss = self._browser.get_screenshot()
-                        now = datetime.datetime.now(datetime.UTC)
-                        img = screenshot_to_opencv(ss)
-                        cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                        raise NotImplementedError from e
-                    _, name, request, _, _ = message
-                    if name in MatchPresentation._COMMON_MESSAGE_NAMES:
-                        self._on_common_message(message)
-                        continue
-                    if name == ".lq.ActionPrototype":
-                        _, action_name, _ = _common.parse_action(request)
-                        if action_name in ("ActionChiPengGang", "ActionHule"):
-                            # You were being disturbed by
-                            # Peng, Gang, or Rong from other player.
-                            # Backfill prefetched messages.
-                            self._db_client.put_back(message)
-                            self._operation_list = None
-                            now = datetime.datetime.now(datetime.UTC)
-                            self._wait_impl(deadline - now)
-                            return
-                        ss = self._browser.get_screenshot()
-                        now = datetime.datetime.now(datetime.UTC)
-                        img = screenshot_to_opencv(ss)
-                        cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                        raise InconsistentMessage(
-                            str(message), self._browser.get_screenshot(),
-                        ) from e
-                    if name == ".lq.FastTest.inputOperation":
-                        raise InconsistentMessage(
-                            str(message), self._browser.get_screenshot(),
-                        ) from e
-                    if name == ".lq.FastTest.inputChiPengGang":
-                        # It is highly likely that the drawing on
-                        # the screen is distorted and the "Chi" button
-                        # cannot be clicked. Therefore, it is
-                        # recommended to refresh the browser.
-                        msg = "A rendering problem may occur."
-                        raise BrowserRefreshRequest(
-                            msg, self._browser, self._browser.get_screenshot(),
-                        ) from e
+                    img = screenshot_to_opencv(ss)
+                    cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
                     raise InconsistentMessage(
                         str(message), self._browser.get_screenshot(),
                     ) from e
-            if len(operation.combinations) >= 2:
-                if index is None:
-                    msg = "Must specify an index."
-                    raise InvalidOperation(msg, self._browser.get_screenshot())
-                if len(operation.combinations) == 2:
-                    if index == 0:
-                        left = 780
-                    elif index == 1:
-                        left = 980
-                    else:
-                        msg = f"{index}: out-of-range index"
-                        raise InvalidOperation(msg,
-                                               self._browser.get_screenshot())
-                elif len(operation.combinations) == 3:
-                    if index == 0:
-                        left = 680
-                    elif index == 1:
-                        left = 880
-                    elif index == 2:
-                        left = 1080
-                    else:
-                        msg = f"{index}: out-of-range index"
-                        raise InvalidOperation(msg,
-                                               self._browser.get_screenshot())
-                elif len(operation.combinations) == 4:
-                    if index == 0:
-                        left = 580
-                    elif index == 1:
-                        left = 780
-                    elif index == 2:
-                        left = 980
-                    elif index == 3:
-                        left = 1180
-                    else:
-                        msg = f"{index}: out-of-range index"
-                        raise InvalidOperation(msg,
-                                               self._browser.get_screenshot())
-                elif len(operation.combinations) == 5:
-                    if index == 0:
-                        left = 480
-                    elif index == 1:
-                        left = 680
-                    elif index == 2:
-                        left = 880
-                    elif index == 3:
-                        left = 1080
-                    elif index == 4:
-                        left = 1280
-                    else:
-                        msg = f"{index}: out-of-range index"
-                        raise InvalidOperation(msg,
-                                               self._browser.get_screenshot())
-                else:
-                    ss = self._browser.get_screenshot()
-                    now = datetime.datetime.now(datetime.UTC)
-                    img = screenshot_to_opencv(ss)
-                    cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                    raise AssertionError(len(operation.combinations))
-                left = round(left * self._browser.zoom_ratio)
-                top = round(691 * self._browser.zoom_ratio)
-                width = round(160 * self._browser.zoom_ratio)
-                height = round(120 * self._browser.zoom_ratio)
-                self._browser.click_region(left, top, width, height)
-            # Some of the tiles in your hand may slide right
-            # after the Chi, so if you don't add a wait time for
-            # the slide to finish, you may click on an unintended tile
-            # when selecting a discarded tile.
-            time.sleep(1.0)
-            self._operation_list = None
-            now = datetime.datetime.now(datetime.UTC)
-            self._wait_impl(deadline - now)
-            return
-
-        if isinstance(operation, PengOperation):
-            template = Template.open_file("template/match/peng",
-                                          self._browser.zoom_ratio)
-            try:
-                # If you do not set the 'timeout' to a short value,
-                # you will not be able to respond to the hule screen
-                # when you are interrupted by Rong from other player.
-                template.wait_for_then_click(self._browser, timeout=5.0)
-            except Timeout as e:
-                # Possibly interfered with by Rong from other player.
-                while True:
-                    now = datetime.datetime.now(datetime.UTC)
-                    message = self._db_client.dequeue_message(deadline - now)
-                    if message is None:
-                        ss = self._browser.get_screenshot()
-                        now = datetime.datetime.now(datetime.UTC)
-                        img = screenshot_to_opencv(ss)
-                        cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                        raise NotImplementedError from e
-                    _, name, request, _, _ = message
-                    if name in MatchPresentation._COMMON_MESSAGE_NAMES:
-                        self._on_common_message(message)
-                        continue
-                    if name == ".lq.ActionPrototype":
-                        _, action_name, _ = _common.parse_action(request)
-                        if action_name == "ActionHule":
-                            # You were being disturbed by
-                            # Rong from other player.
-                            # Backfill prefetched messages.
-                            self._db_client.put_back(message)
-                            self._operation_list = None
-                            now = datetime.datetime.now(datetime.UTC)
-                            self._wait_impl(deadline - now)
-                            return
-                        ss = self._browser.get_screenshot()
-                        now = datetime.datetime.now(datetime.UTC)
-                        img = screenshot_to_opencv(ss)
-                        cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                        raise InconsistentMessage(
-                            str(message), self._browser.get_screenshot(),
-                        ) from e
-                    if name == ".lq.FastTest.inputOperation":
-                        raise InconsistentMessage(
-                            str(message), self._browser.get_screenshot(),
-                        ) from e
-                    if name == ".lq.FastTest.inputChiPengGang":
-                        # It is highly likely that the drawing on
-                        # the screen is distorted and the "Peng" button
-                        # cannot be clicked. Therefore, it is
-                        # recommended to refresh the browser.
-                        msg = "A rendering problem may occur."
-                        raise BrowserRefreshRequest(
-                            msg, self._browser, self._browser.get_screenshot(),
-                        ) from e
+                if name == ".lq.FastTest.inputOperation":
                     raise InconsistentMessage(
                         str(message), self._browser.get_screenshot(),
                     ) from e
-            if len(operation.combinations) >= 2:
-                if len(operation.combinations) == 2:
-                    if index == 0:
-                        left = 780
-                    elif index == 1:
-                        left = 980
-                    else:
-                        msg = f"{index}: out-of-range index"
-                        raise InvalidOperation(msg,
-                                               self._browser.get_screenshot())
-                else:
-                    ss = self._browser.get_screenshot()
-                    now = datetime.datetime.now(datetime.UTC)
-                    img = screenshot_to_opencv(ss)
-                    cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                    raise AssertionError(len(operation.combinations))
-
-                left = round(left * self._browser.zoom_ratio)
-                top = round(691 * self._browser.zoom_ratio)
-                width = round(160 * self._browser.zoom_ratio)
-                height = round(120 * self._browser.zoom_ratio)
-                self._browser.click_region(left, top, width, height)
-            # Some of the tiles in your hand may slide right
-            # after the Peng, so if you don't add a wait time for
-            # the slide to finish, you may click on an unintended tile
-            # when selecting a discarded tile.
-            time.sleep(1.0)
-            self._operation_list = None
-            now = datetime.datetime.now(datetime.UTC)
-            self._wait_impl(deadline - now)
-            return
-
-        if isinstance(operation, AngangOperation):
-            template = Template.open_file("template/match/gang",
-                                          self._browser.zoom_ratio)
-            try:
-                template.wait_for_then_click(self._browser, timeout=10.0)
-            except Timeout as e:
-                ss = self._browser.get_screenshot()
-                now = datetime.datetime.now(datetime.UTC)
-                img = screenshot_to_opencv(ss)
-                cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                raise NotImplementedError from e
-
-            if len(operation.combinations) >= 2:
-                ss = self._browser.get_screenshot()
-                now = datetime.datetime.now(datetime.UTC)
-                img = screenshot_to_opencv(ss)
-                cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                raise NotImplementedError
-            # Some of the tiles in your hand may slide right
-            # after the Angang, so if you don't add a wait time for
-            # the slide to finish, you may click on an unintended tile
-            # when selecting a discarded tile.
-            time.sleep(1.0)
-            self._operation_list = None
-            now = datetime.datetime.now(datetime.UTC)
-            self._wait_impl(deadline - now)
-            return
-
-        if isinstance(operation, DaminggangOperation):
-            template = Template.open_file("template/match/gang",
-                                          self._browser.zoom_ratio)
-            try:
-                template.wait_for_then_click(self._browser, timeout=10.0)
-            except Timeout as e:
-                # TODO: Possibly interfered with by Rong from other player.
-                ss = self._browser.get_screenshot()
-                now = datetime.datetime.now(datetime.UTC)
-                img = screenshot_to_opencv(ss)
-                cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                raise NotImplementedError from e
-
-            if len(operation.combinations) >= 2:
-                ss = self._browser.get_screenshot()
-                now = datetime.datetime.now(datetime.UTC)
-                img = screenshot_to_opencv(ss)
-                cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                raise NotImplementedError
-            # Some of the tiles in your hand may slide right
-            # after the Damingang, so if you don't add a wait time for
-            # the slide to finish, you may click on an unintended tile
-            # when selecting a discarded tile.
-            time.sleep(1.0)
-            self._operation_list = None
-            now = datetime.datetime.now(datetime.UTC)
-            self._wait_impl(deadline - now)
-            return
-
-        if isinstance(operation, JiagangOperation):
-            template = Template.open_file("template/match/gang",
-                                          self._browser.zoom_ratio)
-            try:
-                template.wait_for_then_click(self._browser, timeout=10.0)
-            except Timeout as e:
-                ss = self._browser.get_screenshot()
-                now = datetime.datetime.now(datetime.UTC)
-                img = screenshot_to_opencv(ss)
-                cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                raise NotImplementedError from e
-
-            if len(operation.combinations) >= 2:
-                if len(operation.combinations) == 2:
-                    if index == 0:
-                        left = 600
-                    elif index == 1:
-                        left = 960
-                    else:
-                        msg = f"{index}: out-of-range index"
-                        raise InvalidOperation(msg,
-                                               self._browser.get_screenshot())
-                else:
-                    ss = self._browser.get_screenshot()
-                    now = datetime.datetime.now(datetime.UTC)
-                    img = screenshot_to_opencv(ss)
-                    cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                    raise NotImplementedError
-
-                left = round(left * self._browser.zoom_ratio)
-                top = round(691 * self._browser.zoom_ratio)
-                width = round(320 * self._browser.zoom_ratio)
-                height = round(120 * self._browser.zoom_ratio)
-                self._browser.click_region(left, top, width, height)
-            # Some of the tiles in your hand may slide right
-            # after the Jiagang, so if you don't add a wait time for
-            # the slide to finish, you may click on an unintended tile
-            # when selecting a discarded tile.
-            time.sleep(1.0)
-            self._operation_list = None
-            now = datetime.datetime.now(datetime.UTC)
-            self._wait_impl(deadline - now)
-            return
-
-        if isinstance(operation, LiqiOperation):
-            template = Template.open_file("template/match/lizhi",
-                                          self._browser.zoom_ratio)
-            try:
-                template.wait_for_then_click(self._browser, timeout=5.0)
-            except Timeout as e:
-                # It is highly likely that the drawing on
-                # the screen is distorted and the "Lizhi" button
-                # cannot be clicked. Therefore, it is
-                # recommended to refresh the browser.
-                msg = "A rendering problem may occur."
-                raise BrowserRefreshRequest(
-                    msg, self._browser, self._browser.get_screenshot(),
+                if name == ".lq.FastTest.inputChiPengGang":
+                    # It is highly likely that the drawing on
+                    # the screen is distorted and the "Chi" button
+                    # cannot be clicked. Therefore, it is
+                    # recommended to refresh the browser.
+                    msg = "A rendering problem may occur."
+                    raise BrowserRefreshRequest(
+                        msg, self._browser, self._browser.get_screenshot(),
+                    ) from e
+                raise InconsistentMessage(
+                    str(message), self._browser.get_screenshot(),
                 ) from e
-
-            if index < len(self.shoupai):
-                if self.shoupai[index] not in operation.candidate_dapai_list:
-                    raise InvalidOperation(str(index),
-                                           self._browser.get_screenshot())
-            elif index == len(self.shoupai):
-                if self.zimopai not in operation.candidate_dapai_list:
-                    msg = ""
+        if len(operation.combinations) >= 2:
+            if index is None:
+                msg = "Must specify an index."
+                raise InvalidOperation(msg, self._browser.get_screenshot())
+            if len(operation.combinations) == 2:
+                if index == 0:
+                    left = 780
+                elif index == 1:
+                    left = 980
+                else:
+                    msg = f"{index}: out-of-range index"
+                    raise InvalidOperation(msg, self._browser.get_screenshot())
+            elif len(operation.combinations) == 3:
+                if index == 0:
+                    left = 680
+                elif index == 1:
+                    left = 880
+                elif index == 2:
+                    left = 1080
+                else:
+                    msg = f"{index}: out-of-range index"
+                    raise InvalidOperation(msg, self._browser.get_screenshot())
+            elif len(operation.combinations) == 4:
+                if index == 0:
+                    left = 580
+                elif index == 1:
+                    left = 780
+                elif index == 2:
+                    left = 980
+                elif index == 3:
+                    left = 1180
+                else:
+                    msg = f"{index}: out-of-range index"
+                    raise InvalidOperation(msg, self._browser.get_screenshot())
+            elif len(operation.combinations) == 5:
+                if index == 0:
+                    left = 480
+                elif index == 1:
+                    left = 680
+                elif index == 2:
+                    left = 880
+                elif index == 3:
+                    left = 1080
+                elif index == 4:
+                    left = 1280
+                else:
+                    msg = f"{index}: out-of-range index"
                     raise InvalidOperation(msg, self._browser.get_screenshot())
             else:
-                msg = f"{index}: out-of-range index"
-                raise InvalidOperation(msg, self._browser.get_screenshot())
-            self._dapai(index, [])
-            self._operation_list = None
-            now = datetime.datetime.now(datetime.UTC)
-            self._wait_impl(deadline - now)
-            return
-
-        if isinstance(operation, ZimohuOperation):
-            # Zimohu. To prevent slowrolling Zimo, UI operations for
-            # Zimohu must be performed in the shortest possible time.
-            # Therefore, skip it by clicking the "Auto Call Win" button
-            # (even after the option of Zimohu appears,
-            # clicking the "Auto Call Win" button has the same effect
-            # as clicking the "Zimo" button)
-            left = round(14 * self._browser.zoom_ratio)
-            top = round(557 * self._browser.zoom_ratio)
-            width = round(43 * self._browser.zoom_ratio)
-            height = round(43 * self._browser.zoom_ratio)
-            self._browser.click_region(left, top, width, height, edge_sigma=1)
-            self._operation_list = None
-            now = datetime.datetime.now(datetime.UTC)
-            self._wait_impl(deadline - now)
-            return
-
-        if isinstance(operation, RongOperation):
-            # Ronghu. To prevent slowrolling Rong, UI operations for
-            # Ronghu must be performed in the shortest possible time.
-            # Therefore, skip it by clicking the "Auto Call Win" button
-            # (even after the option of Ronghu appears,
-            # clicking the "Auto Call Win" button has the same effect
-            # as clicking the "Rong" button)
-            left = round(14 * self._browser.zoom_ratio)
-            top = round(557 * self._browser.zoom_ratio)
-            width = round(43 * self._browser.zoom_ratio)
-            height = round(43 * self._browser.zoom_ratio)
-            self._browser.click_region(left, top, width, height, edge_sigma=1)
-            self._operation_list = None
-            now = datetime.datetime.now(datetime.UTC)
-            self._wait_impl(deadline - now)
-            return
-
-        if isinstance(operation, JiuzhongjiupaiOperation):
-            template = Template.open_file("template/match/liuju",
-                                          self._browser.zoom_ratio)
-            try:
-                template.wait_for_then_click(self._browser, timeout=5.0)
-            except Timeout as e:
-                # It is highly likely that the drawing on
-                # the screen is distorted and the "Liuju" button
-                # cannot be clicked. Therefore, it is
-                # recommended to refresh the browser.
-                msg = "A rendering problem may occur."
-                raise BrowserRefreshRequest(
-                    msg, self._browser, self._browser.get_screenshot(),
-                ) from e
-
-            self._operation_list = None
-            now = datetime.datetime.now(datetime.UTC)
-            self._wait_impl(deadline - now)
-            return
-
-        if isinstance(operation, BabeiOperation):
-            template = Template.open_file("template/match/babei",
-                                          self._browser.zoom_ratio)
-            try:
-                template.wait_for_then_click(self._browser, timeout=10.0)
-            except Timeout as e:
                 ss = self._browser.get_screenshot()
                 now = datetime.datetime.now(datetime.UTC)
                 img = screenshot_to_opencv(ss)
                 cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                raise NotImplementedError from e
+                raise AssertionError(len(operation.combinations))
 
-            # Some of the tiles in your hand may slide right
-            # after the Babei, so if you don't add a wait time for
-            # the slide to finish, you may click on an unintended tile
-            # when selecting a discarded tile.
-            time.sleep(1.0)
-            self._operation_list = None
+            left = round(left * self._browser.zoom_ratio)
+            top = round(691 * self._browser.zoom_ratio)
+            width = round(160 * self._browser.zoom_ratio)
+            height = round(120 * self._browser.zoom_ratio)
+            self._browser.click_region(left, top, width, height)
+
+        # Some of the tiles in your hand may slide right
+        # after the Chi, so if you don't add a wait time for
+        # the slide to finish, you may click on an unintended tile
+        # when selecting a discarded tile.
+        time.sleep(1.0)
+
+    def _operate_peng(
+        self,
+        operation: PengOperation,
+        index: int,
+        deadline: datetime.datetime,
+    ) -> None:
+        template = Template.open_file("template/match/peng",
+                                      self._browser.zoom_ratio)
+        try:
+            # If you do not set the 'timeout' to a short value,
+            # you will not be able to respond to the hule screen
+            # when you are interrupted by Rong from other player.
+            template.wait_for_then_click(self._browser, timeout=5.0)
+        except Timeout as e:
+            # Possibly interfered with by Rong from other player.
+            while True:
+                now = datetime.datetime.now(datetime.UTC)
+                message = self._db_client.dequeue_message(deadline - now)
+                if message is None:
+                    ss = self._browser.get_screenshot()
+                    now = datetime.datetime.now(datetime.UTC)
+                    img = screenshot_to_opencv(ss)
+                    cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
+                    raise NotImplementedError from e
+                _, name, request, _, _ = message
+                if name in MatchPresentation._COMMON_MESSAGE_NAMES:
+                    self._on_common_message(message)
+                    continue
+                if name == ".lq.ActionPrototype":
+                    _, action_name, _ = _common.parse_action(request)
+                    if action_name == "ActionHule":
+                        # You were being disturbed by
+                        # Rong from other player.
+                        # Backfill prefetched messages.
+                        self._db_client.put_back(message)
+                        self._operation_list = None
+                        now = datetime.datetime.now(datetime.UTC)
+                        self._wait_impl(deadline - now)
+                        return
+                    ss = self._browser.get_screenshot()
+                    now = datetime.datetime.now(datetime.UTC)
+                    img = screenshot_to_opencv(ss)
+                    cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
+                    raise InconsistentMessage(
+                        str(message), self._browser.get_screenshot(),
+                    ) from e
+                if name == ".lq.FastTest.inputOperation":
+                    raise InconsistentMessage(
+                        str(message), self._browser.get_screenshot(),
+                    ) from e
+                if name == ".lq.FastTest.inputChiPengGang":
+                    # It is highly likely that the drawing on
+                    # the screen is distorted and the "Peng" button
+                    # cannot be clicked. Therefore, it is
+                    # recommended to refresh the browser.
+                    msg = "A rendering problem may occur."
+                    raise BrowserRefreshRequest(
+                        msg, self._browser, self._browser.get_screenshot(),
+                    ) from e
+                raise InconsistentMessage(
+                    str(message), self._browser.get_screenshot(),
+                ) from e
+
+        if len(operation.combinations) >= 2:
+            if len(operation.combinations) == 2:
+                if index == 0:
+                    left = 780
+                elif index == 1:
+                    left = 980
+                else:
+                    msg = f"{index}: out-of-range index"
+                    raise InvalidOperation(msg,
+                                            self._browser.get_screenshot())
+            else:
+                ss = self._browser.get_screenshot()
+                now = datetime.datetime.now(datetime.UTC)
+                img = screenshot_to_opencv(ss)
+                cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
+                raise AssertionError(len(operation.combinations))
+
+            left = round(left * self._browser.zoom_ratio)
+            top = round(691 * self._browser.zoom_ratio)
+            width = round(160 * self._browser.zoom_ratio)
+            height = round(120 * self._browser.zoom_ratio)
+            self._browser.click_region(left, top, width, height)
+
+        # Some of the tiles in your hand may slide right
+        # after the Peng, so if you don't add a wait time for
+        # the slide to finish, you may click on an unintended tile
+        # when selecting a discarded tile.
+        time.sleep(1.0)
+
+    def _operate_angang(self, operation: AngangOperation) -> None:
+        template = Template.open_file("template/match/gang",
+                                      self._browser.zoom_ratio)
+        try:
+            template.wait_for_then_click(self._browser, timeout=10.0)
+        except Timeout as e:
+            ss = self._browser.get_screenshot()
             now = datetime.datetime.now(datetime.UTC)
-            self._wait_impl(deadline - now)
-            return
+            img = screenshot_to_opencv(ss)
+            cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
+            raise NotImplementedError from e
 
-        msg = (
-            "An invalid operation.\n"
-            f"operation: {operation}\n"
-            f"index: {index}"
-        )
-        raise InvalidOperation(msg, self._browser.get_screenshot())
+        if len(operation.combinations) >= 2:
+            ss = self._browser.get_screenshot()
+            now = datetime.datetime.now(datetime.UTC)
+            img = screenshot_to_opencv(ss)
+            cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
+            raise NotImplementedError
+
+        # Some of the tiles in your hand may slide right
+        # after the Angang, so if you don't add a wait time for
+        # the slide to finish, you may click on an unintended tile
+        # when selecting a discarded tile.
+        time.sleep(1.0)
+
+    def _operate_daminggang(
+        self,
+        operation: DaminggangOperation,
+        deadline: datetime.datetime,
+    ) -> None:
+        template = Template.open_file("template/match/gang",
+                                      self._browser.zoom_ratio)
+        try:
+            template.wait_for_then_click(self._browser, timeout=10.0)
+        except Timeout as e:
+            # TODO: Possibly interfered with by Rong from other player.
+            ss = self._browser.get_screenshot()
+            now = datetime.datetime.now(datetime.UTC)
+            img = screenshot_to_opencv(ss)
+            cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
+            raise NotImplementedError from e
+
+        if len(operation.combinations) >= 2:
+            ss = self._browser.get_screenshot()
+            now = datetime.datetime.now(datetime.UTC)
+            img = screenshot_to_opencv(ss)
+            cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
+            raise NotImplementedError
+
+        # Some of the tiles in your hand may slide right
+        # after the Damingang, so if you don't add a wait time for
+        # the slide to finish, you may click on an unintended tile
+        # when selecting a discarded tile.
+        time.sleep(1.0)
+
+    def _operate_jiagang(
+        self,
+        operation: JiagangOperation,
+        index: int,
+    ) -> None:
+        template = Template.open_file("template/match/gang",
+                                      self._browser.zoom_ratio)
+        try:
+            template.wait_for_then_click(self._browser, timeout=10.0)
+        except Timeout as e:
+            ss = self._browser.get_screenshot()
+            now = datetime.datetime.now(datetime.UTC)
+            img = screenshot_to_opencv(ss)
+            cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
+            raise NotImplementedError from e
+
+        if len(operation.combinations) >= 2:
+            if len(operation.combinations) == 2:
+                if index == 0:
+                    left = 600
+                elif index == 1:
+                    left = 960
+                else:
+                    msg = f"{index}: out-of-range index"
+                    raise InvalidOperation(msg, self._browser.get_screenshot())
+            else:
+                ss = self._browser.get_screenshot()
+                now = datetime.datetime.now(datetime.UTC)
+                img = screenshot_to_opencv(ss)
+                cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
+                raise NotImplementedError
+
+            left = round(left * self._browser.zoom_ratio)
+            top = round(691 * self._browser.zoom_ratio)
+            width = round(320 * self._browser.zoom_ratio)
+            height = round(120 * self._browser.zoom_ratio)
+            self._browser.click_region(left, top, width, height)
+
+        # Some of the tiles in your hand may slide right
+        # after the Jiagang, so if you don't add a wait time for
+        # the slide to finish, you may click on an unintended tile
+        # when selecting a discarded tile.
+        time.sleep(1.0)
+
+    def _operate_liqi(self, operation: LiqiOperation, index: int) -> None:
+        template = Template.open_file("template/match/lizhi",
+                                      self._browser.zoom_ratio)
+        try:
+            template.wait_for_then_click(self._browser, timeout=5.0)
+        except Timeout as e:
+            # It is highly likely that the drawing on
+            # the screen is distorted and the "Lizhi" button
+            # cannot be clicked. Therefore, it is
+            # recommended to refresh the browser.
+            msg = "A rendering problem may occur."
+            raise BrowserRefreshRequest(
+                msg, self._browser, self._browser.get_screenshot(),
+            ) from e
+
+        if index < len(self.shoupai):
+            if self.shoupai[index] not in operation.candidate_dapai_list:
+                raise InvalidOperation(str(index),
+                                       self._browser.get_screenshot())
+        elif index == len(self.shoupai):
+            if self.zimopai not in operation.candidate_dapai_list:
+                raise InvalidOperation(str(index),
+                                       self._browser.get_screenshot())
+        else:
+            msg = f"{index}: out-of-range index"
+            raise InvalidOperation(msg, self._browser.get_screenshot())
+        self._dapai(index, [])
+
+    def _operate_hu(self, deadline: datetime.datetime) -> None:
+        # Hu. To prevent slowrolling Hu, UI operations for
+        # Hu must be performed in the shortest possible time.
+        # Therefore, skip it by clicking the "Auto Call Win" button
+        # (even after the option of Zimohu or Ronghu appears,
+        # clicking the "Auto Call Win" button has the same effect
+        # as clicking the "Zimo" or "Rong" button)
+        left = round(14 * self._browser.zoom_ratio)
+        top = round(557 * self._browser.zoom_ratio)
+        width = round(43 * self._browser.zoom_ratio)
+        height = round(43 * self._browser.zoom_ratio)
+        self._browser.click_region(left, top, width, height, edge_sigma=1.0)
+        self._operation_list = None
+        now = datetime.datetime.now(datetime.UTC)
+        self._wait_impl(deadline - now)
+
+    def _operate_jiuzhongjiupai(self) -> None:
+        template = Template.open_file("template/match/liuju",
+                                      self._browser.zoom_ratio)
+        try:
+            template.wait_for_then_click(self._browser, timeout=5.0)
+        except Timeout as e:
+            # It is highly likely that the drawing on
+            # the screen is distorted and the "Liuju" button
+            # cannot be clicked. Therefore, it is
+            # recommended to refresh the browser.
+            msg = "A rendering problem may occur."
+            raise BrowserRefreshRequest(
+                msg, self._browser, self._browser.get_screenshot(),
+            ) from e
+
+    def _operate_babei(self) -> None:
+        template = Template.open_file("template/match/babei",
+                                      self._browser.zoom_ratio)
+        try:
+            template.wait_for_then_click(self._browser, timeout=10.0)
+        except Timeout as e:
+            # It is highly likely that the drawing on
+            # the screen is distorted and the "Babei" button
+            # cannot be clicked. Therefore, it is
+            # recommended to refresh the browser.
+            msg = "A rendering problem may occur."
+            raise BrowserRefreshRequest(
+                msg, self._browser, self._browser.get_screenshot(),
+            ) from e
+
+        # Some of the tiles in your hand may slide right
+        # after the Babei, so if you don't add a wait time for
+        # the slide to finish, you may click on an unintended tile
+        # when selecting a discarded tile.
+        time.sleep(1.0)
