@@ -1435,10 +1435,13 @@ class MatchPresentation(PresentationBase):
                 if not should_click_skip:
                     raise InconsistentMessage(str(message),
                                               self._browser.get_screenshot())
+                logger.info(message)
                 break
             if name == ".lq.FastTest.inputChiPengGang":
+                logger.info(message)
                 break
             if name == ".lq.ActionPrototype":
+                logger.info(message)
                 break
 
         # Backfill prefetched messages.
@@ -1804,7 +1807,7 @@ class MatchPresentation(PresentationBase):
             msg = f"{index}: out-of-range index"
             raise InvalidOperation(msg, self._browser.get_screenshot())
 
-        time.sleep(0.5)
+        time.sleep(0.4)
         self._dapai(index, [])
 
     def _operate_hu(self, deadline: datetime.datetime) -> None:
