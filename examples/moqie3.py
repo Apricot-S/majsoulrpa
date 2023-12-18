@@ -64,7 +64,7 @@ if __name__ == "__main__":
         if not isinstance(presentation, HomePresentation):
             msg = "Could not transit to 'home"
             raise RuntimeError(msg)
-        presentation.create_room()
+        presentation.create_room(mode="3-Player", length="East Only")
         if presentation.new_presentation is None:
             msg = "Could not transit to 'room'."
             raise RuntimeError(msg)

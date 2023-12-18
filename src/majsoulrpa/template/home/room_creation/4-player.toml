@@ -1,0 +1,7 @@
+# Friendly Match - Create Room - 4-Player
+left = 494
+top = 207
+width = 216
+height = 81
+threshold = 0.95
+path = "./selected_option.png"

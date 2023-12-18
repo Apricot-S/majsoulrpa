@@ -1,6 +1,7 @@
 import datetime
 import time
 from logging import getLogger
+from typing import Literal
 
 from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.db_client import DBClientBase
@@ -232,7 +233,13 @@ class HomePresentation(PresentationBase):
 
             raise InconsistentMessage(str(message), sct)
 
-    def create_room(self, timeout: TimeoutType = 60.0) -> None:
+    def create_room(
+        self,
+        mode: Literal["4-Player", "3-Player"] = "4-Player",
+        length: Literal["1 Game", "East Only", "Two-Wind Match", "Vs AI"]
+            = "Two-Wind Match",
+        timeout: TimeoutType = 60.0,
+    ) -> None:
         self._assert_not_stale()
 
         deadline = timeout_to_deadline(timeout)
@@ -242,18 +249,50 @@ class HomePresentation(PresentationBase):
                                       self._browser.zoom_ratio)
         template.click(self._browser)
 
-        # Wait until "Create room" is displayed.
+        # Wait until "Create room" is displayed and then click.
         template = Template.open_file("template/home/create_room",
                                       self._browser.zoom_ratio)
-        template.wait_until(self._browser, deadline)
-
-        # Click "Create room"
-        template.click(self._browser)
+        template.wait_until_then_click(self._browser, deadline)
 
         # Wait until "Create" is displayed.
         template = Template.open_file("template/home/room_creation/create",
                                       self._browser.zoom_ratio)
         template.wait_until(self._browser, deadline)
+
+        def select_option(selected: str) -> None:
+            template = Template.open_file(selected, self._browser.zoom_ratio)
+            while True:
+                if datetime.datetime.now(datetime.UTC) > deadline:
+                    msg = "Timeout."
+                    raise Timeout(msg, self._browser.get_screenshot())
+                if template.match(self._browser.get_screenshot()):
+                    break
+                template.click(self._browser)
+                time.sleep(0.5)
+
+        # Select Mode
+        match mode:
+            case "4-Player":
+                select_option("template/home/room_creation/4-player")
+            case "3-Player":
+                select_option("template/home/room_creation/3-player")
+            case _ as unsupported_mode:
+                msg = f"Unsupported mode selected: {unsupported_mode}"
+                raise ValueError(msg)
+
+        # Select Length
+        match length:
+            case "1 Game":
+                select_option("template/home/room_creation/1_game")
+            case "East Only":
+                select_option("template/home/room_creation/east_only")
+            case "Two-Wind Match":
+                select_option("template/home/room_creation/two-wind_match")
+            case "Vs AI":
+                select_option("template/home/room_creation/vs_ai")
+            case _ as unsupported_length:
+                msg = f"Unsupported length selected: {unsupported_length}"
+                raise ValueError(msg)
 
         # Click "Create"
         template.click(self._browser)
