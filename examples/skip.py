@@ -65,7 +65,7 @@ if __name__ == "__main__":
         if not isinstance(presentation, HomePresentation):
             msg = "Could not transit to 'home"
             raise RuntimeError(msg)
-        presentation.create_room()
+        presentation.create_room(mode="3-Player", length="East Only")
         if presentation.new_presentation is None:
             msg = "Could not transit to 'room'."
             raise RuntimeError(msg)
@@ -77,7 +77,7 @@ if __name__ == "__main__":
             msg = "Could not transit to 'room'."
             raise RuntimeError(msg)
         logger.info(f"room id: {presentation.room_id}")  # noqa: G004
-        while presentation.num_ais < 3:  # noqa: PLR2004
+        while presentation.num_ais < 2:  # noqa: PLR2004
             presentation.add_ai(timeout=10.0)
 
         if input("Do you want to start match? y/n: ") == "y":

@@ -1408,18 +1408,75 @@ class MatchPresentation(PresentationBase):
                     break
 
         if should_click_skip:
-            left = round(1246 * self._browser.zoom_ratio)
-            top = round(823 * self._browser.zoom_ratio)
-            width = round(150 * self._browser.zoom_ratio)
-            height = round(38 * self._browser.zoom_ratio)
-            time.sleep(0.5)
-            self._browser.click_region(left, top, width, height)
+            self._skip_by_skip_button(deadline)
         else:
-            left = round(14 * self._browser.zoom_ratio)
-            top = round(623 * self._browser.zoom_ratio)
-            width = round(43 * self._browser.zoom_ratio)
-            height = round(43 * self._browser.zoom_ratio)
-            self._browser.click_region(left, top, width, height, edge_sigma=1)
+            self._skip_by_no_melding(deadline)
+
+    def _skip_by_skip_button(self, deadline: datetime.datetime) -> None:
+        template = Template.open_file("template/match/skip",
+                                      self._browser.zoom_ratio)
+        try:
+            # If you do not set the 'timeout' to a short value,
+            # you will not be able to respond to the hule screen
+            # when you are interrupted by Rong from other player.
+            template.wait_for_then_click(self._browser, timeout=5.0)
+        except Timeout as e:
+            # Possibly interfered with by Chi, Peng, Gang, or Rong
+            # from other player.
+            while True:
+                now = datetime.datetime.now(datetime.UTC)
+                message = self._db_client.dequeue_message(deadline - now)
+                if message is None:
+                    ss = self._browser.get_screenshot()
+                    now = datetime.datetime.now(datetime.UTC)
+                    img = screenshot_to_opencv(ss)
+                    cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
+                    raise NotImplementedError from e
+                _, name, request, _, _ = message
+                if name in MatchPresentation._COMMON_MESSAGE_NAMES:
+                    self._on_common_message(message)
+                    continue
+                if name == ".lq.ActionPrototype":
+                    _, action_name, _ = _common.parse_action(request)
+                    if action_name in ("ActionChiPengGang", "ActionHule"):
+                        # You were being disturbed by
+                        # Chi, Peng, Gang, or Rong from other player.
+                        # Backfill prefetched messages.
+                        self._db_client.put_back(message)
+                        self._operation_list = None
+                        now = datetime.datetime.now(datetime.UTC)
+                        self._wait_impl(deadline - now)
+                        return
+                    ss = self._browser.get_screenshot()
+                    now = datetime.datetime.now(datetime.UTC)
+                    img = screenshot_to_opencv(ss)
+                    cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
+                    raise InconsistentMessage(
+                        str(message), self._browser.get_screenshot(),
+                    ) from e
+                if name == ".lq.FastTest.inputOperation":
+                    raise InconsistentMessage(
+                        str(message), self._browser.get_screenshot(),
+                    ) from e
+                if name == ".lq.FastTest.inputChiPengGang":
+                    # It is highly likely that the drawing on
+                    # the screen is distorted and the "Skip" button
+                    # cannot be clicked. Therefore, it is
+                    # recommended to refresh the browser.
+                    msg = "A rendering problem may occur."
+                    raise BrowserRefreshRequest(
+                        msg, self._browser, self._browser.get_screenshot(),
+                    ) from e
+                raise InconsistentMessage(
+                    str(message), self._browser.get_screenshot(),
+                ) from e
+
+    def _skip_by_no_melding(self, deadline: datetime.datetime) -> None:
+        left = round(14 * self._browser.zoom_ratio)
+        top = round(623 * self._browser.zoom_ratio)
+        width = round(43 * self._browser.zoom_ratio)
+        height = round(43 * self._browser.zoom_ratio)
+        self._browser.click_region(left, top, width, height, edge_sigma=1.0)
 
         while True:
             now = datetime.datetime.now(datetime.UTC)
@@ -1432,11 +1489,8 @@ class MatchPresentation(PresentationBase):
                 self._on_common_message(message)
                 continue
             if name == ".lq.FastTest.inputOperation":
-                if not should_click_skip:
-                    raise InconsistentMessage(str(message),
-                                              self._browser.get_screenshot())
-                logger.info(message)
-                break
+                raise InconsistentMessage(str(message),
+                                          self._browser.get_screenshot())
             if name == ".lq.FastTest.inputChiPengGang":
                 logger.info(message)
                 break
@@ -1447,8 +1501,7 @@ class MatchPresentation(PresentationBase):
         # Backfill prefetched messages.
         self._db_client.put_back(message)
 
-        if not should_click_skip:
-            self._browser.click_region(left, top, width, height, edge_sigma=1)
+        self._browser.click_region(left, top, width, height, edge_sigma=1.0)
 
     def _operate_chi(self,
         operation: ChiOperation,
