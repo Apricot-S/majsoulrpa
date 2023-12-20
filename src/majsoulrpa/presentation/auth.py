@@ -16,21 +16,6 @@ from .presentation_base import (
     Timeout,
 )
 
-_TEXT_BOX_EMAIL_ADDRESS_LEFT: Final[int] = 365
-_TEXT_BOX_EMAIL_ADDRESS_TOP: Final[int] = 385
-_TEXT_BOX_EMAIL_ADDRESS_WIDTH: Final[int] = 200
-_TEXT_BOX_EMAIL_ADDRESS_HEIGHT: Final[int] = 30
-
-_BUTTON_SEND_CODE_LEFT: Final[int] = 850
-_BUTTON_SEND_CODE_TOP: Final[int] = 500
-_BUTTON_SEND_CODE_WIDTH: Final[int] = 190
-_BUTTON_SEND_CODE_HEIGHT: Final[int] = 70
-
-_TEXT_BOX_AUTH_CODE_LEFT: Final[int] = 365
-_TEXT_BOX_AUTH_CODE_TOP: Final[int] = 520
-_TEXT_BOX_AUTH_CODE_WIDTH: Final[int] = 140
-_TEXT_BOX_AUTH_CODE_HEIGHT: Final[int] = 35
-
 
 class AuthPresentation(PresentationBase):
 
@@ -66,10 +51,10 @@ class AuthPresentation(PresentationBase):
 
         # Click the "Enter email address" text box to focus it.
         self._browser.click_region(
-            int(_TEXT_BOX_EMAIL_ADDRESS_LEFT * self._browser.zoom_ratio),
-            int(_TEXT_BOX_EMAIL_ADDRESS_TOP * self._browser.zoom_ratio),
-            int(_TEXT_BOX_EMAIL_ADDRESS_WIDTH * self._browser.zoom_ratio),
-            int(_TEXT_BOX_EMAIL_ADDRESS_HEIGHT * self._browser.zoom_ratio),
+            int(365 * self._browser.zoom_ratio),
+            int(385 * self._browser.zoom_ratio),
+            int(200 * self._browser.zoom_ratio),
+            int(30 * self._browser.zoom_ratio),
         )
         time.sleep(0.1)
 
@@ -81,10 +66,10 @@ class AuthPresentation(PresentationBase):
 
         # Click the "Send Code" button.
         self._browser.click_region(
-            int(_BUTTON_SEND_CODE_LEFT * self._browser.zoom_ratio),
-            int(_BUTTON_SEND_CODE_TOP * self._browser.zoom_ratio),
-            int(_BUTTON_SEND_CODE_WIDTH * self._browser.zoom_ratio),
-            int(_BUTTON_SEND_CODE_HEIGHT * self._browser.zoom_ratio),
+            int(850 * self._browser.zoom_ratio),
+            int(500 * self._browser.zoom_ratio),
+            int(190 * self._browser.zoom_ratio),
+            int(70 * self._browser.zoom_ratio),
         )
 
         # Wait for the dialog box to appear.
@@ -110,10 +95,10 @@ class AuthPresentation(PresentationBase):
         # Click the "Enter the verification code sent to your email"
         # text box to focus it.
         self._browser.click_region(
-            int(_TEXT_BOX_AUTH_CODE_LEFT * self._browser.zoom_ratio),
-            int(_TEXT_BOX_AUTH_CODE_TOP * self._browser.zoom_ratio),
-            int(_TEXT_BOX_AUTH_CODE_WIDTH * self._browser.zoom_ratio),
-            int(_TEXT_BOX_AUTH_CODE_HEIGHT * self._browser.zoom_ratio),
+            int(365 * self._browser.zoom_ratio),
+            int(520 * self._browser.zoom_ratio),
+            int(140 * self._browser.zoom_ratio),
+            int(35 * self._browser.zoom_ratio),
         )
         time.sleep(0.1)
 
