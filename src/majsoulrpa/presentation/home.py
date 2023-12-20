@@ -161,7 +161,8 @@ class HomePresentation(PresentationBase):
                       | ".lq.Lobby.fetchCharacterInfo"
                       | ".lq.Lobby.fetchAllCommonViews"
                       | ".lq.Lobby.fetchCollectedGameRecordList"
-                      | ".lq.Lobby.modifyRoom"):
+                      | ".lq.Lobby.modifyRoom"
+                      | ".lq.Lobby.fetchInfo"): # TODO: Analyzing content
                     logger.info(message)
                     continue
                 case (".lq.Lobby.fetchDailyTask"
