@@ -1,6 +1,5 @@
 import datetime
 import time
-from typing import Final
 
 from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.db_client import DBClientBase
@@ -72,13 +71,10 @@ class AuthPresentation(PresentationBase):
             int(70 * self._browser.zoom_ratio),
         )
 
-        # Wait for the dialog box to appear.
+        # Wait for the "Confirm" button to appear, then click it.
         template = Template.open_file("template/auth/confirm",
                                       self._browser.zoom_ratio)
-        template.wait_for(self._browser, timeout)
-
-        # Click the "Confirm" button.
-        template.click(self._browser)
+        template.wait_for_then_click(self._browser, timeout)
         time.sleep(0.1)
 
     def enter_auth_code(
@@ -107,13 +103,10 @@ class AuthPresentation(PresentationBase):
         self._browser.press("Backspace")
         self._browser.write(auth_code)
 
-        # Wait for the "Login" button to be activated.
+        # Wait for the "Login" button to appear, then click it.
         template = Template.open_file("template/auth/login",
                                       self._browser.zoom_ratio)
-        template.wait_for(self._browser, timeout)
-
-        # Click the "Login" button
-        template.click(self._browser)
+        template.wait_for_then_click(self._browser, timeout)
 
         templates = (
             "template/home/marker0",
