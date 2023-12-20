@@ -1,6 +1,6 @@
 # Summon
 left = 1770
-top = 940
-width = 106
-height = 110
+top = 925
+width = 80
+height = 130
 threshold = 0.94

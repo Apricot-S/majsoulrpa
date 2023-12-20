@@ -1,6 +1,6 @@
 # Tournament Match
-left = 1100
+left = 1140
 top = 490
-width = 560
+width = 480
 height = 95
 threshold = 0.94
