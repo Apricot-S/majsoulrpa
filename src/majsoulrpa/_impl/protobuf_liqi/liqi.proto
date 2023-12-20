@@ -1043,6 +1043,60 @@ message AccountActivityUpdate {
   repeated lq.ActivityUpgradeData upgrade_data = 6;
   repeated lq.ActivityGachaUpdateData gacha_data = 7;
   repeated lq.ActivitySimulationData simulation_data = 8;
+  repeated ActivityCombiningLQData combining_data = 9;
+}
+
+message ActivityCombiningWorkbench {
+  uint32 craft_id = 1;
+  uint32 pos = 2;
+}
+
+message ActivityCombiningMenuData {
+  uint32 menu_group = 1;
+  repeated MenuRequire generated = 2;
+  message MenuRequire {
+    uint32 level = 1;
+    uint32 count = 2;
+  }
+
+}
+
+message ActivityCombiningOrderData {
+  uint32 id = 1;
+  uint32 pos = 2;
+  uint32 craft_id = 3;
+  uint32 unlock_day = 4;
+}
+
+message ActivityCombiningLQData {
+  uint32 activity_id = 1;
+  repeated ActivityCombiningWorkbench workbench = 2;
+  repeated ActivityCombiningOrderData orders = 3;
+  ActivityCombiningWorkbench recycle_bin = 4;
+  repeated uint32 unlocked_craft = 5;
+}
+
+message ActivityCombiningPoolData {
+  uint32 group = 1;
+  uint32 count = 2;
+}
+
+message ActivityCombiningData {
+  uint32 activity_id = 1;
+  repeated ActivityCombiningWorkbench workbench = 2;
+  repeated ActivityCombiningOrderData orders = 3;
+  ActivityCombiningWorkbench recycle_bin = 4;
+  ActivityCombiningMenuData menu = 5;
+  uint32 current_order_id = 6;
+  BonusData bonus = 7;
+  repeated uint32 unlocked_craft = 8;
+  repeated ActivityCombiningPoolData craft_pool = 9;
+  repeated ActivityCombiningPoolData order_pool = 10;
+  message BonusData {
+    uint32 count = 1;
+    uint32 update_time = 2;
+  }
+
 }
 
 message ActivityFeedData {
@@ -1822,6 +1876,7 @@ message AccountResourceSnapshot {
   repeated CurrencySnapshot currency = 2;
   TitleSnapshot title = 3;
   UsedTitleSnapshot used_title = 4;
+  uint32 currency_convert = 5;
   message BagItemSnapshot {
     uint32 resource_id = 1;
     uint32 resource_count = 2;
@@ -1899,7 +1954,7 @@ message AccountMiscSnapshot {
   AccountVIP vip = 3;
   ShopInfo shop_info = 4;
   AccountMonthTicketSnapshot month_ticket = 5;
-  repeated AccountRechargeInfo recharged = 6;
+  AccountRechargeInfo recharged = 6;
   AccountMonthTicketSnapshotV2 month_ticket_v2 = 7;
   message AccountVIPRewardSnapshot {
     repeated uint32 rewarded = 1;
@@ -1922,8 +1977,13 @@ message AccountMiscSnapshot {
   }
 
   message AccountRechargeInfo {
-    uint32 level = 1;
-    uint32 recharge_time = 2;
+    repeated RechargeRecord records = 1;
+    uint32 has_data = 2;
+    message RechargeRecord {
+      uint32 level = 1;
+      uint32 recharge_time = 2;
+    }
+
   }
 
   message AccountMonthTicketSnapshotV2 {
@@ -1968,6 +2028,7 @@ service Lobby {
   rpc openidCheck (ReqOpenidCheck) returns (ResOauth2Check);
   rpc signup (ReqSignupAccount) returns (ResSignupAccount);
   rpc login (ReqLogin) returns (ResLogin);
+  rpc fetchInfo (ReqCommon) returns (ResFetchInfo);
   rpc loginSuccess (ReqCommon) returns (ResCommon);
   rpc emailLogin (ReqEmailLogin) returns (ResLogin);
   rpc oauth2Auth (ReqOauth2Auth) returns (ResOauth2Auth);
@@ -2254,6 +2315,11 @@ service Lobby {
   rpc fetchSimulationGameRecord (ReqFetchSimulationGameRecord) returns (ResFetchSimulationGameRecord);
   rpc startSimulationActivityGame (ReqStartSimulationActivityGame) returns (ResStartSimulationActivityGame);
   rpc fetchSimulationGameRank (ReqFetchSimulationGameRank) returns (ResFetchSimulationGameRank);
+  rpc generateCombiningCraft (ReqGenerateCombiningCraft) returns (ResGenerateCombiningCraft);
+  rpc moveCombiningCraft (ReqMoveCombiningCraft) returns (ResMoveCombiningCraft);
+  rpc combiningRecycleCraft (ReqCombiningRecycleCraft) returns (ResCombiningRecycleCraft);
+  rpc recoverCombiningRecycle (ReqRecoverCombiningRecycle) returns (ResRecoverCombiningRecycle);
+  rpc finishCombiningOrder (ReqFinishCombiningOrder) returns (ResFinishCombiningOrder);
 }
 
 message ResConnectionInfo {
@@ -3990,6 +4056,7 @@ message ResAccountActivityData {
   repeated lq.ActivityUpgradeData upgrade_data = 21;
   repeated lq.ActivityGachaUpdateData gacha_data = 22;
   repeated lq.ActivitySimulationData simulation_data = 23;
+  repeated lq.ActivityCombiningLQData combining_data = 24;
   message ActivitySignInData {
     uint32 activity_id = 1;
     uint32 sign_in_count = 2;
@@ -4749,6 +4816,99 @@ message ResFetchSimulationGameRank {
     float score = 2;
   }
 
+}
+
+message ReqGenerateCombiningCraft {
+  uint32 activity_id = 1;
+  uint32 bin_id = 2;
+}
+
+message ResGenerateCombiningCraft {
+  Error error = 1;
+  uint32 pos = 2;
+  uint32 craft_id = 3;
+}
+
+message ReqMoveCombiningCraft {
+  uint32 activity_id = 1;
+  uint32 from = 2;
+  uint32 to = 3;
+}
+
+message ResMoveCombiningCraft {
+  Error error = 1;
+  uint32 pos = 2;
+  uint32 combined = 3;
+  uint32 craft_id = 4;
+  BonusData bonus = 5;
+  message BonusData {
+    uint32 craft_id = 1;
+    uint32 pos = 2;
+  }
+
+}
+
+message ReqCombiningRecycleCraft {
+  uint32 activity_id = 1;
+  uint32 pos = 2;
+}
+
+message ResCombiningRecycleCraft {
+  Error error = 1;
+  repeated ExecuteReward reward_items = 2;
+}
+
+message ReqRecoverCombiningRecycle {
+  uint32 activity_id = 1;
+}
+
+message ResRecoverCombiningRecycle {
+  Error error = 1;
+  uint32 craft_id = 2;
+  uint32 pos = 3;
+}
+
+message ReqFinishCombiningOrder {
+  uint32 activity_id = 1;
+  uint32 craft_pos = 2;
+  uint32 order_pos = 3;
+}
+
+message ResFinishCombiningOrder {
+  Error error = 1;
+  repeated ExecuteReward reward_items = 2;
+}
+
+message ResFetchInfo {
+  Error error = 1;
+  ResServerTime server_time = 2;
+  ResServerSettings server_setting = 3;
+  ResClientValue client_value = 4;
+  ResFriendList friend_list = 5;
+  ResFriendApplyList friend_apply_list = 6;
+  ResFetchrecentFriend recent_friend = 7;
+  ResMailInfo mail_info = 8;
+  ResReviveCoinInfo receive_coin_info = 9;
+  ResTitleList title_list = 10;
+  ResBagInfo bag_info = 11;
+  ResShopInfo shop_info = 12;
+  ResFetchShopInterval shop_interval = 13;
+  ResAccountActivityData activity_data = 14;
+  ResFetchActivityInterval activity_interval = 15;
+  ResActivityBuff activity_buff = 16;
+  ResVipReward vip_reward = 17;
+  ResMonthTicketInfo month_ticket_info = 18;
+  ResAchievement achievement = 19;
+  ResCommentSetting comment_setting = 20;
+  ResAccountSettings account_settings = 21;
+  ResModNicknameTime mod_nickname_time = 22;
+  ResMisc misc = 23;
+  ResAnnouncement announcement = 24;
+  ReqRollingNotice rolling_notice = 25;
+  ResActivityList activity_list = 26;
+  ResCharacterInfo character_info = 27;
+  ResAllcommonViews all_common_views = 28;
+  ResCollectedGameRecordList collected_game_record_list = 29;
 }
 
 message ActionMJStart {
