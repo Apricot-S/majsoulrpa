@@ -205,10 +205,9 @@ class Template:
 
     @staticmethod
     def match_one_of(
-        screenshot: bytes, templates: Sequence[str | Path], zoom_ratio: float,
+        screenshot: bytes, templates: Sequence["Template"],
     ) -> int:
-        for i in range(len(templates)):
-            template = Template.open_file(templates[i], zoom_ratio)
+        for i, template in enumerate(templates):
             if template.match(screenshot):
                 return i
         return -1

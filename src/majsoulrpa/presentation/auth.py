@@ -108,13 +108,16 @@ class AuthPresentation(PresentationBase):
                                       self._browser.zoom_ratio)
         template.wait_for_then_click(self._browser, timeout)
 
-        templates = (
+        paths = (
             "template/home/marker0",
             "template/match/marker0",
             "template/match/marker1",
             "template/match/marker2",
             "template/match/marker3",
         )
+        templates = [
+            Template.open_file(p, self._browser.zoom_ratio) for p in paths
+        ]
 
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
@@ -123,7 +126,6 @@ class AuthPresentation(PresentationBase):
             index = Template.match_one_of(
                 self._browser.get_screenshot(),
                 templates,
-                self._browser.zoom_ratio,
             )
             if index in (0,):
                 break

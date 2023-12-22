@@ -63,14 +63,14 @@ class MatchPresentation(PresentationBase):
     @staticmethod
     def _wait(browser: BrowserBase, timeout: TimeoutType = 60.0) -> None:
         deadline = timeout_to_deadline(timeout)
+        paths = [f"template/match/marker{i}" for i in range(4)]
+        templates = [Template.open_file(p, browser.zoom_ratio) for p in paths]
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout."
                 raise Timeout(msg, browser.get_screenshot())
-            templates = [f"template/match/marker{i}" for i in range(4)]
-            if Template.match_one_of(
-                browser.get_screenshot(), templates, browser.zoom_ratio,
-            ) != -1:
+            if (Template.match_one_of(browser.get_screenshot(), templates)
+                    != -1):
                 break
 
     _COMMON_MESSAGE_NAMES = (
@@ -167,14 +167,13 @@ class MatchPresentation(PresentationBase):
         self._round_state = None
         self._operation_list = None
 
-        templates = [f"template/match/marker{i}" for i in range(4)]
+        paths = [f"template/match/marker{i}" for i in range(4)]
+        templates = [Template.open_file(p, browser.zoom_ratio) for p in paths]
         sct = browser.get_screenshot()
-        if Template.match_one_of(sct, templates, browser.zoom_ratio) == -1:
+        if Template.match_one_of(sct, templates) == -1:
             # For postmortem.
-            for i in range(4):
-                template = Template.open_file(f"template/match/marker{i}",
-                                              browser.zoom_ratio)
-                x, y, score = template.best_template_match(sct)
+            for t in templates:
+                x, y, score = t.best_template_match(sct)
                 print(f"({x}, {y}): score = {score}")  # noqa: T201
             now = datetime.datetime.now(datetime.UTC)
             img = screenshot_to_opencv(sct)
