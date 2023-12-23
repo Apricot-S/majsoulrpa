@@ -41,6 +41,10 @@ types-protobuf = "*"
 
 [tool.ruff]
 target-version = "py311"
+extend-exclude = [
+    "src/majsoulrpa/_impl/protobuf_grpc",
+    "src/majsoulrpa/_impl/protobuf_liqi",
+]
 ignore = [
     "ANN101", # missing-type-self
     "ANN102", # missing-type-cls
