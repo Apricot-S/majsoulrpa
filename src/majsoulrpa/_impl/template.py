@@ -27,11 +27,15 @@ def screenshot_to_opencv(screenshot_bytes: bytes) -> np.ndarray:
 
 
 class Template:
-
     def __init__(  # noqa: PLR0913
-        self, path: Path, zoom_ratio: float, *,
-        left: int = 0, top: int = 0,
-        width: int = STD_WIDTH, height: int = STD_HEIGHT,
+        self,
+        path: Path,
+        zoom_ratio: float,
+        *,
+        left: int = 0,
+        top: int = 0,
+        width: int = STD_WIDTH,
+        height: int = STD_HEIGHT,
         threshold: float = _STD_THRESHOLD,
     ) -> None:
         if zoom_ratio < MIN_ZOOM_RATIO or zoom_ratio > MAX_ZOOM_RATIO:
@@ -44,9 +48,9 @@ class Template:
         self._path = path
         self._zoom_ratio = zoom_ratio
         self._left = int(left * zoom_ratio)
-        self._right = int((left + width)*zoom_ratio)
+        self._right = int((left + width) * zoom_ratio)
         self._top = int(top * zoom_ratio)
-        self._bottom = int((top + height)*zoom_ratio)
+        self._bottom = int((top + height) * zoom_ratio)
         self._width = int(width * zoom_ratio)
         self._height = int(height * zoom_ratio)
         self._threshold = threshold
@@ -125,7 +129,7 @@ class Template:
 
     def best_template_match(self, screenshot: bytes) -> tuple[int, int, float]:
         image = screenshot_to_opencv(screenshot)
-        image = image[self._top:self._bottom, self._left:self._right, :]
+        image = image[self._top : self._bottom, self._left : self._right, :]
 
         if image.shape[0] < self._templ.shape[0]:
             msg = (
@@ -159,7 +163,9 @@ class Template:
         return score >= self._threshold
 
     def wait_until(
-        self, browser: BrowserBase, deadline: datetime.datetime,
+        self,
+        browser: BrowserBase,
+        deadline: datetime.datetime,
     ) -> None:
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
@@ -173,15 +179,23 @@ class Template:
         self.wait_until(browser, deadline)
 
     def click(
-        self, browser: BrowserBase, edge_sigma: float = _STD_EDGE_SIGMA,
+        self,
+        browser: BrowserBase,
+        edge_sigma: float = _STD_EDGE_SIGMA,
     ) -> None:
         x, y, _ = self.best_template_match(browser.get_screenshot())
         browser.click_region(
-            x, y, self._templ.shape[1], self._templ.shape[0], edge_sigma,
+            x,
+            y,
+            self._templ.shape[1],
+            self._templ.shape[0],
+            edge_sigma,
         )
 
     def wait_until_then_click(
-        self, browser: BrowserBase, deadline: datetime.datetime,
+        self,
+        browser: BrowserBase,
+        deadline: datetime.datetime,
         edge_sigma: float = _STD_EDGE_SIGMA,
     ) -> None:
         while True:
@@ -193,11 +207,17 @@ class Template:
                 break
 
         browser.click_region(
-            x, y, self._templ.shape[1], self._templ.shape[0], edge_sigma,
+            x,
+            y,
+            self._templ.shape[1],
+            self._templ.shape[0],
+            edge_sigma,
         )
 
     def wait_for_then_click(
-        self, browser: BrowserBase, timeout: TimeoutType,
+        self,
+        browser: BrowserBase,
+        timeout: TimeoutType,
         edge_sigma: float = _STD_EDGE_SIGMA,
     ) -> None:
         deadline = timeout_to_deadline(timeout)
@@ -205,7 +225,8 @@ class Template:
 
     @staticmethod
     def match_one_of(
-        screenshot: bytes, templates: Sequence["Template"],
+        screenshot: bytes,
+        templates: Sequence["Template"],
     ) -> int:
         for i, template in enumerate(templates):
             if template.match(screenshot):
@@ -214,8 +235,10 @@ class Template:
 
     @staticmethod
     def wait_until_one_of_then_click(
-        templates: Iterable["Template"], browser: BrowserBase,
-        deadline: datetime.datetime, edge_sigma: float = _STD_EDGE_SIGMA,
+        templates: Iterable["Template"],
+        browser: BrowserBase,
+        deadline: datetime.datetime,
+        edge_sigma: float = _STD_EDGE_SIGMA,
     ) -> None:
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
@@ -227,18 +250,25 @@ class Template:
                 x, y, score = template.best_template_match(screenshot)
                 if score >= template.threshold:
                     browser.click_region(
-                        x, y,
-                        template.img_width, template.img_height,
+                        x,
+                        y,
+                        template.img_width,
+                        template.img_height,
                         edge_sigma,
                     )
                     return
 
     @staticmethod
     def wait_for_one_of_then_click(
-        templates: Iterable["Template"], browser: BrowserBase,
-        timeout: TimeoutType, edge_sigma: float = _STD_EDGE_SIGMA,
+        templates: Iterable["Template"],
+        browser: BrowserBase,
+        timeout: TimeoutType,
+        edge_sigma: float = _STD_EDGE_SIGMA,
     ) -> None:
         deadline = timeout_to_deadline(timeout)
         Template.wait_until_one_of_then_click(
-            templates, browser, deadline, edge_sigma,
+            templates,
+            browser,
+            deadline,
+            edge_sigma,
         )

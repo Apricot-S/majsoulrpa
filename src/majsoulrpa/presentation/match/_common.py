@@ -23,8 +23,9 @@ def _decode_bytes(buf: bytes) -> bytes:
     return bytes(decode)
 
 
-def parse_action(message: Mapping, *, restore: bool = False) \
-        -> tuple[int, str, dict[str, Any]]:
+def parse_action(
+    message: Mapping, *, restore: bool = False,
+) -> tuple[int, str, dict[str, Any]]:
     step: int = message["step"]
     name: str = message["name"]
     encoded_data: str = message["data"]

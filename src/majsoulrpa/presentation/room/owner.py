@@ -25,27 +25,38 @@ logger = getLogger(__name__)
 
 
 class RoomOwnerPresentation(RoomPresentationBase):
-
     def __init__(  # noqa: PLR0913
-        self, browser: BrowserBase, db_client: DBClientBase,
+        self,
+        browser: BrowserBase,
+        db_client: DBClientBase,
         creator: PresentationCreatorBase,
-        room_id: int, max_num_players: int,
-        players: Iterable[RoomPlayer], num_ais: int,
+        room_id: int,
+        max_num_players: int,
+        players: Iterable[RoomPlayer],
+        num_ais: int,
     ) -> None:
         super().__init__(
-            browser, db_client, creator,
-            room_id, max_num_players, players, num_ais,
+            browser,
+            db_client,
+            creator,
+            room_id,
+            max_num_players,
+            players,
+            num_ais,
         )
 
     @staticmethod
     def _wait(browser: BrowserBase, timeout: TimeoutType = 60.0) -> None:
-        template = Template.open_file("template/room/marker",
-                                      browser.zoom_ratio)
+        template = Template.open_file(
+            "template/room/marker", browser.zoom_ratio,
+        )
         template.wait_for(browser, timeout)
 
     @classmethod
     def _create(
-        cls, browser: BrowserBase, db_client: DBClientBase,
+        cls,
+        browser: BrowserBase,
+        db_client: DBClientBase,
         creator: PresentationCreatorBase,
         timeout: TimeoutType,
     ) -> Self:
@@ -53,8 +64,9 @@ class RoomOwnerPresentation(RoomPresentationBase):
             timeout = datetime.timedelta(seconds=timeout)
         deadline = datetime.datetime.now(datetime.UTC) + timeout
 
-        template = Template.open_file("template/room/marker",
-                                      browser.zoom_ratio)
+        template = Template.open_file(
+            "template/room/marker", browser.zoom_ratio,
+        )
         sct = browser.get_screenshot()
         if not template.match(sct):
             msg = "Could not detect 'room'."
@@ -69,8 +81,7 @@ class RoomOwnerPresentation(RoomPresentationBase):
             _, name, _, response, _ = message
 
             match name:
-                case (".lq.Lobby.createRoom"
-                      | ".lq.Lobby.fetchRoom"):
+                case ".lq.Lobby.createRoom" | ".lq.Lobby.fetchRoom":
                     logger.info(message)
                     break
 
@@ -91,7 +102,8 @@ class RoomOwnerPresentation(RoomPresentationBase):
         for person in room["persons"]:
             account_id = person["account_id"]
             player = RoomPlayer(
-                account_id, person["nickname"],
+                account_id,
+                person["nickname"],
                 is_host=(account_id == owner_id),
                 is_ready=(account_id in ready_list),
             )
@@ -99,15 +111,23 @@ class RoomOwnerPresentation(RoomPresentationBase):
         num_ais = room["robot_count"]
 
         return cls(
-            browser, db_client, creator,
-            room_id, max_num_players, players, num_ais,
+            browser,
+            db_client,
+            creator,
+            room_id,
+            max_num_players,
+            players,
+            num_ais,
         )
 
     @classmethod
     def _return_from_match(  # noqa: PLR0913
-        cls, browser: BrowserBase, db_client: DBClientBase,
+        cls,
+        browser: BrowserBase,
+        db_client: DBClientBase,
         creator: PresentationCreatorBase,
-        prev_presentation: Self, timeout: TimeoutType,
+        prev_presentation: Self,
+        timeout: TimeoutType,
     ) -> Self:
         deadline = timeout_to_deadline(timeout)
 
@@ -126,8 +146,7 @@ class RoomOwnerPresentation(RoomPresentationBase):
             _, name, _, _, _ = message
 
             match name:
-                case (".lq.Lobby.heatbeat"
-                      | ".lq.FastTest.checkNetworkDelay"):
+                case ".lq.Lobby.heatbeat" | ".lq.FastTest.checkNetworkDelay":
                     continue
                 case ".lq.Lobby.fetchAccountInfo":
                     # TODO(Apricot-S): Update account information  # noqa: TD003, E501
@@ -139,9 +158,13 @@ class RoomOwnerPresentation(RoomPresentationBase):
             raise InconsistentMessage(name, browser.get_screenshot())
 
         return cls(
-            browser, db_client, creator,
-            prev_presentation.room_id, prev_presentation.max_num_players,
-            prev_presentation.players, prev_presentation.num_ais,
+            browser,
+            db_client,
+            creator,
+            prev_presentation.room_id,
+            prev_presentation.max_num_players,
+            prev_presentation.players,
+            prev_presentation.num_ais,
         )
 
     def _update(self, timeout: TimeoutType) -> bool:
@@ -158,8 +181,9 @@ class RoomOwnerPresentation(RoomPresentationBase):
         deadline = timeout_to_deadline(timeout)
 
         # Check if you can click "Add AI".
-        template = Template.open_file("template/room/add_ai",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/room/add_ai", self._browser.zoom_ratio,
+        )
         sct = self._browser.get_screenshot()
         if not template.match(sct):
             msg = "Could not add AI."
@@ -187,8 +211,9 @@ class RoomOwnerPresentation(RoomPresentationBase):
 
         deadline = timeout_to_deadline(timeout)
 
-        template = Template.open_file("template/room/start",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/room/start", self._browser.zoom_ratio,
+        )
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout."
@@ -202,7 +227,10 @@ class RoomOwnerPresentation(RoomPresentationBase):
 
         now = datetime.datetime.now(datetime.UTC)
         new_presentation = self._creator.create_new_presentation(
-            Presentation.ROOMOWNER, Presentation.MATCH,
-            self._browser, self._db_client, timeout=(deadline - now),
+            Presentation.ROOMOWNER,
+            Presentation.MATCH,
+            self._browser,
+            self._db_client,
+            timeout=(deadline - now),
         )
         self._set_new_presentation(new_presentation)

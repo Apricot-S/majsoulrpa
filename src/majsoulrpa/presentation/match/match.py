@@ -59,7 +59,6 @@ logger = getLogger(__name__)
 
 
 class MatchPresentation(PresentationBase):
-
     @staticmethod
     def _wait(browser: BrowserBase, timeout: TimeoutType = 60.0) -> None:
         deadline = timeout_to_deadline(timeout)
@@ -69,8 +68,10 @@ class MatchPresentation(PresentationBase):
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout."
                 raise Timeout(msg, browser.get_screenshot())
-            if (Template.match_one_of(browser.get_screenshot(), templates)
-                    != -1):
+            if (
+                Template.match_one_of(browser.get_screenshot(), templates)
+                != -1
+            ):
                 break
 
     _COMMON_MESSAGE_NAMES = (
@@ -104,16 +105,19 @@ class MatchPresentation(PresentationBase):
                 # rarely exchanged
                 logger.warning(message)
                 return
-            case (".lq.NotifyReviveCoinUpdate"
-                  | ".lq.NotifyGiftSendRefresh"
-                  | ".lq.NotifyDailyTaskUpdate"
-                  | ".lq.NotifyShopUpdate"
-                  | ".lq.Lobby.fetchShopInterval"
-                  | ".lq.NotifyAccountChallengeTaskUpdate"
-                  | ".lq.NotifyAccountChallengeTaskUpdate"
-                  | ".lq.NotifyAccountUpdate"
-                  | ".lq.NotifyActivityChange"): # ?
-                #Exchanged if the date (06:00:00 (UTC+0900)) is crossed
+            case (
+                ".lq.NotifyReviveCoinUpdate"
+                | ".lq.NotifyGiftSendRefresh"
+                | ".lq.NotifyDailyTaskUpdate"
+                | ".lq.NotifyShopUpdate"
+                | ".lq.Lobby.fetchShopInterval"
+                | ".lq.NotifyAccountChallengeTaskUpdate"
+                | ".lq.NotifyAccountChallengeTaskUpdate"
+                | ".lq.NotifyAccountUpdate"
+                | ".lq.NotifyActivityChange"  # ?
+            ):
+                # Exchanged if the date (06:00:00 (UTC+0900))
+                # is crossed
                 logger.info(message)
                 return
             case ".lq.NotifyAnnouncementUpdate":
@@ -133,8 +137,10 @@ class MatchPresentation(PresentationBase):
                 raise InconsistentMessage(str(message))
             case ".lq.FastTest.checkNetworkDelay":
                 return
-            case (".lq.FastTest.fetchGamePlayerState"
-                  | ".lq.NotifyPlayerConnectionState"):
+            case (
+                ".lq.FastTest.fetchGamePlayerState"
+                | ".lq.NotifyPlayerConnectionState"
+            ):
                 logger.info(message)
                 # TODO: Checking the connection status of each player
                 return
@@ -150,11 +156,14 @@ class MatchPresentation(PresentationBase):
         raise AssertionError(message)
 
     def __init__(
-        self, browser: BrowserBase, db_client: DBClientBase,
+        self,
+        browser: BrowserBase,
+        db_client: DBClientBase,
         creator: PresentationCreatorBase,
         prev_presentation: Presentation | None,
         timeout: TimeoutType = 60.0,
-        *, match_state: MatchState | None = None,
+        *,
+        match_state: MatchState | None = None,
     ) -> None:
         super().__init__(browser, db_client, creator)
 
@@ -192,41 +201,43 @@ class MatchPresentation(PresentationBase):
             _, name, request, response, timestamp = message
 
             match name:
-                case (".lq.Lobby.oauth2Auth"
-                      | ".lq.Lobby.oauth2Check"
-                      | ".lq.Lobby.oauth2Login"
-                      | ".lq.Lobby.fetchLastPrivacy"
-                      | ".lq.Lobby.fetchServerTime"
-                      | ".lq.Lobby.fetchServerSettings"
-                      | ".lq.Lobby.fetchConnectionInfo"
-                      | ".lq.Lobby.fetchClientValue"
-                      | ".lq.Lobby.fetchFriendList"
-                      | ".lq.Lobby.fetchFriendApplyList"
-                      | ".lq.Lobby.fetchRecentFriend"
-                      | ".lq.Lobby.fetchMailInfo"
-                      | ".lq.Lobby.fetchDailyTask"
-                      | ".lq.Lobby.fetchReviveCoinInfo"
-                      | ".lq.Lobby.fetchTitleList"
-                      | ".lq.Lobby.fetchBagInfo"
-                      | ".lq.Lobby.fetchShopInfo"
-                      | ".lq.Lobby.fetchShopInterval"
-                      | ".lq.Lobby.fetchActivityList"
-                      | ".lq.Lobby.fetchActivityInterval"
-                      | ".lq.Lobby.fetchAccountActivityData"
-                      | ".lq.Lobby.fetchActivityBuff"
-                      | ".lq.Lobby.fetchVipReward"
-                      | ".lq.Lobby.fetchMonthTicketInfo"
-                      | ".lq.Lobby.fetchAchievement"
-                      | ".lq.Lobby.fetchCommentSetting"
-                      | ".lq.Lobby.fetchAccountSettings"
-                      | ".lq.Lobby.fetchModNicknameTime"
-                      | ".lq.Lobby.fetchMisc"
-                      | ".lq.Lobby.fetchAnnouncement"
-                      | ".lq.Lobby.fetchRollingNotice"
-                      | ".lq.Lobby.loginSuccess"
-                      | ".lq.Lobby.fetchCharacterInfo"
-                      | ".lq.Lobby.fetchAllCommonViews"
-                      | ".lq.FastTest.finishSyncGame"):
+                case (
+                    ".lq.Lobby.oauth2Auth"
+                    | ".lq.Lobby.oauth2Check"
+                    | ".lq.Lobby.oauth2Login"
+                    | ".lq.Lobby.fetchLastPrivacy"
+                    | ".lq.Lobby.fetchServerTime"
+                    | ".lq.Lobby.fetchServerSettings"
+                    | ".lq.Lobby.fetchConnectionInfo"
+                    | ".lq.Lobby.fetchClientValue"
+                    | ".lq.Lobby.fetchFriendList"
+                    | ".lq.Lobby.fetchFriendApplyList"
+                    | ".lq.Lobby.fetchRecentFriend"
+                    | ".lq.Lobby.fetchMailInfo"
+                    | ".lq.Lobby.fetchDailyTask"
+                    | ".lq.Lobby.fetchReviveCoinInfo"
+                    | ".lq.Lobby.fetchTitleList"
+                    | ".lq.Lobby.fetchBagInfo"
+                    | ".lq.Lobby.fetchShopInfo"
+                    | ".lq.Lobby.fetchShopInterval"
+                    | ".lq.Lobby.fetchActivityList"
+                    | ".lq.Lobby.fetchActivityInterval"
+                    | ".lq.Lobby.fetchAccountActivityData"
+                    | ".lq.Lobby.fetchActivityBuff"
+                    | ".lq.Lobby.fetchVipReward"
+                    | ".lq.Lobby.fetchMonthTicketInfo"
+                    | ".lq.Lobby.fetchAchievement"
+                    | ".lq.Lobby.fetchCommentSetting"
+                    | ".lq.Lobby.fetchAccountSettings"
+                    | ".lq.Lobby.fetchModNicknameTime"
+                    | ".lq.Lobby.fetchMisc"
+                    | ".lq.Lobby.fetchAnnouncement"
+                    | ".lq.Lobby.fetchRollingNotice"
+                    | ".lq.Lobby.loginSuccess"
+                    | ".lq.Lobby.fetchCharacterInfo"
+                    | ".lq.Lobby.fetchAllCommonViews"
+                    | ".lq.FastTest.finishSyncGame"
+                ):
                     # Only when restarting a suspended match
                     logger.info(message)
                     continue
@@ -241,8 +252,10 @@ class MatchPresentation(PresentationBase):
                     # after the friendly match has started.
                     logger.info(message)
                     continue
-                case (".lq.NotifyRoomPlayerUpdate"
-                      | ".lq.NotifyRoomPlayerReady"):
+                case (
+                    ".lq.NotifyRoomPlayerUpdate"
+                    | ".lq.NotifyRoomPlayerReady"
+                ):
                     # If change notification for
                     # the friendly match waiting room was sent
                     # after the friendly match has started.
@@ -277,11 +290,18 @@ class MatchPresentation(PresentationBase):
                             # When encountering a character whose
                             # character ID is unknown
                             logger.warning(
-                                "%s: %s: charid = %s", uuid, nickname, charid,
+                                "%s: %s: charid = %s",
+                                uuid,
+                                nickname,
+                                charid,
                             )
                             character = "UNKNOWN"
                         player_map[account_id] = MatchPlayer(
-                            account_id, nickname, level4, level3, character,
+                            account_id,
+                            nickname,
+                            level4,
+                            level3,
+                            character,
                         )
                     players = []
                     for i in range(len(response["seat_list"])):
@@ -290,7 +310,11 @@ class MatchPresentation(PresentationBase):
                             self._match_state._set_seat(i)  # noqa: SLF001
                         if account_id == 0:
                             player = MatchPlayer(
-                                0, "CPU", "初心1", "初心1", "一姫",
+                                0,
+                                "CPU",
+                                "初心1",
+                                "初心1",
+                                "一姫",
                             )
                             players.append(player)
                         else:
@@ -306,7 +330,9 @@ class MatchPresentation(PresentationBase):
                 case ".lq.ActionPrototype":
                     step, action_name, data = _common.parse_action(request)
                     action_info = {
-                        "step": step, "action_name": action_name, "data": data,
+                        "step": step,
+                        "action_name": action_name,
+                        "data": data,
                     }
                     if step != self._step:
                         raise InconsistentMessage(str(action_info), sct)
@@ -323,8 +349,9 @@ class MatchPresentation(PresentationBase):
                         if "operation" in data:
                             if len(data["operation"]["operation_list"]) == 0:
                                 return
-                            self._operation_list = \
-                                OperationList(data["operation"])
+                            self._operation_list = OperationList(
+                                data["operation"],
+                            )
                         return
 
                     raise InconsistentMessage(str(action_info), sct)
@@ -420,8 +447,9 @@ class MatchPresentation(PresentationBase):
         return self._round_state.he
 
     @property
-    def fulu(self) \
-            -> list[list[tuple[str, int | None, int | None, list[str]]]]:
+    def fulu(
+        self,
+    ) -> list[list[tuple[str, int | None, int | None, list[str]]]]:
         if self._round_state is None:
             msg = "Round state is not initialized."
             raise RuntimeError(msg)
@@ -485,8 +513,14 @@ class MatchPresentation(PresentationBase):
         return self._events
 
     def _robust_click_region(
-        self, left: int, top: int, width: int, height: int,
-        interval: TimeoutType, timeout: TimeoutType, edge_sigma: float = 2.0,
+        self,
+        left: int,
+        top: int,
+        width: int,
+        height: int,
+        interval: TimeoutType,
+        timeout: TimeoutType,
+        edge_sigma: float = 2.0,
     ) -> None:
         interval = to_timedelta(interval)
 
@@ -507,14 +541,17 @@ class MatchPresentation(PresentationBase):
                 continue
 
             match name:
-                case (".lq.FastTest.inputOperation"
-                      | ".lq.FastTest.inputChiPengGang"
-                      | ".lq.ActionPrototype"):
+                case (
+                    ".lq.FastTest.inputOperation"
+                    | ".lq.FastTest.inputChiPengGang"
+                    | ".lq.ActionPrototype"
+                ):
                     logger.info(message)
                     break
 
-            raise InconsistentMessage(str(message),
-                                      self._browser.get_screenshot())
+            raise InconsistentMessage(
+                str(message), self._browser.get_screenshot(),
+            )
 
         # Backfill the prefetched message.
         self._db_client.put_back(message)
@@ -524,8 +561,9 @@ class MatchPresentation(PresentationBase):
 
         # If there is an additional "confirm" button
         # such as when receiving rewards, click it.
-        template = Template.open_file("template/match/match_result_confirm",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/match/match_result_confirm", self._browser.zoom_ratio,
+        )
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout"
@@ -537,12 +575,16 @@ class MatchPresentation(PresentationBase):
 
         if self._prev_presentation == Presentation.ROOMOWNER:
             now = datetime.datetime.now(datetime.UTC)
-            self._creator.wait(self._browser, deadline - now,
-                               Presentation.ROOMOWNER)
+            self._creator.wait(
+                self._browser, deadline - now, Presentation.ROOMOWNER,
+            )
             now = datetime.datetime.now(datetime.UTC)
             new_presentation = self._creator.create_new_presentation(
-                Presentation.MATCH, Presentation.ROOMOWNER,
-                self._browser, self._db_client, timeout=(deadline - now),
+                Presentation.MATCH,
+                Presentation.ROOMOWNER,
+                self._browser,
+                self._db_client,
+                timeout=(deadline - now),
             )
             self._set_new_presentation(new_presentation)
             return
@@ -578,14 +620,16 @@ class MatchPresentation(PresentationBase):
                     # TODO: Processing message content
                     # Only during the event?
                     continue
-                    #now = datetime.datetime.now(datetime.UTC)
-                    #self._reset_to_prev_presentation(deadline - now)
-                    #return
-                case (".lq.NotifyAccountUpdate"
-                      | ".lq.NotifyGameFinishReward"
-                      | ".lq.NotifyActivityReward"
-                      | ".lq.NotifyActivityPoint"
-                      | ".lq.NotifyLeaderboardPoint"):
+                    # now = datetime.datetime.now(datetime.UTC)
+                    # self._reset_to_prev_presentation(deadline - now)
+                    # return
+                case (
+                    ".lq.NotifyAccountUpdate"
+                    | ".lq.NotifyGameFinishReward"
+                    | ".lq.NotifyActivityReward"
+                    | ".lq.NotifyActivityPoint"
+                    | ".lq.NotifyLeaderboardPoint"
+                ):
                     logger.info(message)
                     # TODO: Processing message content
                     continue
@@ -612,11 +656,15 @@ class MatchPresentation(PresentationBase):
                     self._reset_to_prev_presentation(deadline - now)
                     return
 
-            raise InconsistentMessage(str(message),
-                                      self._browser.get_screenshot())
+            raise InconsistentMessage(
+                str(message), self._browser.get_screenshot(),
+            )
 
     def _workaround_for_reordered_actions(
-        self, message: Message, expected_step: int, timeout: TimeoutType,
+        self,
+        message: Message,
+        expected_step: int,
+        timeout: TimeoutType,
     ) -> Message:
         # Since '.lq.ActionPrototype' may not come in
         # the 'step' order, read ahead the messages and
@@ -646,11 +694,14 @@ class MatchPresentation(PresentationBase):
             if name == ".lq.ActionPrototype":
                 step, action_name, data = _common.parse_action(request)
                 action_info = {
-                    "step": step, "action_name": action_name, "data": data,
+                    "step": step,
+                    "action_name": action_name,
+                    "data": data,
                 }
                 if step < expected_step:
-                    raise InconsistentMessage(str(action_info),
-                                              self._browser.get_screenshot())
+                    raise InconsistentMessage(
+                        str(action_info), self._browser.get_screenshot(),
+                    )
                 while len(messages) <= step - expected_step:
                     messages.append(None)
                 messages[step - expected_step] = message
@@ -682,8 +733,9 @@ class MatchPresentation(PresentationBase):
                     "actions": action_infos,
                     "message": message,
                 }
-                raise InconsistentMessage(str(error_message),
-                                          self._browser.get_screenshot())
+                raise InconsistentMessage(
+                    str(error_message), self._browser.get_screenshot(),
+                )
 
             now = datetime.datetime.now(datetime.UTC)
             message = self._db_client.dequeue_message(deadline - now)
@@ -692,7 +744,9 @@ class MatchPresentation(PresentationBase):
                 raise Timeout(msg, self._browser.get_screenshot())
 
     def _workaround_for_skipped_confirm_new_round(
-        self, message: Message, deadline: datetime.datetime,
+        self,
+        message: Message,
+        deadline: datetime.datetime,
     ) -> None:
         # Workaround if the '.lq.FastTest.confirmNewRound'
         # interaction is skipped.
@@ -704,14 +758,17 @@ class MatchPresentation(PresentationBase):
             raise ValueError(msg)
         _, name, request, _, _ = message
         if name != ".lq.ActionPrototype":
-            raise InconsistentMessage(str(message),
-                                      self._browser.get_screenshot())
+            raise InconsistentMessage(
+                str(message), self._browser.get_screenshot(),
+            )
 
         step, action_name, _ = _common.parse_action(request)
         if step != 0:
             now = datetime.datetime.now(datetime.UTC)
             message = self._workaround_for_reordered_actions(
-                message, 0, deadline - now,
+                message,
+                0,
+                deadline - now,
             )
 
         assert message is not None
@@ -726,23 +783,28 @@ class MatchPresentation(PresentationBase):
         MatchPresentation._wait(self._browser, deadline - now)
         now = datetime.datetime.now(datetime.UTC)
         new_presentation = MatchPresentation(
-            self._browser, self._db_client, self._creator,
-            self._prev_presentation, deadline - now,
+            self._browser,
+            self._db_client,
+            self._creator,
+            self._prev_presentation,
+            deadline - now,
             match_state=self._match_state,
         )
         self._set_new_presentation(new_presentation)
 
     def _on_end_of_round(self, deadline: datetime.datetime) -> None:
-        template = Template.open_file("template/match/round_result_confirm",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/match/round_result_confirm", self._browser.zoom_ratio,
+        )
         round_result_confirmed = False
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout."
                 raise Timeout(msg, self._browser.get_screenshot())
 
-            if ((not round_result_confirmed)
-                and template.match(self._browser.get_screenshot())):
+            if (not round_result_confirmed) and template.match(
+                self._browser.get_screenshot(),
+            ):
                 template.click(self._browser)
                 round_result_confirmed = True
 
@@ -800,17 +862,22 @@ class MatchPresentation(PresentationBase):
                             self._db_client.put_back(message)
                             break
                         raise InconsistentMessage(
-                            str(action_info), self._browser.get_screenshot(),
+                            str(action_info),
+                            self._browser.get_screenshot(),
                         )
-                    raise InconsistentMessage(str(message),
-                                              self._browser.get_screenshot())
+                    raise InconsistentMessage(
+                        str(message), self._browser.get_screenshot(),
+                    )
 
                 now = datetime.datetime.now(datetime.UTC)
                 MatchPresentation._wait(self._browser, deadline - now)
                 now = datetime.datetime.now(datetime.UTC)
                 new_presentation = MatchPresentation(
-                    self._browser, self._db_client, self._creator,
-                    self._prev_presentation, deadline - now,
+                    self._browser,
+                    self._db_client,
+                    self._creator,
+                    self._prev_presentation,
+                    deadline - now,
                     match_state=self._match_state,
                 )
                 self._set_new_presentation(new_presentation)
@@ -824,19 +891,22 @@ class MatchPresentation(PresentationBase):
                 step, action_name, data = _common.parse_action(request)
                 if action_name != "ActionNewRound":
                     raise InconsistentMessage(
-                        str({
+                        str(
+                            {
                                 "step": step,
                                 "action_name": action_name,
                                 "data": data,
-                        }),
+                            },
+                        ),
                         self._browser.get_screenshot(),
                     )
                 while True:
                     # Wait for response message of
                     # '.lq.FastTest.confirmNewRound'
                     now = datetime.datetime.now(datetime.UTC)
-                    next_message = \
-                        self._db_client.dequeue_message(deadline - now)
+                    next_message = self._db_client.dequeue_message(
+                        deadline - now,
+                    )
                     if next_message is None:
                         msg = "Timeout"
                         raise Timeout(msg, self._browser.get_screenshot())
@@ -854,7 +924,8 @@ class MatchPresentation(PresentationBase):
                         # Backfill the prefetched message.
                         self._db_client.put_back(next_message)
                         self._workaround_for_skipped_confirm_new_round(
-                            message, deadline,
+                            message,
+                            deadline,
                         )
                         return
                     if next_name == ".lq.FastTest.confirmNewRound":
@@ -868,8 +939,9 @@ class MatchPresentation(PresentationBase):
                         # response message is not returned?
                         logger.warning(message)
                         break
-                    raise InconsistentMessage(str(next_message),
-                                              self._browser.get_screenshot())
+                    raise InconsistentMessage(
+                        str(next_message), self._browser.get_screenshot(),
+                    )
                 # After backfilling 'ActionNewRound' into
                 # the message queue of the DB server,
                 # the control flow is returned to the user side.
@@ -878,8 +950,11 @@ class MatchPresentation(PresentationBase):
                 MatchPresentation._wait(self._browser, deadline - now)
                 now = datetime.datetime.now(datetime.UTC)
                 new_presentation = MatchPresentation(
-                    self._browser, self._db_client, self._creator,
-                    self._prev_presentation, deadline - now,
+                    self._browser,
+                    self._db_client,
+                    self._creator,
+                    self._prev_presentation,
+                    deadline - now,
                     match_state=self._match_state,
                 )
                 self._set_new_presentation(new_presentation)
@@ -891,14 +966,15 @@ class MatchPresentation(PresentationBase):
                 # TODO: Processing message content
                 template = Template.open_file(
                     "template/match/match_result_confirm",
-                    self._browser.zoom_ratio
+                    self._browser.zoom_ratio,
                 )
                 template.wait_until_then_click(self._browser, deadline)
                 self._on_end_of_match(deadline)
                 return
 
-            raise InconsistentMessage(str(message),
-                                      self._browser.get_screenshot())
+            raise InconsistentMessage(
+                str(message), self._browser.get_screenshot(),
+            )
 
     def _on_sync_game(self, message: Message) -> None:
         direction, name, _, response, timestamp = message
@@ -928,8 +1004,9 @@ class MatchPresentation(PresentationBase):
         self._events.clear()
         self._events.append(NewRoundEvent(data, timestamp))
         self._round_state = RoundState(self._match_state, data)
-        if (("operation" in data)
-                and len(data["operation"]["operation_list"]) > 0):
+        if ("operation" in data) and len(
+            data["operation"]["operation_list"],
+        ) > 0:
             self._operation_list = OperationList(data["operation"])
         else:
             self._operation_list = None
@@ -943,8 +1020,9 @@ class MatchPresentation(PresentationBase):
             if name == "ActionDealTile":
                 self._events.append(ZimoEvent(data, timestamp))
                 self._round_state._on_zimo(data)  # noqa: SLF001
-                if (("operation" in data)
-                        and len(data["operation"]["operation_list"]) > 0):
+                if ("operation" in data) and len(
+                    data["operation"]["operation_list"],
+                ) > 0:
                     self._operation_list = OperationList(data["operation"])
                 else:
                     self._operation_list = None
@@ -954,8 +1032,9 @@ class MatchPresentation(PresentationBase):
             if name == "ActionDiscardTile":
                 self._events.append(DapaiEvent(data, timestamp))
                 self._round_state._on_dapai(data)  # noqa: SLF001
-                if (("operation" in data)
-                        and len(data["operation"]["operation_list"]) > 0):
+                if ("operation" in data) and len(
+                    data["operation"]["operation_list"],
+                ) > 0:
                     self._operation_list = OperationList(data["operation"])
                 else:
                     self._operation_list = None
@@ -965,8 +1044,9 @@ class MatchPresentation(PresentationBase):
             if name == "ActionChiPengGang":
                 self._events.append(ChiPengGangEvent(data, timestamp))
                 self._round_state._on_chipenggang(data)  # noqa: SLF001
-                if (("operation" in data)
-                        and len(data["operation"]["operation_list"]) > 0):
+                if ("operation" in data) and len(
+                    data["operation"]["operation_list"],
+                ) > 0:
                     self._operation_list = OperationList(data["operation"])
                 else:
                     self._operation_list = None
@@ -976,8 +1056,9 @@ class MatchPresentation(PresentationBase):
             if name == "ActionAnGangAddGang":
                 self._events.append(AngangJiagangEvent(data, timestamp))
                 self._round_state._on_angang_jiagang(data)  # noqa: SLF001
-                if (("operation" in data)
-                        and len(data["operation"]["operation_list"]) > 0):
+                if ("operation" in data) and len(
+                    data["operation"]["operation_list"],
+                ) > 0:
                     self._operation_list = OperationList(data["operation"])
                 else:
                     self._operation_list = None
@@ -987,8 +1068,9 @@ class MatchPresentation(PresentationBase):
             if name == "ActionBaBei":
                 self._events.append(BabeiEvent(data, timestamp))
                 self._round_state._on_babei(data)  # noqa: SLF001
-                if (("operation" in data)
-                        and len(data["operation"]["operation_list"]) > 0):
+                if ("operation" in data) and len(
+                    data["operation"]["operation_list"],
+                ) > 0:
                     self._operation_list = OperationList(data["operation"])
                 else:
                     self._operation_list = None
@@ -1024,31 +1106,39 @@ class MatchPresentation(PresentationBase):
             if name == ".lq.ActionPrototype":
                 step, action_name, data = _common.parse_action(request)
                 action_info = {
-                    "step": step, "action_name": action_name, "data": data,
+                    "step": step,
+                    "action_name": action_name,
+                    "data": data,
                 }
 
                 if step != self._step:
                     now = datetime.datetime.now(datetime.UTC)
                     message = self._workaround_for_reordered_actions(
-                        message, self._step, deadline - now,
+                        message,
+                        self._step,
+                        deadline - now,
                     )
-                    assert(message is not None)
+                    assert message is not None
                     _, name, request, _, timestamp = message
-                    assert(name == ".lq.ActionPrototype")
+                    assert name == ".lq.ActionPrototype"
                     step, action_name, data = _common.parse_action(request)
-                    assert(step == self._step)
+                    assert step == self._step
                     action_info = {
-                        "step": step, "action_name": action_name, "data": data,
+                        "step": step,
+                        "action_name": action_name,
+                        "data": data,
                     }
                 self._step += 1
 
                 if action_name == "ActionMJStart":
-                    raise InconsistentMessage(str(action_info),
-                                              self._browser.get_screenshot())
+                    raise InconsistentMessage(
+                        str(action_info), self._browser.get_screenshot(),
+                    )
 
                 if action_name == "ActionNewRound":
-                    raise InconsistentMessage(str(action_info),
-                                              self._browser.get_screenshot())
+                    raise InconsistentMessage(
+                        str(action_info), self._browser.get_screenshot(),
+                    )
 
                 if action_name == "ActionDealTile":
                     logger.info(action_info)
@@ -1175,7 +1265,8 @@ class MatchPresentation(PresentationBase):
                             logger.warning(message1)
                             msg = "Request to refresh the browser."
                             raise BrowserRefreshRequest(
-                                msg, self._browser,
+                                msg,
+                                self._browser,
                                 self._browser.get_screenshot(),
                             )
 
@@ -1205,7 +1296,8 @@ class MatchPresentation(PresentationBase):
                         )
                         for _ in range(len(data["scores"])):
                             template.wait_until_then_click(
-                                self._browser, deadline,
+                                self._browser,
+                                deadline,
                             )
 
                     self._on_end_of_round(deadline)
@@ -1235,8 +1327,9 @@ class MatchPresentation(PresentationBase):
                 logger.warning(message)
                 return
 
-            raise InconsistentMessage(str(message),
-                                      self._browser.get_screenshot())
+            raise InconsistentMessage(
+                str(message), self._browser.get_screenshot(),
+            )
 
     def wait(self, timeout: TimeoutType = 300.0) -> None:
         self._assert_not_stale()
@@ -1301,11 +1394,20 @@ class MatchPresentation(PresentationBase):
 
         # 'timeout=5.0' may be too short
         # when the screen display freezes.
-        self._robust_click_region(left, top, width, height, interval=1.0,
-                                  timeout=25.0, edge_sigma=1.0)
+        self._robust_click_region(
+            left,
+            top,
+            width,
+            height,
+            interval=1.0,
+            timeout=25.0,
+            edge_sigma=1.0,
+        )
 
     def select_operation(
-        self, operation: OperationBase | None, index: int | None = None,
+        self,
+        operation: OperationBase | None,
+        index: int | None = None,
         timeout: TimeoutType = 300.0,
     ) -> None:
         self._assert_not_stale()
@@ -1412,8 +1514,9 @@ class MatchPresentation(PresentationBase):
             self._skip_by_no_melding(deadline)
 
     def _skip_by_skip_button(self, deadline: datetime.datetime) -> None:
-        template = Template.open_file("template/match/skip",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/match/skip", self._browser.zoom_ratio,
+        )
         try:
             # If you do not set the 'timeout' to a short value,
             # you will not be able to respond to the hule screen
@@ -1451,11 +1554,13 @@ class MatchPresentation(PresentationBase):
                     img = screenshot_to_opencv(ss)
                     cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
                     raise InconsistentMessage(
-                        str(message), self._browser.get_screenshot(),
+                        str(message),
+                        self._browser.get_screenshot(),
                     ) from e
                 if name == ".lq.FastTest.inputOperation":
                     raise InconsistentMessage(
-                        str(message), self._browser.get_screenshot(),
+                        str(message),
+                        self._browser.get_screenshot(),
                     ) from e
                 if name == ".lq.FastTest.inputChiPengGang":
                     # It is highly likely that the drawing on
@@ -1464,10 +1569,13 @@ class MatchPresentation(PresentationBase):
                     # recommended to refresh the browser.
                     msg = "A rendering problem may occur."
                     raise BrowserRefreshRequest(
-                        msg, self._browser, self._browser.get_screenshot(),
+                        msg,
+                        self._browser,
+                        self._browser.get_screenshot(),
                     ) from e
                 raise InconsistentMessage(
-                    str(message), self._browser.get_screenshot(),
+                    str(message),
+                    self._browser.get_screenshot(),
                 ) from e
 
     def _skip_by_no_melding(self, deadline: datetime.datetime) -> None:
@@ -1488,8 +1596,9 @@ class MatchPresentation(PresentationBase):
                 self._on_common_message(message)
                 continue
             if name == ".lq.FastTest.inputOperation":
-                raise InconsistentMessage(str(message),
-                                          self._browser.get_screenshot())
+                raise InconsistentMessage(
+                    str(message), self._browser.get_screenshot(),
+                )
             if name == ".lq.FastTest.inputChiPengGang":
                 logger.info(message)
                 break
@@ -1502,13 +1611,15 @@ class MatchPresentation(PresentationBase):
 
         self._browser.click_region(left, top, width, height, edge_sigma=1.0)
 
-    def _operate_chi(self,
+    def _operate_chi(
+        self,
         operation: ChiOperation,
         index: int | None,
         deadline: datetime.datetime,
     ) -> None:
-        template = Template.open_file("template/match/chi",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/match/chi", self._browser.zoom_ratio,
+        )
         try:
             # If you do not set the 'timeout' to a short value,
             # you will not be able to respond to the hule screen
@@ -1546,11 +1657,13 @@ class MatchPresentation(PresentationBase):
                     img = screenshot_to_opencv(ss)
                     cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
                     raise InconsistentMessage(
-                        str(message), self._browser.get_screenshot(),
+                        str(message),
+                        self._browser.get_screenshot(),
                     ) from e
                 if name == ".lq.FastTest.inputOperation":
                     raise InconsistentMessage(
-                        str(message), self._browser.get_screenshot(),
+                        str(message),
+                        self._browser.get_screenshot(),
                     ) from e
                 if name == ".lq.FastTest.inputChiPengGang":
                     # It is highly likely that the drawing on
@@ -1559,10 +1672,13 @@ class MatchPresentation(PresentationBase):
                     # recommended to refresh the browser.
                     msg = "A rendering problem may occur."
                     raise BrowserRefreshRequest(
-                        msg, self._browser, self._browser.get_screenshot(),
+                        msg,
+                        self._browser,
+                        self._browser.get_screenshot(),
                     ) from e
                 raise InconsistentMessage(
-                    str(message), self._browser.get_screenshot(),
+                    str(message),
+                    self._browser.get_screenshot(),
                 ) from e
 
         if len(operation.combinations) >= 2:
@@ -1639,8 +1755,9 @@ class MatchPresentation(PresentationBase):
         index: int | None,
         deadline: datetime.datetime,
     ) -> None:
-        template = Template.open_file("template/match/peng",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/match/peng", self._browser.zoom_ratio,
+        )
         try:
             # If you do not set the 'timeout' to a short value,
             # you will not be able to respond to the hule screen
@@ -1677,11 +1794,13 @@ class MatchPresentation(PresentationBase):
                     img = screenshot_to_opencv(ss)
                     cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
                     raise InconsistentMessage(
-                        str(message), self._browser.get_screenshot(),
+                        str(message),
+                        self._browser.get_screenshot(),
                     ) from e
                 if name == ".lq.FastTest.inputOperation":
                     raise InconsistentMessage(
-                        str(message), self._browser.get_screenshot(),
+                        str(message),
+                        self._browser.get_screenshot(),
                     ) from e
                 if name == ".lq.FastTest.inputChiPengGang":
                     # It is highly likely that the drawing on
@@ -1690,10 +1809,13 @@ class MatchPresentation(PresentationBase):
                     # recommended to refresh the browser.
                     msg = "A rendering problem may occur."
                     raise BrowserRefreshRequest(
-                        msg, self._browser, self._browser.get_screenshot(),
+                        msg,
+                        self._browser,
+                        self._browser.get_screenshot(),
                     ) from e
                 raise InconsistentMessage(
-                    str(message), self._browser.get_screenshot(),
+                    str(message),
+                    self._browser.get_screenshot(),
                 ) from e
 
         if len(operation.combinations) >= 2:
@@ -1708,8 +1830,7 @@ class MatchPresentation(PresentationBase):
                     left = 980
                 else:
                     msg = f"{index}: out-of-range index"
-                    raise InvalidOperation(msg,
-                                            self._browser.get_screenshot())
+                    raise InvalidOperation(msg, self._browser.get_screenshot())
             else:
                 ss = self._browser.get_screenshot()
                 now = datetime.datetime.now(datetime.UTC)
@@ -1730,8 +1851,9 @@ class MatchPresentation(PresentationBase):
         time.sleep(1.0)
 
     def _operate_angang(self, operation: AngangOperation) -> None:
-        template = Template.open_file("template/match/gang",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/match/gang", self._browser.zoom_ratio,
+        )
         try:
             template.wait_for_then_click(self._browser, timeout=10.0)
         except Timeout as e:
@@ -1759,8 +1881,9 @@ class MatchPresentation(PresentationBase):
         operation: DaminggangOperation,
         deadline: datetime.datetime,
     ) -> None:
-        template = Template.open_file("template/match/gang",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/match/gang", self._browser.zoom_ratio,
+        )
         try:
             template.wait_for_then_click(self._browser, timeout=10.0)
         except Timeout as e:
@@ -1789,8 +1912,9 @@ class MatchPresentation(PresentationBase):
         operation: JiagangOperation,
         index: int | None,
     ) -> None:
-        template = Template.open_file("template/match/gang",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/match/gang", self._browser.zoom_ratio,
+        )
         try:
             template.wait_for_then_click(self._browser, timeout=10.0)
         except Timeout as e:
@@ -1833,8 +1957,9 @@ class MatchPresentation(PresentationBase):
         time.sleep(1.0)
 
     def _operate_liqi(self, operation: LiqiOperation, index: int) -> None:
-        template = Template.open_file("template/match/lizhi",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/match/lizhi", self._browser.zoom_ratio,
+        )
         try:
             template.wait_for_then_click(self._browser, timeout=5.0)
         except Timeout as e:
@@ -1844,17 +1969,21 @@ class MatchPresentation(PresentationBase):
             # recommended to refresh the browser.
             msg = "A rendering problem may occur."
             raise BrowserRefreshRequest(
-                msg, self._browser, self._browser.get_screenshot(),
+                msg,
+                self._browser,
+                self._browser.get_screenshot(),
             ) from e
 
         if index < len(self.shoupai):
             if self.shoupai[index] not in operation.candidate_dapai_list:
-                raise InvalidOperation(str(index),
-                                       self._browser.get_screenshot())
+                raise InvalidOperation(
+                    str(index), self._browser.get_screenshot(),
+                )
         elif index == len(self.shoupai):
             if self.zimopai not in operation.candidate_dapai_list:
-                raise InvalidOperation(str(index),
-                                       self._browser.get_screenshot())
+                raise InvalidOperation(
+                    str(index), self._browser.get_screenshot(),
+                )
         else:
             msg = f"{index}: out-of-range index"
             raise InvalidOperation(msg, self._browser.get_screenshot())
@@ -1879,8 +2008,9 @@ class MatchPresentation(PresentationBase):
         self._wait_impl(deadline - now)
 
     def _operate_jiuzhongjiupai(self) -> None:
-        template = Template.open_file("template/match/liuju",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/match/liuju", self._browser.zoom_ratio,
+        )
         try:
             template.wait_for_then_click(self._browser, timeout=5.0)
         except Timeout as e:
@@ -1890,12 +2020,15 @@ class MatchPresentation(PresentationBase):
             # recommended to refresh the browser.
             msg = "A rendering problem may occur."
             raise BrowserRefreshRequest(
-                msg, self._browser, self._browser.get_screenshot(),
+                msg,
+                self._browser,
+                self._browser.get_screenshot(),
             ) from e
 
     def _operate_babei(self) -> None:
-        template = Template.open_file("template/match/babei",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/match/babei", self._browser.zoom_ratio,
+        )
         try:
             template.wait_for_then_click(self._browser, timeout=10.0)
         except Timeout as e:
@@ -1905,7 +2038,9 @@ class MatchPresentation(PresentationBase):
             # recommended to refresh the browser.
             msg = "A rendering problem may occur."
             raise BrowserRefreshRequest(
-                msg, self._browser, self._browser.get_screenshot(),
+                msg,
+                self._browser,
+                self._browser.get_screenshot(),
             ) from e
 
         # Some of the tiles in your hand may slide right

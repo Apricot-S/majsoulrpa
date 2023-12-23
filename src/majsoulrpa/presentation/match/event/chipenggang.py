@@ -7,9 +7,10 @@ from ._base import EventBase
 
 
 class ChiPengGangEvent(EventBase):
-
     def __init__(
-        self, data: Mapping[str, Any], timestamp: datetime.datetime,
+        self,
+        data: Mapping[str, Any],
+        timestamp: datetime.datetime,
     ) -> None:
         super().__init__(timestamp)
         self._seat = data["seat"]

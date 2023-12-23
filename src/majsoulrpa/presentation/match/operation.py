@@ -5,7 +5,6 @@ from typing import Any
 
 
 class OperationBase(metaclass=ABCMeta):
-
     @property
     @abstractmethod
     def type_(self) -> str:
@@ -13,7 +12,6 @@ class OperationBase(metaclass=ABCMeta):
 
 
 class DapaiOperation(OperationBase):
-
     def __init__(self, forbidden_tiles: Iterable[str]) -> None:
         self._forbidden_tiles = list(forbidden_tiles)
 
@@ -27,13 +25,12 @@ class DapaiOperation(OperationBase):
 
 
 class ChiOperation(OperationBase):
-
     def __init__(self, combinations: Iterable[str]) -> None:
         self._combinations: list[tuple[str, str]] = []
         for combination in combinations:
             tiles = combination.split("|")
             assert len(tiles) == 2
-            self._combinations.append(tuple(tiles)) # type: ignore[arg-type]
+            self._combinations.append(tuple(tiles))  # type: ignore[arg-type]
 
     @property
     def type_(self) -> str:
@@ -45,13 +42,12 @@ class ChiOperation(OperationBase):
 
 
 class PengOperation(OperationBase):
-
     def __init__(self, combinations: Iterable[str]) -> None:
         self._combinations: list[tuple[str, str]] = []
         for combination in combinations:
             tiles = combination.split("|")
             assert len(tiles) == 2
-            self._combinations.append(tuple(tiles)) # type: ignore[arg-type]
+            self._combinations.append(tuple(tiles))  # type: ignore[arg-type]
 
     @property
     def type_(self) -> str:
@@ -68,7 +64,7 @@ class AngangOperation(OperationBase):
         for combination in combinations:
             tiles = combination.split("|")
             assert len(tiles) == 4
-            self._combinations.append(tuple(tiles)) # type: ignore[arg-type]
+            self._combinations.append(tuple(tiles))  # type: ignore[arg-type]
 
     @property
     def type_(self) -> str:
@@ -80,13 +76,12 @@ class AngangOperation(OperationBase):
 
 
 class DaminggangOperation(OperationBase):
-
     def __init__(self, combinations: Iterable[str]) -> None:
         self._combinations: list[tuple[str, str, str]] = []
         for combination in combinations:
             tiles = combination.split("|")
             assert len(tiles) == 3
-            self._combinations.append(tuple(tiles)) # type: ignore[arg-type]
+            self._combinations.append(tuple(tiles))  # type: ignore[arg-type]
 
     @property
     def type_(self) -> str:
@@ -98,13 +93,12 @@ class DaminggangOperation(OperationBase):
 
 
 class JiagangOperation(OperationBase):
-
     def __init__(self, combinations: Iterable[str]) -> None:
         self._combinations: list[tuple[str, str, str, str]] = []
         for combination in combinations:
             tiles = combination.split("|")
             assert len(tiles) == 4
-            self._combinations.append(tuple(tiles)) # type: ignore[arg-type]
+            self._combinations.append(tuple(tiles))  # type: ignore[arg-type]
 
     @property
     def type_(self) -> str:
@@ -116,7 +110,6 @@ class JiagangOperation(OperationBase):
 
 
 class LiqiOperation(OperationBase):
-
     def __init__(self, combinations: Iterable[str]) -> None:
         self._candidate_dapai_list = list(combinations)
 
@@ -130,7 +123,6 @@ class LiqiOperation(OperationBase):
 
 
 class ZimohuOperation(OperationBase):
-
     def __init__(self) -> None:
         pass
 

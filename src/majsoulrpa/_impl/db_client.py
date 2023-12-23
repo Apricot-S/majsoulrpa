@@ -10,12 +10,15 @@ from majsoulrpa.common import TimeoutType
 from .protobuf_liqi import liqi_pb2
 
 Message: TypeAlias = tuple[
-    str, str, dict[str, Any], dict[str, Any] | None, datetime.datetime,
+    str,
+    str,
+    dict[str, Any],
+    dict[str, Any] | None,
+    datetime.datetime,
 ]
 
 
 class DBClientBase(metaclass=ABCMeta):
-
     def __init__(self, host: str, port: int) -> None:  # noqa: ARG002
         self._put_back_messages: deque[Message] = deque()
         self._account_id: int | None = None

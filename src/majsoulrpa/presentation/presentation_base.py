@@ -53,13 +53,14 @@ class InconsistentMessage(ErrorBase):
 
 
 class InvalidOperation(ErrorBase):
-        def __init__(self, message: str, screenshot: bytes) -> None:
-            super().__init__(message, screenshot)
+    def __init__(self, message: str, screenshot: bytes) -> None:
+        super().__init__(message, screenshot)
 
 
 class BrowserRefreshRequest(ErrorBase):
     def __init__(
-        self, message: str,
+        self,
+        message: str,
         browser: BrowserBase,
         screenshot: bytes | None = None,
     ) -> None:
@@ -81,28 +82,32 @@ class Presentation(Enum):
 
 
 class PresentationCreatorBase(metaclass=ABCMeta):
-
     @staticmethod
     @abstractmethod
     def wait(
-        browser: BrowserBase, timeout: TimeoutType, presentation: Presentation,
+        browser: BrowserBase,
+        timeout: TimeoutType,
+        presentation: Presentation,
     ) -> None:
         pass
 
     @abstractmethod
     def create_new_presentation(
         self,
-        current_presentation: Presentation, next_presentation: Presentation,
-        browser: BrowserBase, db_client: DBClientBase,
+        current_presentation: Presentation,
+        next_presentation: Presentation,
+        browser: BrowserBase,
+        db_client: DBClientBase,
         **kwargs,
     ) -> "PresentationBase":
         pass
 
 
 class PresentationBase(metaclass=ABCMeta):
-
     def __init__(
-        self, browser: BrowserBase, db_client: DBClientBase,
+        self,
+        browser: BrowserBase,
+        db_client: DBClientBase,
         creator: PresentationCreatorBase,
     ) -> None:
         self._browser = browser
@@ -110,8 +115,9 @@ class PresentationBase(metaclass=ABCMeta):
         self._creator: PresentationCreatorBase = creator
         self._new_presentation: "PresentationBase | None" = None
 
-    def _set_new_presentation(self,
-                              new_presentation: "PresentationBase") -> None:
+    def _set_new_presentation(
+        self, new_presentation: "PresentationBase",
+    ) -> None:
         if self._new_presentation is not None:
             msg = "A new presentation has been already set."
             raise RuntimeError(msg)

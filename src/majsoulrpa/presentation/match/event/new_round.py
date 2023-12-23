@@ -7,9 +7,10 @@ from ._base import EventBase
 
 
 class NewRoundEvent(EventBase):
-
     def __init__(
-        self, data: Mapping[str, Any], timestamp: datetime.datetime,
+        self,
+        data: Mapping[str, Any],
+        timestamp: datetime.datetime,
     ) -> None:
         super().__init__(timestamp)
         self._chang = data["chang"]
@@ -33,8 +34,8 @@ class NewRoundEvent(EventBase):
 
     @property
     def ju(self) -> int:
-        assert(self._ju >= 0)
-        assert(self._ju < 4)
+        assert self._ju >= 0
+        assert self._ju < 4
         return self._ju
 
     @property

@@ -10,7 +10,7 @@ from email.utils import mktime_tz, parsedate_tz
 from logging import getLogger
 from typing import Any, Final
 
-from imapclient import IMAPClient  #type: ignore[import-untyped]
+from imapclient import IMAPClient  # type: ignore[import-untyped]
 
 from .common import TimeoutType, to_timedelta
 
@@ -21,7 +21,6 @@ YOSTAR_EMAIL_SUBJECT: Final[str] = "Eメールアドレスの確認"
 
 
 class YostarLoginBase(metaclass=ABCMeta):
-
     @abstractmethod
     def __init__(self, config: dict[str, Any]) -> None:
         pass
@@ -46,13 +45,15 @@ class YostarLoginBase(metaclass=ABCMeta):
 
     @abstractmethod
     def get_auth_code(
-        self, *, start_time: datetime.datetime, timeout: TimeoutType = 1800,
+        self,
+        *,
+        start_time: datetime.datetime,
+        timeout: TimeoutType = 1800,
     ) -> str:
         pass
 
 
 class YostarLoginIMAP(YostarLoginBase):
-
     def __init__(self, config: dict[str, Any]) -> None:
         self._email_address = config["email_address"]
         self._smtp_server = config["smtp_server"]
@@ -73,11 +74,16 @@ class YostarLoginIMAP(YostarLoginBase):
             today = now.date()
 
             server.select_folder(self._mail_folder)
-            messages_ids = server.search([
-                "TO", self._email_address,
-                "FROM", YOSTAR_EMAIL_ADDRESS,
-                "SINCE", today,
-            ]) # type: ignore[arg-type]
+            messages_ids = server.search(
+                [
+                    "TO",
+                    self._email_address,
+                    "FROM",
+                    YOSTAR_EMAIL_ADDRESS,
+                    "SINCE",
+                    today,
+                ],  # type: ignore[arg-type]
+            )
 
             response = server.fetch(messages_ids, ["RFC822"])
             parser = BytesParser(policy=email.policy.default)
@@ -86,7 +92,7 @@ class YostarLoginIMAP(YostarLoginBase):
             target_content = None
 
             for uid, msg_data in response.items():
-                msg = parser.parsebytes(msg_data[b"RFC822"]) # type: ignore[arg-type]
+                msg = parser.parsebytes(msg_data[b"RFC822"])  # type: ignore[arg-type]
 
                 if not isinstance(msg, EmailMessage):
                     continue
@@ -98,7 +104,8 @@ class YostarLoginIMAP(YostarLoginBase):
                 if mail_date is None:
                     continue
                 date = datetime.datetime.fromtimestamp(
-                    mktime_tz(parsedate_tz(mail_date)), datetime.UTC,  #type: ignore[arg-type]
+                    mktime_tz(parsedate_tz(mail_date)),  # type: ignore[arg-type]
+                    datetime.UTC,
                 )
 
                 # The authentication code is valid for 30 minutes,
@@ -142,7 +149,10 @@ class YostarLoginIMAP(YostarLoginBase):
             return self._extract_auth_code_from_content(target_content)
 
     def get_auth_code(
-        self, *, start_time: datetime.datetime, timeout: TimeoutType = 1800,
+        self,
+        *,
+        start_time: datetime.datetime,
+        timeout: TimeoutType = 1800,
     ) -> str:
         timeout = to_timedelta(timeout)
 

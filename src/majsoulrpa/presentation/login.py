@@ -16,15 +16,17 @@ from .presentation_base import (
 
 
 class LoginPresentation(PresentationBase):
-
     def __init__(
-        self, browser: BrowserBase, db_client: DBClientBase,
+        self,
+        browser: BrowserBase,
+        db_client: DBClientBase,
         creator: PresentationCreatorBase,
     ) -> None:
         super().__init__(browser, db_client, creator)
 
-        template = Template.open_file("template/login/marker",
-                                      browser.zoom_ratio)
+        template = Template.open_file(
+            "template/login/marker", browser.zoom_ratio,
+        )
         sct = browser.get_screenshot()
         if not template.match(sct):
             msg = "Could not detect 'LoginPresentation'."
@@ -37,8 +39,9 @@ class LoginPresentation(PresentationBase):
     def login(self, timeout: TimeoutType = 60.0) -> None:
         self._assert_not_stale()
 
-        template = Template.open_file("template/login/marker",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/login/marker", self._browser.zoom_ratio,
+        )
         template.click(self._browser)
 
         deadline = timeout_to_deadline(timeout)
@@ -51,8 +54,10 @@ class LoginPresentation(PresentationBase):
             new_presentation: PresentationBase | None = None
             try:
                 new_presentation = self._creator.create_new_presentation(
-                    Presentation.LOGIN, Presentation.AUTH,
-                    self._browser, self._db_client,
+                    Presentation.LOGIN,
+                    Presentation.AUTH,
+                    self._browser,
+                    self._db_client,
                 )
                 self._set_new_presentation(new_presentation)
             except PresentationNotDetected:
@@ -63,8 +68,11 @@ class LoginPresentation(PresentationBase):
             try:
                 now = datetime.datetime.now(datetime.UTC)
                 new_presentation = self._creator.create_new_presentation(
-                    Presentation.LOGIN, Presentation.HOME,
-                    self._browser, self._db_client, timeout=(deadline - now),
+                    Presentation.LOGIN,
+                    Presentation.HOME,
+                    self._browser,
+                    self._db_client,
+                    timeout=(deadline - now),
                 )
                 self._set_new_presentation(new_presentation)
             except PresentationNotDetected:

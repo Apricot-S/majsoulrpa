@@ -7,9 +7,10 @@ from logging import getLogger
 
 import grpc  # type:ignore[import-untyped]
 import wsproto.frame_protocol
+from mitmproxy import addonmanager, ctx, http
+
 from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2 import Message
 from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import GRPCServerStub
-from mitmproxy import addonmanager, ctx, http
 
 logger = getLogger(__name__)
 
@@ -19,7 +20,6 @@ _response_pattern = re.compile(b"^\x03..\n\x00\x12", flags=re.DOTALL)
 
 
 class Sniffer:
-
     def load(self, loader: addonmanager.Loader) -> None:
         loader.add_option(
             name="server_port",
@@ -154,8 +154,9 @@ class Sniffer:
         # Encode to JSON format so that it can be enqueueed to DB.
         encoded_request = base64.b64encode(request).decode(encoding="utf-8")
         if response is not None:
-            encoded_response = \
-                base64.b64encode(response).decode(encoding="utf-8")
+            encoded_response = base64.b64encode(response).decode(
+                encoding="utf-8",
+            )
         else:
             encoded_response = None
         now = datetime.datetime.now(tz=datetime.UTC)

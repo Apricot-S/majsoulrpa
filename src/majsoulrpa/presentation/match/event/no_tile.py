@@ -7,9 +7,10 @@ from ._base import EventBase
 
 
 class NoTileEvent(EventBase):
-
     def __init__(
-        self, data: Mapping[str, Any], timestamp: datetime.datetime,  # noqa: ARG002
+        self,
+        data: Mapping[str, Any],  # noqa: ARG002
+        timestamp: datetime.datetime,
     ) -> None:
         super().__init__(timestamp)
         # TODO

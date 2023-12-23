@@ -17,17 +17,19 @@ from .presentation_base import (
 
 
 class AuthPresentation(PresentationBase):
-
     def __init__(
-        self, browser: BrowserBase, db_client: DBClientBase,
+        self,
+        browser: BrowserBase,
+        db_client: DBClientBase,
         creator: PresentationCreatorBase,
     ) -> None:
         super().__init__(browser, db_client, creator)
 
         self._entered_email_address: bool = False
 
-        template = Template.open_file("template/auth/marker",
-                                      browser.zoom_ratio)
+        template = Template.open_file(
+            "template/auth/marker", browser.zoom_ratio,
+        )
         sct = browser.get_screenshot()
         if not template.match(sct):
             msg = "Could not detect 'AuthPresentation'."
@@ -35,12 +37,15 @@ class AuthPresentation(PresentationBase):
 
     @staticmethod
     def _wait(browser: BrowserBase, timeout: TimeoutType = 10.0) -> None:
-        template = Template.open_file("template/auth/marker",
-                                      browser.zoom_ratio)
+        template = Template.open_file(
+            "template/auth/marker", browser.zoom_ratio,
+        )
         template.wait_for(browser, timeout)
 
     def enter_email_address(
-        self, email_address: str, timeout: TimeoutType = 10.0,
+        self,
+        email_address: str,
+        timeout: TimeoutType = 10.0,
     ) -> None:
         self._assert_not_stale()
 
@@ -72,13 +77,16 @@ class AuthPresentation(PresentationBase):
         )
 
         # Wait for the "Confirm" button to appear, then click it.
-        template = Template.open_file("template/auth/confirm",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/auth/confirm", self._browser.zoom_ratio,
+        )
         template.wait_for_then_click(self._browser, timeout)
         time.sleep(0.1)
 
     def enter_auth_code(
-        self, auth_code: str, timeout: TimeoutType = 120.0,
+        self,
+        auth_code: str,
+        timeout: TimeoutType = 120.0,
     ) -> None:
         self._assert_not_stale()
 
@@ -104,8 +112,9 @@ class AuthPresentation(PresentationBase):
         self._browser.write(auth_code)
 
         # Wait for the "Login" button to appear, then click it.
-        template = Template.open_file("template/auth/login",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/auth/login", self._browser.zoom_ratio,
+        )
         template.wait_for_then_click(self._browser, timeout)
 
         paths = (
@@ -135,8 +144,11 @@ class AuthPresentation(PresentationBase):
                 self._creator.wait(self._browser, timeout, Presentation.MATCH)
                 timeout = deadline - datetime.datetime.now(datetime.UTC)
                 new_presentation = self._creator.create_new_presentation(
-                    Presentation.AUTH, Presentation.MATCH,
-                    self._browser, self._db_client, timeout=timeout,
+                    Presentation.AUTH,
+                    Presentation.MATCH,
+                    self._browser,
+                    self._db_client,
+                    timeout=timeout,
                 )
                 self._set_new_presentation(new_presentation)
                 return
@@ -146,7 +158,10 @@ class AuthPresentation(PresentationBase):
         self._creator.wait(self._browser, timeout, Presentation.HOME)
 
         new_presentation = self._creator.create_new_presentation(
-            Presentation.AUTH, Presentation.HOME,
-            self._browser, self._db_client, timeout=60.0,
+            Presentation.AUTH,
+            Presentation.HOME,
+            self._browser,
+            self._db_client,
+            timeout=60.0,
         )
         self._set_new_presentation(new_presentation)

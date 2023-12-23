@@ -16,7 +16,6 @@ from .protobuf_liqi import liqi_pb2
 
 
 class GRPCClient(DBClientBase):
-
     def __init__(self, host: str = "gRPC", port: int = 37247) -> None:
         super().__init__(host, port)
         self._channel = grpc.insecure_channel(f"localhost:{port}")
@@ -35,8 +34,8 @@ class GRPCClient(DBClientBase):
             return self._put_back_messages.popleft()
 
         message_bytes: bytes = self._client.PopMessage(
-                grpcserver_pb2.Timeout(seconds=timeout.total_seconds()),
-            ).content
+            grpcserver_pb2.Timeout(seconds=timeout.total_seconds()),
+        ).content
         if message_bytes == b"":
             return None
 
@@ -54,11 +53,12 @@ class GRPCClient(DBClientBase):
         else:
             response = None
         timestamp = datetime.datetime.fromtimestamp(
-            timestamp_float, datetime.UTC,
+            timestamp_float,
+            datetime.UTC,
         )
 
         def unwrap_message(message: bytes) -> tuple[str, bytes]:
-            wrapper = liqi_pb2.Wrapper() # type: ignore[attr-defined]
+            wrapper = liqi_pb2.Wrapper()  # type: ignore[attr-defined]
             wrapper.ParseFromString(message)
             return (wrapper.name, wrapper.data)
 
@@ -89,15 +89,18 @@ class GRPCClient(DBClientBase):
             response_data = b""
 
         # Convert Protocol Buffers messages to JSONizable object format
-        def jsonize(name: str, data: bytes, *, is_response: bool) \
-                -> dict[str, Any]:
+        def jsonize(
+            name: str, data: bytes, *, is_response: bool,
+        ) -> dict[str, Any]:
             if is_response:
                 try:
                     parser = self._message_type_map[name][1]()
                 except IndexError as ie:
                     proc = subprocess.run(
                         ["protoc", "--decode_raw"],  # noqa: S603, S607
-                        input=data, capture_output=True, check=True,
+                        input=data,
+                        capture_output=True,
+                        check=True,
                     )
                     stdout = proc.stdout.decode("utf-8")
                     msg = (
@@ -117,7 +120,9 @@ class GRPCClient(DBClientBase):
                 except KeyError as ke:
                     proc = subprocess.run(
                         ["protoc", "--decode_raw"],  # noqa: S603, S607
-                        input=data, capture_output=True, check=True,
+                        input=data,
+                        capture_output=True,
+                        check=True,
                     )
                     stdout = proc.stdout.decode("utf-8")
                     msg = (
@@ -163,12 +168,15 @@ class GRPCClient(DBClientBase):
                     raise RuntimeError(msg)
                 account_id = account_id[key]
             if self._account_id is None:
-                self._account_id = account_id # type: ignore[assignment]
+                self._account_id = account_id  # type: ignore[assignment]
             elif account_id != self._account_id:
                 msg = "Inconsistent account IDs."
                 raise RuntimeError(msg)
 
         return (
-            request_direction, name, jsonized_request, jsonized_response,
+            request_direction,
+            name,
+            jsonized_request,
+            jsonized_response,
             timestamp,
         )

@@ -16,7 +16,6 @@ from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import (
 
 
 class GRPCServer(GRPCServerServicer):
-
     def __init__(self) -> None:
         super().__init__()
         self._message_queue: asyncio.Queue[bytes] = asyncio.Queue()

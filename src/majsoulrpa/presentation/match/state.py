@@ -8,10 +8,13 @@ from majsoulrpa.presentation.presentation_base import InconsistentMessage
 
 
 class MatchPlayer(Player):
-
     def __init__(  # noqa: PLR0913
-        self, account_id: int, name: str,
-        level4: str, level3: str, character: str,
+        self,
+        account_id: int,
+        name: str,
+        level4: str,
+        level3: str,
+        character: str,
     ) -> None:
         super().__init__(account_id, name)
         self._level4 = level4
@@ -32,7 +35,6 @@ class MatchPlayer(Player):
 
 
 class MatchState:
-
     def __init__(self) -> None:
         self._uuid: str | None = None
         self._seat: int | None = None
@@ -42,9 +44,11 @@ class MatchState:
         if self._uuid is None:
             self._uuid = uuid
         elif uuid != self._uuid:
-            msg = ("An inconsistent UUIDs.\n"
-                   f"Old one: {self._uuid}\n"
-                   f"New one: {uuid}")
+            msg = (
+                "An inconsistent UUIDs.\n"
+                f"Old one: {self._uuid}\n"
+                f"New one: {uuid}"
+            )
             raise ValueError(msg)
 
     def _set_seat(self, seat: int) -> None:
@@ -82,9 +86,10 @@ class MatchState:
 
 
 class RoundState:
-
     def __init__(
-        self, match_state: MatchState, data: Mapping[str, Any],
+        self,
+        match_state: MatchState,
+        data: Mapping[str, Any],
     ) -> None:
         self._match_state = match_state
         self._chang = data["chang"]
@@ -167,8 +172,8 @@ class RoundState:
 
         if seat == self._match_state.seat:
             if data["moqie"]:
-                assert(self._zimopai is not None)
-                assert(self._zimopai == data["tile"])
+                assert self._zimopai is not None
+                assert self._zimopai == data["tile"]
                 self._zimopai = None
             else:
                 # discarding from the hand
@@ -443,8 +448,9 @@ class RoundState:
         return self._he
 
     @property
-    def fulu(self) \
-            -> list[list[tuple[str, int | None, int | None, list[str]]]]:
+    def fulu(
+        self,
+    ) -> list[list[tuple[str, int | None, int | None, list[str]]]]:
         assert len(self._fulu) in (4, 3)
         for fulu_ in self._fulu:
             for type_, from_, he_index, tiles in fulu_:

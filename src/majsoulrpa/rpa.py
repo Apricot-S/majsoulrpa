@@ -25,11 +25,14 @@ logger = getLogger(__name__)
 _SERVER_PATH: Final = Path(__file__).parent / "_impl/grpc_server.py"
 _SNIFFER_PATH: Final = Path(__file__).parent / "_mitmproxy/sniffer.py"
 
-class RPA:
 
+class RPA:
     def __init__(  # noqa: PLR0913
-        self, proxy_port: int | None = 8080, db_port: int | None = 37247,
-        initial_left: int = 0, initial_top: int = 0,
+        self,
+        proxy_port: int | None = 8080,
+        db_port: int | None = 37247,
+        initial_left: int = 0,
+        initial_top: int = 0,
         viewport_height: int = 1080,
     ) -> None:
         self._id = uuid.uuid4()
@@ -125,7 +128,9 @@ class RPA:
 
             try:
                 p = LoginPresentation(
-                    self._browser, self._db_client, self._creator,
+                    self._browser,
+                    self._db_client,
+                    self._creator,
                 )
             except PresentationNotDetected:
                 pass
@@ -134,7 +139,9 @@ class RPA:
 
             try:
                 p = AuthPresentation(
-                    self._browser, self._db_client, self._creator,
+                    self._browser,
+                    self._db_client,
+                    self._creator,
                 )
             except PresentationNotDetected:
                 pass
@@ -146,11 +153,14 @@ class RPA:
                 # and any announcements are displayed, close them.
                 now = datetime.datetime.now(datetime.UTC)
                 HomePresentation._close_notifications(  # noqa: SLF001
-                    self._browser, deadline - now,
+                    self._browser,
+                    deadline - now,
                 )
                 now = datetime.datetime.now(datetime.UTC)
                 p = HomePresentation(
-                    self._browser, self._db_client, self._creator,
+                    self._browser,
+                    self._db_client,
+                    self._creator,
                     deadline - now,
                 )
             except PresentationNotDetected:

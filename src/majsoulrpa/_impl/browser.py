@@ -25,15 +25,19 @@ ASPECT_RATIO: Final[Fraction] = Fraction(16, 9)
 
 
 def _get_random_point_in_region(
-    left: int, top: int, width: int, height: int,
-    edge_sigma: float=0.2,
+    left: int,
+    top: int,
+    width: int,
+    height: int,
+    edge_sigma: float = 0.2,
 ) -> tuple[int, int]:
     """Return random point in region.
 
     This function does not validate parameters.
     """
+
     def _get_point_impl(distance_origin: int, length_region: int) -> int:
-        mu = distance_origin + length_region/2.0
+        mu = distance_origin + length_region / 2.0
         sigma = (mu - distance_origin) / edge_sigma
         while True:
             p = random.normalvariate(mu, sigma)
@@ -49,7 +53,6 @@ def _get_random_point_in_region(
 
 
 class BrowserBase(metaclass=ABCMeta):
-
     def check_single(self) -> None:
         """Check if only one target window exists.
 
@@ -93,8 +96,12 @@ class BrowserBase(metaclass=ABCMeta):
 
     @abstractmethod
     def click_region(  # noqa: PLR0913
-        self, left: int, top: int, width: int, height: int,
-        edge_sigma: float=2.0,
+        self,
+        left: int,
+        top: int,
+        width: int,
+        height: int,
+        edge_sigma: float = 2.0,
     ) -> None:
         pass
 
@@ -108,11 +115,14 @@ class BrowserBase(metaclass=ABCMeta):
 
 
 class DesktopBrowser(BrowserBase):
-
     def __init__(  # noqa: PLR0913
-        self, *, proxy_port: int = 8080,
-        initial_left: int = 0, initial_top: int = 0,
-        width: int = STD_WIDTH, height: int = STD_HEIGHT,
+        self,
+        *,
+        proxy_port: int = 8080,
+        initial_left: int = 0,
+        initial_top: int = 0,
+        width: int = STD_WIDTH,
+        height: int = STD_HEIGHT,
     ) -> None:
         super().__init__()
 
@@ -138,7 +148,7 @@ class DesktopBrowser(BrowserBase):
             ignore_default_args=["--mute-audio"],
             headless=False,
         )
-        self._context = self._browser.new_context(viewport=self._viewport_size)  #type: ignore[arg-type]
+        self._context = self._browser.new_context(viewport=self._viewport_size)  # type: ignore[arg-type]
         self._page = self._context.new_page()
         self._page.goto(URL_MAJSOUL)
 
@@ -185,12 +195,13 @@ class DesktopBrowser(BrowserBase):
             clicks = abs(clicks)
 
         self._page.mouse.wheel(delta_x=0, delta_y=delta)
-        for _ in range(clicks -1):
+        for _ in range(clicks - 1):
             time.sleep(0.1)
             self._page.mouse.wheel(delta_x=0, delta_y=delta)
 
     def _validate_region(  # noqa: PLR0911
-            self, left: int, top: int, width: int, height: int) -> bool:
+        self, left: int, top: int, width: int, height: int,
+    ) -> bool:
         if left < 0 or top < 0:
             return False
         if width <= 0 or height <= 0:
@@ -206,25 +217,34 @@ class DesktopBrowser(BrowserBase):
         return True
 
     def click_region(  # noqa: PLR0913
-        self, left: int, top: int, width: int, height: int,
-        edge_sigma: float=2.0,
+        self,
+        left: int,
+        top: int,
+        width: int,
+        height: int,
+        edge_sigma: float = 2.0,
     ) -> None:
         if not self._validate_region(left, top, width, height):
-            msg = ("A click was requested into an invalid area."
-                   f"{left=}, {top=}, {width=}, {height=}")
+            msg = (
+                "A click was requested into an invalid area."
+                f"{left=}, {top=}, {width=}, {height=}"
+            )
             raise RuntimeError(msg)
         if edge_sigma <= 0.0:  # noqa: PLR2004
             msg = "Invalid edge sigma was input."
             raise RuntimeError(msg)
 
         x, y = _get_random_point_in_region(
-            left, top, width, height, edge_sigma=edge_sigma,
+            left,
+            top,
+            width,
+            height,
+            edge_sigma=edge_sigma,
         )
         self._page.mouse.click(x, y)
 
     def get_screenshot(self) -> bytes:
-        """Return bytes in png format.
-        """
+        """Return bytes in png format."""
         return self._page.screenshot()
 
     def close(self) -> None:

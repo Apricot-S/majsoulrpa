@@ -7,16 +7,16 @@ from ._base import EventBase
 
 
 class HuleEvent(EventBase):
-
     def __init__(
-        self, data: Mapping[str, Any], timestamp: datetime.datetime,
+        self,
+        data: Mapping[str, Any],
+        timestamp: datetime.datetime,
     ) -> None:
         super().__init__(timestamp)
         # TODO: data['hules']
         self._old_scores = data["old_scores"]
         self._delta_scores = data["delta_scores"]
         self._scores = data["scores"]
-
 
     @property
     def old_scores(self) -> list[int]:

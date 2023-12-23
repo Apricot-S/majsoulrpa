@@ -14,9 +14,13 @@ from majsoulrpa.presentation.presentation_base import (
 
 
 class RoomPlayer(Player):
-
     def __init__(
-        self, account_id: int, name: str, *, is_host: bool, is_ready: bool,
+        self,
+        account_id: int,
+        name: str,
+        *,
+        is_host: bool,
+        is_ready: bool,
     ) -> None:
         super().__init__(account_id, name)
         self._is_host = is_host
@@ -35,11 +39,14 @@ class RoomPlayer(Player):
 
 
 class RoomPresentationBase(PresentationBase):
-
     def __init__(  # noqa: PLR0913
-        self, browser: BrowserBase, db_client: DBClientBase,
+        self,
+        browser: BrowserBase,
+        db_client: DBClientBase,
         creator: PresentationCreatorBase,
-        room_id: int, max_num_players: int, players: Iterable[RoomPlayer],
+        room_id: int,
+        max_num_players: int,
+        players: Iterable[RoomPlayer],
         num_ais: int,
     ) -> None:
         super().__init__(browser, db_client, creator)
@@ -75,7 +82,8 @@ class RoomPresentationBase(PresentationBase):
             for p in request["player_list"]:
                 account_id = p["account_id"]
                 player = RoomPlayer(
-                    account_id, p["nickname"],
+                    account_id,
+                    p["nickname"],
                     is_host=(account_id == host_account_id),
                     is_ready=False,
                 )
@@ -100,8 +108,9 @@ class RoomPresentationBase(PresentationBase):
                 if self._players[i].account_id == account_id:
                     break
                 if i == len(self._players):
-                    msg = \
+                    msg = (
                         "An inconsistent '.lq.NotifyRoomPlayerReady' message."
+                    )
                     raise InconsistentMessage(msg, None)
                 self._players[i]._set_ready(is_ready=request["ready"])  # noqa: SLF001
 
@@ -137,8 +146,9 @@ class RoomPresentationBase(PresentationBase):
         self._assert_not_stale()
 
         # Click on the icon to leave the room.
-        template = Template.open_file("template/room/leave",
-                                      self._browser.zoom_ratio)
+        template = Template.open_file(
+            "template/room/leave", self._browser.zoom_ratio,
+        )
         if not template.match(self._browser.get_screenshot()):
             msg = "Could not leave the room."
             raise InvalidOperation(msg, self._browser.get_screenshot())
@@ -148,7 +158,10 @@ class RoomPresentationBase(PresentationBase):
         self._creator.wait(self._browser, timeout, Presentation.HOME)
 
         new_presentation = self._creator.create_new_presentation(
-            Presentation.ROOMBASE, Presentation.HOME,
-            self._browser, self._db_client, timeout=timeout,
+            Presentation.ROOMBASE,
+            Presentation.HOME,
+            self._browser,
+            self._db_client,
+            timeout=timeout,
         )
         self._set_new_presentation(new_presentation)

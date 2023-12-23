@@ -17,7 +17,6 @@ def timeout_to_deadline(timeout: TimeoutType) -> datetime.datetime:
 
 
 class Player:
-
     def __init__(self, account_id: int, name: str) -> None:
         self._account_id = account_id
         self._name = name
@@ -47,7 +46,7 @@ _LEVEL_ID_MAP = {
     10501: "雀聖1",
     10502: "雀聖2",
     10503: "雀聖3",
-    #10601: "魂天", before Soul Points introduction
+    # 10601: "魂天", before Soul Points introduction
     10701: "魂天Lv1",
     10702: "魂天Lv2",
     10703: "魂天Lv3",
@@ -83,7 +82,7 @@ _LEVEL_ID_MAP = {
     20501: "雀聖1",
     20502: "雀聖2",
     20503: "雀聖3",
-    #20601: "魂天", before Soul Points introduction
+    # 20601: "魂天", before Soul Points introduction
     20701: "魂天Lv1",
     20702: "魂天Lv2",
     20703: "魂天Lv3",
