@@ -28,7 +28,6 @@ if __name__ == "__main__":
         initial_top=myconfig["initial_position"]["top"],
         viewport_height=myconfig["viewport_height"],
     ) as rpa:
-
         logger.info("RPA start.")
         presentation = rpa.wait(timeout=20.0)
 
@@ -97,8 +96,10 @@ if __name__ == "__main__":
                 print(f"{player.name} ({player.level4}, {player.character})")
             assert seat is not None
             changs = ["東", "南", "西", "北"]
-            print(f"{changs[presentation.chang]}{presentation.ju + 1}局"
-                f"{presentation.ben}本場 (供託{presentation.liqibang}本)")
+            print(
+                f"{changs[presentation.chang]}{presentation.ju + 1}局"
+                f"{presentation.ben}本場 (供託{presentation.liqibang}本)",
+            )
             print(f'スコア: {",".join([str(s) for s in presentation.scores])}')
             print(f"表ドラ表示牌: {presentation.dora_indicators[0]}")
             print(f"自風: {changs[seat]}")
