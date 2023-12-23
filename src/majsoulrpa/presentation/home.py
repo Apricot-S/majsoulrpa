@@ -53,9 +53,9 @@ class HomePresentation(PresentationBase):
                 msg = "Timeout."
                 raise Timeout(msg, browser.get_screenshot())
 
-            sct = browser.get_screenshot()
+            ss = browser.get_screenshot()
 
-            x, y, score = notification_close.best_template_match(sct)
+            x, y, score = notification_close.best_template_match(ss)
             if score >= notification_close.threshold:
                 browser.click_region(
                     x, y,
@@ -65,7 +65,7 @@ class HomePresentation(PresentationBase):
                 time.sleep(1.0)
                 continue
 
-            x, y, score = event_close.best_template_match(sct)
+            x, y, score = event_close.best_template_match(ss)
             if score >= event_close.threshold:
                 browser.click_region(
                     x, y,
@@ -85,19 +85,24 @@ class HomePresentation(PresentationBase):
                                       browser.zoom_ratio)
         template.wait_until(browser, deadline)
 
-        if not HomePresentation._match_markers(browser.get_screenshot(),
-                                               browser.zoom_ratio):
-            # Close any notifications displayed on the home screen.
-            now = datetime.datetime.now(datetime.UTC)
-            HomePresentation._close_notifications(browser, deadline - now)
+        # Wait for any notification to display on the home screen.
+        time.sleep(0.5)
 
-            while True:
-                if datetime.datetime.now(datetime.UTC) > deadline:
-                    msg = "Timeout."
-                    raise Timeout(msg, browser.get_screenshot())
-                if HomePresentation._match_markers(browser.get_screenshot(),
-                                                   browser.zoom_ratio):
-                    break
+        if HomePresentation._match_markers(browser.get_screenshot(),
+                                           browser.zoom_ratio):
+            return
+
+        # Close any notifications displayed on the home screen.
+        now = datetime.datetime.now(datetime.UTC)
+        HomePresentation._close_notifications(browser, deadline - now)
+
+        while True:
+            if datetime.datetime.now(datetime.UTC) > deadline:
+                msg = "Timeout."
+                raise Timeout(msg, browser.get_screenshot())
+            if HomePresentation._match_markers(browser.get_screenshot(),
+                                               browser.zoom_ratio):
+                break
 
     def __init__(  # noqa: PLR0912, PLR0915, C901
         self, browser: BrowserBase, db_client: DBClientBase,
