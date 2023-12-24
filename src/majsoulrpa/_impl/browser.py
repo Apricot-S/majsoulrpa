@@ -200,7 +200,11 @@ class DesktopBrowser(BrowserBase):
             self._page.mouse.wheel(delta_x=0, delta_y=delta)
 
     def _validate_region(  # noqa: PLR0911
-        self, left: int, top: int, width: int, height: int,
+        self,
+        left: int,
+        top: int,
+        width: int,
+        height: int,
     ) -> bool:
         if left < 0 or top < 0:
             return False

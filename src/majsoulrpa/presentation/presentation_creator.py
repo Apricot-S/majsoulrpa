@@ -56,11 +56,15 @@ class PresentationCreator(PresentationCreatorBase):
                 return AuthPresentation(browser, db_client, self)
             case Presentation.HOME:
                 if not isinstance(
-                    kwargs.get("timeout"), int | float | datetime.timedelta,
+                    kwargs.get("timeout"),
+                    int | float | datetime.timedelta,
                 ):
                     raise TypeError
                 return HomePresentation(
-                    browser, db_client, self, kwargs["timeout"],
+                    browser,
+                    db_client,
+                    self,
+                    kwargs["timeout"],
                 )
             case Presentation.TOURNAMENT:
                 raise NotImplementedError
@@ -82,7 +86,8 @@ class PresentationCreator(PresentationCreatorBase):
                         raise NotImplementedError
             case Presentation.MATCH:
                 if not isinstance(
-                    kwargs.get("timeout"), int | float | datetime.timedelta,
+                    kwargs.get("timeout"),
+                    int | float | datetime.timedelta,
                 ):
                     raise TypeError
                 match current_presentation:
@@ -105,7 +110,8 @@ class PresentationCreator(PresentationCreatorBase):
                         )
                     case Presentation.MATCH:
                         if not isinstance(
-                            kwargs.get("match_state"), MatchState,
+                            kwargs.get("match_state"),
+                            MatchState,
                         ):
                             raise TypeError
                         return MatchPresentation(

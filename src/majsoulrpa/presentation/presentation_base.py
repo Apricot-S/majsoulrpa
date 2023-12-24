@@ -116,7 +116,8 @@ class PresentationBase(metaclass=ABCMeta):
         self._new_presentation: "PresentationBase | None" = None
 
     def _set_new_presentation(
-        self, new_presentation: "PresentationBase",
+        self,
+        new_presentation: "PresentationBase",
     ) -> None:
         if self._new_presentation is not None:
             msg = "A new presentation has been already set."

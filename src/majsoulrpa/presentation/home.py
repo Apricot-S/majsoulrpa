@@ -25,7 +25,8 @@ class HomePresentation(PresentationBase):
     def _match_markers(screenshot: bytes, zoom_ratio: float) -> bool:
         for i in range(1, 4):
             template = Template.open_file(
-                f"template/home/marker{i}", zoom_ratio,
+                f"template/home/marker{i}",
+                zoom_ratio,
             )
             if not template.match(screenshot):
                 return False
@@ -86,7 +87,8 @@ class HomePresentation(PresentationBase):
         deadline = timeout_to_deadline(timeout)
 
         template = Template.open_file(
-            "template/home/marker0", browser.zoom_ratio,
+            "template/home/marker0",
+            browser.zoom_ratio,
         )
         template.wait_until(browser, deadline)
 
@@ -94,7 +96,8 @@ class HomePresentation(PresentationBase):
         time.sleep(0.5)
 
         if HomePresentation._match_markers(
-            browser.get_screenshot(), browser.zoom_ratio,
+            browser.get_screenshot(),
+            browser.zoom_ratio,
         ):
             return
 
@@ -107,7 +110,8 @@ class HomePresentation(PresentationBase):
                 msg = "Timeout."
                 raise Timeout(msg, browser.get_screenshot())
             if HomePresentation._match_markers(
-                browser.get_screenshot(), browser.zoom_ratio,
+                browser.get_screenshot(),
+                browser.zoom_ratio,
             ):
                 break
 
@@ -256,7 +260,10 @@ class HomePresentation(PresentationBase):
         self,
         mode: Literal["4-Player", "3-Player"] = "4-Player",
         length: Literal[
-            "1 Game", "East Only", "Two-Wind Match", "Vs AI",
+            "1 Game",
+            "East Only",
+            "Two-Wind Match",
+            "Vs AI",
         ] = "Two-Wind Match",
         timeout: TimeoutType = 60.0,
     ) -> None:
@@ -266,19 +273,22 @@ class HomePresentation(PresentationBase):
 
         # Click "Friendly Match".
         template = Template.open_file(
-            "template/home/marker3", self._browser.zoom_ratio,
+            "template/home/marker3",
+            self._browser.zoom_ratio,
         )
         template.click(self._browser)
 
         # Wait until "Create room" is displayed and then click.
         template = Template.open_file(
-            "template/home/create_room", self._browser.zoom_ratio,
+            "template/home/create_room",
+            self._browser.zoom_ratio,
         )
         template.wait_until_then_click(self._browser, deadline)
 
         # Wait until "Create" is displayed.
         template = Template.open_file(
-            "template/home/room_creation/create", self._browser.zoom_ratio,
+            "template/home/room_creation/create",
+            self._browser.zoom_ratio,
         )
         template.wait_until(self._browser, deadline)
 
@@ -323,7 +333,9 @@ class HomePresentation(PresentationBase):
         # Wait until room screen is displayed.
         now = datetime.datetime.now(datetime.UTC)
         self._creator.wait(
-            self._browser, deadline - now, Presentation.ROOMOWNER,
+            self._browser,
+            deadline - now,
+            Presentation.ROOMOWNER,
         )
 
         now = datetime.datetime.now(datetime.UTC)

@@ -147,7 +147,8 @@ class RoomPresentationBase(PresentationBase):
 
         # Click on the icon to leave the room.
         template = Template.open_file(
-            "template/room/leave", self._browser.zoom_ratio,
+            "template/room/leave",
+            self._browser.zoom_ratio,
         )
         if not template.match(self._browser.get_screenshot()):
             msg = "Could not leave the room."

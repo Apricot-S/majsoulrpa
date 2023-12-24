@@ -25,7 +25,8 @@ class LoginPresentation(PresentationBase):
         super().__init__(browser, db_client, creator)
 
         template = Template.open_file(
-            "template/login/marker", browser.zoom_ratio,
+            "template/login/marker",
+            browser.zoom_ratio,
         )
         sct = browser.get_screenshot()
         if not template.match(sct):
@@ -40,7 +41,8 @@ class LoginPresentation(PresentationBase):
         self._assert_not_stale()
 
         template = Template.open_file(
-            "template/login/marker", self._browser.zoom_ratio,
+            "template/login/marker",
+            self._browser.zoom_ratio,
         )
         template.click(self._browser)
 

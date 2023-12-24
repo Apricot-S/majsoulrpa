@@ -90,7 +90,10 @@ class GRPCClient(DBClientBase):
 
         # Convert Protocol Buffers messages to JSONizable object format
         def jsonize(
-            name: str, data: bytes, *, is_response: bool,
+            name: str,
+            data: bytes,
+            *,
+            is_response: bool,
         ) -> dict[str, Any]:
             if is_response:
                 try:

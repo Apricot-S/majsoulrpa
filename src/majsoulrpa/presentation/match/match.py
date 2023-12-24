@@ -550,7 +550,8 @@ class MatchPresentation(PresentationBase):
                     break
 
             raise InconsistentMessage(
-                str(message), self._browser.get_screenshot(),
+                str(message),
+                self._browser.get_screenshot(),
             )
 
         # Backfill the prefetched message.
@@ -562,7 +563,8 @@ class MatchPresentation(PresentationBase):
         # If there is an additional "confirm" button
         # such as when receiving rewards, click it.
         template = Template.open_file(
-            "template/match/match_result_confirm", self._browser.zoom_ratio,
+            "template/match/match_result_confirm",
+            self._browser.zoom_ratio,
         )
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
@@ -576,7 +578,9 @@ class MatchPresentation(PresentationBase):
         if self._prev_presentation == Presentation.ROOMOWNER:
             now = datetime.datetime.now(datetime.UTC)
             self._creator.wait(
-                self._browser, deadline - now, Presentation.ROOMOWNER,
+                self._browser,
+                deadline - now,
+                Presentation.ROOMOWNER,
             )
             now = datetime.datetime.now(datetime.UTC)
             new_presentation = self._creator.create_new_presentation(
@@ -657,7 +661,8 @@ class MatchPresentation(PresentationBase):
                     return
 
             raise InconsistentMessage(
-                str(message), self._browser.get_screenshot(),
+                str(message),
+                self._browser.get_screenshot(),
             )
 
     def _workaround_for_reordered_actions(
@@ -700,7 +705,8 @@ class MatchPresentation(PresentationBase):
                 }
                 if step < expected_step:
                     raise InconsistentMessage(
-                        str(action_info), self._browser.get_screenshot(),
+                        str(action_info),
+                        self._browser.get_screenshot(),
                     )
                 while len(messages) <= step - expected_step:
                     messages.append(None)
@@ -734,7 +740,8 @@ class MatchPresentation(PresentationBase):
                     "message": message,
                 }
                 raise InconsistentMessage(
-                    str(error_message), self._browser.get_screenshot(),
+                    str(error_message),
+                    self._browser.get_screenshot(),
                 )
 
             now = datetime.datetime.now(datetime.UTC)
@@ -759,7 +766,8 @@ class MatchPresentation(PresentationBase):
         _, name, request, _, _ = message
         if name != ".lq.ActionPrototype":
             raise InconsistentMessage(
-                str(message), self._browser.get_screenshot(),
+                str(message),
+                self._browser.get_screenshot(),
             )
 
         step, action_name, _ = _common.parse_action(request)
@@ -794,7 +802,8 @@ class MatchPresentation(PresentationBase):
 
     def _on_end_of_round(self, deadline: datetime.datetime) -> None:
         template = Template.open_file(
-            "template/match/round_result_confirm", self._browser.zoom_ratio,
+            "template/match/round_result_confirm",
+            self._browser.zoom_ratio,
         )
         round_result_confirmed = False
         while True:
@@ -866,7 +875,8 @@ class MatchPresentation(PresentationBase):
                             self._browser.get_screenshot(),
                         )
                     raise InconsistentMessage(
-                        str(message), self._browser.get_screenshot(),
+                        str(message),
+                        self._browser.get_screenshot(),
                     )
 
                 now = datetime.datetime.now(datetime.UTC)
@@ -940,7 +950,8 @@ class MatchPresentation(PresentationBase):
                         logger.warning(message)
                         break
                     raise InconsistentMessage(
-                        str(next_message), self._browser.get_screenshot(),
+                        str(next_message),
+                        self._browser.get_screenshot(),
                     )
                 # After backfilling 'ActionNewRound' into
                 # the message queue of the DB server,
@@ -973,7 +984,8 @@ class MatchPresentation(PresentationBase):
                 return
 
             raise InconsistentMessage(
-                str(message), self._browser.get_screenshot(),
+                str(message),
+                self._browser.get_screenshot(),
             )
 
     def _on_sync_game(self, message: Message) -> None:
@@ -1132,12 +1144,14 @@ class MatchPresentation(PresentationBase):
 
                 if action_name == "ActionMJStart":
                     raise InconsistentMessage(
-                        str(action_info), self._browser.get_screenshot(),
+                        str(action_info),
+                        self._browser.get_screenshot(),
                     )
 
                 if action_name == "ActionNewRound":
                     raise InconsistentMessage(
-                        str(action_info), self._browser.get_screenshot(),
+                        str(action_info),
+                        self._browser.get_screenshot(),
                     )
 
                 if action_name == "ActionDealTile":
@@ -1328,7 +1342,8 @@ class MatchPresentation(PresentationBase):
                 return
 
             raise InconsistentMessage(
-                str(message), self._browser.get_screenshot(),
+                str(message),
+                self._browser.get_screenshot(),
             )
 
     def wait(self, timeout: TimeoutType = 300.0) -> None:
@@ -1515,7 +1530,8 @@ class MatchPresentation(PresentationBase):
 
     def _skip_by_skip_button(self, deadline: datetime.datetime) -> None:
         template = Template.open_file(
-            "template/match/skip", self._browser.zoom_ratio,
+            "template/match/skip",
+            self._browser.zoom_ratio,
         )
         try:
             # If you do not set the 'timeout' to a short value,
@@ -1597,7 +1613,8 @@ class MatchPresentation(PresentationBase):
                 continue
             if name == ".lq.FastTest.inputOperation":
                 raise InconsistentMessage(
-                    str(message), self._browser.get_screenshot(),
+                    str(message),
+                    self._browser.get_screenshot(),
                 )
             if name == ".lq.FastTest.inputChiPengGang":
                 logger.info(message)
@@ -1618,7 +1635,8 @@ class MatchPresentation(PresentationBase):
         deadline: datetime.datetime,
     ) -> None:
         template = Template.open_file(
-            "template/match/chi", self._browser.zoom_ratio,
+            "template/match/chi",
+            self._browser.zoom_ratio,
         )
         try:
             # If you do not set the 'timeout' to a short value,
@@ -1756,7 +1774,8 @@ class MatchPresentation(PresentationBase):
         deadline: datetime.datetime,
     ) -> None:
         template = Template.open_file(
-            "template/match/peng", self._browser.zoom_ratio,
+            "template/match/peng",
+            self._browser.zoom_ratio,
         )
         try:
             # If you do not set the 'timeout' to a short value,
@@ -1852,7 +1871,8 @@ class MatchPresentation(PresentationBase):
 
     def _operate_angang(self, operation: AngangOperation) -> None:
         template = Template.open_file(
-            "template/match/gang", self._browser.zoom_ratio,
+            "template/match/gang",
+            self._browser.zoom_ratio,
         )
         try:
             template.wait_for_then_click(self._browser, timeout=10.0)
@@ -1882,7 +1902,8 @@ class MatchPresentation(PresentationBase):
         deadline: datetime.datetime,
     ) -> None:
         template = Template.open_file(
-            "template/match/gang", self._browser.zoom_ratio,
+            "template/match/gang",
+            self._browser.zoom_ratio,
         )
         try:
             template.wait_for_then_click(self._browser, timeout=10.0)
@@ -1913,7 +1934,8 @@ class MatchPresentation(PresentationBase):
         index: int | None,
     ) -> None:
         template = Template.open_file(
-            "template/match/gang", self._browser.zoom_ratio,
+            "template/match/gang",
+            self._browser.zoom_ratio,
         )
         try:
             template.wait_for_then_click(self._browser, timeout=10.0)
@@ -1958,7 +1980,8 @@ class MatchPresentation(PresentationBase):
 
     def _operate_liqi(self, operation: LiqiOperation, index: int) -> None:
         template = Template.open_file(
-            "template/match/lizhi", self._browser.zoom_ratio,
+            "template/match/lizhi",
+            self._browser.zoom_ratio,
         )
         try:
             template.wait_for_then_click(self._browser, timeout=5.0)
@@ -1977,12 +2000,14 @@ class MatchPresentation(PresentationBase):
         if index < len(self.shoupai):
             if self.shoupai[index] not in operation.candidate_dapai_list:
                 raise InvalidOperation(
-                    str(index), self._browser.get_screenshot(),
+                    str(index),
+                    self._browser.get_screenshot(),
                 )
         elif index == len(self.shoupai):
             if self.zimopai not in operation.candidate_dapai_list:
                 raise InvalidOperation(
-                    str(index), self._browser.get_screenshot(),
+                    str(index),
+                    self._browser.get_screenshot(),
                 )
         else:
             msg = f"{index}: out-of-range index"
@@ -2009,7 +2034,8 @@ class MatchPresentation(PresentationBase):
 
     def _operate_jiuzhongjiupai(self) -> None:
         template = Template.open_file(
-            "template/match/liuju", self._browser.zoom_ratio,
+            "template/match/liuju",
+            self._browser.zoom_ratio,
         )
         try:
             template.wait_for_then_click(self._browser, timeout=5.0)
@@ -2027,7 +2053,8 @@ class MatchPresentation(PresentationBase):
 
     def _operate_babei(self) -> None:
         template = Template.open_file(
-            "template/match/babei", self._browser.zoom_ratio,
+            "template/match/babei",
+            self._browser.zoom_ratio,
         )
         try:
             template.wait_for_then_click(self._browser, timeout=10.0)

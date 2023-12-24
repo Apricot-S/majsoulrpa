@@ -28,7 +28,8 @@ class AuthPresentation(PresentationBase):
         self._entered_email_address: bool = False
 
         template = Template.open_file(
-            "template/auth/marker", browser.zoom_ratio,
+            "template/auth/marker",
+            browser.zoom_ratio,
         )
         sct = browser.get_screenshot()
         if not template.match(sct):
@@ -38,7 +39,8 @@ class AuthPresentation(PresentationBase):
     @staticmethod
     def _wait(browser: BrowserBase, timeout: TimeoutType = 10.0) -> None:
         template = Template.open_file(
-            "template/auth/marker", browser.zoom_ratio,
+            "template/auth/marker",
+            browser.zoom_ratio,
         )
         template.wait_for(browser, timeout)
 
@@ -78,7 +80,8 @@ class AuthPresentation(PresentationBase):
 
         # Wait for the "Confirm" button to appear, then click it.
         template = Template.open_file(
-            "template/auth/confirm", self._browser.zoom_ratio,
+            "template/auth/confirm",
+            self._browser.zoom_ratio,
         )
         template.wait_for_then_click(self._browser, timeout)
         time.sleep(0.1)
@@ -113,7 +116,8 @@ class AuthPresentation(PresentationBase):
 
         # Wait for the "Login" button to appear, then click it.
         template = Template.open_file(
-            "template/auth/login", self._browser.zoom_ratio,
+            "template/auth/login",
+            self._browser.zoom_ratio,
         )
         template.wait_for_then_click(self._browser, timeout)
 

@@ -48,7 +48,8 @@ class RoomOwnerPresentation(RoomPresentationBase):
     @staticmethod
     def _wait(browser: BrowserBase, timeout: TimeoutType = 60.0) -> None:
         template = Template.open_file(
-            "template/room/marker", browser.zoom_ratio,
+            "template/room/marker",
+            browser.zoom_ratio,
         )
         template.wait_for(browser, timeout)
 
@@ -65,7 +66,8 @@ class RoomOwnerPresentation(RoomPresentationBase):
         deadline = datetime.datetime.now(datetime.UTC) + timeout
 
         template = Template.open_file(
-            "template/room/marker", browser.zoom_ratio,
+            "template/room/marker",
+            browser.zoom_ratio,
         )
         sct = browser.get_screenshot()
         if not template.match(sct):
@@ -182,7 +184,8 @@ class RoomOwnerPresentation(RoomPresentationBase):
 
         # Check if you can click "Add AI".
         template = Template.open_file(
-            "template/room/add_ai", self._browser.zoom_ratio,
+            "template/room/add_ai",
+            self._browser.zoom_ratio,
         )
         sct = self._browser.get_screenshot()
         if not template.match(sct):
@@ -212,7 +215,8 @@ class RoomOwnerPresentation(RoomPresentationBase):
         deadline = timeout_to_deadline(timeout)
 
         template = Template.open_file(
-            "template/room/start", self._browser.zoom_ratio,
+            "template/room/start",
+            self._browser.zoom_ratio,
         )
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
