@@ -164,7 +164,6 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.fetchShopInfo"
                     | ".lq.Lobby.fetchShopInterval"
                     | ".lq.Lobby.fetchActivityList"
-                    | ".lq.Lobby.fetchAccountActivityData"
                     | ".lq.Lobby.fetchActivityInterval"
                     | ".lq.Lobby.fetchActivityBuff"
                     | ".lq.Lobby.fetchVipReward"
@@ -186,7 +185,11 @@ class HomePresentation(PresentationBase):
                 ):
                     logger.info(message)
                     continue
-                case ".lq.Lobby.fetchDailyTask" | ".lq.Lobby.leaveRoom":
+                case (
+                    ".lq.Lobby.fetchDailyTask"
+                    | ".lq.Lobby.leaveRoom"
+                    | ".lq.Lobby.fetchAccountActivityData"
+                ):
                     logger.info(message)
 
                     break_ = False
