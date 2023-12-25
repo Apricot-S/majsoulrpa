@@ -11,19 +11,17 @@ from majsoulrpa.common import TimeoutType
 
 class ErrorBase(Exception):  # noqa: N818
     def __init__(self, message: str, screenshot: bytes | None) -> None:
-        if screenshot is not None:
-            now = datetime.datetime.now(datetime.UTC)
-            ss_name = now.strftime(
-                f"%Y-%m-%d-%H-%M-%S-{self.__class__.__name__}.png",
-            )
-            with Path(ss_name).open("wb") as fp:
-                fp.write(screenshot)
-        else:
-            ss_name = None
+        now = datetime.datetime.now(datetime.UTC)
+        ss_name = now.strftime(f"%Y-%m-%d-%H-%M-%S-{self.__class__.__name__}")
 
         super().__init__(message, ss_name)
-        self._message = message
         self._screenshot = screenshot
+        self._ss_name = ss_name
+
+    def save_screenshot(self) -> None:
+        if self._screenshot is not None:
+            with Path(self._ss_name).with_suffix(".png").open("wb") as fp:
+                fp.write(self._screenshot)
 
 
 class Timeout(ErrorBase):
@@ -33,8 +31,7 @@ class Timeout(ErrorBase):
 
 class PresentationNotDetected(ErrorBase):
     def __init__(self, message: str, screenshot: bytes) -> None:
-        super().__init__(message, None)
-        self._screenshot = screenshot
+        super().__init__(message, screenshot)
 
 
 class StalePresentation(ErrorBase):
