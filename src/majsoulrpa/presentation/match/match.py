@@ -46,11 +46,13 @@ from majsoulrpa.presentation.presentation_base import (
     BrowserRefreshRequest,
     InconsistentMessage,
     InvalidOperation,
+    NotImplementedOperation,
     Presentation,
     PresentationBase,
     PresentationCreatorBase,
     PresentationNotDetected,
     Timeout,
+    UnexpectedState,
 )
 
 from . import _common
@@ -184,9 +186,6 @@ class MatchPresentation(PresentationBase):
             for t in templates:
                 x, y, score = t.best_template_match(ss)
                 print(f"({x}, {y}): score = {score}")  # noqa: T201
-            now = datetime.datetime.now(datetime.UTC)
-            img = screenshot_to_opencv(ss)
-            cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
             msg = "Could not detect 'match_main'."
             raise PresentationNotDetected(msg, ss)
 
@@ -1545,11 +1544,14 @@ class MatchPresentation(PresentationBase):
                 now = datetime.datetime.now(datetime.UTC)
                 message = self._db_client.dequeue_message(deadline - now)
                 if message is None:
-                    ss = self._browser.get_screenshot()
-                    now = datetime.datetime.now(datetime.UTC)
-                    img = screenshot_to_opencv(ss)
-                    cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                    raise NotImplementedError from e
+                    msg = (
+                        "The WebSocket message that "
+                        "was supposed to be present is missing."
+                    )
+                    raise UnexpectedState(
+                        msg,
+                        self._browser.get_screenshot(),
+                    ) from e
                 _, name, request, _, _ = message
                 if name in MatchPresentation._COMMON_MESSAGE_NAMES:
                     self._on_common_message(message)
@@ -1565,10 +1567,6 @@ class MatchPresentation(PresentationBase):
                         now = datetime.datetime.now(datetime.UTC)
                         self._wait_impl(deadline - now)
                         return
-                    ss = self._browser.get_screenshot()
-                    now = datetime.datetime.now(datetime.UTC)
-                    img = screenshot_to_opencv(ss)
-                    cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
                     raise InconsistentMessage(
                         str(message),
                         self._browser.get_screenshot(),
@@ -1650,11 +1648,14 @@ class MatchPresentation(PresentationBase):
                 now = datetime.datetime.now(datetime.UTC)
                 message = self._db_client.dequeue_message(deadline - now)
                 if message is None:
-                    ss = self._browser.get_screenshot()
-                    now = datetime.datetime.now(datetime.UTC)
-                    img = screenshot_to_opencv(ss)
-                    cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                    raise NotImplementedError from e
+                    msg = (
+                        "The WebSocket message that "
+                        "was supposed to be present is missing."
+                    )
+                    raise UnexpectedState(
+                        msg,
+                        self._browser.get_screenshot(),
+                    ) from e
                 _, name, request, _, _ = message
                 if name in MatchPresentation._COMMON_MESSAGE_NAMES:
                     self._on_common_message(message)
@@ -1670,10 +1671,6 @@ class MatchPresentation(PresentationBase):
                         now = datetime.datetime.now(datetime.UTC)
                         self._wait_impl(deadline - now)
                         return
-                    ss = self._browser.get_screenshot()
-                    now = datetime.datetime.now(datetime.UTC)
-                    img = screenshot_to_opencv(ss)
-                    cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
                     raise InconsistentMessage(
                         str(message),
                         self._browser.get_screenshot(),
@@ -1749,11 +1746,11 @@ class MatchPresentation(PresentationBase):
                     msg = f"{index}: out-of-range index"
                     raise InvalidOperation(msg, self._browser.get_screenshot())
             else:
-                ss = self._browser.get_screenshot()
-                now = datetime.datetime.now(datetime.UTC)
-                img = screenshot_to_opencv(ss)
-                cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                raise AssertionError(len(operation.combinations))
+                msg = (
+                    f"There are {len(operation.combinations)} "
+                    "combinations that can be Chi."
+                )
+                raise UnexpectedState(msg, self._browser.get_screenshot())
 
             left = round(left * self._browser.zoom_ratio)
             top = round(691 * self._browser.zoom_ratio)
@@ -1788,11 +1785,14 @@ class MatchPresentation(PresentationBase):
                 now = datetime.datetime.now(datetime.UTC)
                 message = self._db_client.dequeue_message(deadline - now)
                 if message is None:
-                    ss = self._browser.get_screenshot()
-                    now = datetime.datetime.now(datetime.UTC)
-                    img = screenshot_to_opencv(ss)
-                    cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                    raise NotImplementedError from e
+                    msg = (
+                        "The WebSocket message that "
+                        "was supposed to be present is missing."
+                    )
+                    raise UnexpectedState(
+                        msg,
+                        self._browser.get_screenshot(),
+                    ) from e
                 _, name, request, _, _ = message
                 if name in MatchPresentation._COMMON_MESSAGE_NAMES:
                     self._on_common_message(message)
@@ -1808,10 +1808,6 @@ class MatchPresentation(PresentationBase):
                         now = datetime.datetime.now(datetime.UTC)
                         self._wait_impl(deadline - now)
                         return
-                    ss = self._browser.get_screenshot()
-                    now = datetime.datetime.now(datetime.UTC)
-                    img = screenshot_to_opencv(ss)
-                    cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
                     raise InconsistentMessage(
                         str(message),
                         self._browser.get_screenshot(),
@@ -1851,11 +1847,11 @@ class MatchPresentation(PresentationBase):
                     msg = f"{index}: out-of-range index"
                     raise InvalidOperation(msg, self._browser.get_screenshot())
             else:
-                ss = self._browser.get_screenshot()
-                now = datetime.datetime.now(datetime.UTC)
-                img = screenshot_to_opencv(ss)
-                cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                raise AssertionError(len(operation.combinations))
+                msg = (
+                    f"There are {len(operation.combinations)} "
+                    "combinations that can be Peng."
+                )
+                raise UnexpectedState(msg, self._browser.get_screenshot())
 
             left = round(left * self._browser.zoom_ratio)
             top = round(691 * self._browser.zoom_ratio)
@@ -1884,11 +1880,24 @@ class MatchPresentation(PresentationBase):
             raise NotImplementedError from e
 
         if len(operation.combinations) >= 2:
-            ss = self._browser.get_screenshot()
-            now = datetime.datetime.now(datetime.UTC)
-            img = screenshot_to_opencv(ss)
-            cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-            raise NotImplementedError
+            if (
+                len(operation.combinations) == 2
+                or len(operation.combinations) == 3
+            ):
+                msg = (
+                    "Not implemented operation: "
+                    "AnGang when there are 2 or 3 combinations"
+                )
+                raise NotImplementedOperation(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
+
+            msg = (
+                f"There are {len(operation.combinations)} "
+                "combinations that can be AnGang."
+            )
+            raise UnexpectedState(msg, self._browser.get_screenshot())
 
         # Some of the tiles in your hand may slide right
         # after the Angang, so if you don't add a wait time for
@@ -1916,11 +1925,11 @@ class MatchPresentation(PresentationBase):
             raise NotImplementedError from e
 
         if len(operation.combinations) >= 2:
-            ss = self._browser.get_screenshot()
-            now = datetime.datetime.now(datetime.UTC)
-            img = screenshot_to_opencv(ss)
-            cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-            raise NotImplementedError
+            msg = (
+                f"There are {len(operation.combinations)} "
+                "combinations that can be DamingGang."
+            )
+            raise UnexpectedState(msg, self._browser.get_screenshot())
 
         # Some of the tiles in your hand may slide right
         # after the Damingang, so if you don't add a wait time for
@@ -1959,12 +1968,21 @@ class MatchPresentation(PresentationBase):
                 else:
                     msg = f"{index}: out-of-range index"
                     raise InvalidOperation(msg, self._browser.get_screenshot())
+            elif len(operation.combinations) == 3:
+                msg = (
+                    "Not implemented operation: "
+                    "Jiagang when there are 3 possible combinations"
+                )
+                raise NotImplementedOperation(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
             else:
-                ss = self._browser.get_screenshot()
-                now = datetime.datetime.now(datetime.UTC)
-                img = screenshot_to_opencv(ss)
-                cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
-                raise NotImplementedError
+                msg = (
+                    f"There are {len(operation.combinations)} "
+                    "combinations that can be JiaGang."
+                )
+                raise UnexpectedState(msg, self._browser.get_screenshot())
 
             left = round(left * self._browser.zoom_ratio)
             top = round(691 * self._browser.zoom_ratio)

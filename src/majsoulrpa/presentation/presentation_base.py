@@ -54,6 +54,16 @@ class InvalidOperation(ErrorBase):
         super().__init__(message, screenshot)
 
 
+class UnexpectedState(ErrorBase):
+    def __init__(self, message: str, screenshot: bytes) -> None:
+        super().__init__(message, screenshot)
+
+
+class NotImplementedOperation(ErrorBase):
+    def __init__(self, message: str, screenshot: bytes) -> None:
+        super().__init__(message, screenshot)
+
+
 class BrowserRefreshRequest(ErrorBase):
     def __init__(
         self,
