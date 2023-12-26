@@ -40,6 +40,14 @@ class HomePresentation(PresentationBase):
         """Close home screen notifications if they are visible."""
         deadline = timeout_to_deadline(timeout)
 
+        # Wait for the fortune charm's effect to end.
+        time.sleep(4.0)
+        jade = Template.open_file("template/home/jade", browser.zoom_ratio)
+        x, y, score = jade.best_template_match(browser.get_screenshot())
+        if score >= jade.threshold:
+            browser.click_region(x, y, jade.img_width, jade.img_height)
+            time.sleep(0.4)
+
         notification_close = Template.open_file(
             "template/home/notification_close",
             browser.zoom_ratio,
@@ -92,7 +100,7 @@ class HomePresentation(PresentationBase):
         )
         template.wait_until(browser, deadline)
 
-        # Wait for any notification to display on the home screen.
+        # Wait for markers to display on the home screen.
         time.sleep(0.5)
 
         if HomePresentation._match_markers(
