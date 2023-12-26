@@ -149,13 +149,6 @@ class RPA:
                 return p
 
             try:
-                # If it have transitioned to 'HomePresentation'
-                # and any announcements are displayed, close them.
-                now = datetime.datetime.now(datetime.UTC)
-                HomePresentation._close_notifications(  # noqa: SLF001
-                    self._browser,
-                    deadline - now,
-                )
                 now = datetime.datetime.now(datetime.UTC)
                 p = HomePresentation(
                     self._browser,

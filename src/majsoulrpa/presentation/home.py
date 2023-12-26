@@ -35,13 +35,12 @@ class HomePresentation(PresentationBase):
     @staticmethod
     def _close_notifications(
         browser: BrowserBase,
-        timeout: TimeoutType,
+        deadline: datetime.datetime,
     ) -> None:
         """Close home screen notifications if they are visible."""
-        deadline = timeout_to_deadline(timeout)
 
         # Wait for the fortune charm's effect to end.
-        time.sleep(4.0)
+        time.sleep(3.5)
         jade = Template.open_file("template/home/jade", browser.zoom_ratio)
         x, y, score = jade.best_template_match(browser.get_screenshot())
         if score >= jade.threshold:
@@ -92,36 +91,11 @@ class HomePresentation(PresentationBase):
 
     @staticmethod
     def _wait(browser: BrowserBase, timeout: TimeoutType) -> None:
-        deadline = timeout_to_deadline(timeout)
-
         template = Template.open_file(
             "template/home/marker0",
             browser.zoom_ratio,
         )
-        template.wait_until(browser, deadline)
-
-        # Wait for markers to display on the home screen.
-        time.sleep(0.5)
-
-        if HomePresentation._match_markers(
-            browser.get_screenshot(),
-            browser.zoom_ratio,
-        ):
-            return
-
-        # Close any notifications displayed on the home screen.
-        now = datetime.datetime.now(datetime.UTC)
-        HomePresentation._close_notifications(browser, deadline - now)
-
-        while True:
-            if datetime.datetime.now(datetime.UTC) > deadline:
-                msg = "Timeout."
-                raise Timeout(msg, browser.get_screenshot())
-            if HomePresentation._match_markers(
-                browser.get_screenshot(),
-                browser.zoom_ratio,
-            ):
-                break
+        template.wait_for(browser, timeout)
 
     def __init__(  # noqa: PLR0912, PLR0915, C901
         self,
@@ -134,10 +108,34 @@ class HomePresentation(PresentationBase):
 
         deadline = timeout_to_deadline(timeout)
 
-        sct = browser.get_screenshot()
-        if not HomePresentation._match_markers(sct, browser.zoom_ratio):
-            msg = "Could not detect 'home'."
-            raise PresentationNotDetected(msg, sct)
+        template = Template.open_file(
+            "template/home/marker0",
+            browser.zoom_ratio,
+        )
+        ss = browser.get_screenshot()
+        if not template.match(ss):
+            msg = "Could not detect 'HomePresentation'."
+            raise PresentationNotDetected(msg, ss)
+
+        # Wait for markers to display on the home screen.
+        time.sleep(0.5)
+
+        if not HomePresentation._match_markers(
+            browser.get_screenshot(),
+            browser.zoom_ratio,
+        ):
+            # Close any notifications displayed on the home screen.
+            HomePresentation._close_notifications(browser, deadline)
+
+            while True:
+                if datetime.datetime.now(datetime.UTC) > deadline:
+                    msg = "Timeout."
+                    raise Timeout(msg, browser.get_screenshot())
+                if HomePresentation._match_markers(
+                    browser.get_screenshot(),
+                    browser.zoom_ratio,
+                ):
+                    break
 
         num_login_beats = 0
         while True:
@@ -145,7 +143,7 @@ class HomePresentation(PresentationBase):
             message = self._db_client.dequeue_message(deadline - now)
             if message is None:
                 msg = "Timeout."
-                raise Timeout(msg, sct)
+                raise Timeout(msg, browser.get_screenshot())
             _, name, _, _, _ = message
 
             match name:
@@ -229,7 +227,7 @@ class HomePresentation(PresentationBase):
                         break
                     continue
 
-            raise InconsistentMessage(str(message), sct)
+            raise InconsistentMessage(str(message), browser.get_screenshot())
 
         while True:
             now = datetime.datetime.now(datetime.UTC)
@@ -265,7 +263,7 @@ class HomePresentation(PresentationBase):
                     self._db_client.put_back(message)
                     continue
 
-            raise InconsistentMessage(str(message), sct)
+            raise InconsistentMessage(str(message), browser.get_screenshot())
 
     def create_room(
         self,
