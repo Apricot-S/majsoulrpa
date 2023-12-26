@@ -178,17 +178,17 @@ class MatchPresentation(PresentationBase):
 
         paths = [f"template/match/marker{i}" for i in range(4)]
         templates = [Template.open_file(p, browser.zoom_ratio) for p in paths]
-        sct = browser.get_screenshot()
-        if Template.match_one_of(sct, templates) == -1:
+        ss = browser.get_screenshot()
+        if Template.match_one_of(ss, templates) == -1:
             # For postmortem.
             for t in templates:
-                x, y, score = t.best_template_match(sct)
+                x, y, score = t.best_template_match(ss)
                 print(f"({x}, {y}): score = {score}")  # noqa: T201
             now = datetime.datetime.now(datetime.UTC)
-            img = screenshot_to_opencv(sct)
+            img = screenshot_to_opencv(ss)
             cv2.imwrite(now.strftime("%Y-%m-%d-%H-%M-%S.png"), img)
             msg = "Could not detect 'match_main'."
-            raise PresentationNotDetected(msg, sct)
+            raise PresentationNotDetected(msg, ss)
 
         deadline = timeout_to_deadline(timeout)
 
@@ -197,7 +197,7 @@ class MatchPresentation(PresentationBase):
             message = self._db_client.dequeue_message(deadline - now)
             if message is None:
                 msg = "Timeout."
-                raise Timeout(msg, sct)
+                raise Timeout(msg, ss)
             _, name, request, response, timestamp = message
 
             match name:
@@ -335,7 +335,7 @@ class MatchPresentation(PresentationBase):
                         "data": data,
                     }
                     if step != self._step:
-                        raise InconsistentMessage(str(action_info), sct)
+                        raise InconsistentMessage(str(action_info), ss)
                     self._step += 1
 
                     if action_name == "ActionMJStart":
@@ -354,7 +354,7 @@ class MatchPresentation(PresentationBase):
                             )
                         return
 
-                    raise InconsistentMessage(str(action_info), sct)
+                    raise InconsistentMessage(str(action_info), ss)
 
             # The conditional statement regarding '.lq.FastTest.authGame'
             # must come before this conditional statement.
@@ -362,7 +362,7 @@ class MatchPresentation(PresentationBase):
                 self._on_common_message(message)
                 continue
 
-            raise InconsistentMessage(str(message), sct)
+            raise InconsistentMessage(str(message), ss)
 
     @property
     def uuid(self) -> str:
