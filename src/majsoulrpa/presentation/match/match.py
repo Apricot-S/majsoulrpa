@@ -604,7 +604,7 @@ class MatchPresentation(PresentationBase):
             if message is None:
                 msg = "Timeout"
                 raise Timeout(msg, self._browser.get_screenshot())
-            direction, name, request, _, _ = message
+            _, name, _, _, _ = message
 
             if name in MatchPresentation._COMMON_MESSAGE_NAMES:
                 self._on_common_message(message)
