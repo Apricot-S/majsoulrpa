@@ -1,4 +1,5 @@
 from collections.abc import Iterable, Mapping
+from logging import getLogger
 
 from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.db_client import DBClientBase
@@ -11,6 +12,8 @@ from majsoulrpa.presentation.presentation_base import (
     PresentationBase,
     PresentationCreatorBase,
 )
+
+logger = getLogger(__name__)
 
 
 class RoomPlayer(Player):
@@ -56,7 +59,15 @@ class RoomPresentationBase(PresentationBase):
         self._players = list(players)
         self._num_ais = num_ais
 
-    def _update(self, timeout: TimeoutType) -> bool:  # noqa: C901, PLR0912
+    @staticmethod
+    def _wait(browser: BrowserBase, timeout: TimeoutType = 60.0) -> None:
+        template = Template.open_file(
+            "template/room/marker",
+            browser.zoom_ratio,
+        )
+        template.wait_for(browser, timeout)
+
+    def _update(self, timeout: TimeoutType) -> bool:  # noqa: C901, PLR0912, PLR0915
         self._assert_not_stale()
 
         message = self._db_client.dequeue_message(timeout)
@@ -65,9 +76,15 @@ class RoomPresentationBase(PresentationBase):
         direction, name, request, response, timestamp = message
 
         if name == ".lq.Lobby.modifyRoom":
+            logger.info(message)
+            return False
+
+        if name == ".lq.Lobby.readyPlay":
+            logger.info(message)
             return False
 
         if name == ".lq.NotifyRoomPlayerUpdate":
+            logger.info(message)
             if direction != "inbound":
                 msg = "'.lq.NotifyRoomPlayerUpdate' is not inbound."
                 raise InconsistentMessage(msg, None)
@@ -94,6 +111,7 @@ class RoomPresentationBase(PresentationBase):
             return True
 
         if name == ".lq.NotifyRoomPlayerReady":
+            logger.info(message)
             if direction != "inbound":
                 msg = "'.lq.NotifyRoomPlayerReady' is not inbound."
                 raise InconsistentMessage(msg, None)
@@ -104,15 +122,22 @@ class RoomPresentationBase(PresentationBase):
                 msg = "'.lq.NotifyRoomPlayerReady' does not have a dict."
                 raise InconsistentMessage(msg, None)
             account_id = request["account_id"]
-            for i in range(len(self._players)):
-                if self._players[i].account_id == account_id:
-                    break
-                if i == len(self._players):
-                    msg = (
-                        "An inconsistent '.lq.NotifyRoomPlayerReady' message."
-                    )
-                    raise InconsistentMessage(msg, None)
-                self._players[i]._set_ready(is_ready=request["ready"])  # noqa: SLF001
+            try:
+                i = next(
+                    i
+                    for i, player in enumerate(self._players)
+                    if player.account_id == account_id
+                )
+            except StopIteration:
+                msg = "An inconsistent '.lq.NotifyRoomPlayerReady' message."
+                raise InconsistentMessage(msg, None) from None
+            self._players[i]._set_ready(is_ready=request["ready"])  # noqa: SLF001
+            message = self._db_client.dequeue_message(1.0)
+            if message is not None:
+                _, name, _, _, _ = message
+                if name != ".lq.Lobby.readyPlay":
+                    raise InconsistentMessage(str(message), None)
+                logger.info(message)
 
             return True
 

@@ -11,4 +11,4 @@ from .presentation_base import (
     StalePresentation,
     Timeout,
 )
-from .room import RoomOwnerPresentation
+from .room import RoomGuestPresentation, RoomOwnerPresentation
