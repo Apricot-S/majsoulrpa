@@ -15,7 +15,7 @@ from .presentation_base import (
     PresentationBase,
     PresentationCreatorBase,
 )
-from .room import RoomOwnerPresentation
+from .room import RoomGuestPresentation, RoomOwnerPresentation
 
 
 class PresentationCreator(PresentationCreatorBase):
@@ -36,6 +36,8 @@ class PresentationCreator(PresentationCreatorBase):
                 raise NotImplementedError
             case Presentation.ROOMOWNER:
                 RoomOwnerPresentation._wait(browser, timeout)
+            case Presentation.ROOMGUEST:
+                RoomGuestPresentation._wait(browser, timeout)
             case Presentation.MATCH:
                 MatchPresentation._wait(browser, timeout)
             case _:
@@ -84,6 +86,22 @@ class PresentationCreator(PresentationCreatorBase):
                         )
                     case _:
                         raise NotImplementedError
+            case Presentation.ROOMGUEST:
+                match current_presentation:
+                    case Presentation.HOME | Presentation.MATCH:
+                        if not isinstance(
+                            kwargs.get("timeout"),
+                            int | float | datetime.timedelta,
+                        ):
+                            raise TypeError
+                        return RoomGuestPresentation._join(
+                            browser,
+                            db_client,
+                            self,
+                            kwargs["timeout"],
+                        )
+                    case _:
+                        raise NotImplementedError
             case Presentation.MATCH:
                 if not isinstance(
                     kwargs.get("timeout"),
@@ -100,7 +118,7 @@ class PresentationCreator(PresentationCreatorBase):
                             current_presentation,
                             kwargs["timeout"],
                         )
-                    case Presentation.ROOMOWNER:
+                    case Presentation.ROOMOWNER | Presentation.ROOMGUEST:
                         return MatchPresentation(
                             browser,
                             db_client,

@@ -1,8 +1,7 @@
 import datetime
-import time
 from collections.abc import Iterable, Mapping
 from logging import getLogger
-from typing import Self
+from typing import Self, Union
 
 from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.db_client import DBClientBase
@@ -10,19 +9,20 @@ from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 from majsoulrpa.presentation.presentation_base import (
     InconsistentMessage,
-    InvalidOperation,
     Presentation,
     PresentationCreatorBase,
     PresentationNotDetected,
     Timeout,
+    UnexpectedState,
 )
 
+from . import owner
 from .base import RoomPlayer, RoomPresentationBase
 
 logger = getLogger(__name__)
 
 
-class RoomOwnerPresentation(RoomPresentationBase):
+class RoomGuestPresentation(RoomPresentationBase):
     def __init__(  # noqa: PLR0913
         self,
         browser: BrowserBase,
@@ -44,13 +44,13 @@ class RoomOwnerPresentation(RoomPresentationBase):
         )
 
     @classmethod
-    def _create(
+    def _join(
         cls,
         browser: BrowserBase,
         db_client: DBClientBase,
         creator: PresentationCreatorBase,
         timeout: TimeoutType,
-    ) -> Self:
+    ) -> Union[Self, "owner.RoomOwnerPresentation"]:
         deadline = timeout_to_deadline(timeout)
 
         template = Template.open_file(
@@ -71,9 +71,14 @@ class RoomOwnerPresentation(RoomPresentationBase):
             _, name, _, response, _ = message
 
             match name:
-                case ".lq.Lobby.createRoom" | ".lq.Lobby.fetchRoom":
+                case ".lq.Lobby.joinRoom":
                     logger.info(message)
                     break
+                case ".lq.NotifyRoomPlayerUpdate":
+                    # Sometimes '.lq.NotifyRoomPlayerUpdate'
+                    # is sent before .lq.Lobby.joinRoom.
+                    logger.info(message)
+                    continue
 
             raise InconsistentMessage(str(message), sct)
 
@@ -84,8 +89,6 @@ class RoomOwnerPresentation(RoomPresentationBase):
         room: dict = response["room"]
         room_id: int = room["room_id"]
         owner_id: int = room["owner_id"]
-        if owner_id != db_client.account_id:
-            raise InconsistentMessage(str(message), sct)
         max_num_players: int = room["max_player_count"]
         ready_list: list[int] = room["ready_list"]
         players: list[RoomPlayer] = []
@@ -118,7 +121,7 @@ class RoomOwnerPresentation(RoomPresentationBase):
         creator: PresentationCreatorBase,
         prev_presentation: Self,
         timeout: TimeoutType,
-    ) -> Self:
+    ) -> Union[Self, "owner.RoomOwnerPresentation"]:
         deadline = timeout_to_deadline(timeout)
 
         now = datetime.datetime.now(datetime.UTC)
@@ -148,7 +151,22 @@ class RoomOwnerPresentation(RoomPresentationBase):
                     logger.info(message)
                     continue
 
-            raise InconsistentMessage(name, browser.get_screenshot())
+            raise InconsistentMessage(str(message), browser.get_screenshot())
+
+        add_ai = Template.open_file(
+            "template/room/add_ai",
+            browser.zoom_ratio,
+        )
+        if add_ai.match(browser.get_screenshot()):
+            return owner.RoomOwnerPresentation(
+                browser,
+                db_client,
+                creator,
+                prev_presentation.room_id,
+                prev_presentation.max_num_players,
+                prev_presentation.players,
+                prev_presentation.num_ais,
+            )
 
         return cls(
             browser,
@@ -160,63 +178,62 @@ class RoomOwnerPresentation(RoomPresentationBase):
             prev_presentation.num_ais,
         )
 
-    def add_ai(self, timeout: TimeoutType = 10.0) -> None:
+    def ready(self, timeout: TimeoutType = 60.0) -> None:
         self._assert_not_stale()
 
         deadline = timeout_to_deadline(timeout)
 
-        # Check if you can click "Add AI".
-        template = Template.open_file(
-            "template/room/add_ai",
-            self._browser.zoom_ratio,
-        )
-        sct = self._browser.get_screenshot()
-        if not template.match(sct):
-            msg = "Could not add AI."
-            raise InvalidOperation(msg, sct)
-
-        old_num_ais = self.num_ais
-
-        # Click "Add AI".
-        template.click(self._browser)
-        # An effect occurs when you click "Add AI" and
-        # the effect interferes with template matching
-        # when you click "Add AI" consecutively,
-        # so wait until the effect disappears.
-        time.sleep(1.5)
-
-        # Wait until WebSocket messages come in and
-        # the number of AIs actually increases.
-        while self.num_ais <= old_num_ais:
-            now = datetime.datetime.now(datetime.UTC)
-            self._update(deadline - now)
-
-    def start(self, timeout: TimeoutType = 60.0) -> None:
-        self._assert_not_stale()
-
-        deadline = timeout_to_deadline(timeout)
-
-        template = Template.open_file(
-            "template/room/start",
+        ready_template = Template.open_file(
+            "template/room/ready",
             self._browser.zoom_ratio,
         )
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout."
                 raise Timeout(msg, self._browser.get_screenshot())
-            if template.match(self._browser.get_screenshot()):
+            if ready_template.match(self._browser.get_screenshot()):
                 break
-        template.click(self._browser)
+        ready_template.click(self._browser)
 
-        now = datetime.datetime.now(datetime.UTC)
-        self._creator.wait(self._browser, deadline - now, Presentation.MATCH)
-
-        now = datetime.datetime.now(datetime.UTC)
-        new_presentation = self._creator.create_new_presentation(
-            Presentation.ROOMOWNER,
-            Presentation.MATCH,
-            self._browser,
-            self._db_client,
-            timeout=(deadline - now),
+        own_player_index = next(
+            (
+                i
+                for i, p in enumerate(self.players)
+                if p.account_id == self._db_client.account_id
+            ),
+            -1,
         )
-        self._set_new_presentation(new_presentation)
+        if own_player_index == -1:
+            msg = "Own player is not included in the player list."
+            raise UnexpectedState(msg, self._browser.get_screenshot())
+
+        while not self.players[own_player_index].is_ready:
+            now = datetime.datetime.now(datetime.UTC)
+            self._update(deadline - now)
+
+        try:
+            now = datetime.datetime.now(datetime.UTC)
+            self._creator.wait(
+                self._browser,
+                deadline - now,
+                Presentation.MATCH,
+            )
+        except Timeout:
+            cancel_template = Template.open_file(
+                "template/room/cancel",
+                self._browser.zoom_ratio,
+            )
+            if cancel_template.match(self._browser.get_screenshot()):
+                cancel_template.click(self._browser)
+                return
+            raise NotImplementedError from None
+        else:
+            now = datetime.datetime.now(datetime.UTC)
+            new_presentation = self._creator.create_new_presentation(
+                Presentation.ROOMGUEST,
+                Presentation.MATCH,
+                self._browser,
+                self._db_client,
+                timeout=(deadline - now),
+            )
+            self._set_new_presentation(new_presentation)
