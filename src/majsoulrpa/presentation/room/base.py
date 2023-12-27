@@ -75,6 +75,9 @@ class RoomPresentationBase(PresentationBase):
         if name == ".lq.Lobby.modifyRoom":
             return False
 
+        if name == ".lq.Lobby.readyPlay":
+            return False
+
         if name == ".lq.NotifyRoomPlayerUpdate":
             if direction != "inbound":
                 msg = "'.lq.NotifyRoomPlayerUpdate' is not inbound."
