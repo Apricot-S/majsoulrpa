@@ -1,4 +1,3 @@
-import contextlib
 import datetime
 import time
 from collections.abc import Iterable, Mapping
@@ -15,7 +14,6 @@ from majsoulrpa.presentation.presentation_base import (
     Presentation,
     PresentationCreatorBase,
     PresentationNotDetected,
-    PresentationNotUpdated,
     Timeout,
 )
 
@@ -159,14 +157,6 @@ class RoomOwnerPresentation(RoomPresentationBase):
             prev_presentation.num_ais,
         )
 
-    def _update(self, timeout: TimeoutType) -> bool:
-        self._assert_not_stale()
-
-        if not (result := super()._update(timeout)):
-            msg = "'room_host' has not been updated yet."
-            raise PresentationNotUpdated(msg, None)
-        return result
-
     def add_ai(self, timeout: TimeoutType = 10.0) -> None:
         self._assert_not_stale()
 
@@ -196,8 +186,7 @@ class RoomOwnerPresentation(RoomPresentationBase):
         # the number of AIs actually increases.
         while self.num_ais <= old_num_ais:
             now = datetime.datetime.now(datetime.UTC)
-            with contextlib.suppress(PresentationNotUpdated):
-                self._update(deadline - now)
+            self._update(deadline - now)
 
     def start(self, timeout: TimeoutType = 60.0) -> None:
         self._assert_not_stale()
