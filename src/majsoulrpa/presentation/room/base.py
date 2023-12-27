@@ -56,6 +56,14 @@ class RoomPresentationBase(PresentationBase):
         self._players = list(players)
         self._num_ais = num_ais
 
+    @staticmethod
+    def _wait(browser: BrowserBase, timeout: TimeoutType = 60.0) -> None:
+        template = Template.open_file(
+            "template/room/marker",
+            browser.zoom_ratio,
+        )
+        template.wait_for(browser, timeout)
+
     def _update(self, timeout: TimeoutType) -> bool:  # noqa: C901, PLR0912
         self._assert_not_stale()
 

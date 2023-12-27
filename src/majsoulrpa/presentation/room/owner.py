@@ -45,14 +45,6 @@ class RoomOwnerPresentation(RoomPresentationBase):
             num_ais,
         )
 
-    @staticmethod
-    def _wait(browser: BrowserBase, timeout: TimeoutType = 60.0) -> None:
-        template = Template.open_file(
-            "template/room/marker",
-            browser.zoom_ratio,
-        )
-        template.wait_for(browser, timeout)
-
     @classmethod
     def _create(
         cls,
@@ -61,9 +53,7 @@ class RoomOwnerPresentation(RoomPresentationBase):
         creator: PresentationCreatorBase,
         timeout: TimeoutType,
     ) -> Self:
-        if isinstance(timeout, int | float):
-            timeout = datetime.timedelta(seconds=timeout)
-        deadline = datetime.datetime.now(datetime.UTC) + timeout
+        deadline = timeout_to_deadline(timeout)
 
         template = Template.open_file(
             "template/room/marker",
