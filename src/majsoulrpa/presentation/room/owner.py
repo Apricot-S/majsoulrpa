@@ -165,20 +165,17 @@ class RoomOwnerPresentation(RoomPresentationBase):
 
         deadline = timeout_to_deadline(timeout)
 
-        # Check if you can click "Add AI".
+        # Check if "Add AI" is clickable, and if so, click it.
         template = Template.open_file(
             "template/room/add_ai",
             self._browser.zoom_ratio,
         )
-        sct = self._browser.get_screenshot()
-        if not template.match(sct):
+        if not template.click_if_match(self._browser):
             msg = "Could not add AI."
-            raise InvalidOperation(msg, sct)
+            raise InvalidOperation(msg, self._browser.get_screenshot())
 
         old_num_ais = self.num_ais
 
-        # Click "Add AI".
-        template.click(self._browser)
         # An effect occurs when you click "Add AI" and
         # the effect interferes with template matching
         # when you click "Add AI" consecutively,
@@ -200,13 +197,7 @@ class RoomOwnerPresentation(RoomPresentationBase):
             "template/room/start",
             self._browser.zoom_ratio,
         )
-        while True:
-            if datetime.datetime.now(datetime.UTC) > deadline:
-                msg = "Timeout."
-                raise Timeout(msg, self._browser.get_screenshot())
-            if template.match(self._browser.get_screenshot()):
-                break
-        template.click(self._browser)
+        template.wait_until_then_click(self._browser, deadline)
 
         now = datetime.datetime.now(datetime.UTC)
         self._creator.wait(self._browser, deadline - now, Presentation.MATCH)

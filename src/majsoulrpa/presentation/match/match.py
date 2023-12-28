@@ -810,11 +810,9 @@ class MatchPresentation(PresentationBase):
                 msg = "Timeout."
                 raise Timeout(msg, self._browser.get_screenshot())
 
-            if (not round_result_confirmed) and template.match(
-                self._browser.get_screenshot(),
-            ):
-                template.click(self._browser)
-                round_result_confirmed = True
+            if not round_result_confirmed:  # noqa: SIM102
+                if template.click_if_match(self._browser):
+                    round_result_confirmed = True
 
             now = datetime.datetime.now(datetime.UTC)
             message = self._db_client.dequeue_message(deadline - now)
@@ -1222,8 +1220,7 @@ class MatchPresentation(PresentationBase):
                         # where the winning screen is skipped and the
                         # next game starts suddenly, so we will take
                         # a workaround to deal with this phenomenon.
-                        if template.match(self._browser.get_screenshot()):
-                            template.click(self._browser)
+                        if template.click_if_match(self._browser):
                             click_count += 1
                             if click_count == len(data["hules"]):
                                 break
