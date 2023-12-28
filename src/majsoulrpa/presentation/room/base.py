@@ -7,10 +7,10 @@ from majsoulrpa._impl.template import Template
 from majsoulrpa.common import Player, TimeoutType
 from majsoulrpa.presentation.presentation_base import (
     InconsistentMessage,
-    InvalidOperation,
     Presentation,
     PresentationBase,
     PresentationCreatorBase,
+    UnexpectedState,
 )
 
 logger = getLogger(__name__)
@@ -175,10 +175,9 @@ class RoomPresentationBase(PresentationBase):
             "template/room/leave",
             self._browser.zoom_ratio,
         )
-        if not template.match(self._browser.get_screenshot()):
+        if not template.click_if_match(self._browser):
             msg = "Could not leave the room."
-            raise InvalidOperation(msg, self._browser.get_screenshot())
-        template.click(self._browser)
+            raise UnexpectedState(msg, self._browser.get_screenshot())
 
         # Wait until the home screen is displayed.
         self._creator.wait(self._browser, timeout, Presentation.HOME)

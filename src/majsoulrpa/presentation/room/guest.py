@@ -187,13 +187,7 @@ class RoomGuestPresentation(RoomPresentationBase):
             "template/room/ready",
             self._browser.zoom_ratio,
         )
-        while True:
-            if datetime.datetime.now(datetime.UTC) > deadline:
-                msg = "Timeout."
-                raise Timeout(msg, self._browser.get_screenshot())
-            if ready_template.match(self._browser.get_screenshot()):
-                break
-        ready_template.click(self._browser)
+        ready_template.wait_until_then_click(self._browser, deadline)
 
         own_player_index = next(
             (
@@ -223,8 +217,7 @@ class RoomGuestPresentation(RoomPresentationBase):
                 "template/room/cancel",
                 self._browser.zoom_ratio,
             )
-            if cancel_template.match(self._browser.get_screenshot()):
-                cancel_template.click(self._browser)
+            if cancel_template.click_if_match(self._browser):
                 return
             raise NotImplementedError from None
         else:
