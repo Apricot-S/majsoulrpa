@@ -41,11 +41,12 @@ class HomePresentation(PresentationBase):
         """Close home screen notifications if they are visible."""
 
         # Wait for the fortune charm's effect to end.
-        time.sleep(3.5)
-        jade = Template.open_file("template/home/jade", browser.zoom_ratio)
-        x, y, score = jade.best_template_match(browser.get_screenshot())
-        if score >= jade.threshold:
-            browser.click_region(x, y, jade.img_width, jade.img_height)
+        try:
+            jade = Template.open_file("template/home/jade", browser.zoom_ratio)
+            jade.wait_for_then_click(browser, 3.5)
+        except Timeout:
+            pass
+        else:
             time.sleep(0.4)
 
         notification_close = Template.open_file(
@@ -233,21 +234,20 @@ class HomePresentation(PresentationBase):
             raise InconsistentMessage(str(message), browser.get_screenshot())
 
         while True:
-            now = datetime.datetime.now(datetime.UTC)
             message = self._db_client.dequeue_message(0.1)
             if message is None:
                 break
             _, name, _, _, _ = message
 
             match name:
-                case ".lq.Lobby.heatbeat":
-                    continue
                 case (
-                    ".lq.Lobby.updateClientValue"
+                    ".lq.Lobby.heatbeat"
+                    | ".lq.Lobby.updateClientValue"
                     | ".lq.NotifyAccountUpdate"
                     | ".lq.NotifyAnnouncementUpdate"
                     | ".lq.Lobby.readAnnouncement"
                     | ".lq.Lobby.doActivitySignIn"
+                    | ".lq.Lobby.payMonthTicket"
                 ):
                     logger.info(message)
                     continue
