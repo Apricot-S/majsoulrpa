@@ -183,7 +183,7 @@ class RoomPresentationBase(PresentationBase):
         self._creator.wait(self._browser, timeout, Presentation.HOME)
 
         new_presentation = self._creator.create_new_presentation(
-            Presentation.ROOMBASE,
+            Presentation.ROOM_BASE,
             Presentation.HOME,
             self._browser,
             self._db_client,

@@ -15,7 +15,7 @@ from .presentation_base import (
     PresentationBase,
     PresentationCreatorBase,
 )
-from .room import RoomGuestPresentation, RoomOwnerPresentation
+from .room import RoomGuestPresentation, RoomHostPresentation
 
 
 class PresentationCreator(PresentationCreatorBase):
@@ -34,9 +34,9 @@ class PresentationCreator(PresentationCreatorBase):
                 HomePresentation._wait(browser, timeout)
             case Presentation.TOURNAMENT:
                 raise NotImplementedError
-            case Presentation.ROOMOWNER:
-                RoomOwnerPresentation._wait(browser, timeout)
-            case Presentation.ROOMGUEST:
+            case Presentation.ROOM_HOST:
+                RoomHostPresentation._wait(browser, timeout)
+            case Presentation.ROOM_GUEST:
                 RoomGuestPresentation._wait(browser, timeout)
             case Presentation.MATCH:
                 MatchPresentation._wait(browser, timeout)
@@ -70,7 +70,7 @@ class PresentationCreator(PresentationCreatorBase):
                 )
             case Presentation.TOURNAMENT:
                 raise NotImplementedError
-            case Presentation.ROOMOWNER:
+            case Presentation.ROOM_HOST:
                 match current_presentation:
                     case Presentation.HOME | Presentation.MATCH:
                         if not isinstance(
@@ -78,7 +78,7 @@ class PresentationCreator(PresentationCreatorBase):
                             int | float | datetime.timedelta,
                         ):
                             raise TypeError
-                        return RoomOwnerPresentation._create(
+                        return RoomHostPresentation._create(
                             browser,
                             db_client,
                             self,
@@ -86,7 +86,7 @@ class PresentationCreator(PresentationCreatorBase):
                         )
                     case _:
                         raise NotImplementedError
-            case Presentation.ROOMGUEST:
+            case Presentation.ROOM_GUEST:
                 match current_presentation:
                     case Presentation.HOME | Presentation.MATCH:
                         if not isinstance(
@@ -118,7 +118,7 @@ class PresentationCreator(PresentationCreatorBase):
                             current_presentation,
                             kwargs["timeout"],
                         )
-                    case Presentation.ROOMOWNER | Presentation.ROOMGUEST:
+                    case Presentation.ROOM_HOST | Presentation.ROOM_GUEST:
                         return MatchPresentation(
                             browser,
                             db_client,
