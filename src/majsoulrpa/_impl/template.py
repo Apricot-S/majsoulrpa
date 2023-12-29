@@ -192,6 +192,23 @@ class Template:
             edge_sigma,
         )
 
+    def click_if_match(
+        self,
+        browser: BrowserBase,
+        edge_sigma: float = _STD_EDGE_SIGMA,
+    ) -> bool:
+        x, y, score = self.best_template_match(browser.get_screenshot())
+        if score >= self._threshold:
+            browser.click_region(
+                x,
+                y,
+                self._templ.shape[1],
+                self._templ.shape[0],
+                edge_sigma,
+            )
+            return True
+        return False
+
     def wait_until_then_click(
         self,
         browser: BrowserBase,

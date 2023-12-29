@@ -1,4 +1,5 @@
 import datetime
+import re
 import time
 from logging import getLogger
 from typing import Literal
@@ -40,11 +41,12 @@ class HomePresentation(PresentationBase):
         """Close home screen notifications if they are visible."""
 
         # Wait for the fortune charm's effect to end.
-        time.sleep(3.5)
-        jade = Template.open_file("template/home/jade", browser.zoom_ratio)
-        x, y, score = jade.best_template_match(browser.get_screenshot())
-        if score >= jade.threshold:
-            browser.click_region(x, y, jade.img_width, jade.img_height)
+        try:
+            jade = Template.open_file("template/home/jade", browser.zoom_ratio)
+            jade.wait_for_then_click(browser, 3.5)
+        except Timeout:
+            pass
+        else:
             time.sleep(0.4)
 
         notification_close = Template.open_file(
@@ -149,6 +151,11 @@ class HomePresentation(PresentationBase):
             match name:
                 case (
                     ".lq.Lobby.heatbeat"
+                    | ".lq.NotifyReviveCoinUpdate"
+                    | ".lq.NotifyGiftSendRefresh"
+                    | ".lq.NotifyDailyTaskUpdate"
+                    | ".lq.NotifyAccountChallengeTaskUpdate"
+                    | ".lq.NotifyActivityChange"
                     | ".lq.NotifyAccountUpdate"  # TODO: Analyzing content
                     | ".lq.NotifyShopUpdate"  # TODO: Analyzing content
                     | ".lq.Lobby.oauth2Auth"
@@ -187,6 +194,8 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.fetchAllCommonViews"
                     | ".lq.Lobby.fetchCollectedGameRecordList"
                     | ".lq.Lobby.modifyRoom"
+                    | ".lq.NotifyRoomPlayerReady"
+                    | ".lq.Lobby.readyPlay"
                     | ".lq.Lobby.fetchInfo"  # TODO: Analyzing content
                 ):
                     logger.info(message)
@@ -230,21 +239,20 @@ class HomePresentation(PresentationBase):
             raise InconsistentMessage(str(message), browser.get_screenshot())
 
         while True:
-            now = datetime.datetime.now(datetime.UTC)
             message = self._db_client.dequeue_message(0.1)
             if message is None:
                 break
             _, name, _, _, _ = message
 
             match name:
-                case ".lq.Lobby.heatbeat":
-                    continue
                 case (
-                    ".lq.Lobby.updateClientValue"
+                    ".lq.Lobby.heatbeat"
+                    | ".lq.Lobby.updateClientValue"
                     | ".lq.NotifyAccountUpdate"
                     | ".lq.NotifyAnnouncementUpdate"
                     | ".lq.Lobby.readAnnouncement"
                     | ".lq.Lobby.doActivitySignIn"
+                    | ".lq.Lobby.payMonthTicket"
                 ):
                     logger.info(message)
                     continue
@@ -356,3 +364,92 @@ class HomePresentation(PresentationBase):
             timeout=(deadline - now),
         )
         self._set_new_presentation(new_presentation)
+
+    def join_room(
+        self,
+        room_id: str,
+        timeout: TimeoutType = 60.0,
+    ) -> bool:
+        if re.match(r"([0-9]{5})", room_id) is None:
+            msg = "Room ID must be a 5-digit number."
+            raise ValueError(msg)
+
+        self._assert_not_stale()
+
+        deadline = timeout_to_deadline(timeout)
+
+        # Click "Friendly Match".
+        template = Template.open_file(
+            "template/home/marker3",
+            self._browser.zoom_ratio,
+        )
+        template.click(self._browser)
+
+        # Wait until "Join room" is displayed and then click.
+        template = Template.open_file(
+            "template/home/join_room",
+            self._browser.zoom_ratio,
+        )
+        template.wait_until_then_click(self._browser, deadline)
+
+        # Wait until "Confirm" is displayed.
+        template = Template.open_file(
+            "template/home/room_join/confirm",
+            self._browser.zoom_ratio,
+        )
+        template.wait_until(self._browser, deadline)
+
+        # Click the text box to focus it.
+        self._browser.click_region(
+            int(660 * self._browser.zoom_ratio),
+            int(340 * self._browser.zoom_ratio),
+            int(410 * self._browser.zoom_ratio),
+            int(40 * self._browser.zoom_ratio),
+        )
+        time.sleep(0.1)
+
+        # Enter an room id in the text box.
+        self._browser.write(room_id)
+
+        # Click "Confirm"
+        template.click(self._browser)
+
+        template = Template.open_file(
+            "template/home/room_join/error_close",
+            self._browser.zoom_ratio,
+        )
+        try:
+            template.wait_for_then_click(self._browser, 1.5)
+        except Timeout:
+            pass
+        else:
+            time.sleep(0.5)
+            # Click "Back".
+            self._browser.click_region(
+                int(1175 * self._browser.zoom_ratio),
+                int(250 * self._browser.zoom_ratio),
+                int(100 * self._browser.zoom_ratio),
+                int(34 * self._browser.zoom_ratio),
+            )
+            time.sleep(1.0)
+            return False
+
+        # Wait until room screen is displayed.
+        now = datetime.datetime.now(datetime.UTC)
+        self._creator.wait(
+            self._browser,
+            deadline - now,
+            Presentation.ROOMGUEST,
+        )
+
+        now = datetime.datetime.now(datetime.UTC)
+        new_presentation = self._creator.create_new_presentation(
+            Presentation.HOME,
+            Presentation.ROOMGUEST,
+            self._browser,
+            self._db_client,
+            timeout=(deadline - now),
+        )
+        self._set_new_presentation(new_presentation)
+
+        return True
