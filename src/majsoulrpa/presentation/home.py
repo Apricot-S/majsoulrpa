@@ -352,13 +352,13 @@ class HomePresentation(PresentationBase):
         self._creator.wait(
             self._browser,
             deadline - now,
-            Presentation.ROOMOWNER,
+            Presentation.ROOMHOST,
         )
 
         now = datetime.datetime.now(datetime.UTC)
         new_presentation = self._creator.create_new_presentation(
             Presentation.HOME,
-            Presentation.ROOMOWNER,
+            Presentation.ROOMHOST,
             self._browser,
             self._db_client,
             timeout=(deadline - now),

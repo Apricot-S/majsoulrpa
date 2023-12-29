@@ -16,7 +16,7 @@ from majsoulrpa.presentation.presentation_base import (
     UnexpectedState,
 )
 
-from . import owner
+from . import host
 from .base import RoomPlayer, RoomPresentationBase
 
 logger = getLogger(__name__)
@@ -50,7 +50,7 @@ class RoomGuestPresentation(RoomPresentationBase):
         db_client: DBClientBase,
         creator: PresentationCreatorBase,
         timeout: TimeoutType,
-    ) -> Union[Self, "owner.RoomOwnerPresentation"]:
+    ) -> Union[Self, "host.RoomHostPresentation"]:
         deadline = timeout_to_deadline(timeout)
 
         template = Template.open_file(
@@ -121,7 +121,7 @@ class RoomGuestPresentation(RoomPresentationBase):
         creator: PresentationCreatorBase,
         prev_presentation: Self,
         timeout: TimeoutType,
-    ) -> Union[Self, "owner.RoomOwnerPresentation"]:
+    ) -> Union[Self, "host.RoomHostPresentation"]:
         deadline = timeout_to_deadline(timeout)
 
         now = datetime.datetime.now(datetime.UTC)
@@ -158,7 +158,7 @@ class RoomGuestPresentation(RoomPresentationBase):
             browser.zoom_ratio,
         )
         if add_ai.match(browser.get_screenshot()):
-            return owner.RoomOwnerPresentation(
+            return host.RoomHostPresentation(
                 browser,
                 db_client,
                 creator,
