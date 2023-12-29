@@ -114,7 +114,6 @@ class MatchPresentation(PresentationBase):
                 | ".lq.NotifyShopUpdate"
                 | ".lq.Lobby.fetchShopInterval"
                 | ".lq.NotifyAccountChallengeTaskUpdate"
-                | ".lq.NotifyAccountChallengeTaskUpdate"
                 | ".lq.NotifyAccountUpdate"
                 | ".lq.NotifyActivityChange"  # ?
             ):
@@ -574,17 +573,20 @@ class MatchPresentation(PresentationBase):
             except Timeout:
                 break
 
-        if self._prev_presentation == Presentation.ROOMOWNER:
+        if self._prev_presentation in (
+            Presentation.ROOMOWNER,
+            Presentation.ROOMGUEST,
+        ):
             now = datetime.datetime.now(datetime.UTC)
             self._creator.wait(
                 self._browser,
                 deadline - now,
-                Presentation.ROOMOWNER,
+                self._prev_presentation,
             )
             now = datetime.datetime.now(datetime.UTC)
             new_presentation = self._creator.create_new_presentation(
                 Presentation.MATCH,
-                Presentation.ROOMOWNER,
+                self._prev_presentation,
                 self._browser,
                 self._db_client,
                 timeout=(deadline - now),
