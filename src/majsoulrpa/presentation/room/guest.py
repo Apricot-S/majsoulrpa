@@ -71,7 +71,7 @@ class RoomGuestPresentation(RoomPresentationBase):
             _, name, _, response, _ = message
 
             match name:
-                case ".lq.Lobby.joinRoom":
+                case ".lq.Lobby.joinRoom" | ".lq.Lobby.fetchRoom":
                     logger.info(message)
                     break
                 case ".lq.NotifyRoomPlayerUpdate":
@@ -219,7 +219,7 @@ class RoomGuestPresentation(RoomPresentationBase):
             )
             if cancel_template.click_if_match(self._browser):
                 return
-            raise NotImplementedError from None
+            raise
         else:
             now = datetime.datetime.now(datetime.UTC)
             new_presentation = self._creator.create_new_presentation(
