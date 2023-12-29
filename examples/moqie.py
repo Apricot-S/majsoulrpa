@@ -8,7 +8,7 @@ from majsoulrpa.presentation import (
     AuthPresentation,
     HomePresentation,
     LoginPresentation,
-    RoomOwnerPresentation,
+    RoomHostPresentation,
 )
 from majsoulrpa.presentation.match import MatchPresentation
 from majsoulrpa.presentation.match.operation import DapaiOperation
@@ -68,7 +68,7 @@ if __name__ == "__main__":
         logger.info("Home end.")
 
         logger.info("Room start.")
-        if not isinstance(presentation, RoomOwnerPresentation):
+        if not isinstance(presentation, RoomHostPresentation):
             msg = "Could not transit to 'room'."
             raise RuntimeError(msg)
         logger.info(f"room id: {presentation.room_id}")  # noqa: G004
@@ -128,7 +128,7 @@ if __name__ == "__main__":
                     presentation = presentation.new_presentation
                     if isinstance(presentation, MatchPresentation):
                         continue
-                    assert isinstance(presentation, RoomOwnerPresentation)
+                    assert isinstance(presentation, RoomHostPresentation)
                     break
 
         presentation.leave()
