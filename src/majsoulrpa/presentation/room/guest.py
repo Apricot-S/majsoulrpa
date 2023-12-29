@@ -223,7 +223,7 @@ class RoomGuestPresentation(RoomPresentationBase):
         else:
             now = datetime.datetime.now(datetime.UTC)
             new_presentation = self._creator.create_new_presentation(
-                Presentation.ROOMGUEST,
+                Presentation.ROOM_GUEST,
                 Presentation.MATCH,
                 self._browser,
                 self._db_client,

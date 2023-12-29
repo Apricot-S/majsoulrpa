@@ -574,8 +574,8 @@ class MatchPresentation(PresentationBase):
                 break
 
         if self._prev_presentation in (
-            Presentation.ROOMHOST,
-            Presentation.ROOMGUEST,
+            Presentation.ROOM_HOST,
+            Presentation.ROOM_GUEST,
         ):
             now = datetime.datetime.now(datetime.UTC)
             self._creator.wait(
