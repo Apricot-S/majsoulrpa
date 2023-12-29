@@ -2,6 +2,7 @@
 import datetime
 import time
 from logging import getLogger
+from typing import Any, TypeGuard
 
 import cv2
 
@@ -174,7 +175,6 @@ class MatchPresentation(PresentationBase):
         if match_state is None:
             match_state = MatchState()
         self._match_state = match_state
-        self._round_state = None
         self._operation_list = None
 
         paths = [f"template/match/marker{i}" for i in range(4)]
@@ -274,6 +274,12 @@ class MatchPresentation(PresentationBase):
                     self._match_state._set_uuid(uuid)  # noqa: SLF001
 
                     # TODO: Check game settings
+
+                    if response is None:
+                        msg = (
+                            "'.lq.FastTest.authGame' has no response message."
+                        )
+                        raise InconsistentMessage(msg, ss)
 
                     player_map = {}
                     for p in response["players"]:
@@ -376,72 +382,42 @@ class MatchPresentation(PresentationBase):
 
     @property
     def chang(self) -> int:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.chang
 
     @property
     def ju(self) -> int:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.ju
 
     @property
     def ben(self) -> int:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.ben
 
     @property
     def liqibang(self) -> int:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.liqibang
 
     @property
     def dora_indicators(self) -> list[str]:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.dora_indicators
 
     @property
     def left_tile_count(self) -> int:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.left_tile_count
 
     @property
     def scores(self) -> list[int]:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.scores
 
     @property
     def shoupai(self) -> list[str]:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.shoupai
 
     @property
     def zimopai(self) -> str | None:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.zimopai
 
     @property
     def he(self) -> list[list[tuple[str, bool]]]:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.he
 
     @property
@@ -596,7 +572,8 @@ class MatchPresentation(PresentationBase):
 
         # TODO: What to do when restarting a suspended match.
         # In this case, 'self._prev_presentation' is 'None'.
-
+        if self._prev_presentation is None:
+            raise NotImplementedError(self._prev_presentation)
         raise NotImplementedError(self._prev_presentation.name)
 
     def _on_end_of_match(self, deadline: datetime.datetime) -> None:
@@ -668,7 +645,7 @@ class MatchPresentation(PresentationBase):
 
     def _workaround_for_reordered_actions(
         self,
-        message: Message,
+        message: Message | None,
         expected_step: int,
         timeout: TimeoutType,
     ) -> Message:
@@ -686,7 +663,13 @@ class MatchPresentation(PresentationBase):
 
         deadline = timeout_to_deadline(timeout)
 
-        messages: list[Message] = []
+        messages: list[Message | None] = []
+
+        def is_no_none_in_messages(
+            messages: list[Message | None],
+        ) -> TypeGuard[list[Message]]:
+            return None not in messages
+
         while True:
             assert message is not None
             _, name, request, _, _ = message
@@ -699,7 +682,7 @@ class MatchPresentation(PresentationBase):
 
             if name == ".lq.ActionPrototype":
                 step, action_name, data = _common.parse_action(request)
-                action_info = {
+                action_info: dict[str, int | str | dict] | None = {
                     "step": step,
                     "action_name": action_name,
                     "data": data,
@@ -712,7 +695,8 @@ class MatchPresentation(PresentationBase):
                 while len(messages) <= step - expected_step:
                     messages.append(None)
                 messages[step - expected_step] = message
-                if messages.count(None) == 0:
+
+                if is_no_none_in_messages(messages):
                     result = messages.pop(0)
                     while len(messages) > 0:
                         message = messages.pop(-1)
@@ -993,13 +977,15 @@ class MatchPresentation(PresentationBase):
             raise ValueError(message)
         if name != ".lq.FastTest.syncGame":
             raise ValueError(message)
+        if response is None:
+            raise ValueError(message)
 
         game_restore = response["game_restore"]
 
         if game_restore["game_state"] != 1:
             raise NotImplementedError(message)
 
-        actions: list[object] = game_restore["actions"]
+        actions: list[Any] = game_restore["actions"]
         if len(actions) == 0:
             raise InconsistentMessage(str(message))
         if len(actions) != response["step"]:
