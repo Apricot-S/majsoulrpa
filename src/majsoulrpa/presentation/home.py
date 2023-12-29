@@ -432,6 +432,13 @@ class HomePresentation(PresentationBase):
                 int(34 * self._browser.zoom_ratio),
             )
             time.sleep(1.0)
+
+            while True:
+                message = self._db_client.dequeue_message(1.0)
+                if message is None:
+                    break
+                logger.info(message)
+
             return False
 
         # Wait until room screen is displayed.
