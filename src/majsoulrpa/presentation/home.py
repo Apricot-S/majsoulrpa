@@ -151,6 +151,11 @@ class HomePresentation(PresentationBase):
             match name:
                 case (
                     ".lq.Lobby.heatbeat"
+                    | ".lq.NotifyReviveCoinUpdate"
+                    | ".lq.NotifyGiftSendRefresh"
+                    | ".lq.NotifyDailyTaskUpdate"
+                    | ".lq.NotifyAccountChallengeTaskUpdate"
+                    | ".lq.NotifyActivityChange"
                     | ".lq.NotifyAccountUpdate"  # TODO: Analyzing content
                     | ".lq.NotifyShopUpdate"  # TODO: Analyzing content
                     | ".lq.Lobby.oauth2Auth"
