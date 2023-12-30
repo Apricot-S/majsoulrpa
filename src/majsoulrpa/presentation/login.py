@@ -27,10 +27,10 @@ class LoginPresentation(PresentationBase):
             "template/login/marker",
             browser.zoom_ratio,
         )
-        sct = browser.get_screenshot()
-        if not template.match(sct):
+        ss = browser.get_screenshot()
+        if not template.match(ss):
             msg = "Could not detect 'LoginPresentation'."
-            raise PresentationNotDetected(msg, sct)
+            raise PresentationNotDetected(msg, ss)
 
     @staticmethod
     def _wait(browser: BrowserBase, timeout: TimeoutType = 60.0) -> None:
