@@ -1,0 +1,5 @@
+email_address = "your_email_address@example.cfg" # Must be 50 characters or less
+viewport_height = 720                            # Support from 720 to 2160
+[initial_position] # Support multiple monitors
+left = 100 # The left edge of the primary monitor is 0
+top = 100  # The top of the primary monitor is 0
