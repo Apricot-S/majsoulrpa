@@ -43,7 +43,7 @@ class HomePresentation(PresentationBase):
         # Wait for the fortune charm's effect to end.
         try:
             jade = Template.open_file("template/home/jade", browser.zoom_ratio)
-            jade.wait_for_then_click(browser, 3.5)
+            jade.wait_for_then_click(browser, 4.0)
         except Timeout:
             pass
         else:
@@ -196,6 +196,7 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.modifyRoom"
                     | ".lq.NotifyRoomPlayerReady"
                     | ".lq.Lobby.readyPlay"
+                    | ".lq.Lobby.payMonthTicket"
                     | ".lq.Lobby.fetchInfo"  # TODO: Analyzing content
                 ):
                     logger.info(message)
