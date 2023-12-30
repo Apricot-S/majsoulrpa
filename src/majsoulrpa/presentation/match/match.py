@@ -424,58 +424,34 @@ class MatchPresentation(PresentationBase):
     def fulu(
         self,
     ) -> list[list[tuple[str, int | None, int | None, list[str]]]]:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.fulu
 
     @property
     def liqi(self) -> list[bool]:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.liqi
 
     @property
     def wliqi(self) -> list[bool]:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.wliqi
 
     @property
     def first_draw(self) -> bool:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.first_draw[self.seat]
 
     @property
     def yifa(self) -> list[bool]:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.yifa
 
     @property
     def lingshang_zimo(self) -> bool:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.lingshang_zimo[self.seat]
 
     @property
     def prev_dapai_seat(self) -> int | None:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.prev_dapai_seat
 
     @property
     def prev_dapai(self) -> str | None:
-        if self._round_state is None:
-            msg = "Round state is not initialized."
-            raise RuntimeError(msg)
         return self._round_state.prev_dapai
 
     @property
