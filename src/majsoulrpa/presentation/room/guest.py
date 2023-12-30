@@ -57,17 +57,17 @@ class RoomGuestPresentation(RoomPresentationBase):
             "template/room/marker",
             browser.zoom_ratio,
         )
-        sct = browser.get_screenshot()
-        if not template.match(sct):
+        ss = browser.get_screenshot()
+        if not template.match(ss):
             msg = "Could not detect 'room'."
-            raise PresentationNotDetected(msg, sct)
+            raise PresentationNotDetected(msg, ss)
 
         while True:
             now = datetime.datetime.now(datetime.UTC)
             message = db_client.dequeue_message(deadline - now)
             if message is None:
                 msg = "Timeout."
-                raise Timeout(msg, sct)
+                raise Timeout(msg, ss)
             _, name, _, response, _ = message
 
             match name:
@@ -80,7 +80,7 @@ class RoomGuestPresentation(RoomPresentationBase):
                     logger.info(message)
                     continue
 
-            raise InconsistentMessage(str(message), sct)
+            raise InconsistentMessage(str(message), ss)
 
         if not isinstance(response, Mapping):
             msg = f"'{name}' response does not have a dict."
