@@ -427,6 +427,10 @@ class MatchPresentation(PresentationBase):
         return self._round_state.fulu
 
     @property
+    def num_babei(self) -> list[int]:
+        return self._round_state.num_babei
+
+    @property
     def liqi(self) -> list[bool]:
         return self._round_state.liqi
 
