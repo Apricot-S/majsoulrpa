@@ -43,7 +43,7 @@ class HomePresentation(PresentationBase):
         # Wait for the fortune charm's effect to end.
         try:
             jade = Template.open_file("template/home/jade", browser.zoom_ratio)
-            jade.wait_for_then_click(browser, 3.5)
+            jade.wait_for_then_click(browser, 4.0)
         except Timeout:
             pass
         else:
@@ -196,6 +196,7 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.modifyRoom"
                     | ".lq.NotifyRoomPlayerReady"
                     | ".lq.Lobby.readyPlay"
+                    | ".lq.Lobby.payMonthTicket"
                     | ".lq.Lobby.fetchInfo"  # TODO: Analyzing content
                 ):
                     logger.info(message)
@@ -273,6 +274,34 @@ class HomePresentation(PresentationBase):
 
             raise InconsistentMessage(str(message), browser.get_screenshot())
 
+    def _discard_messages_across_dates(self) -> None:
+        while True:
+            message = self._db_client.dequeue_message(0.1)
+            if message is None:
+                break
+            _, name, _, _, _ = message
+
+            match name:
+                case (
+                    ".lq.NotifyReviveCoinUpdate"
+                    | ".lq.NotifyGiftSendRefresh"
+                    | ".lq.NotifyDailyTaskUpdate"
+                    | ".lq.NotifyActivityPeriodTaskUpdate"
+                    | ".lq.NotifyShopUpdate"
+                    | ".lq.NotifyAccountChallengeTaskUpdate"
+                    | ".lq.NotifyAccountUpdate"
+                    | ".lq.Lobby.fetchShopInterval"
+                    | ".lq.Lobby.fetchActivityInterval"
+                    | ".lq.Lobby.heatbeat"
+                ):
+                    logger.info(message)
+                    continue
+                case _:
+                    raise InconsistentMessage(
+                        str(message),
+                        self._browser.get_screenshot(),
+                    )
+
     def create_room(
         self,
         mode: Literal["4-Player", "3-Player"] = "4-Player",
@@ -287,6 +316,7 @@ class HomePresentation(PresentationBase):
         self._assert_not_stale()
 
         deadline = timeout_to_deadline(timeout)
+        self._discard_messages_across_dates()
 
         # Click "Friendly Match".
         template = Template.open_file(
@@ -370,13 +400,14 @@ class HomePresentation(PresentationBase):
         room_id: str,
         timeout: TimeoutType = 60.0,
     ) -> bool:
-        if re.match(r"([0-9]{5})", room_id) is None:
+        if re.match(r"(\d{5})", room_id) is None:
             msg = "Room ID must be a 5-digit number."
             raise ValueError(msg)
 
         self._assert_not_stale()
 
         deadline = timeout_to_deadline(timeout)
+        self._discard_messages_across_dates()
 
         # Click "Friendly Match".
         template = Template.open_file(
@@ -434,7 +465,7 @@ class HomePresentation(PresentationBase):
             time.sleep(1.0)
 
             while True:
-                message = self._db_client.dequeue_message(1.0)
+                message = self._db_client.dequeue_message(0.1)
                 if message is None:
                     break
                 logger.info(message)
