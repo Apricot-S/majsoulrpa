@@ -371,7 +371,7 @@ class HomePresentation(PresentationBase):
         room_id: str,
         timeout: TimeoutType = 60.0,
     ) -> bool:
-        if re.match(r"([0-9]{5})", room_id) is None:
+        if re.match(r"(\d{5})", room_id) is None:
             msg = "Room ID must be a 5-digit number."
             raise ValueError(msg)
 
