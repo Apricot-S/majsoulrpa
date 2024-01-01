@@ -1,32 +1,24 @@
+import json
 import tomllib
 from pathlib import Path
 from typing import Any
 
-_config: dict[str, Any] | None = None
+from jsonschema import RefResolver, validate
 
-
-def _validate_config(config: dict[str, Any]) -> None:
-    def validate_dict(dict_: dict[str, Any], key: str, type_: type) -> None:
-        if key not in dict_:
-            msg = f"'{key}' is not found."
-            raise KeyError(msg)
-        if not isinstance(dict_[key], type_):
-            msg = f"'{key}' is not {type_}."
-            raise TypeError(msg)
-
-    validate_dict(config, "email_address", str)
-    validate_dict(config, "viewport_height", int)
-    validate_dict(config, "initial_position", dict)
-    validate_dict(config["initial_position"], "left", int)
-    validate_dict(config["initial_position"], "top", int)
+_SCHEMA_PATH = Path(__file__).parent / "_config"
+with (_SCHEMA_PATH / "schema.json").open() as _fp:
+    _CONFIG_SCHEMA = json.load(_fp)
+_REF = RefResolver(_SCHEMA_PATH.as_uri() + "/", _CONFIG_SCHEMA)
 
 
 def get_config(path: str | Path) -> dict[str, Any]:
-    """Get config from file.
+    """
+    Get the config from a TOML format file.
+    If there are multiple configs, select one and input from stdin.
 
     Parameters
     ----------
-    path : str | pathlib.Path
+    path : str or pathlib.Path
         Path of config file.
 
     Returns
@@ -36,33 +28,48 @@ def get_config(path: str | Path) -> dict[str, Any]:
 
     Raises
     ------
-    RuntimeError
-        If loading config fails.
-    KeyError
-        If config item is not found.
-    TypeError
-        If config is invalid type.
+    FileNotFoundError
+        If opening a file fails.
+    IndexError
+        If there are multiple configs
+        and the specified number is outside the range of the list.
+    ValueError
+        If there are multiple configs
+        and non-numeric value is specified.
+        If there are multiple configs
+        and the config names are duplicated.
     tomllib.TOMLDecodeError
         If config file is invalid TOML document.
+    jsonschema.exceptions.ValidationError
+        If config is invalid format.
     """
-    global _config  # noqa: PLW0603
-    if _config is not None:
-        return _config
-
     if isinstance(path, str):
         path = Path(path)
 
-    if not path.exists():
-        msg = f"{path}: Does not exist."
-        raise RuntimeError(msg)
-    if not path.is_file():
-        msg = f"{path}: Is not a file."
-        raise RuntimeError(msg)
-
     with path.open("rb") as fp:
         config = tomllib.load(fp)
+    validate(config, _CONFIG_SCHEMA, resolver=_REF)
 
-    _validate_config(config)
-    _config = config
+    config_list = next(iter(config.values()))
+    if not isinstance(config_list, list):
+        return config
 
-    return config
+    if len(config_list) == 1:
+        return config_list[0]
+
+    name_list = [c["name"] for c in config_list]
+    duplicate_names = {n for n in name_list if name_list.count(n) > 1}
+    if duplicate_names:
+        msg = f"{', '.join(duplicate_names)}: Duplicate config names."
+        raise ValueError(msg)
+
+    for i, c in enumerate(config_list):
+        name = c["name"]
+        print(f"{i}: {name}")  # noqa: T201
+    print("")  # noqa: T201
+
+    selection = int(input("Which configuration to use?: "))
+    if selection < 0 or selection >= len(config_list):
+        msg = f"list index out of range: {selection}"
+        raise IndexError(msg)
+    return config_list[selection]
