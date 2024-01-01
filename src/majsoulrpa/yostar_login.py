@@ -70,8 +70,7 @@ class YostarLoginIMAP(YostarLoginBase):
         context = ssl.create_default_context()
         with IMAPClient(self._imap_server, ssl_context=context) as server:
             server.login(self._email_address, self._app_password)
-            log_msg = "Login to the mail server was successful."
-            logger.info(log_msg)
+            logger.info("Login to the mail server was successful.")
 
             now = datetime.datetime.now(tz=datetime.UTC)
             today = now.date()
@@ -115,36 +114,33 @@ class YostarLoginIMAP(YostarLoginBase):
                 # so delete emails sent more than 30 minutes ago.
                 if date < (now - datetime.timedelta(minutes=30)):
                     server.delete_messages(uid)
-                    log_msg = (
-                        "Deleted mail sent more than 30 minutes ago"
-                        f": uid {uid}"
+                    logger.info(
+                        "Deleted mail sent more than 30 minutes ago: uid %d",
+                        uid,
                     )
-                    logger.info(log_msg)
                     continue
 
                 # Delete emails sent before starting login.
                 if date < start_time:
                     server.delete_messages(uid)
-                    log_msg = (
-                        f"Deleted mail sent before starting login: uid {uid}"
+                    logger.info(
+                        "Deleted mail sent before starting login: uid %d",
+                        uid,
                     )
-                    logger.info(log_msg)
                     continue
 
                 # If another login email already exists,
                 # delete the old one.
                 if target_date is not None and date < target_date:
                     server.delete_messages(uid)
-                    log_msg = f"Deleted mail the old one: uid {uid}"
-                    logger.info(log_msg)
+                    logger.info("Deleted mail the old one: uid %d", uid)
                     continue
 
                 target_date = date
                 target_content = msg.get_content()
 
                 server.delete_messages(uid)
-                log_msg = f"Deleted used mail: uid {uid}"
-                logger.info(log_msg)
+                logger.info("Deleted used mail: uid %d", uid)
 
             if target_content is None:
                 return None
