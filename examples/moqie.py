@@ -24,9 +24,9 @@ if __name__ == "__main__":
     myconfig = config.get_config("examples/config.toml")
 
     with RPA(
-        initial_left=myconfig["initial_position"]["left"],
-        initial_top=myconfig["initial_position"]["top"],
-        viewport_height=myconfig["viewport_height"],
+        initial_left=myconfig["browser"]["initial_position"]["left"],
+        initial_top=myconfig["browser"]["initial_position"]["top"],
+        viewport_height=myconfig["browser"]["viewport_height"],
     ) as rpa:
         logger.info("RPA start.")
         presentation = rpa.wait(timeout=20.0)
@@ -47,7 +47,9 @@ if __name__ == "__main__":
         if not isinstance(presentation, AuthPresentation):
             msg = "Could not transit to 'auth'."
             raise RuntimeError(msg)
-        presentation.enter_email_address(myconfig["email_address"])
+        presentation.enter_email_address(
+            myconfig["authentication"]["email_address"],
+        )
         auth_code = input("verification code: ")
         presentation.enter_auth_code(auth_code, timeout=60.0)
         if presentation.new_presentation is None:
