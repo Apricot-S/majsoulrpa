@@ -1,0 +1,28 @@
+{
+    "type": "object",
+    "required": [
+        "viewport_height",
+        "initial_position"
+    ],
+    "properties": {
+        "viewport_height": {
+            "type": "integer",
+            "minimum": 1
+        },
+        "initial_position": {
+            "type": "object",
+            "required": [
+                "left",
+                "top"
+            ],
+            "properties": {
+                "left": {
+                    "type": "integer"
+                },
+                "top": {
+                    "type": "integer"
+                }
+            }
+        }
+    }
+}
