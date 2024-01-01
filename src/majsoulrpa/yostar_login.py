@@ -30,9 +30,9 @@ class YostarLoginBase(metaclass=ABCMeta):
     def get_email_address(self) -> str:
         pass
 
-    # The authentication code is a 6-digit number
+    # The verification code is a 6-digit number
     # sandwiched between HTML tags,
-    # so it can search for the authentication code
+    # so it can search for the verification code
     # using the following regular expression.
     _PATTERN: Final = re.compile(r">(\d{6})<")
 
@@ -100,6 +100,9 @@ class YostarLoginIMAP(YostarLoginBase):
                     continue
 
                 if msg.get("Subject") != YOSTAR_EMAIL_SUBJECT:
+                    # Ignore emails whose `Subject` is not
+                    # `Eメールアドレスの確認` as they may be
+                    # related to matters other than login.
                     continue
 
                 mail_date = msg.get("Date")
@@ -110,9 +113,9 @@ class YostarLoginIMAP(YostarLoginBase):
                     datetime.UTC,
                 )
 
-                # The authentication code is valid for 30 minutes,
-                # so delete emails sent more than 30 minutes ago.
                 if date < (now - datetime.timedelta(minutes=30)):
+                    # The verification code is valid for 30 minutes,
+                    # so delete emails sent more than 30 minutes ago.
                     server.delete_messages(uid)
                     logger.info(
                         "Deleted mail sent more than 30 minutes ago: uid %d",
@@ -120,8 +123,8 @@ class YostarLoginIMAP(YostarLoginBase):
                     )
                     continue
 
-                # Delete emails sent before starting login.
                 if date < start_time:
+                    # Delete emails sent before starting login.
                     server.delete_messages(uid)
                     logger.info(
                         "Deleted mail sent before starting login: uid %d",
@@ -129,9 +132,9 @@ class YostarLoginIMAP(YostarLoginBase):
                     )
                     continue
 
-                # If another login email already exists,
-                # delete the old one.
                 if target_date is not None and date < target_date:
+                    # If another login email already exists,
+                    # delete the old one.
                     server.delete_messages(uid)
                     logger.info("Deleted mail the old one: uid %d", uid)
                     continue
@@ -266,7 +269,7 @@ class YostarLoginS3(YostarLoginBase):
             now = datetime.datetime.now(tz=datetime.UTC)
 
             if date < (now - datetime.timedelta(minutes=30)):
-                # The authentication code is valid for 30 minutes,
+                # The verification code is valid for 30 minutes,
                 # so delete emails sent more than 30 minutes ago.
                 delete_object(key)
                 logger.info("Deleted the S3 object `%s`.", key)
