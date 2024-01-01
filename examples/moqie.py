@@ -31,7 +31,6 @@ if __name__ == "__main__":
         logger.info("RPA start.")
         presentation = rpa.wait(timeout=20.0)
 
-        login_start_time = datetime.datetime.now(datetime.UTC)
         logger.info("Login start.")
         if not isinstance(presentation, LoginPresentation):
             msg = "Could not transit to 'login'."
