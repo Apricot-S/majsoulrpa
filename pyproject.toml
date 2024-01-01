@@ -16,7 +16,7 @@ classifiers = [
 ]
 readme = "README.md"
 keywords = ["mahjong", "Mahjong Soul", "Majsoul", "automation", "RPA"]
-packages = [{include = "majsoulrpa", from = "src"}]
+packages = [{ include = "majsoulrpa", from = "src" }]
 include = [
     "src/majsoulrpa",
     "src/majsoulrpa/template/**/*",
@@ -32,12 +32,15 @@ playwright = "*"
 protobuf = "*"
 grpcio = "^1.60.0"
 pywinctl = "^0.3"
+jsonschema = "^4.20.0"
+boto3 = "^1.34.11"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 build = "*"
 mypy = "*"
 ruff = "*"
 types-protobuf = "*"
+types-jsonschema = "^4.20.0.0"
 
 [tool.ruff]
 target-version = "py311"
@@ -54,7 +57,5 @@ ignore = [
     "D", # pydocstyle
 ]
 line-length = 79
-select = [
-    "ALL"
-]
+select = ["ALL"]
 src = ["src"]
