@@ -1,9 +1,5 @@
 {
     "type": "object",
-    "required": [
-        "viewport_height",
-        "initial_position"
-    ],
     "properties": {
         "viewport_height": {
             "type": "integer",
@@ -11,10 +7,6 @@
         },
         "initial_position": {
             "type": "object",
-            "required": [
-                "left",
-                "top"
-            ],
             "properties": {
                 "left": {
                     "type": "integer"
