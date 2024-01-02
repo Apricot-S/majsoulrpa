@@ -1,0 +1,13 @@
+{
+    "type": "object",
+    "properties": {
+        "proxy_port": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "db_port": {
+            "type": "integer",
+            "minimum": 0
+        }
+    }
+}

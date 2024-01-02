@@ -45,6 +45,9 @@
                 "authentication": {
                     "$ref": "#/definitions/authentication"
                 },
+                "port": {
+                    "$ref": "port.json"
+                },
                 "browser": {
                     "$ref": "browser.json"
                 }
@@ -66,6 +69,9 @@
                     },
                     "authentication": {
                         "$ref": "#/definitions/authentication"
+                    },
+                    "port": {
+                        "$ref": "port.json"
                     },
                     "browser": {
                         "$ref": "browser.json"
