@@ -58,10 +58,11 @@ class YostarLoginBase(metaclass=ABCMeta):
 
 class YostarLoginIMAP(YostarLoginBase):
     def __init__(self, config: dict[str, Any]) -> None:
-        self._email_address = config["authentication"]["email_address"]
-        self._imap_server = config["authentication"]["imap_server"]
-        self._app_password = config["authentication"]["password"]
-        self._mail_folder = config["authentication"]["mail_folder"]
+        authentication_config = config["authentication"]
+        self._email_address = authentication_config["email_address"]
+        self._imap_server = authentication_config["imap_server"]
+        self._password = authentication_config["password"]
+        self._mail_folder = authentication_config["mail_folder"]
 
     def get_email_address(self) -> str:
         return self._email_address
@@ -69,7 +70,7 @@ class YostarLoginIMAP(YostarLoginBase):
     def _get_auth_code(self, *, start_time: datetime.datetime) -> str | None:
         context = ssl.create_default_context()
         with IMAPClient(self._imap_server, ssl_context=context) as server:
-            server.login(self._email_address, self._app_password)
+            server.login(self._email_address, self._password)
             logger.info("Login to the mail server was successful.")
 
             now = datetime.datetime.now(tz=datetime.UTC)
