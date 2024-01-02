@@ -4,7 +4,7 @@ import uuid
 from logging import getLogger
 from pathlib import Path
 from subprocess import Popen
-from typing import TYPE_CHECKING, Final, Self
+from typing import TYPE_CHECKING, Any, Final, Self
 
 from ._impl.browser import BrowserBase, DesktopBrowser
 from ._impl.grpc_client import GRPCClient
@@ -47,6 +47,95 @@ class RPA:
         self._browser: BrowserBase | None = None
         self._db_client: DBClientBase | None = None
         self._creator = PresentationCreator()
+
+    @classmethod
+    def from_config(cls, config: dict[str, Any]) -> Self:  # noqa: C901, PLR0912, PLR0915
+        port_config = config.get("port")
+        if port_config is None:
+            proxy_port = 8080
+            db_port = 37247
+        elif isinstance(port_config, dict):
+            _proxy_port = port_config.get("proxy_port")
+            match _proxy_port:
+                case None:
+                    proxy_port = 8080
+                case "None":
+                    proxy_port = None
+                case int():
+                    proxy_port = _proxy_port
+                case _ as invalid_arg:
+                    msg = f'`proxy_port` must be int or "None": {invalid_arg}'
+                    raise TypeError(msg)
+
+            _db_port = port_config.get("db_port")
+            match _db_port:
+                case None:
+                    db_port = 37247
+                case "None":
+                    db_port = None
+                case int():
+                    db_port = _db_port
+                case _ as invalid_arg:
+                    msg = f'`db_port` must be int or "None": {invalid_arg}'
+                    raise TypeError(msg)
+        else:
+            msg = "`port` must be dict"
+            raise TypeError(msg)
+
+        browser_config = config.get("browser")
+        if browser_config is None:
+            initial_left = 0
+            initial_top = 0
+            viewport_height = 1080
+        elif isinstance(browser_config, dict):
+            _initial_position = browser_config.get("initial_position")
+            if _initial_position is None:
+                initial_left = 0
+                initial_top = 0
+            elif isinstance(_initial_position, dict):
+                _left = _initial_position.get("left")
+                match _left:
+                    case None:
+                        initial_left = 0
+                    case int():
+                        initial_left = _left
+                    case _ as invalid_arg:
+                        msg = f"`left` must be int: {invalid_arg}"
+                        raise TypeError(msg)
+
+                _top = _initial_position.get("top")
+                match _top:
+                    case None:
+                        initial_top = 0
+                    case int():
+                        initial_top = _top
+                    case _ as invalid_arg:
+                        msg = f"`top` must be int: {invalid_arg}"
+                        raise TypeError(msg)
+            else:
+                msg = "`initial_position` must be dict"
+                raise TypeError(msg)
+
+            _viewport_height = browser_config.get("viewport_height")
+            match _viewport_height:
+                case None:
+                    viewport_height = 1080
+                case int():
+                    viewport_height = _viewport_height
+                case _ as invalid_arg:
+                    msg = f"`viewport_height` must be int: {invalid_arg}"
+                    raise TypeError(msg)
+        else:
+            msg = "`browser` must be dict"
+            raise TypeError(msg)
+
+        return cls(
+            proxy_port,
+            db_port,
+            initial_left,
+            initial_top,
+            viewport_height,
+        )
 
     def __enter__(self) -> Self:
         # Run DB server process

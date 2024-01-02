@@ -24,7 +24,7 @@ method = "s3"
 email_address = "your_email_address_three@example.cfg"
 bucket_name = "your-example-bucket1"
 key_prefix = "verification-email"
-aws_profile = "foobar"                                 # Option
-[config_list.browser]
-viewport_height = 1080
-initial_position = { left = -2150, top = -360 }
+aws_profile = "foobar"                                 # Optional
+[config_list.port]
+proxy_port = 8080
+db_port = 6379

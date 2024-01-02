@@ -39,12 +39,14 @@
         "single_config_schema": {
             "type": "object",
             "required": [
-                "authentication",
-                "browser"
+                "authentication"
             ],
             "proprties": {
                 "authentication": {
                     "$ref": "#/definitions/authentication"
+                },
+                "port": {
+                    "$ref": "port.json"
                 },
                 "browser": {
                     "$ref": "browser.json"
@@ -59,8 +61,7 @@
                 "type": "object",
                 "required": [
                     "name",
-                    "authentication",
-                    "browser"
+                    "authentication"
                 ],
                 "properties": {
                     "name": {
@@ -68,6 +69,9 @@
                     },
                     "authentication": {
                         "$ref": "#/definitions/authentication"
+                    },
+                    "port": {
+                        "$ref": "port.json"
                     },
                     "browser": {
                         "$ref": "browser.json"

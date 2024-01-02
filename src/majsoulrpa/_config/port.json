@@ -1,0 +1,27 @@
+{
+    "type": "object",
+    "properties": {
+        "proxy_port": {
+            "oneOf": [
+                {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                {
+                    "const": "None"
+                }
+            ]
+        },
+        "db_port": {
+            "oneOf": [
+                {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                {
+                    "const": "None"
+                }
+            ]
+        }
+    }
+}
