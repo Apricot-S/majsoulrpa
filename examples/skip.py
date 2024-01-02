@@ -1,5 +1,4 @@
 # ruff: noqa: INP001, T201, TRY004, S101
-import datetime
 import time
 from logging import WARNING, StreamHandler, basicConfig, getLogger
 
