@@ -6,7 +6,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 version = "0.0.1"
 name = "majsoulrpa"
-description = "A RPA framework for Mahjong Soul (雀魂)"
+description = "A Robotic Process Automation (RPA) framework for Mahjong Soul (雀魂)"
 license = "MIT"
 authors = ["Apricot-S"]
 classifiers = [
