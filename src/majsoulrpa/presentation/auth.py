@@ -33,7 +33,7 @@ class AuthPresentation(PresentationBase):
         )
         ss = browser.get_screenshot()
         if not template.match(ss):
-            msg = "Could not detect 'AuthPresentation'."
+            msg = "Could not detect `AuthPresentation`."
             raise PresentationNotDetected(msg, ss)
 
     @staticmethod

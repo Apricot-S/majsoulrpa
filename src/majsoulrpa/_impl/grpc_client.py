@@ -112,7 +112,7 @@ class GRPCClient(DBClientBase):
                         f"  data: {data!r}\n"
                         "\n"
                         "===============================\n"
-                        "Output of 'protoc --decode_raw'\n"
+                        "Output of `protoc --decode_raw`\n"
                         "===============================\n"
                         f"{stdout}"
                     )
@@ -134,7 +134,7 @@ class GRPCClient(DBClientBase):
                         f"  data: {data!r}\n"
                         "\n"
                         "===============================\n"
-                        "Output of 'protoc --decode_raw'\n"
+                        "Output of `protoc --decode_raw`\n"
                         "===============================\n"
                         f"{stdout}"
                     )

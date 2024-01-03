@@ -59,7 +59,7 @@ class RoomGuestPresentation(RoomPresentationBase):
         )
         ss = browser.get_screenshot()
         if not template.match(ss):
-            msg = "Could not detect 'room'."
+            msg = "Could not detect `room`."
             raise PresentationNotDetected(msg, ss)
 
         while True:
@@ -75,7 +75,7 @@ class RoomGuestPresentation(RoomPresentationBase):
                     logger.info(message)
                     break
                 case ".lq.NotifyRoomPlayerUpdate":
-                    # Sometimes '.lq.NotifyRoomPlayerUpdate'
+                    # Sometimes `.lq.NotifyRoomPlayerUpdate`
                     # is sent before .lq.Lobby.joinRoom.
                     logger.info(message)
                     continue
@@ -83,7 +83,7 @@ class RoomGuestPresentation(RoomPresentationBase):
             raise InconsistentMessage(str(message), ss)
 
         if not isinstance(response, Mapping):
-            msg = f"'{name}' response does not have a dict."
+            msg = f"`{name}` response does not have a dict."
             raise InconsistentMessage(msg, None)
 
         room: dict = response["room"]

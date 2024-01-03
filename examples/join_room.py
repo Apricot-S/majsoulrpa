@@ -38,18 +38,18 @@ if __name__ == "__main__":
 
             logger.info("Login start.")
             if not isinstance(presentation, LoginPresentation):
-                msg = "Could not transit to 'login'."
+                msg = "Could not transit to `login`."
                 raise RuntimeError(msg)
             presentation.login(timeout=60.0)
             if presentation.new_presentation is None:
-                msg = "Could not transit to 'auth'."
+                msg = "Could not transit to `auth`."
                 raise RuntimeError(msg)
             presentation = presentation.new_presentation
             logger.info("Login end.")
 
             logger.info("Auth start.")
             if not isinstance(presentation, AuthPresentation):
-                msg = "Could not transit to 'auth'."
+                msg = "Could not transit to `auth`."
                 raise RuntimeError(msg)
             presentation.enter_email_address(
                 myconfig["authentication"]["email_address"],
@@ -57,39 +57,39 @@ if __name__ == "__main__":
             auth_code = input("verification code: ")
             presentation.enter_auth_code(auth_code, timeout=60.0)
             if presentation.new_presentation is None:
-                msg = "Could not transit to 'home'."
+                msg = "Could not transit to `home`."
                 raise RuntimeError
             presentation = presentation.new_presentation
             logger.info("Auth end.")
 
             logger.info("Home start.")
             if not isinstance(presentation, HomePresentation):
-                msg = "Could not transit to 'home"
+                msg = "Could not transit to `home`."
                 raise RuntimeError(msg)
             room_id = str(input("room id: "))
             presentation.join_room(room_id)
             if presentation.new_presentation is None:
-                msg = "Could not transit to 'room'."
+                msg = "Could not transit to `room`."
                 raise RuntimeError(msg)
             presentation = presentation.new_presentation
             logger.info("Home end.")
 
             logger.info("Room start.")
             if not isinstance(presentation, RoomGuestPresentation):
-                msg = "Could not transit to 'room'."
+                msg = "Could not transit to `room`."
                 raise RuntimeError(msg)
             logger.info(f"room id: {presentation.room_id}")  # noqa: G004
 
             presentation.ready(timeout=30.0)
             if presentation.new_presentation is None:
-                msg = "Could not transit to 'match'."
+                msg = "Could not transit to `match`."
                 raise RuntimeError(msg)
             presentation = presentation.new_presentation
             logger.info("Room end.")
 
             logger.info("Match start.")
             if not isinstance(presentation, MatchPresentation):
-                msg = "Could not transit to 'match'."
+                msg = "Could not transit to `match`."
                 raise RuntimeError(msg)
 
             seat = None
@@ -108,11 +108,11 @@ if __name__ == "__main__":
             )
             print(
                 "スコア: "
-                f'{",".join([str(s) for s in presentation.scores])}',
+                f"{','.join([str(s) for s in presentation.scores])}",
             )
             print(f"表ドラ表示牌: {presentation.dora_indicators[0]}")
             print(f"自風: {changs[seat]}")
-            print(f'手牌: {",".join(presentation.shoupai)}')
+            print(f"手牌: {','.join(presentation.shoupai)}")
             if presentation.zimopai is not None:
                 print(f"自摸牌: {presentation.zimopai}")
 
@@ -153,7 +153,7 @@ if __name__ == "__main__":
             presentation.leave()
 
             if presentation.new_presentation is None:
-                msg = "Could not transit to 'home'."
+                msg = "Could not transit to `home`."
                 raise RuntimeError(msg)
             presentation = presentation.new_presentation
 
