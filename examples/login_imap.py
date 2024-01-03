@@ -27,18 +27,18 @@ if __name__ == "__main__":
 
         logger.info("Login start.")
         if not isinstance(presentation, LoginPresentation):
-            msg = "Could not transit to 'login'."
+            msg = "Could not transit to `login`."
             raise RuntimeError(msg)
         presentation.login(timeout=60.0)
         if presentation.new_presentation is None:
-            msg = "Could not transit to 'auth'."
+            msg = "Could not transit to `auth`."
             raise RuntimeError(msg)
         presentation = presentation.new_presentation
         logger.info("Login end.")
 
         logger.info("Auth start.")
         if not isinstance(presentation, AuthPresentation):
-            msg = "Could not transit to 'auth'."
+            msg = "Could not transit to `auth`."
             raise RuntimeError(msg)
 
         auth_start_time = datetime.datetime.now(datetime.UTC)
@@ -48,14 +48,14 @@ if __name__ == "__main__":
 
         presentation.enter_auth_code(auth_code, timeout=60.0)
         if presentation.new_presentation is None:
-            msg = "Could not transit to 'home'."
+            msg = "Could not transit to `home`."
             raise RuntimeError
         presentation = presentation.new_presentation
         logger.info("Auth end.")
 
         logger.info("Home start.")
         if not isinstance(presentation, HomePresentation):
-            msg = "Could not transit to 'home"
+            msg = "Could not transit to `home`."
             raise RuntimeError(msg)
 
         time.sleep(15.0)

@@ -116,7 +116,7 @@ class HomePresentation(PresentationBase):
         )
         ss = browser.get_screenshot()
         if not template.match(ss):
-            msg = "Could not detect 'HomePresentation'."
+            msg = "Could not detect `HomePresentation`."
             raise PresentationNotDetected(msg, ss)
 
         # Wait for markers to display on the home screen.
@@ -220,7 +220,7 @@ class HomePresentation(PresentationBase):
                         _, next_name, _, _, _ = next_message
                         if next_name == ".lq.Lobby.heatbeat":
                             # Discard subsequent
-                            # '.lq.Lobby.heatbeat' messages.
+                            # `.lq.Lobby.heatbeat` messages.
                             logger.info(next_message)
                             continue
                         # Backfill the prefetched message and

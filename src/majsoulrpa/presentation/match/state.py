@@ -53,13 +53,13 @@ class MatchState:
 
     def _set_seat(self, seat: int) -> None:
         if self._seat is not None:
-            msg = "'_set_seat' is called multiple times."
+            msg = "`_set_seat` is called multiple times."
             raise RuntimeError(msg)
         self._seat = seat
 
     def _set_players(self, players: Iterable[MatchPlayer]) -> None:
         if len(self._players) > 0:
-            msg = "'_set_players' is called multiple times."
+            msg = "`_set_players` is called multiple times."
             raise RuntimeError(msg)
         self._players = list(players)
 
@@ -73,7 +73,7 @@ class MatchState:
     @property
     def seat(self) -> int:
         if self._seat is None:
-            msg = "'seat' has not been initialized yet."
+            msg = "`seat` has not been initialized yet."
             raise ValueError(msg)
         return self._seat
 

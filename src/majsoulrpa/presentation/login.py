@@ -29,7 +29,7 @@ class LoginPresentation(PresentationBase):
         )
         ss = browser.get_screenshot()
         if not template.match(ss):
-            msg = "Could not detect 'LoginPresentation'."
+            msg = "Could not detect `LoginPresentation`."
             raise PresentationNotDetected(msg, ss)
 
     @staticmethod
@@ -53,7 +53,7 @@ class LoginPresentation(PresentationBase):
         while True:
             now = datetime.datetime.now(datetime.UTC)
             if now > deadline:
-                msg = "Timeout in transition from 'login'."
+                msg = "Timeout in transition from `login`."
                 raise Timeout(msg, self._browser.get_screenshot())
 
             new_presentation: PresentationBase | None = None

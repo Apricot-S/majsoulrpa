@@ -41,12 +41,12 @@ class Sniffer:
 
         websocket_data = flow.websocket
         if websocket_data is None:
-            msg = "'websocket_data is None'"
+            msg = "`websocket_data is None`"
             raise RuntimeError(msg)
 
         # Get the last message of WebSocket.
         if len(websocket_data.messages) == 0:
-            msg = "'len(websocket_data.messages) == 0'"
+            msg = "`len(websocket_data.messages) == 0`"
             raise RuntimeError(msg)
         message = websocket_data.messages[-1]
 
