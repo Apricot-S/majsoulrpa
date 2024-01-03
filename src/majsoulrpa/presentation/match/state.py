@@ -58,7 +58,7 @@ class MatchState:
         self._seat = seat
 
     def _set_players(self, players: Iterable[MatchPlayer]) -> None:
-        if len(self._players) > 0:
+        if self._players:
             msg = "`_set_players` is called multiple times."
             raise RuntimeError(msg)
         self._players = list(players)
