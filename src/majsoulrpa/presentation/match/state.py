@@ -53,20 +53,20 @@ class MatchState:
 
     def _set_seat(self, seat: int) -> None:
         if self._seat is not None:
-            msg = "`_set_seat` is called multiple times."
+            msg = "`seat` is already set."
             raise RuntimeError(msg)
         self._seat = seat
 
     def _set_players(self, players: Iterable[MatchPlayer]) -> None:
-        if len(self._players) > 0:
-            msg = "`_set_players` is called multiple times."
+        if self._players:
+            msg = "`players` is already set."
             raise RuntimeError(msg)
         self._players = list(players)
 
     @property
     def uuid(self) -> str:
         if self._uuid is None:
-            msg = "UUID has not been initialized yet."
+            msg = "`uuid` has not been initialized yet."
             raise ValueError(msg)
         return self._uuid
 
@@ -80,7 +80,7 @@ class MatchState:
     @property
     def players(self) -> list[MatchPlayer]:
         if not self._players:
-            msg = "Players have not been initialized yet."
+            msg = "`players` have not been initialized yet."
             raise ValueError(msg)
         return self._players
 
