@@ -191,7 +191,7 @@ class RPA:
             msg = "DB client has not been launched yet."
             raise RuntimeError(msg)
         if self._db_client.account_id is None:
-            msg = "'account_id' has not been fetched yet."
+            msg = "`account_id` has not been fetched yet."
             raise RuntimeError(msg)
         return self._db_client.account_id
 

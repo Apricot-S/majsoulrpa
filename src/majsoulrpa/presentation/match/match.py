@@ -185,7 +185,7 @@ class MatchPresentation(PresentationBase):
             for t in templates:
                 x, y, score = t.best_template_match(ss)
                 print(f"({x}, {y}): score = {score}")  # noqa: T201
-            msg = "Could not detect 'match_main'."
+            msg = "Could not detect `match_main`."
             raise PresentationNotDetected(msg, ss)
 
         deadline = timeout_to_deadline(timeout)
@@ -277,7 +277,7 @@ class MatchPresentation(PresentationBase):
 
                     if response is None:
                         msg = (
-                            "'.lq.FastTest.authGame' has no response message."
+                            "`.lq.FastTest.authGame` has no response message."
                         )
                         raise InconsistentMessage(msg, ss)
 
@@ -360,7 +360,7 @@ class MatchPresentation(PresentationBase):
 
                     raise InconsistentMessage(str(action_info), ss)
 
-            # The conditional statement regarding '.lq.FastTest.authGame'
+            # The conditional statement regarding `.lq.FastTest.authGame`
             # must come before this conditional statement.
             if name in MatchPresentation._COMMON_MESSAGE_NAMES:
                 self._on_common_message(message)
@@ -551,7 +551,7 @@ class MatchPresentation(PresentationBase):
             return
 
         # TODO: What to do when restarting a suspended match.
-        # In this case, 'self._prev_presentation' is 'None'.
+        # In this case, `self._prev_presentation` is `None`.
         if self._prev_presentation is None:
             raise NotImplementedError(self._prev_presentation)
         raise NotImplementedError(self._prev_presentation.name)
@@ -572,7 +572,7 @@ class MatchPresentation(PresentationBase):
             match name:
                 case ".lq.FastTest.inputChiPengGang":
                     # The response message of
-                    # '.lq.FastTest.inputChiPengGang'
+                    # `.lq.FastTest.inputChiPengGang`
                     # may be returned late,
                     # so there is a workaround for this.
                     logger.info(message)
@@ -629,11 +629,11 @@ class MatchPresentation(PresentationBase):
         expected_step: int,
         timeout: TimeoutType,
     ) -> Message:
-        # Since '.lq.ActionPrototype' may not come in
-        # the 'step' order, read ahead the messages and
-        # sort them in the 'step' order.
+        # Since `.lq.ActionPrototype` may not come in
+        # the `step` order, read ahead the messages and
+        # sort them in the `step` order.
         if message is None:
-            msg = "'message' is 'None'."
+            msg = "`message` is `None`."
             raise ValueError(msg)
         if message[1] != ".lq.ActionPrototype":
             raise ValueError(message)
@@ -720,13 +720,13 @@ class MatchPresentation(PresentationBase):
         message: Message,
         deadline: datetime.datetime,
     ) -> None:
-        # Workaround if the '.lq.FastTest.confirmNewRound'
+        # Workaround if the `.lq.FastTest.confirmNewRound`
         # interaction is skipped.
-        # In this case, the next station's '.lq.ActionPrototype'
-        # messages may not arrive in 'step' order,
-        # so we also do a workaround to sort them in 'step' order.
+        # In this case, the next station's `.lq.ActionPrototype`
+        # messages may not arrive in `step` order,
+        # so we also do a workaround to sort them in `step` order.
         if message is None:
-            msg = "'message' is 'None'."
+            msg = "`message` is `None`."
             raise ValueError(msg)
         _, name, request, _, _ = message
         if name != ".lq.ActionPrototype":
@@ -793,13 +793,13 @@ class MatchPresentation(PresentationBase):
             match name:
                 case ".lq.FastTest.inputOperation":
                     # The response message of
-                    # '.lq.FastTest.inputOperation' may be
+                    # `.lq.FastTest.inputOperation` may be
                     # returned late, so there is a workaround for this.
                     logger.info(message)
                     continue
                 case ".lq.FastTest.inputChiPengGang":
                     # The response message of
-                    # '.lq.FastTest.inputChiPengGang' may be
+                    # `.lq.FastTest.inputChiPengGang` may be
                     # returned late, so there is a workaround for this.
                     logger.info(message)
                     continue
@@ -812,7 +812,7 @@ class MatchPresentation(PresentationBase):
                 # At the end of the round (if there is a next round)
                 logger.info(message)
                 while True:
-                    # Wait for 'ActionNewRound' message.
+                    # Wait for `ActionNewRound` message.
                     now = datetime.datetime.now(datetime.UTC)
                     message = self._db_client.dequeue_message(deadline - now)
                     if message is None:
@@ -857,8 +857,8 @@ class MatchPresentation(PresentationBase):
                 return
 
             if name == ".lq.ActionPrototype":
-                # The order of the '.lq.FastTest.confirmNewRound'
-                # response message and the 'ActionNewRound'
+                # The order of the `.lq.FastTest.confirmNewRound`
+                # response message and the `ActionNewRound`
                 # message may be reversed,
                 # so here is a workaround for that case.
                 step, action_name, data = _common.parse_action(request)
@@ -875,7 +875,7 @@ class MatchPresentation(PresentationBase):
                     )
                 while True:
                     # Wait for response message of
-                    # '.lq.FastTest.confirmNewRound'
+                    # `.lq.FastTest.confirmNewRound`
                     now = datetime.datetime.now(datetime.UTC)
                     next_message = self._db_client.dequeue_message(
                         deadline - now,
@@ -889,10 +889,10 @@ class MatchPresentation(PresentationBase):
                         continue
                     if next_name == ".lq.ActionPrototype":
                         # The exchange between
-                        # '.lq.FastTest.confirmNewRound' and
-                        # 'ActionNewRound' may be skipped and
-                        # '.lq.ActionPrototype' of the next game's
-                        # 'step = 1' is sent, so here is a workaround
+                        # `.lq.FastTest.confirmNewRound` and
+                        # `ActionNewRound` may be skipped and
+                        # `.lq.ActionPrototype` of the next game's
+                        # `step = 1` is sent, so here is a workaround
                         # for this phenomenon.
                         # Backfill the prefetched message.
                         self._db_client.put_back(next_message)
@@ -908,7 +908,7 @@ class MatchPresentation(PresentationBase):
                         # If you are the parent of the next game.
                         # In extremely rare circumstances,
                         # is there a case where
-                        # '.lq.FastTest.confirmNewRound'
+                        # `.lq.FastTest.confirmNewRound`
                         # response message is not returned?
                         logger.warning(message)
                         break
@@ -916,7 +916,7 @@ class MatchPresentation(PresentationBase):
                         str(next_message),
                         self._browser.get_screenshot(),
                     )
-                # After backfilling 'ActionNewRound' into
+                # After backfilling `ActionNewRound` into
                 # the message queue of the DB server,
                 # the control flow is returned to the user side.
                 self._db_client.put_back(message)
@@ -1205,7 +1205,7 @@ class MatchPresentation(PresentationBase):
 
                         if name1 == ".lq.FastTest.inputOperation":
                             # If the response message for the zimohu
-                            # selection comes after 'ActionHule'
+                            # selection comes after `ActionHule`
                             logger.info(message1)
                             continue
 
@@ -1213,14 +1213,14 @@ class MatchPresentation(PresentationBase):
                             # If the other player's hule is given
                             # priority over the home's Chi Peng Kang
                             # selection, and the response message of
-                            # '.lq.FastTest.inputChiPengGang' comes
-                            # after 'ActionHule'.
+                            # `.lq.FastTest.inputChiPengGang` comes
+                            # after `ActionHule`.
                             logger.info(message1)
                             continue
 
                         if name1 == ".lq.NotifyGameEndResult":
                             # If you receive the
-                            # '.lq.NotifyGameEndResult' message
+                            # `.lq.NotifyGameEndResult` message
                             # before clicking the "Confirm" button
                             # on the winning screen
                             # Backfill prefetched messages.
@@ -1234,7 +1234,7 @@ class MatchPresentation(PresentationBase):
                             self._db_client.put_back(message1)
                             break
 
-                        # If '.lq.FastTest.confirmNewRound'
+                        # If `.lq.FastTest.confirmNewRound`
                         # is being exchanged, there is a high
                         # possibility that the screen drawing
                         # is incorrect, so request that
@@ -1363,7 +1363,7 @@ class MatchPresentation(PresentationBase):
         left += round(width * 0.1)
         top += round(height * 0.1)
         width = round(width * 0.8)
-        # Clicking fails with 'height * 0.8'.
+        # Clicking fails with `height * 0.8`.
         height = round(height * 0.7)
 
         left = round(left * self._browser.zoom_ratio)
@@ -1371,7 +1371,7 @@ class MatchPresentation(PresentationBase):
         width = round(width * self._browser.zoom_ratio)
         height = round(height * self._browser.zoom_ratio)
 
-        # 'timeout=5.0' may be too short
+        # `timeout=5.0` may be too short
         # when the screen display freezes.
         self._robust_click_region(
             left,
@@ -1498,7 +1498,7 @@ class MatchPresentation(PresentationBase):
             self._browser.zoom_ratio,
         )
         try:
-            # If you do not set the 'timeout' to a short value,
+            # If you do not set the `timeout` to a short value,
             # you will not be able to respond to the hule screen
             # when you are interrupted by Rong from other player.
             template.wait_for_then_click(self._browser, timeout=5.0)
@@ -1602,7 +1602,7 @@ class MatchPresentation(PresentationBase):
             self._browser.zoom_ratio,
         )
         try:
-            # If you do not set the 'timeout' to a short value,
+            # If you do not set the `timeout` to a short value,
             # you will not be able to respond to the hule screen
             # when you are interrupted by Rong from other player.
             template.wait_for_then_click(self._browser, timeout=5.0)
@@ -1740,7 +1740,7 @@ class MatchPresentation(PresentationBase):
             self._browser.zoom_ratio,
         )
         try:
-            # If you do not set the 'timeout' to a short value,
+            # If you do not set the `timeout` to a short value,
             # you will not be able to respond to the hule screen
             # when you are interrupted by Rong from other player.
             template.wait_for_then_click(self._browser, timeout=5.0)
