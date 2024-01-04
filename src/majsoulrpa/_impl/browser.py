@@ -1,3 +1,4 @@
+# ruff: noqa: PLR0913
 import random
 import time
 from abc import ABCMeta, abstractmethod
@@ -22,6 +23,47 @@ MAX_WIDTH: Final[int] = STD_WIDTH * 2
 MAX_HEIGHT: Final[int] = STD_HEIGHT * 2
 
 ASPECT_RATIO: Final[Fraction] = Fraction(16, 9)
+
+
+def validate_viewport_size(width: int, height: int) -> None:
+    if (
+        width < MIN_WIDTH
+        or width > MAX_WIDTH
+        or height < MIN_HEIGHT
+        or height > MAX_HEIGHT
+        or Fraction(width, height) != ASPECT_RATIO
+    ):
+        msg = (
+            "Supported viewport sizes are "
+            f"from {MIN_WIDTH} x {MIN_HEIGHT} "
+            f"to {MAX_WIDTH} x {MAX_HEIGHT} and 16:9 aspect ratio."
+        )
+        raise ValueError(msg)
+
+
+def validate_region(
+    left: int,
+    top: int,
+    width: int,
+    height: int,
+    viewport_width: int,
+    viewport_height: int,
+) -> None:
+    if (
+        left < 0
+        or top < 0
+        or width <= 0
+        or height <= 0
+        or left >= viewport_width
+        or top >= viewport_height
+        or width > (viewport_width - left)
+        or height > (viewport_height - top)
+    ):
+        msg = (
+            "A click was requested into an invalid area."
+            f" {left=}, {top=}, {width=}, {height=}"
+        )
+        raise ValueError(msg)
 
 
 def _get_random_point_in_region(
@@ -95,7 +137,7 @@ class BrowserBase(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def click_region(  # noqa: PLR0913
+    def click_region(
         self,
         left: int,
         top: int,
@@ -115,7 +157,7 @@ class BrowserBase(metaclass=ABCMeta):
 
 
 class DesktopBrowser(BrowserBase):
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         proxy_port: int = 8080,
@@ -126,14 +168,7 @@ class DesktopBrowser(BrowserBase):
     ) -> None:
         super().__init__()
 
-        if not self._validate_viewport_size(width, height):
-            msg = (
-                "Supported viewport sizes are "
-                f"from {MIN_WIDTH} x {MIN_HEIGHT} "
-                f"to {MAX_WIDTH} x {MAX_HEIGHT} and 16:9 aspect ratio."
-            )
-            raise RuntimeError(msg)
-
+        validate_viewport_size(width, height)
         self._viewport_size = {"width": width, "height": height}
         self._zoom_ratio = width / STD_WIDTH
 
@@ -151,15 +186,6 @@ class DesktopBrowser(BrowserBase):
         self._context = self._browser.new_context(viewport=self._viewport_size)  # type: ignore[arg-type]
         self._page = self._context.new_page()
         self._page.goto(URL_MAJSOUL)
-
-    def _validate_viewport_size(self, width: int, height: int) -> bool:
-        if width < MIN_WIDTH or height < MIN_HEIGHT:
-            return False
-        if width > MAX_WIDTH or height > MAX_HEIGHT:
-            return False
-        if Fraction(width, height) != ASPECT_RATIO:
-            return False
-        return True
 
     @property
     def zoom_ratio(self) -> float:
@@ -199,28 +225,7 @@ class DesktopBrowser(BrowserBase):
             time.sleep(0.1)
             self._page.mouse.wheel(delta_x=0, delta_y=delta)
 
-    def _validate_region(  # noqa: PLR0911
-        self,
-        left: int,
-        top: int,
-        width: int,
-        height: int,
-    ) -> bool:
-        if left < 0 or top < 0:
-            return False
-        if width <= 0 or height <= 0:
-            return False
-        if left >= self._viewport_size["width"]:
-            return False
-        if top >= self._viewport_size["height"]:
-            return False
-        if width > (self._viewport_size["width"] - left):
-            return False
-        if height > (self._viewport_size["height"] - top):
-            return False
-        return True
-
-    def click_region(  # noqa: PLR0913
+    def click_region(
         self,
         left: int,
         top: int,
@@ -228,15 +233,17 @@ class DesktopBrowser(BrowserBase):
         height: int,
         edge_sigma: float = 2.0,
     ) -> None:
-        if not self._validate_region(left, top, width, height):
-            msg = (
-                "A click was requested into an invalid area."
-                f"{left=}, {top=}, {width=}, {height=}"
-            )
-            raise RuntimeError(msg)
+        validate_region(
+            left,
+            top,
+            width,
+            height,
+            self._viewport_size["width"],
+            self._viewport_size["height"],
+        )
         if edge_sigma <= 0.0:  # noqa: PLR2004
             msg = "Invalid edge sigma was input."
-            raise RuntimeError(msg)
+            raise ValueError(msg)
 
         x, y = _get_random_point_in_region(
             left,
