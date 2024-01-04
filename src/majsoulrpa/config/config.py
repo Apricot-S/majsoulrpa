@@ -5,7 +5,7 @@ from typing import Any
 
 from jsonschema import RefResolver, validate
 
-_SCHEMA_PATH = Path(__file__).parent / "_config"
+_SCHEMA_PATH = Path(__file__).parent
 with (_SCHEMA_PATH / "schema.json").open() as _fp:
     _CONFIG_SCHEMA = json.load(_fp)
 _REF = RefResolver(_SCHEMA_PATH.as_uri() + "/", _CONFIG_SCHEMA)
