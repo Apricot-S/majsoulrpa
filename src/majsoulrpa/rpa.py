@@ -137,7 +137,7 @@ class RPA:
             viewport_height,
         )
 
-    def __enter__(self) -> Self:
+    def launch(self) -> None:
         # Run DB server process
         server_args: list[str | Path] = [sys.executable, _SERVER_PATH]
         if self._db_port is not None:
@@ -170,9 +170,7 @@ class RPA:
         else:
             self._db_client = GRPCClient("localhost", self._db_port)
 
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback) -> None:  # noqa: ANN001
+    def close(self) -> None:
         self._db_client = None
         if self._browser is not None:
             self._browser.close()
@@ -185,6 +183,13 @@ class RPA:
             if self._db_process.poll() is None:
                 self._db_process.kill()
             self._db_process = None
+
+    def __enter__(self) -> Self:
+        self.launch()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:  # noqa: ANN001
+        self.close()
 
     def get_account_id(self) -> int:
         if self._db_client is None:
