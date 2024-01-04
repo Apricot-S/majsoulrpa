@@ -13,7 +13,7 @@ from typing import Any, Final
 import boto3
 from imapclient import IMAPClient  # type: ignore[import-untyped]
 
-from .common import TimeoutType, to_timedelta
+from majsoulrpa.common import TimeoutType, to_timedelta
 
 logger = getLogger(__name__)
 

@@ -1,5 +1,5 @@
 # ruff: noqa: F401
-from .common import (
+from ._common import (
     Player,
     TimeoutType,
     id_to_character,
