@@ -41,6 +41,7 @@ ruff = "^0.1.11"
 types-protobuf = "^4.24.0.4"
 types-jsonschema = "^4.20.0.0"
 boto3-stubs = { extras = ["s3"], version = "^1.34.11" }
+grpcio-tools = "^1.60.0"
 
 [tool.ruff]
 target-version = "py311"
