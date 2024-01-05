@@ -11,6 +11,7 @@ from mitmproxy import addonmanager, ctx, http
 
 from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2 import Message
 from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import GRPCServerStub
+from majsoulrpa.common import validate_user_port
 
 logger = getLogger(__name__)
 
@@ -29,6 +30,7 @@ class Sniffer:
         )
 
     def running(self) -> None:
+        validate_user_port(ctx.options.server_port)
         target = f"localhost:{ctx.options.server_port}"
         self._channel = grpc.insecure_channel(target)
         self._client = GRPCServerStub(self._channel)
