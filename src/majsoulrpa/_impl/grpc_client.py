@@ -7,7 +7,7 @@ from typing import Any
 import google.protobuf.json_format
 import grpc  # type:ignore[import-untyped]
 
-from majsoulrpa._impl.protobuf_grpc import grpcserver_pb2
+from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2 import Timeout
 from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import GRPCServerStub
 from majsoulrpa.common import TimeoutType, to_timedelta, validate_user_port
 
@@ -35,7 +35,7 @@ class GRPCClient(DBClientBase):
             return self._put_back_messages.popleft()
 
         message_bytes: bytes = self._client.pop_message(
-            grpcserver_pb2.Timeout(seconds=timeout.total_seconds()),
+            Timeout(seconds=timeout.total_seconds()),
         ).content
         if message_bytes == b"":
             return None
