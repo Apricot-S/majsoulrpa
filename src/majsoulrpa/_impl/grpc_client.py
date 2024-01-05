@@ -9,14 +9,15 @@ import grpc  # type:ignore[import-untyped]
 
 from majsoulrpa._impl.protobuf_grpc import grpcserver_pb2
 from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import GRPCServerStub
-from majsoulrpa.common import TimeoutType, to_timedelta
+from majsoulrpa.common import TimeoutType, to_timedelta, validate_user_port
 
 from .db_client import DBClientBase, Message
 from .protobuf_liqi import liqi_pb2
 
 
 class GRPCClient(DBClientBase):
-    def __init__(self, host: str = "gRPC", port: int = 37247) -> None:
+    def __init__(self, host: str = "localhost", port: int = 37247) -> None:
+        validate_user_port(port)
         super().__init__(host, port)
         self._channel = grpc.insecure_channel(f"localhost:{port}")
         self._client = GRPCServerStub(self._channel)
