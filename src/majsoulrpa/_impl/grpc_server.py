@@ -23,16 +23,25 @@ class GRPCServer(GRPCServerServicer):
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
 
-    def _push_impl(self, content: bytes) -> None:
-        self._message_queue.put_nowait(content)
+    def _push_impl(self, queue: asyncio.Queue[bytes], content: bytes) -> None:
+        queue.put_nowait(content)
 
     def PushMessage(self, request: Message, context) -> NoneResponse:  # noqa: ARG002, ANN001
-        self._loop.run_in_executor(None, self._push_impl, request.content)
+        self._loop.run_in_executor(
+            None,
+            self._push_impl,
+            self._message_queue,
+            request.content,
+        )
         return NoneResponse()
 
-    async def _pop_impl(self, timeout: float) -> bytes:
+    async def _pop_impl(
+        self,
+        queue: asyncio.Queue[bytes],
+        timeout: float,
+    ) -> bytes:
         try:
-            coro = asyncio.wait_for(self._message_queue.get(), timeout)
+            coro = asyncio.wait_for(queue.get(), timeout)
             result = await self._loop.create_task(coro)
         except TimeoutError:
             return b""
@@ -40,7 +49,9 @@ class GRPCServer(GRPCServerServicer):
             return result
 
     def PopMessage(self, request: Timeout, context) -> Message:  # noqa: ARG002, ANN001
-        result = self._loop.run_until_complete(self._pop_impl(request.seconds))
+        result = self._loop.run_until_complete(
+            self._pop_impl(self._message_queue, request.seconds),
+        )
         return Message(content=result)
 
 
