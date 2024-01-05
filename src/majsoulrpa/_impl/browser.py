@@ -10,6 +10,8 @@ from typing import Final
 import pywinctl as pwc
 from playwright.sync_api import sync_playwright
 
+from majsoulrpa.common import validate_user_port
+
 logger = getLogger(__name__)
 
 TITLE_MAJSOUL: Final[str] = "雀魂 -じゃんたま-| 麻雀を無料で気軽に"
@@ -167,7 +169,7 @@ class DesktopBrowser(BrowserBase):
         height: int = STD_HEIGHT,
     ) -> None:
         super().__init__()
-
+        validate_user_port(proxy_port)
         validate_viewport_size(width, height)
         self._viewport_size = {"width": width, "height": height}
         self._zoom_ratio = width / STD_WIDTH

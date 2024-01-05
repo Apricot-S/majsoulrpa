@@ -13,6 +13,7 @@ from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import (
     GRPCServerServicer,
     add_GRPCServerServicer_to_server,
 )
+from majsoulrpa.common import validate_user_port
 
 
 class GRPCServer(GRPCServerServicer):
@@ -55,7 +56,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=37247)
     port: int = parser.parse_args().port
-    if (port < 1024) or (port > 49151):  # noqa: PLR2004
-        msg = "Port number must be in the range 1024 to 49151."
-        raise ValueError(msg)
+    validate_user_port(port)
     asyncio.run(serve(port))
