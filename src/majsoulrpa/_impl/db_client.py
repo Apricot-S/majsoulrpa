@@ -5,7 +5,7 @@ from typing import Any, ClassVar, TypeAlias
 
 from google.protobuf.message_factory import GetMessageClass
 
-from majsoulrpa.common import TimeoutType
+from majsoulrpa.common import TimeoutType, validate_user_port
 
 from .protobuf_liqi import liqi_pb2
 
@@ -20,6 +20,7 @@ Message: TypeAlias = tuple[
 
 class DBClientBase(metaclass=ABCMeta):
     def __init__(self, host: str, port: int) -> None:  # noqa: ARG002
+        validate_user_port(port)
         self._put_back_messages: deque[Message] = deque()
         self._account_id: int | None = None
 
