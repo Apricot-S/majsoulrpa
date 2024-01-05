@@ -1,13 +1,16 @@
-# ruff: noqa: N802
+# ruff: noqa: ARG002, ANN001
 import argparse
 import asyncio
 
 import grpc  # type:ignore[import-untyped]
 
 from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2 import (
+    BrowserRequest,
+    BrowserResponse,
     Message,
-    NoneResponse,
+    QueueSize,
     Timeout,
+    Void,
 )
 from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import (
     GRPCServerServicer,
@@ -20,20 +23,48 @@ class GRPCServer(GRPCServerServicer):
     def __init__(self) -> None:
         super().__init__()
         self._message_queue: asyncio.Queue[bytes] = asyncio.Queue()
+        self._browser_request_queue: asyncio.Queue[bytes] = asyncio.Queue()
+        self._browser_response_queue: asyncio.Queue[bytes] = asyncio.Queue()
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
 
     def _push_impl(self, queue: asyncio.Queue[bytes], content: bytes) -> None:
         queue.put_nowait(content)
 
-    def PushMessage(self, request: Message, context) -> NoneResponse:  # noqa: ARG002, ANN001
+    def push_message(self, request: Message, context) -> Void:
         self._loop.run_in_executor(
             None,
             self._push_impl,
             self._message_queue,
             request.content,
         )
-        return NoneResponse()
+        return Void()
+
+    def push_browser_request(
+        self,
+        request: BrowserRequest,
+        context,
+    ) -> Void:
+        self._loop.run_in_executor(
+            None,
+            self._push_impl,
+            self._browser_request_queue,
+            request.content,
+        )
+        return Void()
+
+    def push_browser_response(
+        self,
+        request: BrowserResponse,
+        context,
+    ) -> Void:
+        self._loop.run_in_executor(
+            None,
+            self._push_impl,
+            self._browser_response_queue,
+            request.content,
+        )
+        return Void()
 
     async def _pop_impl(
         self,
@@ -48,11 +79,30 @@ class GRPCServer(GRPCServerServicer):
         else:
             return result
 
-    def PopMessage(self, request: Timeout, context) -> Message:  # noqa: ARG002, ANN001
+    def pop_message(self, request: Timeout, context) -> Message:
         result = self._loop.run_until_complete(
             self._pop_impl(self._message_queue, request.seconds),
         )
         return Message(content=result)
+
+    def pop_browser_request(self, request: Timeout, context) -> BrowserRequest:
+        result = self._loop.run_until_complete(
+            self._pop_impl(self._browser_request_queue, request.seconds),
+        )
+        return BrowserRequest(content=result)
+
+    def pop_browser_response(
+        self,
+        request: Timeout,
+        context,
+    ) -> BrowserResponse:
+        result = self._loop.run_until_complete(
+            self._pop_impl(self._browser_response_queue, request.seconds),
+        )
+        return BrowserResponse(content=result)
+
+    def len_browser_request(self, request: Void, context) -> QueueSize:
+        return QueueSize(size=self._browser_request_queue.qsize())
 
 
 async def serve(port: int = 37247) -> None:

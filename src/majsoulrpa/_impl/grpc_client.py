@@ -34,7 +34,7 @@ class GRPCClient(DBClientBase):
         if len(self._put_back_messages) > 0:
             return self._put_back_messages.popleft()
 
-        message_bytes: bytes = self._client.PopMessage(
+        message_bytes: bytes = self._client.pop_message(
             grpcserver_pb2.Timeout(seconds=timeout.total_seconds()),
         ).content
         if message_bytes == b"":

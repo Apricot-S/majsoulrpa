@@ -4,7 +4,7 @@ from typing import ClassVar as _ClassVar, Optional as _Optional
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
-class NoneResponse(_message.Message):
+class Void(_message.Message):
     __slots__ = []
     def __init__(self) -> None: ...
 
@@ -13,6 +13,24 @@ class Message(_message.Message):
     CONTENT_FIELD_NUMBER: _ClassVar[int]
     content: bytes
     def __init__(self, content: _Optional[bytes] = ...) -> None: ...
+
+class BrowserRequest(_message.Message):
+    __slots__ = ["content"]
+    CONTENT_FIELD_NUMBER: _ClassVar[int]
+    content: bytes
+    def __init__(self, content: _Optional[bytes] = ...) -> None: ...
+
+class BrowserResponse(_message.Message):
+    __slots__ = ["content"]
+    CONTENT_FIELD_NUMBER: _ClassVar[int]
+    content: bytes
+    def __init__(self, content: _Optional[bytes] = ...) -> None: ...
+
+class QueueSize(_message.Message):
+    __slots__ = ["size"]
+    SIZE_FIELD_NUMBER: _ClassVar[int]
+    size: int
+    def __init__(self, size: _Optional[int] = ...) -> None: ...
 
 class Timeout(_message.Message):
     __slots__ = ["seconds"]
