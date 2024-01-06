@@ -2,7 +2,6 @@
 import argparse
 import base64
 import json
-import time
 from pathlib import Path
 from subprocess import Popen
 from typing import Final
@@ -41,6 +40,8 @@ def main(context: BrowserContext, db_port: int) -> None:  # noqa: PLR0915
         while True:
             request_bytes: bytes = client.pop_browser_request(
                 Timeout(seconds=3600),
+                timeout=3600,
+                wait_for_ready=True,
             ).content
 
             if request_bytes == b"":
@@ -131,8 +132,6 @@ if __name__ == "__main__":
     ]
 
     with Popen(sniffer_args):  # noqa: S603
-        time.sleep(10.0)
-
         proxy_server = f"--proxy-server=http://localhost:{proxy_port}"
         ignore_certifi_errors = "--ignore-certificate-errors"
         options = [proxy_server, ignore_certifi_errors]
