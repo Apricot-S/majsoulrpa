@@ -307,19 +307,36 @@ class RemoteBrowser(BrowserBase):
 
         num_request: int = self._client.len_browser_request(Void()).size
         if num_request > 0:
-            msg = "Failed to send a message to the remote browser."
+            msg = (
+                "Failed to send a message to the remote browser.:"
+                " The previous request remains."
+            )
             raise RuntimeError(msg)
 
         self._client.push_browser_request(BrowserRequest(content=request))
 
         num_request = self._client.len_browser_request(Void()).size
-        if num_request != 1:
-            msg = "Failed to send a message to the remote browser."
+        if num_request == 0:
+            msg = (
+                "Failed to send a message to the remote browser.:"
+                " The request queue is empty."
+            )
+            raise RuntimeError(msg)
+        if num_request > 1:
+            msg = (
+                "Failed to send a message to the remote browser.:"
+                " There are 2 or more requests in the queue."
+            )
             raise RuntimeError(msg)
 
         response_bytes: bytes = self._client.pop_browser_response(
-            Timeout(seconds=60),
+            Timeout(seconds=10),
         ).content
+
+        if response_bytes == b"":
+            msg = "Failed to receive response within the timeout period."
+            raise TimeoutError(msg)
+
         response = response_bytes.decode("UTF-8")
         return json.loads(response)
 
