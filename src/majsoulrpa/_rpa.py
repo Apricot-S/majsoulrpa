@@ -6,7 +6,7 @@ from pathlib import Path
 from subprocess import Popen
 from typing import TYPE_CHECKING, Any, Final, Self
 
-from ._impl.browser import BrowserBase, DesktopBrowser
+from ._impl.browser import BrowserBase, DesktopBrowser, RemoteBrowser
 from ._impl.grpc_client import GRPCClient
 from .common import timeout_to_deadline
 from .presentation import AuthPresentation, HomePresentation, LoginPresentation
@@ -40,6 +40,7 @@ class RPA:
         self._db_port = db_port
         self._initial_left = initial_left
         self._initial_top = initial_top
+        self._viewport_width = viewport_height * 16 // 9
         self._viewport_height = viewport_height
 
         self._db_process: Popen[bytes] | None = None
@@ -154,13 +155,23 @@ class RPA:
 
         # Construct a class instance that abstracts browser operations
         if self._proxy_port is None:
-            self._browser = None
+            if self._db_port is None:
+                self._browser = RemoteBrowser(
+                    width=self._viewport_width,
+                    height=self._viewport_height,
+                )
+            else:
+                self._browser = RemoteBrowser(
+                    db_port=self._db_port,
+                    width=self._viewport_width,
+                    height=self._viewport_height,
+                )
         else:
             self._browser = DesktopBrowser(
                 proxy_port=self._proxy_port,
                 initial_left=self._initial_left,
                 initial_top=self._initial_top,
-                width=self._viewport_height * 16 // 9,
+                width=self._viewport_width,
                 height=self._viewport_height,
             )
 

@@ -1,15 +1,24 @@
 # ruff: noqa: PLR0913
+import base64
+import json
 import random
 import time
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
 from fractions import Fraction
 from logging import getLogger
-from typing import Final
+from typing import Any, Final
 
+import grpc  # type:ignore[import-untyped]
 import pywinctl as pwc
 from playwright.sync_api import sync_playwright
 
+from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2 import (
+    BrowserRequest,
+    Timeout,
+    Void,
+)
+from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import GRPCServerStub
 from majsoulrpa.common import validate_user_port
 
 logger = getLogger(__name__)
@@ -264,3 +273,129 @@ class DesktopBrowser(BrowserBase):
         self._context.close()
         self._browser.close()
         self._context_manager.__exit__()
+
+
+class RemoteBrowser(BrowserBase):
+    def __init__(
+        self,
+        *,
+        db_port: int = 37247,
+        width: int = STD_WIDTH,
+        height: int = STD_HEIGHT,
+    ) -> None:
+        super().__init__()
+        validate_viewport_size(width, height)
+        self._viewport_size = {"width": width, "height": height}
+        self._zoom_ratio = width / STD_WIDTH
+
+        self._channel = grpc.insecure_channel(f"localhost:{db_port}")
+        self._client = GRPCServerStub(self._channel)
+
+    def __del__(self) -> None:
+        self._channel.close()
+
+    def check_single(self) -> None:
+        pass
+
+    @property
+    def zoom_ratio(self) -> float:
+        return self._zoom_ratio
+
+    def _communicate(self, request: object) -> dict[str, Any]:
+        request = json.dumps(request, separators=(",", ":"))
+        request = request.encode("UTF-8")
+
+        num_request: int = self._client.len_browser_request(Void()).size
+        if num_request > 0:
+            msg = "Failed to send a message to the remote browser."
+            raise RuntimeError(msg)
+
+        self._client.push_browser_request(BrowserRequest(content=request))
+
+        num_request = self._client.len_browser_request(Void()).size
+        if num_request > 0:
+            msg = "Failed to send a message to the remote browser."
+            raise RuntimeError(msg)
+
+        response_bytes: bytes = self._client.pop_browser_response(
+            Timeout(seconds=60),
+        ).content
+        response = response_bytes.decode("UTF-8")
+        return json.loads(response)
+
+    @staticmethod
+    def _check_response(response: dict[str, object]) -> None:
+        if response["result"] != "O.K.":
+            msg = "Failed to send a message to the remote browser."
+            raise RuntimeError(msg)
+
+    def refresh(self) -> None:
+        request = {"type": "fullscreen"}
+        response = self._communicate(request)
+        self._check_response(response)
+
+    def write(self, text: str, delay: float | None = None) -> None:
+        request = {"type": "write", "text": text, "delay": delay}
+        response = self._communicate(request)
+        self._check_response(response)
+
+    def press(self, keys: str | Iterable[str]) -> None:
+        if not isinstance(keys, str):
+            keys = list(keys)
+        request = {"type": "press", "keys": keys}
+        response = self._communicate(request)
+        self._check_response(response)
+
+    def press_hotkey(self, *args: str) -> None:
+        request = {"type": "press_hotkey", "args": list(args)}
+        response = self._communicate(request)
+        self._check_response(response)
+
+    def scroll(self, clicks: int) -> None:
+        request = {"type": "scroll", "clicks": clicks}
+        response = self._communicate(request)
+        self._check_response(response)
+
+    def click_region(
+        self,
+        left: int,
+        top: int,
+        width: int,
+        height: int,
+        edge_sigma: float = 2.0,
+    ) -> None:
+        validate_region(
+            left,
+            top,
+            width,
+            height,
+            self._viewport_size["width"],
+            self._viewport_size["height"],
+        )
+        if edge_sigma <= 0.0:  # noqa: PLR2004
+            msg = "Invalid edge sigma was input."
+            raise ValueError(msg)
+
+        x, y = _get_random_point_in_region(
+            left,
+            top,
+            width,
+            height,
+            edge_sigma=edge_sigma,
+        )
+
+        request = {"type": "click", "x": x, "y": y}
+        response = self._communicate(request)
+        self._check_response(response)
+
+    def get_screenshot(self) -> bytes:
+        request = {"type": "get_screenshot"}
+        response = self._communicate(request)
+        self._check_response(response)
+        data: str = response["data"]
+        return base64.b64decode(data)
+
+    def close(self) -> None:
+        request = {"type": "close"}
+        response = self._communicate(request)
+        self._check_response(response)
