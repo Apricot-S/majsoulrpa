@@ -36,8 +36,7 @@ def main(context: BrowserContext, db_port: int) -> None:  # noqa: PLR0915
 
         page = context.new_page()
         page.goto(URL_MAJSOUL)
-        canvas = page.locator("layaCanvas")
-        canvas.wait_for(timeout=60000)
+        page.wait_for_selector("#layaCanvas", timeout=60000)
 
         while True:
             request_bytes: bytes = client.pop_browser_request(
