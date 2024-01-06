@@ -291,9 +291,6 @@ class RemoteBrowser(BrowserBase):
         self._channel = grpc.insecure_channel(f"localhost:{db_port}")
         self._client = GRPCServerStub(self._channel)
 
-    def __del__(self) -> None:
-        self._channel.close()
-
     def check_single(self) -> None:
         pass
 
@@ -413,6 +410,4 @@ class RemoteBrowser(BrowserBase):
         return base64.b64decode(data)
 
     def close(self) -> None:
-        request = {"type": "close"}
-        response = self._communicate(request)
-        self._check_response(response)
+        self._channel.close()
