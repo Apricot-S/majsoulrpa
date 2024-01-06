@@ -313,7 +313,7 @@ class RemoteBrowser(BrowserBase):
         self._client.push_browser_request(BrowserRequest(content=request))
 
         num_request = self._client.len_browser_request(Void()).size
-        if num_request > 0:
+        if num_request != 1:
             msg = "Failed to send a message to the remote browser."
             raise RuntimeError(msg)
 
