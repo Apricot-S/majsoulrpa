@@ -109,11 +109,16 @@ if __name__ == "__main__":
     parser.add_argument("--initial_left", type=int, default=0)
     parser.add_argument("--initial_top", type=int, default=0)
     parser.add_argument("--viewport_height", type=int, default=STD_HEIGHT)
-    proxy_port: int = parser.parse_args().proxy_port
-    db_port: int = parser.parse_args().db_port
-    initial_left: int = parser.parse_args().initial_left
-    initial_top: int = parser.parse_args().initial_top
-    height: int = parser.parse_args().viewport_height
+    parser.add_argument("--headless", action="store_true")
+    args = parser.parse_args()
+
+    proxy_port: int = args.proxy_port
+    db_port: int = args.db_port
+    initial_left: int = args.initial_left
+    initial_top: int = args.initial_top
+    height: int = args.viewport_height
+    is_headless: bool = args.headless
+
     validate_user_port(proxy_port)
     validate_user_port(db_port)
     if proxy_port == db_port:
@@ -137,10 +142,8 @@ if __name__ == "__main__":
         options = [proxy_server, ignore_certifi_errors]
         viewport_size = {"width": width, "height": height}
         mute_audio_off: list[str] | None = ["--mute-audio"]
-        is_headless = False
-        if False:
+        if is_headless:
             mute_audio_off = None
-            is_headless = True
 
         with (
             sync_playwright() as playwright,
