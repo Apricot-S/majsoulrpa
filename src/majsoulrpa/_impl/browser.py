@@ -322,7 +322,7 @@ class RemoteBrowser(BrowserBase):
         if num_request > 1:
             msg = (
                 "Failed to send a message to the remote browser.:"
-                " There are 2 or more requests in the queue."
+                f" There are {num_request} requests in the queue."
             )
             raise RuntimeError(msg)
 
