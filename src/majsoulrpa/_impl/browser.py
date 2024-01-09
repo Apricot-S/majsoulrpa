@@ -1,14 +1,17 @@
 # ruff: noqa: PLR0913
+import base64
 import random
 import time
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
 from fractions import Fraction
 from logging import getLogger
-from typing import Final
+from typing import Any, Final
 
 import pywinctl as pwc
+import zmq
 from playwright.sync_api import sync_playwright
+from zmq.utils.win32 import allow_interrupt
 
 from majsoulrpa.common import validate_user_port
 
@@ -97,25 +100,13 @@ def _get_random_point_in_region(
 
 
 class BrowserBase(metaclass=ABCMeta):
-    def check_single(self) -> None:
-        """Check if only one target window exists.
-
-        Throws a runtime error if the target does not exist or
-        if two or more targets exist.
-        """
-        windows = [
-            w for w in pwc.getAllWindows() if w.title.startswith(TITLE_MAJSOUL)
-        ]
-        if len(windows) == 0:
-            msg = "No window for Mahjong Soul is found."
-            raise RuntimeError(msg)
-        if len(windows) > 1:
-            msg = "Multiple windows for Mahjong Soul are found."
-            raise RuntimeError(msg)
-
     @property
     @abstractmethod
     def zoom_ratio(self) -> float:
+        pass
+
+    @abstractmethod
+    def check_single(self) -> None:
         pass
 
     @abstractmethod
@@ -193,6 +184,23 @@ class DesktopBrowser(BrowserBase):
     def zoom_ratio(self) -> float:
         return self._zoom_ratio
 
+    def check_single(self) -> None:
+        """
+        Check if only one target window exists.
+
+        Throws a runtime error if the target does not exist or
+        if two or more targets exist.
+        """
+        windows = [
+            w for w in pwc.getAllWindows() if w.title.startswith(TITLE_MAJSOUL)
+        ]
+        if len(windows) == 0:
+            msg = "No window for Mahjong Soul is found."
+            raise RuntimeError(msg)
+        if len(windows) > 1:
+            msg = "Multiple windows for Mahjong Soul are found."
+            raise RuntimeError(msg)
+
     def refresh(self) -> None:
         self._page.reload()
 
@@ -264,3 +272,130 @@ class DesktopBrowser(BrowserBase):
         self._context.close()
         self._browser.close()
         self._context_manager.__exit__()
+
+
+class RemoteBrowser(BrowserBase):
+    def __init__(
+        self,
+        *,
+        db_port: int = 37247,
+        width: int = STD_WIDTH,
+        height: int = STD_HEIGHT,
+    ) -> None:
+        super().__init__()
+        validate_viewport_size(width, height)
+        self._viewport_size = {"width": width, "height": height}
+        self._zoom_ratio = width / STD_WIDTH
+
+        self._context = zmq.Context()
+        self._socket = self._context.socket(zmq.REQ)
+        self._socket.connect(f"tcp://localhost:{db_port}")
+        self._poller_in = zmq.Poller()
+        self._poller_in.register(self._socket, zmq.POLLIN)
+        self._poller_out = zmq.Poller()
+        self._poller_out.register(self._socket, zmq.POLLOUT)
+
+    @property
+    def zoom_ratio(self) -> float:
+        return self._zoom_ratio
+
+    def _communicate(self, request: object) -> dict[str, Any]:
+        with allow_interrupt(self.close):
+            if self._poller_out.poll(10_000):
+                self._socket.send_json(request)
+            else:
+                msg = "Failed to send a message to the remote browser."
+                raise TimeoutError(msg)
+
+            if self._poller_in.poll(10_000):
+                response = self._socket.recv_json()
+            else:
+                msg = "Failed to receive a message from the remote browser."
+                raise TimeoutError(msg)
+
+        if not isinstance(response, dict):
+            raise TypeError
+        if any(not isinstance(key, str) for key in response):
+            raise TypeError
+        return response
+
+    @staticmethod
+    def _check_response(response: dict[str, object]) -> None:
+        if response["result"] != "O.K.":
+            msg = "Failed to send a message to the remote browser."
+            raise RuntimeError(msg)
+
+    def check_single(self) -> None:
+        pass
+
+    def refresh(self) -> None:
+        request = {"type": "fullscreen"}
+        response = self._communicate(request)
+        self._check_response(response)
+
+    def write(self, text: str, delay: float | None = None) -> None:
+        request = {"type": "write", "text": text, "delay": delay}
+        response = self._communicate(request)
+        self._check_response(response)
+
+    def press(self, keys: str | Iterable[str]) -> None:
+        if not isinstance(keys, str):
+            keys = list(keys)
+        request = {"type": "press", "keys": keys}
+        response = self._communicate(request)
+        self._check_response(response)
+
+    def press_hotkey(self, *args: str) -> None:
+        request = {"type": "press_hotkey", "args": list(args)}
+        response = self._communicate(request)
+        self._check_response(response)
+
+    def scroll(self, clicks: int) -> None:
+        request = {"type": "scroll", "clicks": clicks}
+        response = self._communicate(request)
+        self._check_response(response)
+
+    def click_region(
+        self,
+        left: int,
+        top: int,
+        width: int,
+        height: int,
+        edge_sigma: float = 2.0,
+    ) -> None:
+        validate_region(
+            left,
+            top,
+            width,
+            height,
+            self._viewport_size["width"],
+            self._viewport_size["height"],
+        )
+        if edge_sigma <= 0.0:  # noqa: PLR2004
+            msg = "Invalid edge sigma was input."
+            raise ValueError(msg)
+
+        x, y = _get_random_point_in_region(
+            left,
+            top,
+            width,
+            height,
+            edge_sigma=edge_sigma,
+        )
+
+        request = {"type": "click", "x": x, "y": y}
+        response = self._communicate(request)
+        self._check_response(response)
+
+    def get_screenshot(self) -> bytes:
+        request = {"type": "get_screenshot"}
+        response = self._communicate(request)
+        self._check_response(response)
+        data: str = response["data"]
+        return base64.b64decode(data)
+
+    def close(self) -> None:
+        self._poller_out.unregister(self._socket)
+        self._poller_in.unregister(self._socket)
+        self._socket.close()
+        self._context.destroy()

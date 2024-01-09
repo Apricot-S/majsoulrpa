@@ -6,7 +6,7 @@ from pathlib import Path
 from subprocess import Popen
 from typing import TYPE_CHECKING, Any, Final, Self
 
-from ._impl.browser import BrowserBase, DesktopBrowser
+from ._impl.browser import BrowserBase, DesktopBrowser, RemoteBrowser
 from ._impl.grpc_client import GRPCClient
 from .common import timeout_to_deadline
 from .presentation import AuthPresentation, HomePresentation, LoginPresentation
@@ -29,17 +29,21 @@ _SNIFFER_PATH: Final = Path(__file__).parent / "_mitmproxy/sniffer.py"
 class RPA:
     def __init__(  # noqa: PLR0913
         self,
-        proxy_port: int | None = 8080,
+        *,
+        remote_host: str | None = None,
+        proxy_port: int = 8080,
         db_port: int | None = 37247,
         initial_left: int = 0,
         initial_top: int = 0,
         viewport_height: int = 1080,
     ) -> None:
         self._id = uuid.uuid4()
+        self._remote_host = remote_host
         self._proxy_port = proxy_port
         self._db_port = db_port
         self._initial_left = initial_left
         self._initial_top = initial_top
+        self._viewport_width = viewport_height * 16 // 9
         self._viewport_height = viewport_height
 
         self._db_process: Popen[bytes] | None = None
@@ -50,6 +54,16 @@ class RPA:
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> Self:  # noqa: C901, PLR0912, PLR0915
+        remote_host_config = config.get("remote_host")
+        match remote_host_config:
+            case None:
+                remote_host = None
+            case str():
+                remote_host = remote_host_config
+            case _ as invalid_arg:
+                msg = f"`remote_host` must be str: {invalid_arg}"
+                raise TypeError(msg)
+
         port_config = config.get("port")
         if port_config is None:
             proxy_port = 8080
@@ -59,12 +73,10 @@ class RPA:
             match _proxy_port:
                 case None:
                     proxy_port = 8080
-                case "None":
-                    proxy_port = None
                 case int():
                     proxy_port = _proxy_port
                 case _ as invalid_arg:
-                    msg = f'`proxy_port` must be int or "None": {invalid_arg}'
+                    msg = f"`proxy_port` must be int: {invalid_arg}"
                     raise TypeError(msg)
 
             _db_port = port_config.get("db_port")
@@ -130,11 +142,12 @@ class RPA:
             raise TypeError(msg)
 
         return cls(
-            proxy_port,
-            db_port,
-            initial_left,
-            initial_top,
-            viewport_height,
+            remote_host=remote_host,
+            proxy_port=proxy_port,
+            db_port=db_port,
+            initial_left=initial_left,
+            initial_top=initial_top,
+            viewport_height=viewport_height,
         )
 
     def launch(self) -> None:
@@ -145,22 +158,32 @@ class RPA:
         self._db_process = Popen(server_args)  # noqa: S603
 
         # Run network sniffering process
-        sniffer_args: list[str | Path] = ["mitmdump", "-qs", _SNIFFER_PATH]
-        if self._proxy_port is not None:
+        if self._remote_host is None:
+            sniffer_args: list[str | Path] = ["mitmdump", "-qs", _SNIFFER_PATH]
             sniffer_args.extend(["-p", f"{self._proxy_port}"])
-        if self._db_port is not None:
-            sniffer_args.extend(["--set", f"server_port={self._db_port}"])
-        self._mitmproxy_process = Popen(sniffer_args)  # noqa: S603
+            if self._db_port is not None:
+                sniffer_args.extend(["--set", f"server_port={self._db_port}"])
+            self._mitmproxy_process = Popen(sniffer_args)  # noqa: S603
 
         # Construct a class instance that abstracts browser operations
-        if self._proxy_port is None:
-            self._browser = None
+        if self._remote_host is not None:
+            if self._db_port is None:
+                self._browser = RemoteBrowser(
+                    width=self._viewport_width,
+                    height=self._viewport_height,
+                )
+            else:
+                self._browser = RemoteBrowser(
+                    db_port=self._db_port,
+                    width=self._viewport_width,
+                    height=self._viewport_height,
+                )
         else:
             self._browser = DesktopBrowser(
                 proxy_port=self._proxy_port,
                 initial_left=self._initial_left,
                 initial_top=self._initial_top,
-                width=self._viewport_height * 16 // 9,
+                width=self._viewport_width,
                 height=self._viewport_height,
             )
 

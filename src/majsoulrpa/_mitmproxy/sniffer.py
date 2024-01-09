@@ -172,7 +172,7 @@ class Sniffer:
         data_str = json.dumps(data, allow_nan=False, separators=(",", ":"))
         data_bytes = data_str.encode(encoding="utf-8")
 
-        self._client.PushMessage(Message(content=data_bytes))
+        self._client.push_message(Message(content=data_bytes))
 
 
 addons = [Sniffer()]
