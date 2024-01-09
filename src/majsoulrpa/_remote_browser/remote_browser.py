@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # ruff: noqa: INP001, PLR2004
 import argparse
 import base64
@@ -10,6 +11,7 @@ from playwright.sync_api import BrowserContext, sync_playwright
 from zmq.utils.win32 import allow_interrupt
 
 from majsoulrpa._impl.browser import (
+    ASPECT_RATIO,
     STD_HEIGHT,
     URL_MAJSOUL,
     validate_viewport_size,
@@ -32,12 +34,14 @@ def main(browser_context: BrowserContext, db_port: int) -> None:  # noqa: PLR091
         poller_in = zmq.Poller()
         poller_in.register(socket, zmq.POLLIN)
 
-        def unregister() -> None:
+        def interrupt_polling() -> None:
             poller_in.unregister(socket)
+            socket.close()
+            remote_context.destroy()
 
         while True:
-            with allow_interrupt(unregister):
-                if poller_in.poll(3600_000):
+            with allow_interrupt(interrupt_polling):
+                if poller_in.poll(300_000):
                     request = socket.recv_json()
                 else:
                     msg = "Failed to receive a message from the RPA client."
@@ -120,7 +124,7 @@ if __name__ == "__main__":
     if proxy_port == db_port:
         msg = f"Ports must be different. {proxy_port=}, {db_port=}"
         raise ValueError(msg)
-    width = height * 16 // 9
+    width = int(height * ASPECT_RATIO)
     validate_viewport_size(width, height)
 
     # Run network sniffering process
@@ -129,10 +133,11 @@ if __name__ == "__main__":
         "-qs",
         _SNIFFER_PATH,
         "--set",
-        f"server_port={db_port}",
+        f"server_port={db_port + 1}",
     ]
 
-    with Popen(sniffer_args):  # noqa: S603
+    sniffer_process = Popen(sniffer_args)  # noqa: S603
+    try:
         proxy_server = f"--proxy-server=http://localhost:{proxy_port}"
         ignore_certifi_errors = "--ignore-certificate-errors"
         options = [proxy_server, ignore_certifi_errors]
@@ -151,3 +156,6 @@ if __name__ == "__main__":
             browser.new_context(viewport=viewport_size) as context,  # type: ignore[arg-type]
         ):
             main(context, db_port)
+    finally:
+        if sniffer_process.poll() is None:
+            sniffer_process.terminate()

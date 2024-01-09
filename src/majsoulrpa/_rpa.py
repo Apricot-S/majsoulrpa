@@ -1,5 +1,4 @@
 import datetime
-import sys
 import uuid
 from logging import getLogger
 from pathlib import Path
@@ -7,7 +6,7 @@ from subprocess import Popen
 from typing import TYPE_CHECKING, Any, Final, Self
 
 from ._impl.browser import BrowserBase, DesktopBrowser, RemoteBrowser
-from ._impl.grpc_client import GRPCClient
+from ._impl.zmq_client import ZMQClient
 from .common import timeout_to_deadline
 from .presentation import AuthPresentation, HomePresentation, LoginPresentation
 from .presentation.presentation_base import (
@@ -151,18 +150,14 @@ class RPA:
         )
 
     def launch(self) -> None:
-        # Run DB server process
-        server_args: list[str | Path] = [sys.executable, _SERVER_PATH]
-        if self._db_port is not None:
-            server_args.extend(["--port", f"{self._db_port}"])
-        self._db_process = Popen(server_args)  # noqa: S603
-
         # Run network sniffering process
         if self._remote_host is None:
             sniffer_args: list[str | Path] = ["mitmdump", "-qs", _SNIFFER_PATH]
             sniffer_args.extend(["-p", f"{self._proxy_port}"])
             if self._db_port is not None:
-                sniffer_args.extend(["--set", f"server_port={self._db_port}"])
+                sniffer_args.extend(
+                    ["--set", f"server_port={self._db_port + 1}"],
+                )
             self._mitmproxy_process = Popen(sniffer_args)  # noqa: S603
 
         # Construct a class instance that abstracts browser operations
@@ -189,9 +184,9 @@ class RPA:
 
         # Construct a class instance that abstracts DB client
         if self._db_port is None:
-            self._db_client = GRPCClient()
+            self._db_client = ZMQClient(port=37247 + 1)
         else:
-            self._db_client = GRPCClient("localhost", self._db_port)
+            self._db_client = ZMQClient("localhost", self._db_port + 1)
 
     def close(self) -> None:
         self._db_client = None

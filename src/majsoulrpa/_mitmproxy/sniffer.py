@@ -5,12 +5,10 @@ import json
 import re
 from logging import getLogger
 
-import grpc  # type:ignore[import-untyped]
 import wsproto.frame_protocol
+import zmq
 from mitmproxy import addonmanager, ctx, http
 
-from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2 import Message
-from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import GRPCServerStub
 from majsoulrpa.common import validate_user_port
 
 logger = getLogger(__name__)
@@ -31,12 +29,14 @@ class Sniffer:
 
     def running(self) -> None:
         validate_user_port(ctx.options.server_port)
-        target = f"localhost:{ctx.options.server_port}"
-        self._channel = grpc.insecure_channel(target)
-        self._client = GRPCServerStub(self._channel)
+        target = f"tcp://127.0.0.1:{ctx.options.server_port}"
+        self._context = zmq.Context()
+        self._socket = self._context.socket(zmq.PUB)
+        self._socket.bind(target)
 
     def done(self) -> None:
-        self._channel.close()
+        self._socket.close()
+        self._context.destroy()
 
     def websocket_message(self, flow: http.HTTPFlow) -> None:  # noqa: C901, PLR0912, PLR0915
         global _message_queue  # noqa: PLW0602
@@ -172,7 +172,7 @@ class Sniffer:
         data_str = json.dumps(data, allow_nan=False, separators=(",", ":"))
         data_bytes = data_str.encode(encoding="utf-8")
 
-        self._client.push_message(Message(content=data_bytes))
+        self._socket.send_multipart([b"ws", data_bytes])
 
 
 addons = [Sniffer()]
