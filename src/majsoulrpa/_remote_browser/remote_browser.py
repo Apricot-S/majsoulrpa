@@ -1,68 +1,64 @@
 # ruff: noqa: INP001, PLR2004
 import argparse
 import base64
-import json
 from pathlib import Path
 from subprocess import Popen
 from typing import Final
 
-import grpc  # type:ignore[import-untyped]
+import zmq
 from playwright.sync_api import BrowserContext, sync_playwright
+from zmq.utils.win32 import allow_interrupt
 
 from majsoulrpa._impl.browser import (
     STD_HEIGHT,
     URL_MAJSOUL,
     validate_viewport_size,
 )
-from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2 import (
-    BrowserResponse,
-    Timeout,
-)
-from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import GRPCServerStub
 from majsoulrpa.common import validate_user_port
 
 _SNIFFER_PATH: Final = Path(__file__).parents[1] / "_mitmproxy/sniffer.py"
 
 
-def main(context: BrowserContext, db_port: int) -> None:  # noqa: PLR0915
-    def respond(response: dict[str, str]) -> None:
-        message = json.dumps(response, separators=(",", ":"))
-        message_bytes = message.encode("utf-8")
-        client.push_browser_response(BrowserResponse(content=message_bytes))
+def main(browser_context: BrowserContext, db_port: int) -> None:  # noqa: PLR0915
+    page = browser_context.new_page()
+    page.goto(URL_MAJSOUL)
+    page.wait_for_selector("#layaCanvas", timeout=60000)
 
-    with grpc.insecure_channel(f"localhost:{db_port}") as channel:
-        client = GRPCServerStub(channel)
+    with (
+        zmq.Context() as remote_context,
+        remote_context.socket(zmq.REP) as socket,
+        socket.bind(f"tcp://127.0.0.1:{db_port}"),
+    ):
+        poller_in = zmq.Poller()
+        poller_in.register(socket, zmq.POLLIN)
 
-        page = context.new_page()
-        page.goto(URL_MAJSOUL)
-        page.wait_for_selector("#layaCanvas", timeout=60000)
+        def unregister() -> None:
+            poller_in.unregister(socket)
 
         while True:
-            request_bytes: bytes = client.pop_browser_request(
-                Timeout(seconds=3600),
-                timeout=3600,
-                wait_for_ready=True,
-            ).content
-
-            if request_bytes == b"":
-                msg = "There have been no requests for an hour."
-                raise TimeoutError(msg)
-
-            request_str = request_bytes.decode(encoding="utf-8")
-            request = json.loads(request_str)
+            with allow_interrupt(unregister):
+                if poller_in.poll(3600_000):
+                    request = socket.recv_json()
+                else:
+                    msg = "Failed to receive a message from the RPA client."
+                    raise TimeoutError(msg)
+                if not isinstance(request, dict):
+                    raise TypeError
+                if any(not isinstance(key, str) for key in request):
+                    raise TypeError
 
             match request["type"]:
                 case "refresh":
                     page.reload()
                     response = {"result": "O.K."}
-                    respond(response)
+                    socket.send_json(response)
                 case "write":
                     text = request["text"]
                     delay = request["delay"]
                     if text != "":
                         page.keyboard.type(text, delay=delay)
                     response = {"result": "O.K."}
-                    respond(response)
+                    socket.send_json(response)
                 case "press":
                     keys = request["keys"]
                     if isinstance(keys, str):
@@ -71,31 +67,31 @@ def main(context: BrowserContext, db_port: int) -> None:  # noqa: PLR0915
                         for k in keys:
                             page.keyboard.press(k)
                     response = {"result": "O.K."}
-                    respond(response)
+                    socket.send_json(response)
                 case "press_hotkey":
                     args = request["args"]
                     keys = "+".join(args)
                     page.keyboard.press(keys)
                     response = {"result": "O.K."}
-                    respond(response)
+                    socket.send_json(response)
                 case "scroll":
                     response = {"result": "Error: Not implemented."}
-                    respond(response)
+                    socket.send_json(response)
                 case "click":
                     x = request["x"]
                     y = request["y"]
                     page.mouse.click(x, y)
                     response = {"result": "O.K."}
-                    respond(response)
+                    socket.send_json(response)
                 case "get_screenshot":
                     data_png = page.screenshot()
                     data_b64 = base64.b64encode(data_png)
                     data = data_b64.decode("utf-8")
                     response = {"result": "O.K.", "data": data}
-                    respond(response)
+                    socket.send_json(response)
                 case "close":
                     response = {"result": "O.K."}
-                    respond(response)
+                    socket.send_json(response)
                     break
                 case _ as unexpected:
                     msg = f"{unexpected}: An unknown message."
