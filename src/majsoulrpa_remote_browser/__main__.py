@@ -23,7 +23,41 @@ _SNIFFER_PATH: Final = (
 )
 
 
-def main(browser_context: BrowserContext, db_port: int) -> None:  # noqa: PLR0915
+def parse_options() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--remote_port", type=int, default=19222)
+    parser.add_argument("--proxy_port", type=int, default=8080)
+    parser.add_argument("--message_queue_port", type=int, default=37247)
+    parser.add_argument("--initial_left", type=int, default=0)
+    parser.add_argument("--initial_top", type=int, default=0)
+    parser.add_argument("--viewport_height", type=int, default=STD_HEIGHT)
+    parser.add_argument("--headless", action="store_true")
+    return parser.parse_args()
+
+
+def validate_options(
+    remote_port: int,
+    proxy_port: int,
+    message_queue_port: int,
+    width: int,
+    height: int,
+) -> None:
+    validate_user_port(remote_port)
+    validate_user_port(proxy_port)
+    validate_user_port(message_queue_port)
+    if len({remote_port, proxy_port, message_queue_port}) != 3:
+        msg = (
+            "Ports must be different. "
+            f"{remote_port=}, {proxy_port=}, {message_queue_port=}"
+        )
+        raise ValueError(msg)
+    validate_viewport_size(width, height)
+
+
+def _launch_remote_browser_core(  # noqa: PLR0915
+    browser_context: BrowserContext,
+    remote_port: int,
+) -> None:
     page = browser_context.new_page()
     page.goto(URL_MAJSOUL)
     page.wait_for_selector("#layaCanvas", timeout=60000)
@@ -31,7 +65,7 @@ def main(browser_context: BrowserContext, db_port: int) -> None:  # noqa: PLR091
     with (
         zmq.Context() as remote_context,
         remote_context.socket(zmq.REP) as socket,
-        socket.bind(f"tcp://127.0.0.1:{db_port}"),
+        socket.bind(f"tcp://127.0.0.1:{remote_port}"),
     ):
         poller_in = zmq.Poller()
         poller_in.register(socket, zmq.POLLIN)
@@ -104,36 +138,24 @@ def main(browser_context: BrowserContext, db_port: int) -> None:  # noqa: PLR091
                     raise RuntimeError(msg)
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--remote_port", type=int, default=19222)
-    parser.add_argument("--proxy_port", type=int, default=8080)
-    parser.add_argument("--message_queue_port", type=int, default=37247)
-    parser.add_argument("--initial_left", type=int, default=0)
-    parser.add_argument("--initial_top", type=int, default=0)
-    parser.add_argument("--viewport_height", type=int, default=STD_HEIGHT)
-    parser.add_argument("--headless", action="store_true")
-    args = parser.parse_args()
-
-    remote_port: int = args.remote_port
-    proxy_port: int = args.proxy_port
-    message_queue_port: int = args.message_queue_port
-    initial_left: int = args.initial_left
-    initial_top: int = args.initial_top
-    height: int = args.viewport_height
-    is_headless: bool = args.headless
-
-    validate_user_port(remote_port)
-    validate_user_port(proxy_port)
-    validate_user_port(message_queue_port)
-    if len({remote_port, proxy_port, message_queue_port}) != 3:
-        msg = (
-            "Ports must be different. "
-            f"{remote_port=}, {proxy_port=}, {message_queue_port=}"
-        )
-        raise ValueError(msg)
-    width = int(height * ASPECT_RATIO)
-    validate_viewport_size(width, height)
+def launch_remote_browser(  # noqa: PLR0913
+    remote_port: int,
+    proxy_port: int,
+    message_queue_port: int,
+    initial_left: int,
+    initial_top: int,
+    width: int,
+    height: int,
+    *,
+    is_headless: bool,
+) -> None:
+    validate_options(
+        remote_port,
+        proxy_port,
+        message_queue_port,
+        width,
+        height,
+    )
 
     # Run network sniffering process
     sniffer_args: list[str | Path] = [
@@ -146,9 +168,10 @@ if __name__ == "__main__":
 
     sniffer_process = Popen(sniffer_args)  # noqa: S603
     try:
+        initial_position = f"--window-position={initial_left},{initial_top}"
         proxy_server = f"--proxy-server=http://localhost:{proxy_port}"
         ignore_certifi_errors = "--ignore-certificate-errors"
-        options = [proxy_server, ignore_certifi_errors]
+        options = [initial_position, proxy_server, ignore_certifi_errors]
         viewport_size = {"width": width, "height": height}
         mute_audio_off: list[str] | None = ["--mute-audio"]
         if is_headless:
@@ -163,7 +186,36 @@ if __name__ == "__main__":
             ) as browser,
             browser.new_context(viewport=viewport_size) as context,  # type: ignore[arg-type]
         ):
-            main(context, remote_port)
+            _launch_remote_browser_core(context, remote_port)
     finally:
         if sniffer_process.poll() is None:
             sniffer_process.terminate()
+
+
+def main() -> None:
+    args = parse_options()
+
+    remote_port: int = args.remote_port
+    proxy_port: int = args.proxy_port
+    message_queue_port: int = args.message_queue_port
+    initial_left: int = args.initial_left
+    initial_top: int = args.initial_top
+    height: int = args.viewport_height
+    is_headless: bool = args.headless
+
+    width = int(height * ASPECT_RATIO)
+
+    launch_remote_browser(
+        remote_port,
+        proxy_port,
+        message_queue_port,
+        initial_left,
+        initial_top,
+        width,
+        height,
+        is_headless=is_headless,
+    )
+
+
+if __name__ == "__main__":
+    main()
