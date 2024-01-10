@@ -18,9 +18,7 @@ from majsoulrpa._impl.browser import (
 )
 from majsoulrpa.common import validate_user_port
 
-_SNIFFER_PATH: Final = (
-    Path(__file__).parents[1] / "majsoulrpa/_mitmproxy/sniffer.py"
-)
+_SNIFFER_PATH: Final = Path(__file__).parents[1] / "_mitmproxy/sniffer.py"
 
 
 def parse_options() -> argparse.Namespace:
