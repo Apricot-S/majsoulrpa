@@ -2,7 +2,7 @@
 import datetime
 
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.db_client import DBClientBase
+from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa.common import TimeoutType
 
 from .auth import AuthPresentation
@@ -48,14 +48,14 @@ class PresentationCreator(PresentationCreatorBase):
         current_presentation: Presentation,
         next_presentation: Presentation,
         browser: BrowserBase,
-        db_client: DBClientBase,
+        message_queue_client: MessageQueueClientBase,
         **kwargs,
     ) -> PresentationBase:
         match next_presentation:
             case Presentation.LOGIN:
-                return LoginPresentation(browser, db_client, self)
+                return LoginPresentation(browser, message_queue_client, self)
             case Presentation.AUTH:
-                return AuthPresentation(browser, db_client, self)
+                return AuthPresentation(browser, message_queue_client, self)
             case Presentation.HOME:
                 if not isinstance(
                     kwargs.get("timeout"),
@@ -64,7 +64,7 @@ class PresentationCreator(PresentationCreatorBase):
                     raise TypeError
                 return HomePresentation(
                     browser,
-                    db_client,
+                    message_queue_client,
                     self,
                     kwargs["timeout"],
                 )
@@ -80,7 +80,7 @@ class PresentationCreator(PresentationCreatorBase):
                             raise TypeError
                         return RoomHostPresentation._create(
                             browser,
-                            db_client,
+                            message_queue_client,
                             self,
                             kwargs["timeout"],
                         )
@@ -96,7 +96,7 @@ class PresentationCreator(PresentationCreatorBase):
                             raise TypeError
                         return RoomGuestPresentation._join(
                             browser,
-                            db_client,
+                            message_queue_client,
                             self,
                             kwargs["timeout"],
                         )
@@ -113,7 +113,7 @@ class PresentationCreator(PresentationCreatorBase):
                         # TODO: What to do when a suspended match is resumed.
                         return MatchPresentation(
                             browser,
-                            db_client,
+                            message_queue_client,
                             self,
                             current_presentation,
                             kwargs["timeout"],
@@ -121,7 +121,7 @@ class PresentationCreator(PresentationCreatorBase):
                     case Presentation.ROOM_HOST | Presentation.ROOM_GUEST:
                         return MatchPresentation(
                             browser,
-                            db_client,
+                            message_queue_client,
                             self,
                             current_presentation,
                             kwargs["timeout"],
@@ -134,7 +134,7 @@ class PresentationCreator(PresentationCreatorBase):
                             raise TypeError
                         return MatchPresentation(
                             browser,
-                            db_client,
+                            message_queue_client,
                             self,
                             current_presentation,
                             kwargs["timeout"],

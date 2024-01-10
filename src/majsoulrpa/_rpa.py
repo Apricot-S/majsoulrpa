@@ -17,7 +17,7 @@ from .presentation.presentation_base import (
 from .presentation.presentation_creator import PresentationCreator
 
 if TYPE_CHECKING:
-    from ._impl.db_client import DBClientBase
+    from ._impl.message_queue_client import MessageQueueClientBase
 
 logger = getLogger(__name__)
 
@@ -30,7 +30,7 @@ class RPA:
         *,
         remote_host: str | None = None,
         proxy_port: int = 8080,
-        db_port: int | None = 37247,
+        message_queue_port: int | None = 37247,
         initial_left: int = 0,
         initial_top: int = 0,
         viewport_height: int = 1080,
@@ -38,16 +38,15 @@ class RPA:
         self._id = uuid.uuid4()
         self._remote_host = remote_host
         self._proxy_port = proxy_port
-        self._db_port = db_port
+        self._message_queue_port = message_queue_port
         self._initial_left = initial_left
         self._initial_top = initial_top
         self._viewport_width = viewport_height * 16 // 9
         self._viewport_height = viewport_height
 
-        self._db_process: Popen[bytes] | None = None
         self._mitmproxy_process: Popen[bytes] | None = None
         self._browser: BrowserBase | None = None
-        self._db_client: DBClientBase | None = None
+        self._message_queue_client: MessageQueueClientBase | None = None
         self._creator = PresentationCreator()
 
     @classmethod
@@ -65,7 +64,7 @@ class RPA:
         port_config = config.get("port")
         if port_config is None:
             proxy_port = 8080
-            db_port = 37247
+            message_queue_port = 37247
         elif isinstance(port_config, dict):
             _proxy_port = port_config.get("proxy_port")
             match _proxy_port:
@@ -77,14 +76,14 @@ class RPA:
                     msg = f"`proxy_port` must be int: {invalid_arg}"
                     raise TypeError(msg)
 
-            _db_port = port_config.get("db_port")
-            match _db_port:
+            _message_queue_port = port_config.get("db_port")
+            match _message_queue_port:
                 case None:
-                    db_port = 37247
+                    message_queue_port = 37247
                 case "None":
-                    db_port = None
+                    message_queue_port = None
                 case int():
-                    db_port = _db_port
+                    message_queue_port = _message_queue_port
                 case _ as invalid_arg:
                     msg = f'`db_port` must be int or "None": {invalid_arg}'
                     raise TypeError(msg)
@@ -142,7 +141,7 @@ class RPA:
         return cls(
             remote_host=remote_host,
             proxy_port=proxy_port,
-            db_port=db_port,
+            message_queue_port=message_queue_port,
             initial_left=initial_left,
             initial_top=initial_top,
             viewport_height=viewport_height,
@@ -153,22 +152,22 @@ class RPA:
         if self._remote_host is None:
             sniffer_args: list[str | Path] = ["mitmdump", "-qs", _SNIFFER_PATH]
             sniffer_args.extend(["-p", f"{self._proxy_port}"])
-            if self._db_port is not None:
+            if self._message_queue_port is not None:
                 sniffer_args.extend(
-                    ["--set", f"server_port={self._db_port + 1}"],
+                    ["--set", f"server_port={self._message_queue_port + 1}"],
                 )
             self._mitmproxy_process = Popen(sniffer_args)  # noqa: S603
 
         # Construct a class instance that abstracts browser operations
         if self._remote_host is not None:
-            if self._db_port is None:
+            if self._message_queue_port is None:
                 self._browser = RemoteBrowser(
                     width=self._viewport_width,
                     height=self._viewport_height,
                 )
             else:
                 self._browser = RemoteBrowser(
-                    db_port=self._db_port,
+                    remote_port=self._message_queue_port,
                     width=self._viewport_width,
                     height=self._viewport_height,
                 )
@@ -182,13 +181,16 @@ class RPA:
             )
 
         # Construct a class instance that abstracts DB client
-        if self._db_port is None:
-            self._db_client = ZMQClient(port=37247 + 1)
+        if self._message_queue_port is None:
+            self._message_queue_client = ZMQClient(port=37247 + 1)
         else:
-            self._db_client = ZMQClient("localhost", self._db_port + 1)
+            self._message_queue_client = ZMQClient(
+                "localhost",
+                self._message_queue_port + 1,
+            )
 
     def close(self) -> None:
-        self._db_client = None
+        self._message_queue_client = None
         if self._browser is not None:
             self._browser.close()
             self._browser = None
@@ -196,10 +198,6 @@ class RPA:
             if self._mitmproxy_process.poll() is None:
                 self._mitmproxy_process.kill()
             self._mitmproxy_process = None
-        if self._db_process is not None:
-            if self._db_process.poll() is None:
-                self._db_process.kill()
-            self._db_process = None
 
     def __enter__(self) -> Self:
         self.launch()
@@ -209,13 +207,13 @@ class RPA:
         self.close()
 
     def get_account_id(self) -> int:
-        if self._db_client is None:
+        if self._message_queue_client is None:
             msg = "DB client has not been launched yet."
             raise RuntimeError(msg)
-        if self._db_client.account_id is None:
+        if self._message_queue_client.account_id is None:
             msg = "`account_id` has not been fetched yet."
             raise RuntimeError(msg)
-        return self._db_client.account_id
+        return self._message_queue_client.account_id
 
     def get_screenshot(self) -> bytes:
         if self._browser is None:
@@ -229,7 +227,7 @@ class RPA:
         if self._browser is None:
             msg = "Browser has not been launched yet."
             raise RuntimeError(msg)
-        if self._db_client is None:
+        if self._message_queue_client is None:
             msg = "DB client has not been launched yet."
             raise RuntimeError(msg)
 
@@ -240,7 +238,7 @@ class RPA:
             try:
                 p = LoginPresentation(
                     self._browser,
-                    self._db_client,
+                    self._message_queue_client,
                     self._creator,
                 )
             except PresentationNotDetected:
@@ -251,7 +249,7 @@ class RPA:
             try:
                 p = AuthPresentation(
                     self._browser,
-                    self._db_client,
+                    self._message_queue_client,
                     self._creator,
                 )
             except PresentationNotDetected:
@@ -263,7 +261,7 @@ class RPA:
                 now = datetime.datetime.now(datetime.UTC)
                 p = HomePresentation(
                     self._browser,
-                    self._db_client,
+                    self._message_queue_client,
                     self._creator,
                     deadline - now,
                 )

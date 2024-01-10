@@ -2,7 +2,7 @@ import datetime
 import time
 
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.db_client import DBClientBase
+from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 
@@ -20,10 +20,10 @@ class AuthPresentation(PresentationBase):
     def __init__(
         self,
         browser: BrowserBase,
-        db_client: DBClientBase,
+        message_queue_client: MessageQueueClientBase,
         creator: PresentationCreatorBase,
     ) -> None:
-        super().__init__(browser, db_client, creator)
+        super().__init__(browser, message_queue_client, creator)
 
         self._entered_email_address: bool = False
 
@@ -151,7 +151,7 @@ class AuthPresentation(PresentationBase):
                     Presentation.AUTH,
                     Presentation.MATCH,
                     self._browser,
-                    self._db_client,
+                    self._message_queue_client,
                     timeout=timeout,
                 )
                 self._set_new_presentation(new_presentation)
@@ -165,7 +165,7 @@ class AuthPresentation(PresentationBase):
             Presentation.AUTH,
             Presentation.HOME,
             self._browser,
-            self._db_client,
+            self._message_queue_client,
             timeout=60.0,
         )
         self._set_new_presentation(new_presentation)

@@ -8,7 +8,10 @@ import cv2
 
 from majsoulrpa import common
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.db_client import DBClientBase, Message
+from majsoulrpa._impl.message_queue_client import (
+    Message,
+    MessageQueueClientBase,
+)
 from majsoulrpa._impl.template import Template, screenshot_to_opencv
 from majsoulrpa.common import TimeoutType, timeout_to_deadline, to_timedelta
 from majsoulrpa.presentation.match.event import (
@@ -160,14 +163,14 @@ class MatchPresentation(PresentationBase):
     def __init__(
         self,
         browser: BrowserBase,
-        db_client: DBClientBase,
+        message_queue_client: MessageQueueClientBase,
         creator: PresentationCreatorBase,
         prev_presentation: Presentation | None,
         timeout: TimeoutType = 60.0,
         *,
         match_state: MatchState | None = None,
     ) -> None:
-        super().__init__(browser, db_client, creator)
+        super().__init__(browser, message_queue_client, creator)
 
         self._prev_presentation = prev_presentation
         self._step = 0
@@ -192,7 +195,9 @@ class MatchPresentation(PresentationBase):
 
         while True:
             now = datetime.datetime.now(datetime.UTC)
-            message = self._db_client.dequeue_message(deadline - now)
+            message = self._message_queue_client.dequeue_message(
+                deadline - now,
+            )
             if message is None:
                 msg = "Timeout."
                 raise Timeout(msg, ss)
@@ -310,7 +315,7 @@ class MatchPresentation(PresentationBase):
                     players = []
                     for i in range(len(response["seat_list"])):
                         account_id = response["seat_list"][i]
-                        if account_id == db_client.account_id:
+                        if account_id == message_queue_client.account_id:
                             self._match_state._set_seat(i)  # noqa: SLF001
                         if account_id == 0:
                             player = MatchPlayer(
@@ -485,7 +490,7 @@ class MatchPresentation(PresentationBase):
                 raise Timeout(msg, self._browser.get_screenshot())
 
             self._browser.click_region(left, top, width, height, edge_sigma)
-            message = self._db_client.dequeue_message(interval)
+            message = self._message_queue_client.dequeue_message(interval)
             if message is None:
                 continue
             _, name, _, _, _ = message
@@ -509,7 +514,7 @@ class MatchPresentation(PresentationBase):
             )
 
         # Backfill the prefetched message.
-        self._db_client.put_back(message)
+        self._message_queue_client.put_back(message)
 
     def _reset_to_prev_presentation(self, timeout: TimeoutType) -> None:
         deadline = timeout_to_deadline(timeout)
@@ -544,7 +549,7 @@ class MatchPresentation(PresentationBase):
                 Presentation.MATCH,
                 self._prev_presentation,
                 self._browser,
-                self._db_client,
+                self._message_queue_client,
                 timeout=(deadline - now),
             )
             self._set_new_presentation(new_presentation)
@@ -559,7 +564,9 @@ class MatchPresentation(PresentationBase):
     def _on_end_of_match(self, deadline: datetime.datetime) -> None:
         while True:
             now = datetime.datetime.now(datetime.UTC)
-            message = self._db_client.dequeue_message(deadline - now)
+            message = self._message_queue_client.dequeue_message(
+                deadline - now,
+            )
             if message is None:
                 msg = "Timeout"
                 raise Timeout(msg, self._browser.get_screenshot())
@@ -601,7 +608,7 @@ class MatchPresentation(PresentationBase):
 
                     # If there are no more messages,
                     # return to the home screen
-                    message = self._db_client.dequeue_message(5)
+                    message = self._message_queue_client.dequeue_message(5)
                     if message is None:
                         now = datetime.datetime.now(datetime.UTC)
                         self._reset_to_prev_presentation(deadline - now)
@@ -609,11 +616,11 @@ class MatchPresentation(PresentationBase):
 
                     # Backfill the prefetched message and
                     # proceed to the next.
-                    self._db_client.put_back(message)
+                    self._message_queue_client.put_back(message)
                     continue
                 case ".lq.Lobby.fetchRoom":
                     # Backfill the prefetched message.
-                    self._db_client.put_back(message)
+                    self._message_queue_client.put_back(message)
                     now = datetime.datetime.now(datetime.UTC)
                     self._reset_to_prev_presentation(deadline - now)
                     return
@@ -680,7 +687,7 @@ class MatchPresentation(PresentationBase):
                     result = messages.pop(0)
                     while len(messages) > 0:
                         message = messages.pop(-1)
-                        self._db_client.put_back(message)
+                        self._message_queue_client.put_back(message)
                     return result
                 flag = True
 
@@ -710,7 +717,9 @@ class MatchPresentation(PresentationBase):
                 )
 
             now = datetime.datetime.now(datetime.UTC)
-            message = self._db_client.dequeue_message(deadline - now)
+            message = self._message_queue_client.dequeue_message(
+                deadline - now,
+            )
             if message is None:
                 msg = "Timeout."
                 raise Timeout(msg, self._browser.get_screenshot())
@@ -750,14 +759,14 @@ class MatchPresentation(PresentationBase):
         step, action_name, _ = _common.parse_action(request)
         assert step == 0
         assert action_name == "ActionNewRound"
-        self._db_client.put_back(message)
+        self._message_queue_client.put_back(message)
 
         now = datetime.datetime.now(datetime.UTC)
         MatchPresentation._wait(self._browser, deadline - now)
         now = datetime.datetime.now(datetime.UTC)
         new_presentation = MatchPresentation(
             self._browser,
-            self._db_client,
+            self._message_queue_client,
             self._creator,
             self._prev_presentation,
             deadline - now,
@@ -781,7 +790,9 @@ class MatchPresentation(PresentationBase):
                     round_result_confirmed = True
 
             now = datetime.datetime.now(datetime.UTC)
-            message = self._db_client.dequeue_message(deadline - now)
+            message = self._message_queue_client.dequeue_message(
+                deadline - now,
+            )
             if message is None:
                 continue
             _, name, request, _, _ = message
@@ -814,7 +825,9 @@ class MatchPresentation(PresentationBase):
                 while True:
                     # Wait for `ActionNewRound` message.
                     now = datetime.datetime.now(datetime.UTC)
-                    message = self._db_client.dequeue_message(deadline - now)
+                    message = self._message_queue_client.dequeue_message(
+                        deadline - now,
+                    )
                     if message is None:
                         msg = "Timeout"
                         raise Timeout(msg, self._browser.get_screenshot())
@@ -831,7 +844,7 @@ class MatchPresentation(PresentationBase):
                         }
                         if action_name == "ActionNewRound":
                             # Backfill the prefetched message.
-                            self._db_client.put_back(message)
+                            self._message_queue_client.put_back(message)
                             break
                         raise InconsistentMessage(
                             str(action_info),
@@ -847,7 +860,7 @@ class MatchPresentation(PresentationBase):
                 now = datetime.datetime.now(datetime.UTC)
                 new_presentation = MatchPresentation(
                     self._browser,
-                    self._db_client,
+                    self._message_queue_client,
                     self._creator,
                     self._prev_presentation,
                     deadline - now,
@@ -877,7 +890,7 @@ class MatchPresentation(PresentationBase):
                     # Wait for response message of
                     # `.lq.FastTest.confirmNewRound`
                     now = datetime.datetime.now(datetime.UTC)
-                    next_message = self._db_client.dequeue_message(
+                    next_message = self._message_queue_client.dequeue_message(
                         deadline - now,
                     )
                     if next_message is None:
@@ -895,7 +908,7 @@ class MatchPresentation(PresentationBase):
                         # `step = 1` is sent, so here is a workaround
                         # for this phenomenon.
                         # Backfill the prefetched message.
-                        self._db_client.put_back(next_message)
+                        self._message_queue_client.put_back(next_message)
                         self._workaround_for_skipped_confirm_new_round(
                             message,
                             deadline,
@@ -919,13 +932,13 @@ class MatchPresentation(PresentationBase):
                 # After backfilling `ActionNewRound` into
                 # the message queue of the DB server,
                 # the control flow is returned to the user side.
-                self._db_client.put_back(message)
+                self._message_queue_client.put_back(message)
                 now = datetime.datetime.now(datetime.UTC)
                 MatchPresentation._wait(self._browser, deadline - now)
                 now = datetime.datetime.now(datetime.UTC)
                 new_presentation = MatchPresentation(
                     self._browser,
-                    self._db_client,
+                    self._message_queue_client,
                     self._creator,
                     self._prev_presentation,
                     deadline - now,
@@ -1070,7 +1083,9 @@ class MatchPresentation(PresentationBase):
 
         while True:
             now = datetime.datetime.now(datetime.UTC)
-            message = self._db_client.dequeue_message(deadline - now)
+            message = self._message_queue_client.dequeue_message(
+                deadline - now,
+            )
             if message is None:
                 msg = "Timeout"
                 raise Timeout(msg, self._browser.get_screenshot())
@@ -1194,7 +1209,9 @@ class MatchPresentation(PresentationBase):
                                 break
                             continue
 
-                        message1 = self._db_client.dequeue_message(0.1)
+                        message1 = self._message_queue_client.dequeue_message(
+                            0.1,
+                        )
                         if message1 is None:
                             continue
                         _, name1, _, _, _ = message1
@@ -1224,14 +1241,14 @@ class MatchPresentation(PresentationBase):
                             # before clicking the "Confirm" button
                             # on the winning screen
                             # Backfill prefetched messages.
-                            self._db_client.put_back(message1)
+                            self._message_queue_client.put_back(message1)
                             continue
 
                         if name1 == ".lq.ActionPrototype":
                             # If the winning screen is skipped
                             # and the next game starts
                             # Backfill prefetched messages.
-                            self._db_client.put_back(message1)
+                            self._message_queue_client.put_back(message1)
                             break
 
                         # If `.lq.FastTest.confirmNewRound`
@@ -1507,7 +1524,9 @@ class MatchPresentation(PresentationBase):
             # from other player.
             while True:
                 now = datetime.datetime.now(datetime.UTC)
-                message = self._db_client.dequeue_message(deadline - now)
+                message = self._message_queue_client.dequeue_message(
+                    deadline - now,
+                )
                 if message is None:
                     msg = (
                         "The WebSocket message that "
@@ -1527,7 +1546,7 @@ class MatchPresentation(PresentationBase):
                         # You were being disturbed by
                         # Chi, Peng, Gang, or Rong from other player.
                         # Backfill prefetched messages.
-                        self._db_client.put_back(message)
+                        self._message_queue_client.put_back(message)
                         self._operation_list = None
                         now = datetime.datetime.now(datetime.UTC)
                         self._wait_impl(deadline - now)
@@ -1566,7 +1585,9 @@ class MatchPresentation(PresentationBase):
 
         while True:
             now = datetime.datetime.now(datetime.UTC)
-            message = self._db_client.dequeue_message(deadline - now)
+            message = self._message_queue_client.dequeue_message(
+                deadline - now,
+            )
             if message is None:
                 msg = "Timeout"
                 raise Timeout(msg, self._browser.get_screenshot())
@@ -1587,7 +1608,7 @@ class MatchPresentation(PresentationBase):
                 break
 
         # Backfill prefetched messages.
-        self._db_client.put_back(message)
+        self._message_queue_client.put_back(message)
 
         self._browser.click_region(left, top, width, height, edge_sigma=1.0)
 
@@ -1611,7 +1632,9 @@ class MatchPresentation(PresentationBase):
             # from other player.
             while True:
                 now = datetime.datetime.now(datetime.UTC)
-                message = self._db_client.dequeue_message(deadline - now)
+                message = self._message_queue_client.dequeue_message(
+                    deadline - now,
+                )
                 if message is None:
                     msg = (
                         "The WebSocket message that "
@@ -1631,7 +1654,7 @@ class MatchPresentation(PresentationBase):
                         # You were being disturbed by
                         # Peng, Gang, or Rong from other player.
                         # Backfill prefetched messages.
-                        self._db_client.put_back(message)
+                        self._message_queue_client.put_back(message)
                         self._operation_list = None
                         now = datetime.datetime.now(datetime.UTC)
                         self._wait_impl(deadline - now)
@@ -1748,7 +1771,9 @@ class MatchPresentation(PresentationBase):
             # Possibly interfered with by Rong from other player.
             while True:
                 now = datetime.datetime.now(datetime.UTC)
-                message = self._db_client.dequeue_message(deadline - now)
+                message = self._message_queue_client.dequeue_message(
+                    deadline - now,
+                )
                 if message is None:
                     msg = (
                         "The WebSocket message that "
@@ -1768,7 +1793,7 @@ class MatchPresentation(PresentationBase):
                         # You were being disturbed by
                         # Rong from other player.
                         # Backfill prefetched messages.
-                        self._db_client.put_back(message)
+                        self._message_queue_client.put_back(message)
                         self._operation_list = None
                         now = datetime.datetime.now(datetime.UTC)
                         self._wait_impl(deadline - now)

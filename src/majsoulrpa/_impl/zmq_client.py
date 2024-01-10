@@ -10,11 +10,11 @@ from zmq.utils.win32 import allow_interrupt
 
 from majsoulrpa.common import TimeoutType, to_timedelta, validate_user_port
 
-from .db_client import DBClientBase, Message
+from .message_queue_client import Message, MessageQueueClientBase
 from .protobuf_liqi import liqi_pb2
 
 
-class ZMQClient(DBClientBase):
+class ZMQClient(MessageQueueClientBase):
     def __init__(self, host: str = "localhost", port: int = 37247) -> None:
         validate_user_port(port)
         super().__init__(host, port)
@@ -162,12 +162,12 @@ class ZMQClient(DBClientBase):
 
         # If the message contains an account ID,
         # extract the account ID.
-        if name in DBClientBase._ACCOUNT_ID_MESSAGES:  # noqa: SLF001
+        if name in MessageQueueClientBase._ACCOUNT_ID_MESSAGES:  # noqa: SLF001
             if jsonized_response is None:
                 msg = "Message without any response."
                 raise RuntimeError(msg)
             account_id = jsonized_response
-            keys = DBClientBase._ACCOUNT_ID_MESSAGES[name]  # noqa: SLF001
+            keys = MessageQueueClientBase._ACCOUNT_ID_MESSAGES[name]  # noqa: SLF001
             for key in keys:
                 if key not in account_id:
                     msg = (
