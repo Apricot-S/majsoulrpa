@@ -278,18 +278,20 @@ class RemoteBrowser(BrowserBase):
     def __init__(
         self,
         *,
-        db_port: int = 37247,
+        remote_host: str,
+        remote_port: int = 19222,
         width: int = STD_WIDTH,
         height: int = STD_HEIGHT,
     ) -> None:
         super().__init__()
+        validate_user_port(remote_port)
         validate_viewport_size(width, height)
         self._viewport_size = {"width": width, "height": height}
         self._zoom_ratio = width / STD_WIDTH
 
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.REQ)
-        self._socket.connect(f"tcp://localhost:{db_port}")
+        self._socket.connect(f"tcp://{remote_host}:{remote_port}")
         self._poller_in = zmq.Poller()
         self._poller_in.register(self._socket, zmq.POLLIN)
         self._poller_out = zmq.Poller()

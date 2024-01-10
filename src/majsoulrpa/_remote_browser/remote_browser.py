@@ -104,25 +104,31 @@ def main(browser_context: BrowserContext, db_port: int) -> None:  # noqa: PLR091
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--remote_port", type=int, default=19222)
     parser.add_argument("--proxy_port", type=int, default=8080)
-    parser.add_argument("--db_port", type=int, default=37247)
+    parser.add_argument("--message_queue_port", type=int, default=37247)
     parser.add_argument("--initial_left", type=int, default=0)
     parser.add_argument("--initial_top", type=int, default=0)
     parser.add_argument("--viewport_height", type=int, default=STD_HEIGHT)
     parser.add_argument("--headless", action="store_true")
     args = parser.parse_args()
 
+    remote_port: int = args.remote_port
     proxy_port: int = args.proxy_port
-    db_port: int = args.db_port
+    message_queue_port: int = args.message_queue_port
     initial_left: int = args.initial_left
     initial_top: int = args.initial_top
     height: int = args.viewport_height
     is_headless: bool = args.headless
 
+    validate_user_port(remote_port)
     validate_user_port(proxy_port)
-    validate_user_port(db_port)
-    if proxy_port == db_port:
-        msg = f"Ports must be different. {proxy_port=}, {db_port=}"
+    validate_user_port(message_queue_port)
+    if len({remote_port, proxy_port, message_queue_port}) != 3:
+        msg = (
+            "Ports must be different. "
+            f"{remote_port=}, {proxy_port=}, {message_queue_port=}"
+        )
         raise ValueError(msg)
     width = int(height * ASPECT_RATIO)
     validate_viewport_size(width, height)
@@ -133,7 +139,7 @@ if __name__ == "__main__":
         "-qs",
         _SNIFFER_PATH,
         "--set",
-        f"server_port={db_port + 1}",
+        f"server_port={message_queue_port}",
     ]
 
     sniffer_process = Popen(sniffer_args)  # noqa: S603
@@ -155,7 +161,7 @@ if __name__ == "__main__":
             ) as browser,
             browser.new_context(viewport=viewport_size) as context,  # type: ignore[arg-type]
         ):
-            main(context, db_port)
+            main(context, remote_port)
     finally:
         if sniffer_process.poll() is None:
             sniffer_process.terminate()

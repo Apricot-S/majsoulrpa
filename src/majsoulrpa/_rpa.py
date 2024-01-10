@@ -29,16 +29,26 @@ class RPA:
         self,
         *,
         remote_host: str | None = None,
+        remote_port: int = 19222,
         proxy_port: int = 8080,
         message_queue_port: int | None = 37247,
         initial_left: int = 0,
         initial_top: int = 0,
         viewport_height: int = 1080,
     ) -> None:
+        if len({remote_port, proxy_port, message_queue_port}) != 3:  # noqa: PLR2004
+            msg = (
+                "Ports must be different. "
+                f"{remote_port=}, {proxy_port=}, {message_queue_port=}"
+            )
+            raise ValueError(msg)
+
         self._id = uuid.uuid4()
         self._remote_host = remote_host
+        self._remote_port = remote_port
         self._proxy_port = proxy_port
         self._message_queue_port = message_queue_port
+
         self._initial_left = initial_left
         self._initial_top = initial_top
         self._viewport_width = viewport_height * 16 // 9
@@ -154,23 +164,18 @@ class RPA:
             sniffer_args.extend(["-p", f"{self._proxy_port}"])
             if self._message_queue_port is not None:
                 sniffer_args.extend(
-                    ["--set", f"server_port={self._message_queue_port + 1}"],
+                    ["--set", f"server_port={self._message_queue_port}"],
                 )
             self._mitmproxy_process = Popen(sniffer_args)  # noqa: S603
 
         # Construct a class instance that abstracts browser operations
         if self._remote_host is not None:
-            if self._message_queue_port is None:
-                self._browser = RemoteBrowser(
-                    width=self._viewport_width,
-                    height=self._viewport_height,
-                )
-            else:
-                self._browser = RemoteBrowser(
-                    remote_port=self._message_queue_port,
-                    width=self._viewport_width,
-                    height=self._viewport_height,
-                )
+            self._browser = RemoteBrowser(
+                remote_host=self._remote_host,
+                remote_port=self._remote_port,
+                width=self._viewport_width,
+                height=self._viewport_height,
+            )
         else:
             self._browser = DesktopBrowser(
                 proxy_port=self._proxy_port,
@@ -182,11 +187,11 @@ class RPA:
 
         # Construct a class instance that abstracts DB client
         if self._message_queue_port is None:
-            self._message_queue_client = ZMQClient(port=37247 + 1)
+            self._message_queue_client = ZMQClient()
         else:
             self._message_queue_client = ZMQClient(
                 "localhost",
-                self._message_queue_port + 1,
+                self._message_queue_port,
             )
 
     def close(self) -> None:
