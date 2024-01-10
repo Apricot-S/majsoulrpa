@@ -5,7 +5,12 @@ from pathlib import Path
 from subprocess import Popen
 from typing import TYPE_CHECKING, Any, Final, Self
 
-from ._impl.browser import BrowserBase, DesktopBrowser, RemoteBrowser
+from ._impl.browser import (
+    ASPECT_RATIO,
+    BrowserBase,
+    DesktopBrowser,
+    RemoteBrowser,
+)
 from ._impl.zmq_client import ZMQClient
 from .common import timeout_to_deadline
 from .presentation import AuthPresentation, HomePresentation, LoginPresentation
@@ -51,7 +56,7 @@ class RPA:
 
         self._initial_left = initial_left
         self._initial_top = initial_top
-        self._viewport_width = viewport_height * 16 // 9
+        self._viewport_width = int(viewport_height * ASPECT_RATIO)
         self._viewport_height = viewport_height
 
         self._mitmproxy_process: Popen[bytes] | None = None
