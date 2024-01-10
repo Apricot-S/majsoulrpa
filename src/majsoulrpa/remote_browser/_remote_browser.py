@@ -21,7 +21,7 @@ from majsoulrpa.common import validate_user_port
 _SNIFFER_PATH: Final = Path(__file__).parents[1] / "_mitmproxy/sniffer.py"
 
 
-def parse_options() -> argparse.Namespace:
+def parse_option() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--remote_port", type=int, default=19222)
     parser.add_argument("--proxy_port", type=int, default=8080)
@@ -33,12 +33,11 @@ def parse_options() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def validate_options(
+def validate_option(
     remote_port: int,
     proxy_port: int,
     message_queue_port: int,
-    width: int,
-    height: int,
+    viewport_height: int,
 ) -> None:
     validate_user_port(remote_port)
     validate_user_port(proxy_port)
@@ -49,7 +48,8 @@ def validate_options(
             f"{remote_port=}, {proxy_port=}, {message_queue_port=}"
         )
         raise ValueError(msg)
-    validate_viewport_size(width, height)
+    viewport_width = int(viewport_height * ASPECT_RATIO)
+    validate_viewport_size(viewport_width, viewport_height)
 
 
 def _launch_remote_browser_core(  # noqa: PLR0915
@@ -137,23 +137,22 @@ def _launch_remote_browser_core(  # noqa: PLR0915
 
 
 def launch_remote_browser(
-    remote_port: int,
-    proxy_port: int,
-    message_queue_port: int,
-    initial_left: int,
-    initial_top: int,
-    width: int,
-    height: int,
+    remote_port: int = 19222,
+    proxy_port: int = 8080,
+    message_queue_port: int = 37247,
+    initial_left: int = 0,
+    initial_top: int = 0,
+    viewport_height: int = 1080,
     *,
-    is_headless: bool,
+    headless: bool = False,
 ) -> None:
-    validate_options(
+    validate_option(
         remote_port,
         proxy_port,
         message_queue_port,
-        width,
-        height,
+        viewport_height,
     )
+    viewport_width = int(viewport_height * ASPECT_RATIO)
 
     # Run network sniffering process
     sniffer_args: list[str | Path] = [
@@ -170,17 +169,15 @@ def launch_remote_browser(
         proxy_server = f"--proxy-server=http://localhost:{proxy_port}"
         ignore_certifi_errors = "--ignore-certificate-errors"
         options = [initial_position, proxy_server, ignore_certifi_errors]
-        viewport_size = {"width": width, "height": height}
-        mute_audio_off: list[str] | None = ["--mute-audio"]
-        if is_headless:
-            mute_audio_off = None
+        viewport_size = {"width": viewport_width, "height": viewport_height}
+        mute_audio_off = None if headless else ["--mute-audio"]
 
         with (
             sync_playwright() as playwright,
             playwright.chromium.launch(
                 args=options,
                 ignore_default_args=mute_audio_off,
-                headless=is_headless,
+                headless=headless,
             ) as browser,
             browser.new_context(viewport=viewport_size) as context,  # type: ignore[arg-type]
         ):
@@ -191,17 +188,15 @@ def launch_remote_browser(
 
 
 def main() -> None:
-    args = parse_options()
+    args = parse_option()
 
     remote_port: int = args.remote_port
     proxy_port: int = args.proxy_port
     message_queue_port: int = args.message_queue_port
     initial_left: int = args.initial_left
     initial_top: int = args.initial_top
-    height: int = args.viewport_height
-    is_headless: bool = args.headless
-
-    width = int(height * ASPECT_RATIO)
+    viewport_height: int = args.viewport_height
+    headless: bool = args.headless
 
     launch_remote_browser(
         remote_port,
@@ -209,9 +204,8 @@ def main() -> None:
         message_queue_port,
         initial_left,
         initial_top,
-        width,
-        height,
-        is_headless=is_headless,
+        viewport_height,
+        headless=headless,
     )
 
 
