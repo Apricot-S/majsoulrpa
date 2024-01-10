@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# ruff: noqa: INP001, PLR2004
+# ruff: noqa: PLR0913, PLR2004
 import argparse
 import base64
 from pathlib import Path
@@ -136,7 +136,7 @@ def _launch_remote_browser_core(  # noqa: PLR0915
                     raise RuntimeError(msg)
 
 
-def launch_remote_browser(  # noqa: PLR0913
+def launch_remote_browser(
     remote_port: int,
     proxy_port: int,
     message_queue_port: int,
