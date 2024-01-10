@@ -18,7 +18,9 @@ from majsoulrpa._impl.browser import (
 )
 from majsoulrpa.common import validate_user_port
 
-_SNIFFER_PATH: Final = Path(__file__).parents[1] / "_mitmproxy/sniffer.py"
+_SNIFFER_PATH: Final = (
+    Path(__file__).parents[1] / "src/majsoulrpa/_mitmproxy/sniffer.py"
+)
 
 
 def main(browser_context: BrowserContext, db_port: int) -> None:  # noqa: PLR0915
