@@ -19,12 +19,14 @@ initial_position = { left = -2150, top = -360 }
 
 [[config_list]]
 name = "S3 1920 x 1080"
+remote_host = "127.0.0.1"
 [config_list.authentication]
 method = "s3"
 email_address = "your_email_address_three@example.cfg"
 bucket_name = "your-example-bucket1"
 key_prefix = "verification-email"
-aws_profile = "foobar"                                 # Optional
+aws_profile = "foobar"                                 # Optional.
 [config_list.port]
+remote_port = 19222
 proxy_port = 8080
 db_port = 6379

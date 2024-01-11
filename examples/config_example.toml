@@ -1,11 +1,13 @@
-[authentication] # Required (all items below are also required)
-email_address = "your_email_address@example.cfg" # Must be 50 characters or less
-[port] # Optional (all items below are also optional)
-proxy_port = 8080 # Browser proxy port number (default: 8080)
-db_port = 37247   # Port number of the DB that stores Websocket messages (default: 37247)
-[browser] # Optional (all items below are also optional)
-viewport_height = 720 # Support from 720 to 2160 (default: 1080)
-# Support multiple monitors
-# The left edge of the primary monitor is 0 (default: 0)
-# The top of the primary monitor is 0 (default: 0)
-initial_position = { left = 100, top = 100 } # Either one can be set
+remote_host = "127.0.0.1" # Optional. IP address of remote browser. If not specified, desktop mode will be used.
+[authentication] # Required (all items below are also required).
+email_address = "your_email_address@example.cfg" # Must be 50 characters or less.
+[port] # Optional (all items below are also optional).
+remote_port = 19222 # Port for browser remote control (default: 19222). Ignored in desktop mode.
+proxy_port = 8080   # Browser proxy port (default: 8080).
+db_port = 37247     # Port of the DB that stores Websocket messages (default: 37247).
+[browser] # Optional (all items below are also optional).
+viewport_height = 720 # Support from 720 to 2160 (default: 1080).
+# Support multiple monitors.
+# The left edge of the primary monitor is 0 (default: 0).
+# The top of the primary monitor is 0 (default: 0).
+initial_position = { left = 100, top = 100 } # Either one can be set.
