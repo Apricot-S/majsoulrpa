@@ -78,9 +78,20 @@ class RPA:
 
         port_config = config.get("port")
         if port_config is None:
+            remote_port = 19222
             proxy_port = 8080
             message_queue_port = 37247
         elif isinstance(port_config, dict):
+            _remote_port = port_config.get("remote_port")
+            match _remote_port:
+                case None:
+                    remote_port = 19222
+                case int():
+                    remote_port = _remote_port
+                case _ as invalid_arg:
+                    msg = f"`remote_port` must be int: {invalid_arg}"
+                    raise TypeError(msg)
+
             _proxy_port = port_config.get("proxy_port")
             match _proxy_port:
                 case None:
@@ -155,6 +166,7 @@ class RPA:
 
         return cls(
             remote_host=remote_host,
+            remote_port=remote_port,
             proxy_port=proxy_port,
             message_queue_port=message_queue_port,
             initial_left=initial_left,
