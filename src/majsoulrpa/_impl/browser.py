@@ -5,6 +5,7 @@ import time
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
 from fractions import Fraction
+from ipaddress import ip_address
 from logging import getLogger
 from typing import Any, Final
 
@@ -284,6 +285,7 @@ class RemoteBrowser(BrowserBase):
         height: int = STD_HEIGHT,
     ) -> None:
         super().__init__()
+        ip_address(remote_host)
         validate_user_port(remote_port)
         validate_viewport_size(width, height)
         self._viewport_size = {"width": width, "height": height}

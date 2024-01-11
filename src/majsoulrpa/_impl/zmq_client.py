@@ -2,6 +2,7 @@ import base64
 import datetime
 import json
 import subprocess
+from ipaddress import ip_address
 from typing import Any
 
 import google.protobuf.json_format
@@ -15,7 +16,8 @@ from .protobuf_liqi import liqi_pb2
 
 
 class ZMQClient(MessageQueueClientBase):
-    def __init__(self, host: str = "localhost", port: int = 37247) -> None:
+    def __init__(self, host: str = "127.0.0.1", port: int = 37247) -> None:
+        ip_address(host)
         validate_user_port(port)
         super().__init__(host, port)
         self._context = zmq.Context()

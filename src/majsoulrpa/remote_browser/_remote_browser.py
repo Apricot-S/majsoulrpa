@@ -2,6 +2,7 @@
 # ruff: noqa: PLR0913, PLR2004
 import argparse
 import base64
+from ipaddress import ip_address
 from pathlib import Path
 from subprocess import Popen
 from typing import Final
@@ -23,6 +24,7 @@ _SNIFFER_PATH: Final = Path(__file__).parents[1] / "_mitmproxy/sniffer.py"
 
 def parse_option() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--remote_host", type=str, default="127.0.0.1")
     parser.add_argument("--remote_port", type=int, default=19222)
     parser.add_argument("--proxy_port", type=int, default=8080)
     parser.add_argument("--message_queue_port", type=int, default=37247)
@@ -34,11 +36,13 @@ def parse_option() -> argparse.Namespace:
 
 
 def validate_option(
+    remote_host: str,
     remote_port: int,
     proxy_port: int,
     message_queue_port: int,
     viewport_height: int,
 ) -> None:
+    ip_address(remote_host)
     validate_user_port(remote_port)
     validate_user_port(proxy_port)
     validate_user_port(message_queue_port)
@@ -54,6 +58,7 @@ def validate_option(
 
 def _launch_remote_browser_core(  # noqa: PLR0915
     browser_context: BrowserContext,
+    remote_host: str,
     remote_port: int,
 ) -> None:
     page = browser_context.new_page()
@@ -63,7 +68,7 @@ def _launch_remote_browser_core(  # noqa: PLR0915
     with (
         zmq.Context() as remote_context,
         remote_context.socket(zmq.REP) as socket,
-        socket.bind(f"tcp://127.0.0.1:{remote_port}"),
+        socket.bind(f"tcp://{remote_host}:{remote_port}"),
     ):
         poller_in = zmq.Poller()
         poller_in.register(socket, zmq.POLLIN)
@@ -137,6 +142,7 @@ def _launch_remote_browser_core(  # noqa: PLR0915
 
 
 def launch_remote_browser(
+    remote_host: str = "127.0.0.1",
     remote_port: int = 19222,
     proxy_port: int = 8080,
     message_queue_port: int = 37247,
@@ -147,6 +153,7 @@ def launch_remote_browser(
     headless: bool = False,
 ) -> None:
     validate_option(
+        remote_host,
         remote_port,
         proxy_port,
         message_queue_port,
@@ -160,7 +167,9 @@ def launch_remote_browser(
         "-qs",
         _SNIFFER_PATH,
         "--set",
-        f"server_port={message_queue_port}",
+        f"host={remote_host}",
+        "--set",
+        f"port={message_queue_port}",
     ]
 
     sniffer_process = Popen(sniffer_args)  # noqa: S603
@@ -181,7 +190,7 @@ def launch_remote_browser(
             ) as browser,
             browser.new_context(viewport=viewport_size) as context,  # type: ignore[arg-type]
         ):
-            _launch_remote_browser_core(context, remote_port)
+            _launch_remote_browser_core(context, remote_host, remote_port)
     finally:
         if sniffer_process.poll() is None:
             sniffer_process.terminate()
@@ -190,6 +199,7 @@ def launch_remote_browser(
 def main() -> None:
     args = parse_option()
 
+    remote_host: str = args.remote_host
     remote_port: int = args.remote_port
     proxy_port: int = args.proxy_port
     message_queue_port: int = args.message_queue_port
@@ -199,6 +209,7 @@ def main() -> None:
     headless: bool = args.headless
 
     launch_remote_browser(
+        remote_host,
         remote_port,
         proxy_port,
         message_queue_port,

@@ -165,11 +165,16 @@ class RPA:
     def launch(self) -> None:
         # Run network sniffering process
         if self._remote_host is None:
-            sniffer_args: list[str | Path] = ["mitmdump", "-qs", _SNIFFER_PATH]
-            sniffer_args.extend(["-p", f"{self._proxy_port}"])
+            sniffer_args: list[str | Path] = [
+                "mitmdump",
+                "-qs",
+                _SNIFFER_PATH,
+                "-p",
+                f"{self._proxy_port}",
+            ]
             if self._message_queue_port is not None:
                 sniffer_args.extend(
-                    ["--set", f"server_port={self._message_queue_port}"],
+                    ["--set", f"port={self._message_queue_port}"],
                 )
             self._mitmproxy_process = Popen(sniffer_args)  # noqa: S603
 
@@ -191,12 +196,19 @@ class RPA:
             )
 
         # Construct a class instance that abstracts DB client
-        if self._message_queue_port is None:
+        if self._remote_host is not None:
+            if self._message_queue_port is None:
+                self._message_queue_client = ZMQClient(self._remote_host)
+            else:
+                self._message_queue_client = ZMQClient(
+                    self._remote_host,
+                    self._message_queue_port,
+                )
+        elif self._message_queue_port is None:
             self._message_queue_client = ZMQClient()
         else:
             self._message_queue_client = ZMQClient(
-                "localhost",
-                self._message_queue_port,
+                port=self._message_queue_port,
             )
 
     def close(self) -> None:

@@ -3,6 +3,7 @@ import base64
 import datetime
 import json
 import re
+from ipaddress import ip_address
 from logging import getLogger
 
 import wsproto.frame_protocol
@@ -21,18 +22,26 @@ _response_pattern = re.compile(b"^\x03..\n\x00\x12", flags=re.DOTALL)
 class Sniffer:
     def load(self, loader: addonmanager.Loader) -> None:
         loader.add_option(
-            name="server_port",
+            name="host",
+            typespec=str,
+            default="127.0.0.1",
+            help="Host to send sniffed messages to",
+        )
+        loader.add_option(
+            name="port",
             typespec=int,
             default=37247,
-            help="Port number of server",
+            help="Port to send sniffed messages to",
         )
 
     def running(self) -> None:
-        validate_user_port(ctx.options.server_port)
-        target = f"tcp://127.0.0.1:{ctx.options.server_port}"
+        host = ctx.options.host
+        port = ctx.options.port
+        ip_address(host)
+        validate_user_port(port)
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.PUB)
-        self._socket.bind(target)
+        self._socket.bind(f"tcp://{host}:{port}")
 
     def done(self) -> None:
         self._socket.close()
