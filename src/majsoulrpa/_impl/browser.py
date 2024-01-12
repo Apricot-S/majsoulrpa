@@ -299,10 +299,6 @@ class RemoteBrowser(BrowserBase):
         self._poller_out = zmq.Poller()
         self._poller_out.register(self._socket, zmq.POLLOUT)
 
-    @property
-    def zoom_ratio(self) -> float:
-        return self._zoom_ratio
-
     def _communicate(self, request: object) -> dict[str, Any]:
         with allow_interrupt(self.close):
             if self._poller_out.poll(10_000):
@@ -329,11 +325,18 @@ class RemoteBrowser(BrowserBase):
             msg = "Failed to send a message to the remote browser."
             raise RuntimeError(msg)
 
+    @property
+    def zoom_ratio(self) -> float:
+        request = {"type": "zoom_ratio"}
+        response = self._communicate(request)
+        self._check_response(response)
+        return response["data"]
+
     def check_single(self) -> None:
         pass
 
     def refresh(self) -> None:
-        request = {"type": "fullscreen"}
+        request = {"type": "refresh"}
         response = self._communicate(request)
         self._check_response(response)
 

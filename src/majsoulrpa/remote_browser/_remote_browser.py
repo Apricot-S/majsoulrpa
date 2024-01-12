@@ -60,6 +60,7 @@ def _launch_remote_browser_core(  # noqa: PLR0915
     browser_context: BrowserContext,
     remote_host: str,
     remote_port: int,
+    zoom_ratio: float,
 ) -> None:
     page = browser_context.new_page()
     page.goto(URL_MAJSOUL)
@@ -97,6 +98,9 @@ def _launch_remote_browser_core(  # noqa: PLR0915
                 raise TypeError(msg)
 
             match request["type"]:
+                case "zoom_ratio":
+                    response = {"result": "O.K.", "data": zoom_ratio}
+                    socket.send_json(response)
                 case "refresh":
                     page.reload()
                     response = {"result": "O.K."}
@@ -166,6 +170,7 @@ def launch_remote_browser(
         viewport_height,
     )
     viewport_width = int(viewport_height * ASPECT_RATIO)
+    zoom_ratio = viewport_height / STD_HEIGHT
 
     # Run network sniffering process
     sniffer_args: list[str | Path] = [
@@ -196,7 +201,12 @@ def launch_remote_browser(
             ) as browser,
             browser.new_context(viewport=viewport_size) as context,  # type: ignore[arg-type]
         ):
-            _launch_remote_browser_core(context, remote_host, remote_port)
+            _launch_remote_browser_core(
+                context,
+                remote_host,
+                remote_port,
+                zoom_ratio,
+            )
             input("Type something to close the remote browser.")
     finally:
         if sniffer_process.poll() is None:
