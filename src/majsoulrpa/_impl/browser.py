@@ -153,7 +153,6 @@ class BrowserBase(metaclass=ABCMeta):
 class DesktopBrowser(BrowserBase):
     def __init__(
         self,
-        *,
         proxy_port: int = 8080,
         initial_left: int = 0,
         initial_top: int = 0,
@@ -278,7 +277,6 @@ class DesktopBrowser(BrowserBase):
 class RemoteBrowser(BrowserBase):
     def __init__(
         self,
-        *,
         remote_host: str,
         remote_port: int = 19222,
     ) -> None:

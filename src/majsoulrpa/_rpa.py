@@ -192,17 +192,14 @@ class RPA:
 
         # Construct a class instance that abstracts browser operations
         if self._remote_host is not None:
-            self._browser = RemoteBrowser(
-                remote_host=self._remote_host,
-                remote_port=self._remote_port,
-            )
+            self._browser = RemoteBrowser(self._remote_host, self._remote_port)
         else:
             self._browser = DesktopBrowser(
-                proxy_port=self._proxy_port,
-                initial_left=self._initial_left,
-                initial_top=self._initial_top,
-                width=self._viewport_width,
-                height=self._viewport_height,
+                self._proxy_port,
+                self._initial_left,
+                self._initial_top,
+                self._viewport_width,
+                self._viewport_height,
             )
 
         # Construct a class instance that abstracts DB client
