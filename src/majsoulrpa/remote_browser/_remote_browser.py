@@ -83,12 +83,18 @@ def _launch_remote_browser_core(  # noqa: PLR0915
                 if poller_in.poll(300_000):
                     request = socket.recv_json()
                 else:
-                    msg = "Failed to receive a message from the RPA client."
-                    raise TimeoutError(msg)
-                if not isinstance(request, dict):
-                    raise TypeError
-                if any(not isinstance(key, str) for key in request):
-                    raise TypeError
+                    print(  # noqa: T201
+                        "There was no operation from the RPA client "
+                        "until the timeout.",
+                    )
+                    break
+
+            if not isinstance(request, dict):
+                msg = "An invalid message was received."
+                raise TypeError(msg)
+            if any(not isinstance(key, str) for key in request):
+                msg = "An invalid message was received."
+                raise TypeError(msg)
 
             match request["type"]:
                 case "refresh":
@@ -191,6 +197,7 @@ def launch_remote_browser(
             browser.new_context(viewport=viewport_size) as context,  # type: ignore[arg-type]
         ):
             _launch_remote_browser_core(context, remote_host, remote_port)
+            input("Type something to close the remote browser.")
     finally:
         if sniffer_process.poll() is None:
             sniffer_process.terminate()
