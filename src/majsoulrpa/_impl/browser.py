@@ -308,9 +308,11 @@ class RemoteBrowser(BrowserBase):
                 raise TimeoutError(msg)
 
         if not isinstance(response, dict):
-            raise TypeError
+            msg = "An invalid message was received."
+            raise TypeError(msg)
         if any(not isinstance(key, str) for key in response):
-            raise TypeError
+            msg = "An invalid message was received."
+            raise TypeError(msg)
         return response
 
     @staticmethod
