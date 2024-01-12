@@ -27,8 +27,9 @@ MIN_WIDTH: Final[int] = STD_WIDTH * 2 // 3
 MIN_HEIGHT: Final[int] = STD_HEIGHT * 2 // 3
 MAX_WIDTH: Final[int] = STD_WIDTH * 2
 MAX_HEIGHT: Final[int] = STD_HEIGHT * 2
-
 ASPECT_RATIO: Final[Fraction] = Fraction(16, 9)
+
+MAX_LATENCY: Final[int] = 1_000  # ms
 
 
 def validate_viewport_size(width: int, height: int) -> None:
@@ -294,13 +295,13 @@ class RemoteBrowser(BrowserBase):
 
     def _communicate(self, request: object) -> dict[str, Any]:
         with allow_interrupt(self.close):
-            if self._poller_out.poll(10_000):
+            if self._poller_out.poll(MAX_LATENCY):
                 self._socket.send_json(request)
             else:
                 msg = "Failed to send a message to the remote browser."
                 raise TimeoutError(msg)
 
-            if self._poller_in.poll(10_000):
+            if self._poller_in.poll(MAX_LATENCY):
                 response = self._socket.recv_json()
             else:
                 msg = "Failed to receive a message from the remote browser."
