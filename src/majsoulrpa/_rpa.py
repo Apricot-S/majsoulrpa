@@ -195,8 +195,6 @@ class RPA:
             self._browser = RemoteBrowser(
                 remote_host=self._remote_host,
                 remote_port=self._remote_port,
-                width=self._viewport_width,
-                height=self._viewport_height,
             )
         else:
             self._browser = DesktopBrowser(
