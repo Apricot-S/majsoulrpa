@@ -60,8 +60,10 @@ def _launch_remote_browser_core(  # noqa: PLR0915
     browser_context: BrowserContext,
     remote_host: str,
     remote_port: int,
-    zoom_ratio: float,
+    viewport_size: dict[str, int],
 ) -> None:
+    zoom_ratio = viewport_size["height"] / STD_HEIGHT
+
     page = browser_context.new_page()
     page.goto(URL_MAJSOUL)
     page.wait_for_selector("#layaCanvas", timeout=60000)
@@ -130,6 +132,9 @@ def _launch_remote_browser_core(  # noqa: PLR0915
                 case "scroll":
                     response = {"result": "Error: Not implemented."}
                     socket.send_json(response)
+                case "_get_viewport_size":
+                    response = {"result": "O.K.", "data": viewport_size}
+                    socket.send_json(response)
                 case "click":
                     x = request["x"]
                     y = request["y"]
@@ -170,7 +175,6 @@ def launch_remote_browser(
         viewport_height,
     )
     viewport_width = int(viewport_height * ASPECT_RATIO)
-    zoom_ratio = viewport_height / STD_HEIGHT
 
     # Run network sniffering process
     sniffer_args: list[str | Path] = [
@@ -205,7 +209,7 @@ def launch_remote_browser(
                 context,
                 remote_host,
                 remote_port,
-                zoom_ratio,
+                viewport_size,
             )
             input("Type something to close the remote browser.")
     finally:

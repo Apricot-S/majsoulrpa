@@ -362,6 +362,12 @@ class RemoteBrowser(BrowserBase):
         response = self._communicate(request)
         self._check_response(response)
 
+    def _get_viewport_size(self) -> dict[str, int]:
+        request = {"type": "_get_viewport_size"}
+        response = self._communicate(request)
+        self._check_response(response)
+        return response["data"]
+
     def click_region(
         self,
         left: int,
@@ -370,13 +376,15 @@ class RemoteBrowser(BrowserBase):
         height: int,
         edge_sigma: float = 2.0,
     ) -> None:
+        viewport_size = self._get_viewport_size()
+
         validate_region(
             left,
             top,
             width,
             height,
-            self._viewport_size["width"],
-            self._viewport_size["height"],
+            viewport_size["width"],
+            viewport_size["height"],
         )
         if edge_sigma <= 0.0:  # noqa: PLR2004
             msg = "Invalid edge sigma was input."
