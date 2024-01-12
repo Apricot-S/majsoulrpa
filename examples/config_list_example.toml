@@ -1,5 +1,5 @@
 [[config_list]] # The name of the array of tables is arbitrary.
-name = "Manual 1280 x 720" # Names must not be duplicated.
+name = "Desktop Manual 1280 x 720" # Names must not be duplicated.
 [config_list.authentication]
 email_address = "your_email_address_one@example.cfg"
 [config_list.browser]
@@ -7,18 +7,17 @@ viewport_height = 720
 initial_position = { left = 200, top = 100 }
 
 [[config_list]]
-name = "IMAP 1920 x 1080"
+name = "Desktop IMAP 1920 x 1080"
 [config_list.authentication]
 email_address = "your_email_address_two@example.cfg"
 imap_server = "imap.server.cfg"
 password = "app_password"
 mail_folder = "INBOX"
 [config_list.browser]
-viewport_height = 1080
 initial_position = { left = -2150, top = -360 }
 
 [[config_list]]
-name = "S3 1920 x 1080"
+name = "Remote S3 1920 x 1080"
 remote_host = "127.0.0.1"
 [config_list.authentication]
 method = "s3"
