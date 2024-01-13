@@ -9,7 +9,6 @@ from ipaddress import ip_address
 from logging import getLogger
 from typing import Any, Final
 
-import pywinctl as pwc
 import zmq
 from playwright.sync_api import sync_playwright
 from zmq.utils.win32 import allow_interrupt
@@ -18,7 +17,6 @@ from majsoulrpa.common import validate_user_port
 
 logger = getLogger(__name__)
 
-TITLE_MAJSOUL: Final[str] = "雀魂 -じゃんたま-| 麻雀を無料で気軽に"
 URL_MAJSOUL: Final[str] = "https://game.mahjongsoul.com/"
 
 STD_WIDTH: Final[int] = 1920
@@ -108,10 +106,6 @@ class BrowserBase(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def check_single(self) -> None:
-        pass
-
-    @abstractmethod
     def refresh(self) -> None:
         pass
 
@@ -187,23 +181,6 @@ class DesktopBrowser(BrowserBase):
     @property
     def zoom_ratio(self) -> float:
         return self._zoom_ratio
-
-    def check_single(self) -> None:
-        """
-        Check if only one target window exists.
-
-        Throws a runtime error if the target does not exist or
-        if two or more targets exist.
-        """
-        windows = [
-            w for w in pwc.getAllWindows() if w.title.startswith(TITLE_MAJSOUL)
-        ]
-        if len(windows) == 0:
-            msg = "No window for Mahjong Soul is found."
-            raise RuntimeError(msg)
-        if len(windows) > 1:
-            msg = "Multiple windows for Mahjong Soul are found."
-            raise RuntimeError(msg)
 
     def refresh(self) -> None:
         self._page.reload()
@@ -330,9 +307,6 @@ class RemoteBrowser(BrowserBase):
         response = self._communicate(request)
         self._check_response(response)
         return response["data"]
-
-    def check_single(self) -> None:
-        pass
 
     def refresh(self) -> None:
         request = {"type": "refresh"}
