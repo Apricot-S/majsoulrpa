@@ -1,7 +1,7 @@
 # ruff: noqa: INP001, T201, TRY004, S101
 import datetime
 import time
-from logging import INFO, StreamHandler, basicConfig, getLogger
+from logging import INFO, StreamHandler, basicConfig
 
 from majsoulrpa import RPA, config
 from majsoulrpa.presentation import (
@@ -15,17 +15,13 @@ LOG_LEVEL = INFO
 stream_handler = StreamHandler()
 stream_handler.setLevel(LOG_LEVEL)
 basicConfig(level=LOG_LEVEL, handlers=[stream_handler])
-logger = getLogger()
 
 if __name__ == "__main__":
-    logger.info("program start.")
-    myconfig = config.get_config("examples/config.toml")
+    my_config = config.get_config("examples/config.toml")
 
-    with RPA.from_config(myconfig) as rpa:
-        logger.info("RPA start.")
+    with RPA.from_config(my_config) as rpa:
         presentation = rpa.wait(timeout=20.0)
 
-        logger.info("Login start.")
         if not isinstance(presentation, LoginPresentation):
             msg = "Could not transit to `login`."
             raise RuntimeError(msg)
@@ -34,15 +30,13 @@ if __name__ == "__main__":
             msg = "Could not transit to `auth`."
             raise RuntimeError(msg)
         presentation = presentation.new_presentation
-        logger.info("Login end.")
 
-        logger.info("Auth start.")
         if not isinstance(presentation, AuthPresentation):
             msg = "Could not transit to `auth`."
             raise RuntimeError(msg)
 
         auth_start_time = datetime.datetime.now(datetime.UTC)
-        login_imap = YostarLoginIMAP(myconfig)
+        login_imap = YostarLoginIMAP(my_config)
         presentation.enter_email_address(login_imap.get_email_address())
         auth_code = login_imap.get_auth_code(start_time=auth_start_time)
 
@@ -51,14 +45,9 @@ if __name__ == "__main__":
             msg = "Could not transit to `home`."
             raise RuntimeError
         presentation = presentation.new_presentation
-        logger.info("Auth end.")
 
-        logger.info("Home start.")
         if not isinstance(presentation, HomePresentation):
             msg = "Could not transit to `home`."
             raise RuntimeError(msg)
 
-        time.sleep(15.0)
-
-    logger.info("RPA close.")
-    logger.info("program end.")
+        time.sleep(5.0)
