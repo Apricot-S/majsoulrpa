@@ -18,7 +18,7 @@ Message: TypeAlias = tuple[
 ]
 
 
-class DBClientBase(metaclass=ABCMeta):
+class MessageQueueClientBase(metaclass=ABCMeta):
     def __init__(self, host: str, port: int | None) -> None:  # noqa: ARG002
         self._put_back_messages: deque[Message] = deque()
         self._account_id: int | None = None

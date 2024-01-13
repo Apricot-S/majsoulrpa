@@ -1,7 +1,7 @@
 import datetime
 
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.db_client import DBClientBase
+from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 
@@ -18,10 +18,10 @@ class LoginPresentation(PresentationBase):
     def __init__(
         self,
         browser: BrowserBase,
-        db_client: DBClientBase,
+        message_queue_client: MessageQueueClientBase,
         creator: PresentationCreatorBase,
     ) -> None:
-        super().__init__(browser, db_client, creator)
+        super().__init__(browser, message_queue_client, creator)
 
         template = Template.open_file(
             "template/login/marker",
@@ -62,7 +62,7 @@ class LoginPresentation(PresentationBase):
                     Presentation.LOGIN,
                     Presentation.AUTH,
                     self._browser,
-                    self._db_client,
+                    self._message_queue_client,
                 )
                 self._set_new_presentation(new_presentation)
             except PresentationNotDetected:
@@ -76,7 +76,7 @@ class LoginPresentation(PresentationBase):
                     Presentation.LOGIN,
                     Presentation.HOME,
                     self._browser,
-                    self._db_client,
+                    self._message_queue_client,
                     timeout=(deadline - now),
                 )
                 self._set_new_presentation(new_presentation)

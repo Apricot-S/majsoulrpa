@@ -1,11 +1,15 @@
 {
     "type": "object",
     "properties": {
+        "remote_port": {
+            "type": "integer",
+            "minimum": 0
+        },
         "proxy_port": {
             "type": "integer",
             "minimum": 0
         },
-        "db_port": {
+        "message_queue_port": {
             "oneOf": [
                 {
                     "type": "integer",

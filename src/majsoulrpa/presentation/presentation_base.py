@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.db_client import DBClientBase
+from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa.common import TimeoutType
 
 
@@ -105,7 +105,7 @@ class PresentationCreatorBase(metaclass=ABCMeta):
         current_presentation: Presentation,
         next_presentation: Presentation,
         browser: BrowserBase,
-        db_client: DBClientBase,
+        message_queue_client: MessageQueueClientBase,
         **kwargs,
     ) -> "PresentationBase":
         pass
@@ -115,11 +115,11 @@ class PresentationBase(metaclass=ABCMeta):
     def __init__(
         self,
         browser: BrowserBase,
-        db_client: DBClientBase,
+        message_queue_client: MessageQueueClientBase,
         creator: PresentationCreatorBase,
     ) -> None:
         self._browser = browser
-        self._db_client = db_client
+        self._message_queue_client = message_queue_client
         self._creator: PresentationCreatorBase = creator
         self._new_presentation: "PresentationBase | None" = None
 

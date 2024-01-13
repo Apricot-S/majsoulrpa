@@ -2,7 +2,7 @@ from collections.abc import Iterable, Mapping
 from logging import getLogger
 
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.db_client import DBClientBase
+from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import Player, TimeoutType
 from majsoulrpa.presentation.presentation_base import (
@@ -45,14 +45,14 @@ class RoomPresentationBase(PresentationBase):
     def __init__(  # noqa: PLR0913
         self,
         browser: BrowserBase,
-        db_client: DBClientBase,
+        message_queue_client: MessageQueueClientBase,
         creator: PresentationCreatorBase,
         room_id: int,
         max_num_players: int,
         players: Iterable[RoomPlayer],
         num_ais: int,
     ) -> None:
-        super().__init__(browser, db_client, creator)
+        super().__init__(browser, message_queue_client, creator)
 
         self._room_id = room_id
         self._max_num_players = max_num_players
@@ -70,7 +70,7 @@ class RoomPresentationBase(PresentationBase):
     def _update(self, timeout: TimeoutType) -> bool:  # noqa: C901, PLR0912, PLR0915
         self._assert_not_stale()
 
-        message = self._db_client.dequeue_message(timeout)
+        message = self._message_queue_client.dequeue_message(timeout)
         if message is None:
             return False
         direction, name, request, response, timestamp = message
@@ -132,7 +132,7 @@ class RoomPresentationBase(PresentationBase):
                 msg = "An inconsistent `.lq.NotifyRoomPlayerReady` message."
                 raise InconsistentMessage(msg, None) from None
             self._players[i]._set_ready(is_ready=request["ready"])  # noqa: SLF001
-            message = self._db_client.dequeue_message(1.0)
+            message = self._message_queue_client.dequeue_message(1.0)
             if message is not None:
                 _, name, _, _, _ = message
                 if name != ".lq.Lobby.readyPlay":
@@ -186,7 +186,7 @@ class RoomPresentationBase(PresentationBase):
             Presentation.ROOM_BASE,
             Presentation.HOME,
             self._browser,
-            self._db_client,
+            self._message_queue_client,
             timeout=timeout,
         )
         self._set_new_presentation(new_presentation)

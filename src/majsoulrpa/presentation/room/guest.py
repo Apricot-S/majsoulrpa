@@ -4,7 +4,7 @@ from logging import getLogger
 from typing import Self, Union
 
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.db_client import DBClientBase
+from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 from majsoulrpa.presentation.presentation_base import (
@@ -26,7 +26,7 @@ class RoomGuestPresentation(RoomPresentationBase):
     def __init__(  # noqa: PLR0913
         self,
         browser: BrowserBase,
-        db_client: DBClientBase,
+        message_queue_client: MessageQueueClientBase,
         creator: PresentationCreatorBase,
         room_id: int,
         max_num_players: int,
@@ -35,7 +35,7 @@ class RoomGuestPresentation(RoomPresentationBase):
     ) -> None:
         super().__init__(
             browser,
-            db_client,
+            message_queue_client,
             creator,
             room_id,
             max_num_players,
@@ -47,7 +47,7 @@ class RoomGuestPresentation(RoomPresentationBase):
     def _join(
         cls,
         browser: BrowserBase,
-        db_client: DBClientBase,
+        message_queue_client: MessageQueueClientBase,
         creator: PresentationCreatorBase,
         timeout: TimeoutType,
     ) -> Union[Self, "host.RoomHostPresentation"]:
@@ -64,7 +64,7 @@ class RoomGuestPresentation(RoomPresentationBase):
 
         while True:
             now = datetime.datetime.now(datetime.UTC)
-            message = db_client.dequeue_message(deadline - now)
+            message = message_queue_client.dequeue_message(deadline - now)
             if message is None:
                 msg = "Timeout."
                 raise Timeout(msg, ss)
@@ -105,7 +105,7 @@ class RoomGuestPresentation(RoomPresentationBase):
 
         return cls(
             browser,
-            db_client,
+            message_queue_client,
             creator,
             room_id,
             max_num_players,
@@ -117,7 +117,7 @@ class RoomGuestPresentation(RoomPresentationBase):
     def _return_from_match(  # noqa: PLR0913
         cls,
         browser: BrowserBase,
-        db_client: DBClientBase,
+        message_queue_client: MessageQueueClientBase,
         creator: PresentationCreatorBase,
         prev_presentation: Self,
         timeout: TimeoutType,
@@ -133,7 +133,7 @@ class RoomGuestPresentation(RoomPresentationBase):
                 raise Timeout(msg, browser.get_screenshot())
 
             now = datetime.datetime.now(datetime.UTC)
-            message = db_client.dequeue_message(deadline - now)
+            message = message_queue_client.dequeue_message(deadline - now)
             if message is None:
                 break
             _, name, _, _, _ = message
@@ -160,7 +160,7 @@ class RoomGuestPresentation(RoomPresentationBase):
         if add_ai.match(browser.get_screenshot()):
             return host.RoomHostPresentation(
                 browser,
-                db_client,
+                message_queue_client,
                 creator,
                 prev_presentation.room_id,
                 prev_presentation.max_num_players,
@@ -170,7 +170,7 @@ class RoomGuestPresentation(RoomPresentationBase):
 
         return cls(
             browser,
-            db_client,
+            message_queue_client,
             creator,
             prev_presentation.room_id,
             prev_presentation.max_num_players,
@@ -193,7 +193,7 @@ class RoomGuestPresentation(RoomPresentationBase):
             (
                 i
                 for i, p in enumerate(self.players)
-                if p.account_id == self._db_client.account_id
+                if p.account_id == self._message_queue_client.account_id
             ),
             -1,
         )
@@ -226,7 +226,7 @@ class RoomGuestPresentation(RoomPresentationBase):
                 Presentation.ROOM_GUEST,
                 Presentation.MATCH,
                 self._browser,
-                self._db_client,
+                self._message_queue_client,
                 timeout=(deadline - now),
             )
             self._set_new_presentation(new_presentation)

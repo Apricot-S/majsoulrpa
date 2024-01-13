@@ -5,6 +5,7 @@ import time
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
 from fractions import Fraction
+from ipaddress import ip_address
 from logging import getLogger
 from typing import Any, Final
 
@@ -26,8 +27,9 @@ MIN_WIDTH: Final[int] = STD_WIDTH * 2 // 3
 MIN_HEIGHT: Final[int] = STD_HEIGHT * 2 // 3
 MAX_WIDTH: Final[int] = STD_WIDTH * 2
 MAX_HEIGHT: Final[int] = STD_HEIGHT * 2
-
 ASPECT_RATIO: Final[Fraction] = Fraction(16, 9)
+
+MAX_LATENCY: Final[int] = 1_000  # ms
 
 
 def validate_viewport_size(width: int, height: int) -> None:
@@ -152,7 +154,6 @@ class BrowserBase(metaclass=ABCMeta):
 class DesktopBrowser(BrowserBase):
     def __init__(
         self,
-        *,
         proxy_port: int = 8080,
         initial_left: int = 0,
         initial_top: int = 0,
@@ -277,46 +278,41 @@ class DesktopBrowser(BrowserBase):
 class RemoteBrowser(BrowserBase):
     def __init__(
         self,
-        *,
-        db_port: int = 37247,
-        width: int = STD_WIDTH,
-        height: int = STD_HEIGHT,
+        remote_host: str,
+        remote_port: int = 19222,
     ) -> None:
         super().__init__()
-        validate_viewport_size(width, height)
-        self._viewport_size = {"width": width, "height": height}
-        self._zoom_ratio = width / STD_WIDTH
+        ip_address(remote_host)
+        validate_user_port(remote_port)
 
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.REQ)
-        self._socket.connect(f"tcp://localhost:{db_port}")
+        self._socket.connect(f"tcp://{remote_host}:{remote_port}")
         self._poller_in = zmq.Poller()
         self._poller_in.register(self._socket, zmq.POLLIN)
         self._poller_out = zmq.Poller()
         self._poller_out.register(self._socket, zmq.POLLOUT)
 
-    @property
-    def zoom_ratio(self) -> float:
-        return self._zoom_ratio
-
     def _communicate(self, request: object) -> dict[str, Any]:
         with allow_interrupt(self.close):
-            if self._poller_out.poll(10_000):
+            if self._poller_out.poll(MAX_LATENCY):
                 self._socket.send_json(request)
             else:
                 msg = "Failed to send a message to the remote browser."
                 raise TimeoutError(msg)
 
-            if self._poller_in.poll(10_000):
+            if self._poller_in.poll(MAX_LATENCY):
                 response = self._socket.recv_json()
             else:
                 msg = "Failed to receive a message from the remote browser."
                 raise TimeoutError(msg)
 
         if not isinstance(response, dict):
-            raise TypeError
+            msg = "An invalid message was received."
+            raise TypeError(msg)
         if any(not isinstance(key, str) for key in response):
-            raise TypeError
+            msg = "An invalid message was received."
+            raise TypeError(msg)
         return response
 
     @staticmethod
@@ -325,11 +321,18 @@ class RemoteBrowser(BrowserBase):
             msg = "Failed to send a message to the remote browser."
             raise RuntimeError(msg)
 
+    @property
+    def zoom_ratio(self) -> float:
+        request = {"type": "zoom_ratio"}
+        response = self._communicate(request)
+        self._check_response(response)
+        return response["data"]
+
     def check_single(self) -> None:
         pass
 
     def refresh(self) -> None:
-        request = {"type": "fullscreen"}
+        request = {"type": "refresh"}
         response = self._communicate(request)
         self._check_response(response)
 
@@ -355,6 +358,12 @@ class RemoteBrowser(BrowserBase):
         response = self._communicate(request)
         self._check_response(response)
 
+    def _get_viewport_size(self) -> dict[str, int]:
+        request = {"type": "_get_viewport_size"}
+        response = self._communicate(request)
+        self._check_response(response)
+        return response["data"]
+
     def click_region(
         self,
         left: int,
@@ -363,13 +372,15 @@ class RemoteBrowser(BrowserBase):
         height: int,
         edge_sigma: float = 2.0,
     ) -> None:
+        viewport_size = self._get_viewport_size()
+
         validate_region(
             left,
             top,
             width,
             height,
-            self._viewport_size["width"],
-            self._viewport_size["height"],
+            viewport_size["width"],
+            viewport_size["height"],
         )
         if edge_sigma <= 0.0:  # noqa: PLR2004
             msg = "Invalid edge sigma was input."

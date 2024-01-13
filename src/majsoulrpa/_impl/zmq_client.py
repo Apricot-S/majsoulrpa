@@ -2,28 +2,35 @@ import base64
 import datetime
 import json
 import subprocess
+from ipaddress import ip_address
 from typing import Any
 
 import google.protobuf.json_format
-import grpc  # type:ignore[import-untyped]
+import zmq
+from zmq.utils.win32 import allow_interrupt
 
-from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2 import Timeout
-from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import GRPCServerStub
 from majsoulrpa.common import TimeoutType, to_timedelta, validate_user_port
 
-from .db_client import DBClientBase, Message
+from .message_queue_client import Message, MessageQueueClientBase
 from .protobuf_liqi import liqi_pb2
 
 
-class GRPCClient(DBClientBase):
-    def __init__(self, host: str = "localhost", port: int = 37247) -> None:
+class ZMQClient(MessageQueueClientBase):
+    def __init__(self, host: str = "127.0.0.1", port: int = 37247) -> None:
+        ip_address(host)
         validate_user_port(port)
         super().__init__(host, port)
-        self._channel = grpc.insecure_channel(f"localhost:{port}")
-        self._client = GRPCServerStub(self._channel)
+        self._context = zmq.Context()
+        self._socket = self._context.socket(zmq.SUB)
+        self._socket.connect(f"tcp://{host}:{port}")
+        self._socket.subscribe(b"ws")
+        self._poller_in = zmq.Poller()
+        self._poller_in.register(self._socket, zmq.POLLIN)
 
     def __del__(self) -> None:
-        self._channel.close()
+        self._poller_in.unregister(self._socket)
+        self._socket.close()
+        self._context.destroy()
 
     def dequeue_message(self, timeout: TimeoutType) -> Message | None:  # noqa: C901, PLR0912, PLR0915
         timeout = to_timedelta(timeout)
@@ -34,11 +41,11 @@ class GRPCClient(DBClientBase):
         if len(self._put_back_messages) > 0:
             return self._put_back_messages.popleft()
 
-        message_bytes: bytes = self._client.pop_message(
-            Timeout(seconds=timeout.total_seconds()),
-        ).content
-        if message_bytes == b"":
-            return None
+        with allow_interrupt(self.__del__):
+            if self._poller_in.poll(int(timeout.total_seconds() * 1000)):
+                [_, message_bytes] = self._socket.recv_multipart()
+            else:
+                return None
 
         message_str = message_bytes.decode(encoding="utf-8")
         message = json.loads(message_str)
@@ -157,12 +164,12 @@ class GRPCClient(DBClientBase):
 
         # If the message contains an account ID,
         # extract the account ID.
-        if name in DBClientBase._ACCOUNT_ID_MESSAGES:  # noqa: SLF001
+        if name in MessageQueueClientBase._ACCOUNT_ID_MESSAGES:  # noqa: SLF001
             if jsonized_response is None:
                 msg = "Message without any response."
                 raise RuntimeError(msg)
             account_id = jsonized_response
-            keys = DBClientBase._ACCOUNT_ID_MESSAGES[name]  # noqa: SLF001
+            keys = MessageQueueClientBase._ACCOUNT_ID_MESSAGES[name]  # noqa: SLF001
             for key in keys:
                 if key not in account_id:
                     msg = (
