@@ -5,7 +5,7 @@ from logging import getLogger
 from typing import Literal
 
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.db_client import DBClientBase
+from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 
@@ -102,11 +102,11 @@ class HomePresentation(PresentationBase):
     def __init__(  # noqa: PLR0912, PLR0915, C901
         self,
         browser: BrowserBase,
-        db_client: DBClientBase,
+        message_queue_client: MessageQueueClientBase,
         creator: PresentationCreatorBase,
         timeout: TimeoutType,
     ) -> None:
-        super().__init__(browser, db_client, creator)
+        super().__init__(browser, message_queue_client, creator)
 
         deadline = timeout_to_deadline(timeout)
 
@@ -142,7 +142,9 @@ class HomePresentation(PresentationBase):
         num_login_beats = 0
         while True:
             now = datetime.datetime.now(datetime.UTC)
-            message = self._db_client.dequeue_message(deadline - now)
+            message = self._message_queue_client.dequeue_message(
+                deadline - now,
+            )
             if message is None:
                 msg = "Timeout."
                 raise Timeout(msg, browser.get_screenshot())
@@ -210,7 +212,9 @@ class HomePresentation(PresentationBase):
 
                     break_ = False
                     while True:
-                        next_message = self._db_client.dequeue_message(5)
+                        next_message = (
+                            self._message_queue_client.dequeue_message(5)
+                        )
                         if next_message is None:
                             # If there are no more messages,
                             # the transition to the home screen
@@ -225,7 +229,7 @@ class HomePresentation(PresentationBase):
                             continue
                         # Backfill the prefetched message and
                         # proceed to the next.
-                        self._db_client.put_back(next_message)
+                        self._message_queue_client.put_back(next_message)
                         break
                     if break_:
                         break
@@ -240,7 +244,7 @@ class HomePresentation(PresentationBase):
             raise InconsistentMessage(str(message), browser.get_screenshot())
 
         while True:
-            message = self._db_client.dequeue_message(0.1)
+            message = self._message_queue_client.dequeue_message(0.1)
             if message is None:
                 break
             _, name, _, _, _ = message
@@ -263,20 +267,20 @@ class HomePresentation(PresentationBase):
                     # If there are no more messages,
                     # the transition to the home screen
                     # has been completed.
-                    message = self._db_client.dequeue_message(5)
+                    message = self._message_queue_client.dequeue_message(5)
                     if message is None:
                         return
 
                     # Backfill the prefetched message and
                     # proceed to the next.
-                    self._db_client.put_back(message)
+                    self._message_queue_client.put_back(message)
                     continue
 
             raise InconsistentMessage(str(message), browser.get_screenshot())
 
     def _discard_messages_across_dates(self) -> None:
         while True:
-            message = self._db_client.dequeue_message(0.1)
+            message = self._message_queue_client.dequeue_message(0.1)
             if message is None:
                 break
             _, name, _, _, _ = message
@@ -390,7 +394,7 @@ class HomePresentation(PresentationBase):
             Presentation.HOME,
             Presentation.ROOM_HOST,
             self._browser,
-            self._db_client,
+            self._message_queue_client,
             timeout=(deadline - now),
         )
         self._set_new_presentation(new_presentation)
@@ -465,7 +469,7 @@ class HomePresentation(PresentationBase):
             time.sleep(1.0)
 
             while True:
-                message = self._db_client.dequeue_message(0.1)
+                message = self._message_queue_client.dequeue_message(0.1)
                 if message is None:
                     break
                 logger.info(message)
@@ -485,7 +489,7 @@ class HomePresentation(PresentationBase):
             Presentation.HOME,
             Presentation.ROOM_GUEST,
             self._browser,
-            self._db_client,
+            self._message_queue_client,
             timeout=(deadline - now),
         )
         self._set_new_presentation(new_presentation)

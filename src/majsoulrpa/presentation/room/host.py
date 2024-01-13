@@ -5,7 +5,7 @@ from logging import getLogger
 from typing import Self
 
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.db_client import DBClientBase
+from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 from majsoulrpa.presentation.presentation_base import (
@@ -26,7 +26,7 @@ class RoomHostPresentation(RoomPresentationBase):
     def __init__(  # noqa: PLR0913
         self,
         browser: BrowserBase,
-        db_client: DBClientBase,
+        message_queue_client: MessageQueueClientBase,
         creator: PresentationCreatorBase,
         room_id: int,
         max_num_players: int,
@@ -35,7 +35,7 @@ class RoomHostPresentation(RoomPresentationBase):
     ) -> None:
         super().__init__(
             browser,
-            db_client,
+            message_queue_client,
             creator,
             room_id,
             max_num_players,
@@ -47,7 +47,7 @@ class RoomHostPresentation(RoomPresentationBase):
     def _create(
         cls,
         browser: BrowserBase,
-        db_client: DBClientBase,
+        message_queue_client: MessageQueueClientBase,
         creator: PresentationCreatorBase,
         timeout: TimeoutType,
     ) -> Self:
@@ -64,7 +64,7 @@ class RoomHostPresentation(RoomPresentationBase):
 
         while True:
             now = datetime.datetime.now(datetime.UTC)
-            message = db_client.dequeue_message(deadline - now)
+            message = message_queue_client.dequeue_message(deadline - now)
             if message is None:
                 msg = "Timeout."
                 raise Timeout(msg, ss)
@@ -84,7 +84,7 @@ class RoomHostPresentation(RoomPresentationBase):
         room: dict = response["room"]
         room_id: int = room["room_id"]
         owner_id: int = room["owner_id"]
-        if owner_id != db_client.account_id:
+        if owner_id != message_queue_client.account_id:
             raise InconsistentMessage(str(message), ss)
         max_num_players: int = room["max_player_count"]
         ready_list: list[int] = room["ready_list"]
@@ -102,7 +102,7 @@ class RoomHostPresentation(RoomPresentationBase):
 
         return cls(
             browser,
-            db_client,
+            message_queue_client,
             creator,
             room_id,
             max_num_players,
@@ -114,7 +114,7 @@ class RoomHostPresentation(RoomPresentationBase):
     def _return_from_match(  # noqa: PLR0913
         cls,
         browser: BrowserBase,
-        db_client: DBClientBase,
+        message_queue_client: MessageQueueClientBase,
         creator: PresentationCreatorBase,
         prev_presentation: Self,
         timeout: TimeoutType,
@@ -130,7 +130,7 @@ class RoomHostPresentation(RoomPresentationBase):
                 raise Timeout(msg, browser.get_screenshot())
 
             now = datetime.datetime.now(datetime.UTC)
-            message = db_client.dequeue_message(deadline - now)
+            message = message_queue_client.dequeue_message(deadline - now)
             if message is None:
                 break
             _, name, _, _, _ = message
@@ -152,7 +152,7 @@ class RoomHostPresentation(RoomPresentationBase):
 
         return cls(
             browser,
-            db_client,
+            message_queue_client,
             creator,
             prev_presentation.room_id,
             prev_presentation.max_num_players,
@@ -207,7 +207,7 @@ class RoomHostPresentation(RoomPresentationBase):
             Presentation.ROOM_HOST,
             Presentation.MATCH,
             self._browser,
-            self._db_client,
+            self._message_queue_client,
             timeout=(deadline - now),
         )
         self._set_new_presentation(new_presentation)

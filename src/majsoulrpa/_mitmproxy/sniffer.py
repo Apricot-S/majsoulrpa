@@ -3,44 +3,53 @@ import base64
 import datetime
 import json
 import re
+from ipaddress import ip_address
 from logging import getLogger
 
-import grpc  # type:ignore[import-untyped]
 import wsproto.frame_protocol
+import zmq
 from mitmproxy import addonmanager, ctx, http
 
-from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2 import Message
-from majsoulrpa._impl.protobuf_grpc.grpcserver_pb2_grpc import GRPCServerStub
 from majsoulrpa.common import validate_user_port
 
 logger = getLogger(__name__)
 
-_message_queue: dict[int, dict] = {}
 _message_pattern = re.compile(b"^(?:\x01|\x02..)\n.(.*?)\x12", flags=re.DOTALL)
 _response_pattern = re.compile(b"^\x03..\n\x00\x12", flags=re.DOTALL)
 
 
 class Sniffer:
+    def __init__(self) -> None:
+        self._message_queue: dict[int, dict] = {}
+
     def load(self, loader: addonmanager.Loader) -> None:
         loader.add_option(
-            name="server_port",
+            name="host",
+            typespec=str,
+            default="127.0.0.1",
+            help="Host to send sniffed messages to",
+        )
+        loader.add_option(
+            name="port",
             typespec=int,
             default=37247,
-            help="Port number of server",
+            help="Port to send sniffed messages to",
         )
 
     def running(self) -> None:
-        validate_user_port(ctx.options.server_port)
-        target = f"localhost:{ctx.options.server_port}"
-        self._channel = grpc.insecure_channel(target)
-        self._client = GRPCServerStub(self._channel)
+        host = ctx.options.host
+        port = ctx.options.port
+        ip_address(host)
+        validate_user_port(port)
+        self._context = zmq.Context()
+        self._socket = self._context.socket(zmq.PUB)
+        self._socket.bind(f"tcp://{host}:{port}")
 
     def done(self) -> None:
-        self._channel.close()
+        self._socket.close()
+        self._context.destroy()
 
     def websocket_message(self, flow: http.HTTPFlow) -> None:  # noqa: C901, PLR0912, PLR0915
-        global _message_queue  # noqa: PLW0602
-
         websocket_data = flow.websocket
         if websocket_data is None:
             msg = "`websocket_data is None`"
@@ -74,8 +83,8 @@ class Sniffer:
                 # Store messages in a queue until
                 # a corresponding response message is found.
                 number = int.from_bytes(content[1:2], byteorder="little")
-                if number in _message_queue:
-                    prev_request = _message_queue[number]
+                if number in self._message_queue:
+                    prev_request = self._message_queue[number]
                     msg = (
                         "There is not any response message"
                         " for the following WebSocket request message:\n"
@@ -84,7 +93,7 @@ class Sniffer:
                     )
                     logger.warning(msg)
 
-                _message_queue[number] = {
+                self._message_queue[number] = {
                     "direction": direction,
                     "name": name,
                     "request": content,
@@ -119,7 +128,7 @@ class Sniffer:
                 raise RuntimeError(msg)
 
             number = int.from_bytes(content[1:2], byteorder="little")
-            if number not in _message_queue:
+            if number not in self._message_queue:
                 msg = (
                     "An WebSocket response message"
                     " that does not match to any request message:\n"
@@ -128,11 +137,11 @@ class Sniffer:
                 )
                 raise RuntimeError(msg)
 
-            request_direction = _message_queue[number]["direction"]
-            name = _message_queue[number]["name"]
-            request = _message_queue[number]["request"]
+            request_direction = self._message_queue[number]["direction"]
+            name = self._message_queue[number]["name"]
+            request = self._message_queue[number]["request"]
             response = content
-            del _message_queue[number]
+            del self._message_queue[number]
 
         # Check that the directions of
         # the request and response are consistent.
@@ -153,7 +162,8 @@ class Sniffer:
                 raise RuntimeError(msg)
             assert direction == "inbound"
 
-        # Encode to JSON format so that it can be enqueueed to DB.
+        # Encode to JSON format so that
+        # it can be enqueueed to message queue.
         encoded_request = base64.b64encode(request).decode(encoding="utf-8")
         if response is not None:
             encoded_response = base64.b64encode(response).decode(
@@ -172,7 +182,7 @@ class Sniffer:
         data_str = json.dumps(data, allow_nan=False, separators=(",", ":"))
         data_bytes = data_str.encode(encoding="utf-8")
 
-        self._client.PushMessage(Message(content=data_bytes))
+        self._socket.send_multipart([b"ws", data_bytes])
 
 
 addons = [Sniffer()]

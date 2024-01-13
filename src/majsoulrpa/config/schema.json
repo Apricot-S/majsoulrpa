@@ -45,6 +45,9 @@
                 "authentication": {
                     "$ref": "#/definitions/authentication"
                 },
+                "remote_host": {
+                    "type": "string"
+                },
                 "port": {
                     "$ref": "port.json"
                 },
@@ -69,6 +72,9 @@
                     },
                     "authentication": {
                         "$ref": "#/definitions/authentication"
+                    },
+                    "remote_host": {
+                        "type": "string"
                     },
                     "port": {
                         "$ref": "port.json"
