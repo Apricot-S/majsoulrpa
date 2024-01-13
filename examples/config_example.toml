@@ -6,8 +6,9 @@ remote_port = 19222        # Port for browser remote control (default: 19222). I
 proxy_port = 8080          # Browser proxy port (default: 8080).
 message_queue_port = 37247 # Port of the message queue that stores Websocket messages (default: 37247).
 [browser] # Optional (all items below are also optional). Ignored in remote mode.
-viewport_height = 720 # Support from 720 to 2160 (default: 1080).
 # Support multiple monitors.
 # The left edge of the primary monitor is 0 (default: 0).
 # The top of the primary monitor is 0 (default: 0).
 initial_position = { left = 100, top = 100 } # Either one can be set.
+viewport_height = 720                        # Support from 720 to 2160 (default: 1080).
+headless = false                             # Whether to run the browser headless (default: false).
