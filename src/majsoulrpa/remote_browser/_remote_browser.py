@@ -31,6 +31,7 @@ def parse_option() -> argparse.Namespace:
     parser.add_argument("--initial_left", type=int, default=0)
     parser.add_argument("--initial_top", type=int, default=0)
     parser.add_argument("--viewport_height", type=int, default=STD_HEIGHT)
+    parser.add_argument("--timeout", type=int, default=600)
     parser.add_argument("--headless", action="store_true")
     return parser.parse_args()
 
@@ -41,6 +42,7 @@ def validate_option(
     proxy_port: int,
     message_queue_port: int,
     viewport_height: int,
+    timeout: int,
 ) -> None:
     ip_address(remote_host)
     validate_user_port(remote_port)
@@ -54,6 +56,9 @@ def validate_option(
         raise ValueError(msg)
     viewport_width = int(viewport_height * ASPECT_RATIO)
     validate_viewport_size(viewport_width, viewport_height)
+    if timeout <= 0:
+        msg = "Timeout must be a positive integer."
+        raise ValueError(msg)
 
 
 def _launch_remote_browser_core(  # noqa: PLR0915
@@ -61,6 +66,7 @@ def _launch_remote_browser_core(  # noqa: PLR0915
     remote_host: str,
     remote_port: int,
     viewport_size: dict[str, int],
+    timeout: int,
 ) -> None:
     zoom_ratio = viewport_size["height"] / STD_HEIGHT
 
@@ -83,7 +89,7 @@ def _launch_remote_browser_core(  # noqa: PLR0915
 
         while True:
             with allow_interrupt(interrupt_polling):
-                if poller_in.poll(300_000):
+                if poller_in.poll(timeout * 1000):
                     request = socket.recv_json()
                 else:
                     print(  # noqa: T201
@@ -164,6 +170,7 @@ def launch_remote_browser(
     initial_left: int = 0,
     initial_top: int = 0,
     viewport_height: int = 1080,
+    timeout: int = 600,
     *,
     headless: bool = False,
 ) -> None:
@@ -173,6 +180,7 @@ def launch_remote_browser(
         proxy_port,
         message_queue_port,
         viewport_height,
+        timeout,
     )
     viewport_width = int(viewport_height * ASPECT_RATIO)
 
@@ -210,6 +218,7 @@ def launch_remote_browser(
                 remote_host,
                 remote_port,
                 viewport_size,
+                timeout,
             )
             input("Type something to close the remote browser.")
     finally:
@@ -227,6 +236,7 @@ def main() -> None:
     initial_left: int = args.initial_left
     initial_top: int = args.initial_top
     viewport_height: int = args.viewport_height
+    timeout: int = args.timeout
     headless: bool = args.headless
 
     launch_remote_browser(
@@ -237,6 +247,7 @@ def main() -> None:
         initial_left,
         initial_top,
         viewport_height,
+        timeout,
         headless=headless,
     )
 
