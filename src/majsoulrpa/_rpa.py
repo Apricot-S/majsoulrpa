@@ -247,6 +247,17 @@ class RPA:
                 self._mitmproxy_process.kill()
             self._mitmproxy_process = None
 
+    def is_running(self) -> bool:
+        if self._message_queue_client is None:
+            return False
+        if self._browser is None:
+            return False
+        if self._mitmproxy_process is None:
+            return False
+        if self._mitmproxy_process.poll() is not None:
+            return False
+        return True
+
     def __enter__(self) -> Self:
         self.launch()
         return self
@@ -281,7 +292,9 @@ class RPA:
 
         p: PresentationBase | None = None
         while True:
-            self._browser.check_single()
+            if not self.is_running():
+                msg = "RPA client is not running."
+                raise RuntimeError(msg)
 
             try:
                 p = LoginPresentation(
