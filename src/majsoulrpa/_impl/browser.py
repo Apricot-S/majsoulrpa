@@ -159,6 +159,8 @@ class DesktopBrowser(BrowserBase):
         initial_top: int = 0,
         width: int = STD_WIDTH,
         height: int = STD_HEIGHT,
+        *,
+        headless: bool = False,
     ) -> None:
         super().__init__()
         validate_user_port(proxy_port)
@@ -170,12 +172,13 @@ class DesktopBrowser(BrowserBase):
         proxy_server = f"--proxy-server=http://localhost:{proxy_port}"
         ignore_certifi_errors = "--ignore-certificate-errors"
         options = [initial_position, proxy_server, ignore_certifi_errors]
+        mute_audio_off = None if headless else ["--mute-audio"]
 
         self._context_manager = sync_playwright()
         self._browser = self._context_manager.start().chromium.launch(
             args=options,
-            ignore_default_args=["--mute-audio"],
-            headless=False,
+            ignore_default_args=mute_audio_off,
+            headless=headless,
         )
         self._context = self._browser.new_context(viewport=self._viewport_size)  # type: ignore[arg-type]
         self._page = self._context.new_page()
