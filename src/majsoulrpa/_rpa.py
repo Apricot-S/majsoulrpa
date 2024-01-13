@@ -40,6 +40,7 @@ class RPA:
         initial_left: int = 0,
         initial_top: int = 0,
         viewport_height: int = 1080,
+        headless: bool = False,
     ) -> None:
         if len({remote_port, proxy_port, message_queue_port}) != 3:  # noqa: PLR2004
             msg = (
@@ -58,6 +59,7 @@ class RPA:
         self._initial_top = initial_top
         self._viewport_width = int(viewport_height * ASPECT_RATIO)
         self._viewport_height = viewport_height
+        self._headless = headless
 
         self._mitmproxy_process: Popen[bytes] | None = None
         self._browser: BrowserBase | None = None
@@ -125,6 +127,7 @@ class RPA:
             initial_left = 0
             initial_top = 0
             viewport_height = 1080
+            headless = False
         elif isinstance(browser_config, dict):
             _initial_position = browser_config.get("initial_position")
             if _initial_position is None:
@@ -163,6 +166,16 @@ class RPA:
                 case _ as invalid_arg:
                     msg = f"`viewport_height` must be int: {invalid_arg}"
                     raise TypeError(msg)
+
+            _headless = browser_config.get("headless")
+            match _headless:
+                case None:
+                    headless = False
+                case bool():
+                    headless = _headless
+                case _ as invalid_arg:
+                    msg = f"`headless` must be bool: {invalid_arg}"
+                    raise TypeError(msg)
         else:
             msg = "`browser` must be dict"
             raise TypeError(msg)
@@ -175,6 +188,7 @@ class RPA:
             initial_left=initial_left,
             initial_top=initial_top,
             viewport_height=viewport_height,
+            headless=headless,
         )
 
     def launch(self) -> None:
@@ -203,6 +217,7 @@ class RPA:
                 self._initial_top,
                 self._viewport_width,
                 self._viewport_height,
+                headless=self._headless,
             )
 
         # Construct a class instance
@@ -231,6 +246,17 @@ class RPA:
             if self._mitmproxy_process.poll() is None:
                 self._mitmproxy_process.kill()
             self._mitmproxy_process = None
+
+    def is_running(self) -> bool:
+        if self._message_queue_client is None:
+            return False
+        if self._browser is None:
+            return False
+        if self._mitmproxy_process is None:
+            return False
+        if self._mitmproxy_process.poll() is not None:
+            return False
+        return True
 
     def __enter__(self) -> Self:
         self.launch()
@@ -266,7 +292,9 @@ class RPA:
 
         p: PresentationBase | None = None
         while True:
-            self._browser.check_single()
+            if not self.is_running():
+                msg = "RPA client is not running."
+                raise RuntimeError(msg)
 
             try:
                 p = LoginPresentation(

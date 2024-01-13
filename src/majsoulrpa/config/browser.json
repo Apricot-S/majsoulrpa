@@ -15,6 +15,9 @@
                     "type": "integer"
                 }
             }
+        },
+        "headless": {
+            "type": "boolean"
         }
     }
 }
