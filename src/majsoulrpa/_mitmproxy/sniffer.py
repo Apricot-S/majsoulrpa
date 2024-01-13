@@ -162,7 +162,8 @@ class Sniffer:
                 raise RuntimeError(msg)
             assert direction == "inbound"
 
-        # Encode to JSON format so that it can be enqueueed to DB.
+        # Encode to JSON format so that
+        # it can be enqueueed to message queue.
         encoded_request = base64.b64encode(request).decode(encoding="utf-8")
         if response is not None:
             encoded_response = base64.b64encode(response).decode(

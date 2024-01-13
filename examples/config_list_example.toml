@@ -28,4 +28,4 @@ aws_profile = "foobar"                                 # Optional.
 [config_list.port]
 remote_port = 19222
 proxy_port = 8080
-db_port = 6379
+message_queue_port = 6379

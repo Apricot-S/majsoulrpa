@@ -102,7 +102,7 @@ class RPA:
                     msg = f"`proxy_port` must be int: {invalid_arg}"
                     raise TypeError(msg)
 
-            _message_queue_port = port_config.get("db_port")
+            _message_queue_port = port_config.get("message_queue_port")
             match _message_queue_port:
                 case None:
                     message_queue_port = 37247
@@ -111,7 +111,10 @@ class RPA:
                 case int():
                     message_queue_port = _message_queue_port
                 case _ as invalid_arg:
-                    msg = f'`db_port` must be int or "None": {invalid_arg}'
+                    msg = (
+                        "`message_queue_port` must be "
+                        f'int or "None": {invalid_arg}'
+                    )
                     raise TypeError(msg)
         else:
             msg = "`port` must be dict"
@@ -202,7 +205,8 @@ class RPA:
                 self._viewport_height,
             )
 
-        # Construct a class instance that abstracts DB client
+        # Construct a class instance
+        # that abstracts message queue client
         if self._remote_host is not None:
             if self._message_queue_port is None:
                 self._message_queue_client = ZMQClient(self._remote_host)
@@ -237,7 +241,7 @@ class RPA:
 
     def get_account_id(self) -> int:
         if self._message_queue_client is None:
-            msg = "DB client has not been launched yet."
+            msg = "Message queue client has not been launched yet."
             raise RuntimeError(msg)
         if self._message_queue_client.account_id is None:
             msg = "`account_id` has not been fetched yet."
@@ -257,7 +261,7 @@ class RPA:
             msg = "Browser has not been launched yet."
             raise RuntimeError(msg)
         if self._message_queue_client is None:
-            msg = "DB client has not been launched yet."
+            msg = "Message queue client has not been launched yet."
             raise RuntimeError(msg)
 
         p: PresentationBase | None = None

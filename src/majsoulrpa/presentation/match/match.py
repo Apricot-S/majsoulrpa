@@ -930,7 +930,7 @@ class MatchPresentation(PresentationBase):
                         self._browser.get_screenshot(),
                     )
                 # After backfilling `ActionNewRound` into
-                # the message queue of the DB server,
+                # the message queue,
                 # the control flow is returned to the user side.
                 self._message_queue_client.put_back(message)
                 now = datetime.datetime.now(datetime.UTC)
