@@ -1,8 +1,7 @@
 # ruff: noqa: INP001, T201, TRY004, S101
 import time
-from logging import WARNING, StreamHandler, basicConfig, getLogger
 
-from majsoulrpa import RPA, config
+from majsoulrpa import RPA
 from majsoulrpa.presentation import (
     AuthPresentation,
     HomePresentation,
@@ -12,25 +11,10 @@ from majsoulrpa.presentation import (
 from majsoulrpa.presentation.match import MatchPresentation
 from majsoulrpa.presentation.match.operation import DapaiOperation
 
-LOG_LEVEL = WARNING
-stream_handler = StreamHandler()
-stream_handler.setLevel(LOG_LEVEL)
-basicConfig(level=LOG_LEVEL, handlers=[stream_handler])
-logger = getLogger()
-
 if __name__ == "__main__":
-    logger.info("program start.")
-    myconfig = config.get_config("examples/config.toml")
-
-    with RPA(
-        initial_left=myconfig["browser"]["initial_position"]["left"],
-        initial_top=myconfig["browser"]["initial_position"]["top"],
-        viewport_height=myconfig["browser"]["viewport_height"],
-    ) as rpa:
-        logger.info("RPA start.")
+    with RPA() as rpa:
         presentation = rpa.wait(timeout=20.0)
 
-        logger.info("Login start.")
         if not isinstance(presentation, LoginPresentation):
             msg = "Could not transit to `login`."
             raise RuntimeError(msg)
@@ -39,24 +23,19 @@ if __name__ == "__main__":
             msg = "Could not transit to `auth`."
             raise RuntimeError(msg)
         presentation = presentation.new_presentation
-        logger.info("Login end.")
 
-        logger.info("Auth start.")
         if not isinstance(presentation, AuthPresentation):
             msg = "Could not transit to `auth`."
             raise RuntimeError(msg)
-        presentation.enter_email_address(
-            myconfig["authentication"]["email_address"],
-        )
+        email_address = input("email address: ")
+        presentation.enter_email_address(email_address)
         auth_code = input("verification code: ")
         presentation.enter_auth_code(auth_code, timeout=60.0)
         if presentation.new_presentation is None:
             msg = "Could not transit to `home`."
             raise RuntimeError
         presentation = presentation.new_presentation
-        logger.info("Auth end.")
 
-        logger.info("Home start.")
         if not isinstance(presentation, HomePresentation):
             msg = "Could not transit to `home`."
             raise RuntimeError(msg)
@@ -65,13 +44,11 @@ if __name__ == "__main__":
             msg = "Could not transit to `room`."
             raise RuntimeError(msg)
         presentation = presentation.new_presentation
-        logger.info("Home end.")
 
-        logger.info("Room start.")
         if not isinstance(presentation, RoomHostPresentation):
             msg = "Could not transit to `room`."
             raise RuntimeError(msg)
-        logger.info(f"room id: {presentation.room_id}")  # noqa: G004
+        print(f"room id: {presentation.room_id}")
         while presentation.num_ais < 3:  # noqa: PLR2004
             presentation.add_ai(timeout=10.0)
 
@@ -81,9 +58,7 @@ if __name__ == "__main__":
                 msg = "Could not transit to `match`."
                 raise RuntimeError(msg)
             presentation = presentation.new_presentation
-            logger.info("Room end.")
 
-            logger.info("Match start.")
             if not isinstance(presentation, MatchPresentation):
                 msg = "Could not transit to `match`."
                 raise RuntimeError(msg)
@@ -138,7 +113,4 @@ if __name__ == "__main__":
             raise RuntimeError(msg)
         presentation = presentation.new_presentation
 
-        time.sleep(15.0)
-
-    logger.info("RPA close.")
-    logger.info("program end.")
+        time.sleep(5.0)
