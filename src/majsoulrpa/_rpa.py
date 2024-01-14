@@ -252,10 +252,11 @@ class RPA:
             return False
         if self._browser is None:
             return False
-        if self._mitmproxy_process is None:
-            return False
-        if self._mitmproxy_process.poll() is not None:
-            return False
+        if self._remote_host is None:
+            if self._mitmproxy_process is None:
+                return False
+            if self._mitmproxy_process.poll() is not None:
+                return False
         return True
 
     def __enter__(self) -> Self:
