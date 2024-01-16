@@ -34,7 +34,7 @@ class HomePresentation(PresentationBase):
         return True
 
     @staticmethod
-    def _close_notifications(
+    def _close_notifications(  # noqa: C901
         browser: BrowserBase,
         deadline: datetime.datetime,
     ) -> None:
@@ -57,9 +57,11 @@ class HomePresentation(PresentationBase):
             "template/home/event_close",
             browser.zoom_ratio,
         )
+        rewards_sign_in = Template.open_file(
+            "template/home/accumulated_sign_in_rewards_sign_in",
+            browser.zoom_ratio,
+        )
 
-        # TODO(Apricot S): Add processing for  # noqa: TD003
-        # "Sign-in" and "Confirm" for limited time login bonus
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout."
@@ -87,6 +89,37 @@ class HomePresentation(PresentationBase):
                     event_close.img_height,
                 )
                 time.sleep(1.0)
+                continue
+
+            x, y, score = rewards_sign_in.best_template_match(ss)
+            if score >= rewards_sign_in.threshold:
+                browser.click_region(
+                    x,
+                    y,
+                    rewards_sign_in.img_width,
+                    rewards_sign_in.img_height,
+                )
+                time.sleep(1.9)
+
+                rewards_confirm = Template.open_file(
+                    "template/home/accumulated_sign_in_rewards_confirm",
+                    browser.zoom_ratio,
+                )
+                while True:
+                    if datetime.datetime.now(datetime.UTC) > deadline:
+                        msg = "Timeout."
+                        raise Timeout(msg, browser.get_screenshot())
+                    ss = browser.get_screenshot()
+                    x, y, score = rewards_confirm.best_template_match(ss)
+                    if score >= rewards_confirm.threshold:
+                        browser.click_region(
+                            x,
+                            y,
+                            rewards_confirm.img_width,
+                            rewards_confirm.img_height,
+                        )
+                        break
+
                 continue
 
             break
