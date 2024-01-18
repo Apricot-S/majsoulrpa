@@ -84,6 +84,15 @@ class AuthPresentation(PresentationBase):
             int(70 * self._browser.zoom_ratio),
         )
 
+        # Check if the email address is unavailable.
+        template = Template.open_file(
+            "template/auth/unavailable",
+            self._browser.zoom_ratio,
+        )
+        if template.match(self._browser.get_screenshot()):
+            msg = "This email address is unavailable."
+            raise ValueError(msg)
+
         # Wait for the "Confirm" button to appear, then click it.
         template = Template.open_file(
             "template/auth/confirm",
