@@ -164,7 +164,7 @@ class YostarLoginIMAP(YostarLoginBase):
                 "Timeout is longer than verification code expiration. "
                 "Set the timeout to 30 minutes or less."
             )
-            ValueError(msg)
+            raise ValueError(msg)
 
         while True:
             auth_code = self._get_auth_code(start_time=start_time)
@@ -313,7 +313,7 @@ class YostarLoginS3(YostarLoginBase):
                 "Timeout is longer than verification code expiration. "
                 "Set the timeout to 30 minutes or less."
             )
-            ValueError(msg)
+            raise ValueError(msg)
 
         while True:
             auth_code = self._get_auth_code(start_time=start_time)
