@@ -1,4 +1,5 @@
 import datetime
+import re
 import time
 from typing import Final
 
@@ -114,6 +115,11 @@ class AuthPresentation(PresentationBase):
             raise InvalidOperation(msg, self._browser.get_screenshot())
 
         deadline = timeout_to_deadline(timeout)
+
+        # Validate the format of verification code.
+        if re.fullmatch(r"\d{6}", auth_code) is None:
+            msg = "Verification code must be a 6-digit number."
+            raise ValueError(msg)
 
         # Click the "Enter the verification code sent to your email"
         # text box to focus it.
