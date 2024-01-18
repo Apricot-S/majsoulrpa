@@ -1,5 +1,6 @@
 import datetime
 import time
+from typing import Final
 
 from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
@@ -14,6 +15,8 @@ from .presentation_base import (
     PresentationNotDetected,
     Timeout,
 )
+
+_MAX_EMAIL_ADDRESS_LENGTH: Final[int] = 50  # JP ver
 
 
 class AuthPresentation(PresentationBase):
@@ -51,9 +54,12 @@ class AuthPresentation(PresentationBase):
     ) -> None:
         self._assert_not_stale()
 
-        if self._entered_email_address is True:
-            msg = "Email address has been already entered."
-            raise InvalidOperation(msg, self._browser.get_screenshot())
+        if len(email_address) > _MAX_EMAIL_ADDRESS_LENGTH:
+            msg = (
+                "Keep your email address "
+                f"within {_MAX_EMAIL_ADDRESS_LENGTH} characters."
+            )
+            raise ValueError(msg)
 
         # Click the "Enter email address" text box to focus it.
         self._browser.click_region(
@@ -68,7 +74,6 @@ class AuthPresentation(PresentationBase):
         self._browser.press_hotkey("Control", "KeyA")
         self._browser.press("Backspace")
         self._browser.write(email_address)
-        self._entered_email_address = True
 
         # Click the "Send Code" button.
         self._browser.click_region(
@@ -78,6 +83,15 @@ class AuthPresentation(PresentationBase):
             int(70 * self._browser.zoom_ratio),
         )
 
+        # Check if the email address is unavailable.
+        template = Template.open_file(
+            "template/auth/unavailable",
+            self._browser.zoom_ratio,
+        )
+        if template.match(self._browser.get_screenshot()):
+            msg = "This email address is unavailable."
+            raise ValueError(msg)
+
         # Wait for the "Confirm" button to appear, then click it.
         template = Template.open_file(
             "template/auth/confirm",
@@ -85,6 +99,8 @@ class AuthPresentation(PresentationBase):
         )
         template.wait_for_then_click(self._browser, timeout)
         time.sleep(0.1)
+
+        self._entered_email_address = True
 
     def enter_auth_code(
         self,
