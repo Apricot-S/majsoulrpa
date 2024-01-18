@@ -74,7 +74,6 @@ class AuthPresentation(PresentationBase):
         self._browser.press_hotkey("Control", "KeyA")
         self._browser.press("Backspace")
         self._browser.write(email_address)
-        self._entered_email_address = True
 
         # Click the "Send Code" button.
         self._browser.click_region(
@@ -100,6 +99,8 @@ class AuthPresentation(PresentationBase):
         )
         template.wait_for_then_click(self._browser, timeout)
         time.sleep(0.1)
+
+        self._entered_email_address = True
 
     def enter_auth_code(
         self,
