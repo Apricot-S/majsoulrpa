@@ -110,11 +110,11 @@ class AuthPresentation(PresentationBase):
     ) -> None:
         self._assert_not_stale()
 
+        deadline = timeout_to_deadline(timeout)
+
         if self._entered_email_address is False:
             msg = "Email address has not been entered yet."
             raise InvalidOperation(msg, self._browser.get_screenshot())
-
-        deadline = timeout_to_deadline(timeout)
 
         # Validate the format of verification code.
         if re.fullmatch(r"\d{6}", auth_code) is None:
