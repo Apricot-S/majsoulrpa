@@ -1,5 +1,6 @@
 import datetime
 import time
+from typing import Final
 
 from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
@@ -14,6 +15,8 @@ from .presentation_base import (
     PresentationNotDetected,
     Timeout,
 )
+
+_MAX_EMAIL_ADDRESS_LENGTH: Final[int] = 50  # JP ver
 
 
 class AuthPresentation(PresentationBase):
@@ -50,6 +53,13 @@ class AuthPresentation(PresentationBase):
         timeout: TimeoutType = 10.0,
     ) -> None:
         self._assert_not_stale()
+
+        if len(email_address) > _MAX_EMAIL_ADDRESS_LENGTH:
+            msg = (
+                "Keep your email address "
+                f"within {_MAX_EMAIL_ADDRESS_LENGTH} characters."
+            )
+            raise ValueError(msg)
 
         # Click the "Enter email address" text box to focus it.
         self._browser.click_region(
