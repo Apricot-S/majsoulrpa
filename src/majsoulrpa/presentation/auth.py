@@ -51,10 +51,6 @@ class AuthPresentation(PresentationBase):
     ) -> None:
         self._assert_not_stale()
 
-        if self._entered_email_address is True:
-            msg = "Email address has been already entered."
-            raise InvalidOperation(msg, self._browser.get_screenshot())
-
         # Click the "Enter email address" text box to focus it.
         self._browser.click_region(
             int(365 * self._browser.zoom_ratio),
