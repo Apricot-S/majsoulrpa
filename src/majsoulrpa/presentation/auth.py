@@ -1,4 +1,5 @@
 import datetime
+import re
 import time
 from typing import Final
 
@@ -109,11 +110,16 @@ class AuthPresentation(PresentationBase):
     ) -> None:
         self._assert_not_stale()
 
+        deadline = timeout_to_deadline(timeout)
+
         if self._entered_email_address is False:
             msg = "Email address has not been entered yet."
             raise InvalidOperation(msg, self._browser.get_screenshot())
 
-        deadline = timeout_to_deadline(timeout)
+        # Validate the format of verification code.
+        if re.fullmatch(r"\d{6}", auth_code) is None:
+            msg = "Verification code must be a 6-digit number."
+            raise ValueError(msg)
 
         # Click the "Enter the verification code sent to your email"
         # text box to focus it.
@@ -136,6 +142,35 @@ class AuthPresentation(PresentationBase):
             self._browser.zoom_ratio,
         )
         template.wait_for_then_click(self._browser, timeout)
+
+        # Check if the verification code is incorrect.
+        try:
+            # If the verification code is incorrect,
+            # a dialog box will appear, so click "Confirm".
+            template = Template.open_file(
+                "template/auth/confirm",
+                self._browser.zoom_ratio,
+            )
+            template.wait_for_then_click(self._browser, 1.0)
+        except Timeout:
+            pass
+        else:
+            # After clicking "Confirm",
+            # it will be returned to the login screen,
+            # so proceed to the authentication screen again.
+            time.sleep(0.3)
+            template = Template.open_file(
+                "template/login/marker",
+                self._browser.zoom_ratio,
+            )
+            template.click(self._browser)
+            time.sleep(0.4)
+
+            msg = (
+                "Verification failed. Verification code may be incorrect. "
+                "Please re-enter the verification code."
+            )
+            raise ValueError(msg)
 
         paths = (
             "template/home/marker0",
