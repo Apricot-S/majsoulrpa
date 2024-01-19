@@ -145,6 +145,8 @@ class AuthPresentation(PresentationBase):
 
         # Check if the verification code is incorrect.
         try:
+            # If the verification code is incorrect,
+            # a dialog box will appear, so click "Confirm".
             template = Template.open_file(
                 "template/auth/confirm",
                 self._browser.zoom_ratio,
