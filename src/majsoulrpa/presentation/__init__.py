@@ -7,8 +7,6 @@ from .presentation_base import (
     InconsistentMessageError,
     InvalidOperationError,
     PresentationNotDetectedError,
-    PresentationNotUpdatedError,
     PresentationTimeoutError,
-    StalePresentationError,
 )
 from .room import RoomGuestPresentation, RoomHostPresentation

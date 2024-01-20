@@ -34,16 +34,6 @@ class PresentationNotDetectedError(BaseError):
         super().__init__(message, screenshot)
 
 
-class StalePresentationError(BaseError):
-    def __init__(self, message: str, screenshot: bytes) -> None:
-        super().__init__(message, screenshot)
-
-
-class PresentationNotUpdatedError(BaseError):
-    def __init__(self, message: str, screenshot: bytes | None) -> None:
-        super().__init__(message, screenshot)
-
-
 class InconsistentMessageError(BaseError):
     def __init__(self, message: str, screenshot: bytes | None = None) -> None:
         super().__init__(message, screenshot)
