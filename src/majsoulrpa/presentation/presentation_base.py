@@ -9,7 +9,7 @@ from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa.common import TimeoutType
 
 
-class ErrorBase(Exception):  # noqa: N818
+class BaseError(Exception):
     def __init__(self, message: str, screenshot: bytes | None) -> None:
         now = datetime.datetime.now(datetime.UTC)
         ss_name = now.strftime(f"%Y-%m-%d-%H-%M-%S-{self.__class__.__name__}")
@@ -24,47 +24,47 @@ class ErrorBase(Exception):  # noqa: N818
                 fp.write(self._screenshot)
 
 
-class Timeout(ErrorBase):
+class PresentationTimeoutError(BaseError):
     def __init__(self, message: str, screenshot: bytes) -> None:
         super().__init__(message, screenshot)
 
 
-class PresentationNotDetected(ErrorBase):
+class PresentationNotDetectedError(BaseError):
     def __init__(self, message: str, screenshot: bytes) -> None:
         super().__init__(message, screenshot)
 
 
-class StalePresentation(ErrorBase):
+class StalePresentationError(BaseError):
     def __init__(self, message: str, screenshot: bytes) -> None:
         super().__init__(message, screenshot)
 
 
-class PresentationNotUpdated(ErrorBase):
+class PresentationNotUpdatedError(BaseError):
     def __init__(self, message: str, screenshot: bytes | None) -> None:
         super().__init__(message, screenshot)
 
 
-class InconsistentMessage(ErrorBase):
+class InconsistentMessageError(BaseError):
     def __init__(self, message: str, screenshot: bytes | None = None) -> None:
         super().__init__(message, screenshot)
 
 
-class InvalidOperation(ErrorBase):
+class InvalidOperationError(BaseError):
     def __init__(self, message: str, screenshot: bytes) -> None:
         super().__init__(message, screenshot)
 
 
-class UnexpectedState(ErrorBase):
+class UnexpectedStateError(BaseError):
     def __init__(self, message: str, screenshot: bytes) -> None:
         super().__init__(message, screenshot)
 
 
-class NotImplementedOperation(ErrorBase):
+class NotImplementedOperationError(BaseError):
     def __init__(self, message: str, screenshot: bytes) -> None:
         super().__init__(message, screenshot)
 
 
-class BrowserRefreshRequest(ErrorBase):
+class BrowserRefreshRequest(BaseError):  # noqa: N818
     def __init__(
         self,
         message: str,

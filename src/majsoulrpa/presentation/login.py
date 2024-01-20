@@ -9,8 +9,8 @@ from .presentation_base import (
     Presentation,
     PresentationBase,
     PresentationCreatorBase,
-    PresentationNotDetected,
-    Timeout,
+    PresentationNotDetectedError,
+    PresentationTimeoutError,
 )
 
 
@@ -30,7 +30,7 @@ class LoginPresentation(PresentationBase):
         ss = browser.get_screenshot()
         if not template.match(ss):
             msg = "Could not detect `LoginPresentation`."
-            raise PresentationNotDetected(msg, ss)
+            raise PresentationNotDetectedError(msg, ss)
 
     @staticmethod
     def _wait(browser: BrowserBase, timeout: TimeoutType = 60.0) -> None:
@@ -54,7 +54,10 @@ class LoginPresentation(PresentationBase):
             now = datetime.datetime.now(datetime.UTC)
             if now > deadline:
                 msg = "Timeout in transition from `login`."
-                raise Timeout(msg, self._browser.get_screenshot())
+                raise PresentationTimeoutError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
 
             new_presentation: PresentationBase | None = None
             try:
@@ -65,7 +68,7 @@ class LoginPresentation(PresentationBase):
                     self._message_queue_client,
                 )
                 self._set_new_presentation(new_presentation)
-            except PresentationNotDetected:
+            except PresentationNotDetectedError:
                 pass
             else:
                 return
@@ -80,7 +83,7 @@ class LoginPresentation(PresentationBase):
                     timeout=(deadline - now),
                 )
                 self._set_new_presentation(new_presentation)
-            except PresentationNotDetected:
+            except PresentationNotDetectedError:
                 pass
             else:
                 return

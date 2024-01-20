@@ -9,12 +9,12 @@ from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 from majsoulrpa.presentation.presentation_base import (
-    InconsistentMessage,
-    InvalidOperation,
+    InconsistentMessageError,
+    InvalidOperationError,
     Presentation,
     PresentationCreatorBase,
-    PresentationNotDetected,
-    Timeout,
+    PresentationNotDetectedError,
+    PresentationTimeoutError,
 )
 
 from .base import RoomPlayer, RoomPresentationBase
@@ -60,14 +60,14 @@ class RoomHostPresentation(RoomPresentationBase):
         ss = browser.get_screenshot()
         if not template.match(ss):
             msg = "Could not detect `room`."
-            raise PresentationNotDetected(msg, ss)
+            raise PresentationNotDetectedError(msg, ss)
 
         while True:
             now = datetime.datetime.now(datetime.UTC)
             message = message_queue_client.dequeue_message(deadline - now)
             if message is None:
                 msg = "Timeout."
-                raise Timeout(msg, ss)
+                raise PresentationTimeoutError(msg, ss)
             _, name, _, response, _ = message
 
             match name:
@@ -75,17 +75,17 @@ class RoomHostPresentation(RoomPresentationBase):
                     logger.info(message)
                     break
 
-            raise InconsistentMessage(str(message), ss)
+            raise InconsistentMessageError(str(message), ss)
 
         if not isinstance(response, Mapping):
             msg = f"`{name}` response does not have a dict."
-            raise InconsistentMessage(msg, None)
+            raise InconsistentMessageError(msg, None)
 
         room: dict = response["room"]
         room_id: int = room["room_id"]
         owner_id: int = room["owner_id"]
         if owner_id != message_queue_client.account_id:
-            raise InconsistentMessage(str(message), ss)
+            raise InconsistentMessageError(str(message), ss)
         max_num_players: int = room["max_player_count"]
         ready_list: list[int] = room["ready_list"]
         players: list[RoomPlayer] = []
@@ -127,7 +127,7 @@ class RoomHostPresentation(RoomPresentationBase):
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout."
-                raise Timeout(msg, browser.get_screenshot())
+                raise PresentationTimeoutError(msg, browser.get_screenshot())
 
             now = datetime.datetime.now(datetime.UTC)
             message = message_queue_client.dequeue_message(deadline - now)
@@ -148,7 +148,7 @@ class RoomHostPresentation(RoomPresentationBase):
                     logger.info(message)
                     continue
 
-            raise InconsistentMessage(name, browser.get_screenshot())
+            raise InconsistentMessageError(name, browser.get_screenshot())
 
         return cls(
             browser,
@@ -172,7 +172,7 @@ class RoomHostPresentation(RoomPresentationBase):
         )
         if not template.click_if_match(self._browser):
             msg = "Could not add AI."
-            raise InvalidOperation(msg, self._browser.get_screenshot())
+            raise InvalidOperationError(msg, self._browser.get_screenshot())
 
         old_num_ais = self.num_ais
 

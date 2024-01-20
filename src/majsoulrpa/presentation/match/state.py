@@ -4,7 +4,7 @@ from collections.abc import Iterable, Mapping
 from typing import Any
 
 from majsoulrpa.common import Player
-from majsoulrpa.presentation.presentation_base import InconsistentMessage
+from majsoulrpa.presentation.presentation_base import InconsistentMessageError
 
 
 class MatchPlayer(Player):
@@ -289,13 +289,13 @@ class RoundState:
                 if count != 1:
                     if count != 0:
                         msg = "An inconsistent message"
-                        raise InconsistentMessage(msg)
+                        raise InconsistentMessageError(msg)
                     if self._zimopai is None:
                         msg = "An inconsistent message"
-                        raise InconsistentMessage(msg)
+                        raise InconsistentMessageError(msg)
                     if self._zimopai not in tiles:
                         msg = "An inconsistent message"
-                        raise InconsistentMessage(msg)
+                        raise InconsistentMessageError(msg)
                     self._zimopai = None
                     count += 1
                 assert count == 1
@@ -304,13 +304,13 @@ class RoundState:
                 if count != 4:
                     if count != 3:
                         msg = "An inconsistent message"
-                        raise InconsistentMessage(msg)
+                        raise InconsistentMessageError(msg)
                     if self._zimopai is None:
                         msg = "An inconsistent message"
-                        raise InconsistentMessage(msg)
+                        raise InconsistentMessageError(msg)
                     if self._zimopai not in tiles:
                         msg = "An inconsistent message"
-                        raise InconsistentMessage(msg)
+                        raise InconsistentMessageError(msg)
                     self._zimopai = None
                     count += 1
                 assert count == 4
@@ -368,13 +368,13 @@ class RoundState:
             if count != 1:
                 if count != 0:
                     msg = "An inconsistent message"
-                    raise InconsistentMessage(msg)
+                    raise InconsistentMessageError(msg)
                 if self._zimopai is None:
                     msg = "An inconsistent message"
-                    raise InconsistentMessage(msg)
+                    raise InconsistentMessageError(msg)
                 if self._zimopai != bei:
                     msg = "An inconsistent message"
-                    raise InconsistentMessage(msg)
+                    raise InconsistentMessageError(msg)
                 self._zimopai = None
                 count += 1
             assert count == 1

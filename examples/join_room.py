@@ -6,7 +6,7 @@ from logging import INFO, StreamHandler, basicConfig
 from majsoulrpa import RPA, config
 from majsoulrpa.presentation import (
     AuthPresentation,
-    ErrorBase,
+    BaseError,
     HomePresentation,
     LoginPresentation,
     RoomGuestPresentation,
@@ -142,6 +142,6 @@ if __name__ == "__main__":
             presentation = presentation.new_presentation
 
             time.sleep(5.0)
-    except ErrorBase as e:
+    except BaseError as e:
         e.save_screenshot()
         traceback.print_exc()

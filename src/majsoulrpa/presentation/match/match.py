@@ -48,15 +48,15 @@ from majsoulrpa.presentation.match.state import (
 )
 from majsoulrpa.presentation.presentation_base import (
     BrowserRefreshRequest,
-    InconsistentMessage,
-    InvalidOperation,
-    NotImplementedOperation,
+    InconsistentMessageError,
+    InvalidOperationError,
+    NotImplementedOperationError,
     Presentation,
     PresentationBase,
     PresentationCreatorBase,
-    PresentationNotDetected,
-    Timeout,
-    UnexpectedState,
+    PresentationNotDetectedError,
+    PresentationTimeoutError,
+    UnexpectedStateError,
 )
 
 from . import _common
@@ -73,7 +73,7 @@ class MatchPresentation(PresentationBase):
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout."
-                raise Timeout(msg, browser.get_screenshot())
+                raise PresentationTimeoutError(msg, browser.get_screenshot())
             if (
                 Template.match_one_of(browser.get_screenshot(), templates)
                 != -1
@@ -139,7 +139,7 @@ class MatchPresentation(PresentationBase):
                     # When reconnecting after
                     # communication is disconnected
                     return
-                raise InconsistentMessage(str(message))
+                raise InconsistentMessageError(str(message))
             case ".lq.FastTest.checkNetworkDelay":
                 return
             case (
@@ -189,7 +189,7 @@ class MatchPresentation(PresentationBase):
                 x, y, score = t.best_template_match(ss)
                 print(f"({x}, {y}): score = {score}")  # noqa: T201
             msg = "Could not detect `match_main`."
-            raise PresentationNotDetected(msg, ss)
+            raise PresentationNotDetectedError(msg, ss)
 
         deadline = timeout_to_deadline(timeout)
 
@@ -200,7 +200,7 @@ class MatchPresentation(PresentationBase):
             )
             if message is None:
                 msg = "Timeout."
-                raise Timeout(msg, ss)
+                raise PresentationTimeoutError(msg, ss)
             _, name, request, response, timestamp = message
 
             match name:
@@ -284,7 +284,7 @@ class MatchPresentation(PresentationBase):
                         msg = (
                             "`.lq.FastTest.authGame` has no response message."
                         )
-                        raise InconsistentMessage(msg, ss)
+                        raise InconsistentMessageError(msg, ss)
 
                     player_map = {}
                     for p in response["players"]:
@@ -344,7 +344,7 @@ class MatchPresentation(PresentationBase):
                         "data": data,
                     }
                     if step != self._step:
-                        raise InconsistentMessage(str(action_info), ss)
+                        raise InconsistentMessageError(str(action_info), ss)
                     self._step += 1
 
                     if action_name == "ActionMJStart":
@@ -363,7 +363,7 @@ class MatchPresentation(PresentationBase):
                             )
                         return
 
-                    raise InconsistentMessage(str(action_info), ss)
+                    raise InconsistentMessageError(str(action_info), ss)
 
             # The conditional statement regarding `.lq.FastTest.authGame`
             # must come before this conditional statement.
@@ -371,7 +371,7 @@ class MatchPresentation(PresentationBase):
                 self._on_common_message(message)
                 continue
 
-            raise InconsistentMessage(str(message), ss)
+            raise InconsistentMessageError(str(message), ss)
 
     @property
     def uuid(self) -> str:
@@ -487,7 +487,10 @@ class MatchPresentation(PresentationBase):
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout."
-                raise Timeout(msg, self._browser.get_screenshot())
+                raise PresentationTimeoutError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
 
             self._browser.click_region(left, top, width, height, edge_sigma)
             message = self._message_queue_client.dequeue_message(interval)
@@ -508,7 +511,7 @@ class MatchPresentation(PresentationBase):
                     logger.info(message)
                     break
 
-            raise InconsistentMessage(
+            raise InconsistentMessageError(
                 str(message),
                 self._browser.get_screenshot(),
             )
@@ -528,10 +531,13 @@ class MatchPresentation(PresentationBase):
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout"
-                raise Timeout(msg, self._browser.get_screenshot())
+                raise PresentationTimeoutError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
             try:
                 template.wait_for_then_click(self._browser, 5.0)
-            except Timeout:
+            except PresentationTimeoutError:
                 break
 
         if self._prev_presentation in (
@@ -569,7 +575,10 @@ class MatchPresentation(PresentationBase):
             )
             if message is None:
                 msg = "Timeout"
-                raise Timeout(msg, self._browser.get_screenshot())
+                raise PresentationTimeoutError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
             _, name, _, _, _ = message
 
             if name in MatchPresentation._COMMON_MESSAGE_NAMES:
@@ -625,7 +634,7 @@ class MatchPresentation(PresentationBase):
                     self._reset_to_prev_presentation(deadline - now)
                     return
 
-            raise InconsistentMessage(
+            raise InconsistentMessageError(
                 str(message),
                 self._browser.get_screenshot(),
             )
@@ -675,7 +684,7 @@ class MatchPresentation(PresentationBase):
                     "data": data,
                 }
                 if step < expected_step:
-                    raise InconsistentMessage(
+                    raise InconsistentMessageError(
                         str(action_info),
                         self._browser.get_screenshot(),
                     )
@@ -711,7 +720,7 @@ class MatchPresentation(PresentationBase):
                     "actions": action_infos,
                     "message": message,
                 }
-                raise InconsistentMessage(
+                raise InconsistentMessageError(
                     str(error_message),
                     self._browser.get_screenshot(),
                 )
@@ -722,7 +731,10 @@ class MatchPresentation(PresentationBase):
             )
             if message is None:
                 msg = "Timeout."
-                raise Timeout(msg, self._browser.get_screenshot())
+                raise PresentationTimeoutError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
 
     def _workaround_for_skipped_confirm_new_round(
         self,
@@ -739,7 +751,7 @@ class MatchPresentation(PresentationBase):
             raise ValueError(msg)
         _, name, request, _, _ = message
         if name != ".lq.ActionPrototype":
-            raise InconsistentMessage(
+            raise InconsistentMessageError(
                 str(message),
                 self._browser.get_screenshot(),
             )
@@ -783,7 +795,10 @@ class MatchPresentation(PresentationBase):
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout."
-                raise Timeout(msg, self._browser.get_screenshot())
+                raise PresentationTimeoutError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
 
             if not round_result_confirmed:  # noqa: SIM102
                 if template.click_if_match(self._browser):
@@ -830,7 +845,10 @@ class MatchPresentation(PresentationBase):
                     )
                     if message is None:
                         msg = "Timeout"
-                        raise Timeout(msg, self._browser.get_screenshot())
+                        raise PresentationTimeoutError(
+                            msg,
+                            self._browser.get_screenshot(),
+                        )
                     _, name, request, _, _ = message
                     if name in MatchPresentation._COMMON_MESSAGE_NAMES:
                         self._on_common_message(message)
@@ -846,11 +864,11 @@ class MatchPresentation(PresentationBase):
                             # Backfill the prefetched message.
                             self._message_queue_client.put_back(message)
                             break
-                        raise InconsistentMessage(
+                        raise InconsistentMessageError(
                             str(action_info),
                             self._browser.get_screenshot(),
                         )
-                    raise InconsistentMessage(
+                    raise InconsistentMessageError(
                         str(message),
                         self._browser.get_screenshot(),
                     )
@@ -876,7 +894,7 @@ class MatchPresentation(PresentationBase):
                 # so here is a workaround for that case.
                 step, action_name, data = _common.parse_action(request)
                 if action_name != "ActionNewRound":
-                    raise InconsistentMessage(
+                    raise InconsistentMessageError(
                         str(
                             {
                                 "step": step,
@@ -895,7 +913,10 @@ class MatchPresentation(PresentationBase):
                     )
                     if next_message is None:
                         msg = "Timeout"
-                        raise Timeout(msg, self._browser.get_screenshot())
+                        raise PresentationTimeoutError(
+                            msg,
+                            self._browser.get_screenshot(),
+                        )
                     _, next_name, _, _, _ = next_message
                     if next_name in MatchPresentation._COMMON_MESSAGE_NAMES:
                         self._on_common_message(next_message)
@@ -925,7 +946,7 @@ class MatchPresentation(PresentationBase):
                         # response message is not returned?
                         logger.warning(message)
                         break
-                    raise InconsistentMessage(
+                    raise InconsistentMessageError(
                         str(next_message),
                         self._browser.get_screenshot(),
                     )
@@ -959,7 +980,7 @@ class MatchPresentation(PresentationBase):
                 self._on_end_of_match(deadline)
                 return
 
-            raise InconsistentMessage(
+            raise InconsistentMessageError(
                 str(message),
                 self._browser.get_screenshot(),
             )
@@ -980,16 +1001,16 @@ class MatchPresentation(PresentationBase):
 
         actions: list[Any] = game_restore["actions"]
         if len(actions) == 0:
-            raise InconsistentMessage(str(message))
+            raise InconsistentMessageError(str(message))
         if len(actions) != response["step"]:
-            raise InconsistentMessage(str(message))
+            raise InconsistentMessageError(str(message))
 
         action = actions.pop(0)
         step, name, data = _common.parse_action(action, restore=True)
         if step != 0:
-            raise InconsistentMessage(str(action))
+            raise InconsistentMessageError(str(action))
         if name != "ActionNewRound":
-            raise InconsistentMessage(str(action))
+            raise InconsistentMessageError(str(action))
         self._step = 0
         self._events.clear()
         self._events.append(NewRoundEvent(data, timestamp))
@@ -1005,7 +1026,7 @@ class MatchPresentation(PresentationBase):
         for action in actions:
             step, name, data = _common.parse_action(action, restore=True)
             if step != self._step:
-                raise InconsistentMessage(str(action))
+                raise InconsistentMessageError(str(action))
 
             if name == "ActionDealTile":
                 self._events.append(ZimoEvent(data, timestamp))
@@ -1068,15 +1089,15 @@ class MatchPresentation(PresentationBase):
                 continue
 
             if name == "ActionHule":
-                raise InconsistentMessage(str(action))
+                raise InconsistentMessageError(str(action))
 
             if name == "ActionNoTile":
-                raise InconsistentMessage(str(action))
+                raise InconsistentMessageError(str(action))
 
             if name == "ActionLiuJu":
-                raise InconsistentMessage(str(action))
+                raise InconsistentMessageError(str(action))
 
-            raise InconsistentMessage(str(action))
+            raise InconsistentMessageError(str(action))
 
     def _wait_impl(self, timeout: TimeoutType = 300.0) -> None:
         deadline = timeout_to_deadline(timeout)
@@ -1088,7 +1109,10 @@ class MatchPresentation(PresentationBase):
             )
             if message is None:
                 msg = "Timeout"
-                raise Timeout(msg, self._browser.get_screenshot())
+                raise PresentationTimeoutError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
             _, name, request, _, timestamp = message
 
             if name in MatchPresentation._COMMON_MESSAGE_NAMES:
@@ -1123,13 +1147,13 @@ class MatchPresentation(PresentationBase):
                 self._step += 1
 
                 if action_name == "ActionMJStart":
-                    raise InconsistentMessage(
+                    raise InconsistentMessageError(
                         str(action_info),
                         self._browser.get_screenshot(),
                     )
 
                 if action_name == "ActionNewRound":
-                    raise InconsistentMessage(
+                    raise InconsistentMessageError(
                         str(action_info),
                         self._browser.get_screenshot(),
                     )
@@ -1196,7 +1220,10 @@ class MatchPresentation(PresentationBase):
                     while True:
                         if datetime.datetime.now(datetime.UTC) > deadline:
                             msg = "Timeout."
-                            raise Timeout(msg, self._browser.get_screenshot())
+                            raise PresentationTimeoutError(
+                                msg,
+                                self._browser.get_screenshot(),
+                            )
 
                         # Click the "Confirm" button on
                         # the winning screen. However, there are cases
@@ -1265,7 +1292,7 @@ class MatchPresentation(PresentationBase):
                                 self._browser.get_screenshot(),
                             )
 
-                        raise InconsistentMessage(str(message1))
+                        raise InconsistentMessageError(str(message1))
 
                     self._on_end_of_round(deadline)
                     return
@@ -1322,7 +1349,7 @@ class MatchPresentation(PresentationBase):
                 logger.warning(message)
                 return
 
-            raise InconsistentMessage(
+            raise InconsistentMessageError(
                 str(message),
                 self._browser.get_screenshot(),
             )
@@ -1332,24 +1359,24 @@ class MatchPresentation(PresentationBase):
 
         if self._operation_list is not None:
             msg = "Must select an operation."
-            raise InvalidOperation(msg, self._browser.get_screenshot())
+            raise InvalidOperationError(msg, self._browser.get_screenshot())
         self._wait_impl(timeout)
 
     def _dapai(self, index: int, forbidden_tiles: list[str]) -> None:
         if index is None:
             msg = "Must specify an index for dapai."
-            raise InvalidOperation(msg, self._browser.get_screenshot())
+            raise InvalidOperationError(msg, self._browser.get_screenshot())
         num_tiles = len(self._round_state.shoupai)
         num_tiles += 0 if (self._round_state.zimopai is None) else 1
         if index >= num_tiles:
             msg = "Out of index for dapai."
-            raise InvalidOperation(msg, self._browser.get_screenshot())
+            raise InvalidOperationError(msg, self._browser.get_screenshot())
 
         if (self.zimopai is None) and (self.shoupai[index] in forbidden_tiles):
             # Validate that you are not trying to discard a tile
             # that cannot be swap-calling immediately after fulu.
             msg = "An invalid operation: Swap-Calling."
-            raise InvalidOperation(msg, self._browser.get_screenshot())
+            raise InvalidOperationError(msg, self._browser.get_screenshot())
 
         if (self.zimopai is not None) and index == num_tiles - 1:
             # Moqie
@@ -1412,7 +1439,7 @@ class MatchPresentation(PresentationBase):
 
         if self._operation_list is None:
             msg = "No operation exists for now."
-            raise InvalidOperation(msg, self._browser.get_screenshot())
+            raise InvalidOperationError(msg, self._browser.get_screenshot())
 
         if operation is not None:
             operation_exists = False
@@ -1424,7 +1451,10 @@ class MatchPresentation(PresentationBase):
                     break
             if not operation_exists:
                 msg = "An invalid operation."
-                raise InvalidOperation(msg, self._browser.get_screenshot())
+                raise InvalidOperationError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
 
         match operation:
             case None:
@@ -1440,7 +1470,10 @@ class MatchPresentation(PresentationBase):
                     time.sleep(1.0)
                 if index is None:
                     msg = "Index not specified."
-                    raise InvalidOperation(msg, self._browser.get_screenshot())
+                    raise InvalidOperationError(
+                        msg,
+                        self._browser.get_screenshot(),
+                    )
                 self._dapai(index, operation.forbidden_tiles)
             case ChiOperation():
                 self._operate_chi(operation, index, deadline)
@@ -1455,7 +1488,10 @@ class MatchPresentation(PresentationBase):
             case LiqiOperation():
                 if index is None:
                     msg = "Index not specified."
-                    raise InvalidOperation(msg, self._browser.get_screenshot())
+                    raise InvalidOperationError(
+                        msg,
+                        self._browser.get_screenshot(),
+                    )
                 self._operate_liqi(operation, index)
             case ZimohuOperation():
                 self._operate_hu(deadline)
@@ -1473,7 +1509,10 @@ class MatchPresentation(PresentationBase):
                     f"operation: {operation}\n"
                     f"index: {index}"
                 )
-                raise InvalidOperation(msg, self._browser.get_screenshot())
+                raise InvalidOperationError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
 
         self._operation_list = None
         now = datetime.datetime.now(datetime.UTC)
@@ -1519,7 +1558,7 @@ class MatchPresentation(PresentationBase):
             # you will not be able to respond to the hule screen
             # when you are interrupted by Rong from other player.
             template.wait_for_then_click(self._browser, timeout=5.0)
-        except Timeout as e:
+        except PresentationTimeoutError as e:
             # Possibly interfered with by Chi, Peng, Gang, or Rong
             # from other player.
             while True:
@@ -1532,7 +1571,7 @@ class MatchPresentation(PresentationBase):
                         "The WebSocket message that "
                         "was supposed to be present is missing."
                     )
-                    raise UnexpectedState(
+                    raise UnexpectedStateError(
                         msg,
                         self._browser.get_screenshot(),
                     ) from e
@@ -1551,12 +1590,12 @@ class MatchPresentation(PresentationBase):
                         now = datetime.datetime.now(datetime.UTC)
                         self._wait_impl(deadline - now)
                         return
-                    raise InconsistentMessage(
+                    raise InconsistentMessageError(
                         str(message),
                         self._browser.get_screenshot(),
                     ) from e
                 if name == ".lq.FastTest.inputOperation":
-                    raise InconsistentMessage(
+                    raise InconsistentMessageError(
                         str(message),
                         self._browser.get_screenshot(),
                     ) from e
@@ -1571,7 +1610,7 @@ class MatchPresentation(PresentationBase):
                         self._browser,
                         self._browser.get_screenshot(),
                     ) from e
-                raise InconsistentMessage(
+                raise InconsistentMessageError(
                     str(message),
                     self._browser.get_screenshot(),
                 ) from e
@@ -1590,13 +1629,16 @@ class MatchPresentation(PresentationBase):
             )
             if message is None:
                 msg = "Timeout"
-                raise Timeout(msg, self._browser.get_screenshot())
+                raise PresentationTimeoutError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
             _, name, _, _, _ = message
             if name in MatchPresentation._COMMON_MESSAGE_NAMES:
                 self._on_common_message(message)
                 continue
             if name == ".lq.FastTest.inputOperation":
-                raise InconsistentMessage(
+                raise InconsistentMessageError(
                     str(message),
                     self._browser.get_screenshot(),
                 )
@@ -1627,7 +1669,7 @@ class MatchPresentation(PresentationBase):
             # you will not be able to respond to the hule screen
             # when you are interrupted by Rong from other player.
             template.wait_for_then_click(self._browser, timeout=5.0)
-        except Timeout as e:
+        except PresentationTimeoutError as e:
             # Possibly interfered with by Peng, Gang, or Rong
             # from other player.
             while True:
@@ -1640,7 +1682,7 @@ class MatchPresentation(PresentationBase):
                         "The WebSocket message that "
                         "was supposed to be present is missing."
                     )
-                    raise UnexpectedState(
+                    raise UnexpectedStateError(
                         msg,
                         self._browser.get_screenshot(),
                     ) from e
@@ -1659,12 +1701,12 @@ class MatchPresentation(PresentationBase):
                         now = datetime.datetime.now(datetime.UTC)
                         self._wait_impl(deadline - now)
                         return
-                    raise InconsistentMessage(
+                    raise InconsistentMessageError(
                         str(message),
                         self._browser.get_screenshot(),
                     ) from e
                 if name == ".lq.FastTest.inputOperation":
-                    raise InconsistentMessage(
+                    raise InconsistentMessageError(
                         str(message),
                         self._browser.get_screenshot(),
                     ) from e
@@ -1679,7 +1721,7 @@ class MatchPresentation(PresentationBase):
                         self._browser,
                         self._browser.get_screenshot(),
                     ) from e
-                raise InconsistentMessage(
+                raise InconsistentMessageError(
                     str(message),
                     self._browser.get_screenshot(),
                 ) from e
@@ -1687,7 +1729,10 @@ class MatchPresentation(PresentationBase):
         if len(operation.combinations) >= 2:
             if index is None:
                 msg = "Must specify an index."
-                raise InvalidOperation(msg, self._browser.get_screenshot())
+                raise InvalidOperationError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
 
             if len(operation.combinations) == 2:
                 if index == 0:
@@ -1696,7 +1741,10 @@ class MatchPresentation(PresentationBase):
                     left = 980
                 else:
                     msg = f"{index}: out-of-range index"
-                    raise InvalidOperation(msg, self._browser.get_screenshot())
+                    raise InvalidOperationError(
+                        msg,
+                        self._browser.get_screenshot(),
+                    )
             elif len(operation.combinations) == 3:
                 if index == 0:
                     left = 680
@@ -1706,7 +1754,10 @@ class MatchPresentation(PresentationBase):
                     left = 1080
                 else:
                     msg = f"{index}: out-of-range index"
-                    raise InvalidOperation(msg, self._browser.get_screenshot())
+                    raise InvalidOperationError(
+                        msg,
+                        self._browser.get_screenshot(),
+                    )
             elif len(operation.combinations) == 4:
                 if index == 0:
                     left = 580
@@ -1718,7 +1769,10 @@ class MatchPresentation(PresentationBase):
                     left = 1180
                 else:
                     msg = f"{index}: out-of-range index"
-                    raise InvalidOperation(msg, self._browser.get_screenshot())
+                    raise InvalidOperationError(
+                        msg,
+                        self._browser.get_screenshot(),
+                    )
             elif len(operation.combinations) == 5:
                 if index == 0:
                     left = 480
@@ -1732,13 +1786,16 @@ class MatchPresentation(PresentationBase):
                     left = 1280
                 else:
                     msg = f"{index}: out-of-range index"
-                    raise InvalidOperation(msg, self._browser.get_screenshot())
+                    raise InvalidOperationError(
+                        msg,
+                        self._browser.get_screenshot(),
+                    )
             else:
                 msg = (
                     f"There are {len(operation.combinations)} "
                     "combinations that can be Chi."
                 )
-                raise UnexpectedState(msg, self._browser.get_screenshot())
+                raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
             left = round(left * self._browser.zoom_ratio)
             top = round(691 * self._browser.zoom_ratio)
@@ -1767,7 +1824,7 @@ class MatchPresentation(PresentationBase):
             # you will not be able to respond to the hule screen
             # when you are interrupted by Rong from other player.
             template.wait_for_then_click(self._browser, timeout=5.0)
-        except Timeout as e:
+        except PresentationTimeoutError as e:
             # Possibly interfered with by Rong from other player.
             while True:
                 now = datetime.datetime.now(datetime.UTC)
@@ -1779,7 +1836,7 @@ class MatchPresentation(PresentationBase):
                         "The WebSocket message that "
                         "was supposed to be present is missing."
                     )
-                    raise UnexpectedState(
+                    raise UnexpectedStateError(
                         msg,
                         self._browser.get_screenshot(),
                     ) from e
@@ -1798,12 +1855,12 @@ class MatchPresentation(PresentationBase):
                         now = datetime.datetime.now(datetime.UTC)
                         self._wait_impl(deadline - now)
                         return
-                    raise InconsistentMessage(
+                    raise InconsistentMessageError(
                         str(message),
                         self._browser.get_screenshot(),
                     ) from e
                 if name == ".lq.FastTest.inputOperation":
-                    raise InconsistentMessage(
+                    raise InconsistentMessageError(
                         str(message),
                         self._browser.get_screenshot(),
                     ) from e
@@ -1818,7 +1875,7 @@ class MatchPresentation(PresentationBase):
                         self._browser,
                         self._browser.get_screenshot(),
                     ) from e
-                raise InconsistentMessage(
+                raise InconsistentMessageError(
                     str(message),
                     self._browser.get_screenshot(),
                 ) from e
@@ -1826,7 +1883,10 @@ class MatchPresentation(PresentationBase):
         if len(operation.combinations) >= 2:
             if index is None:
                 msg = "Must specify an index."
-                raise InvalidOperation(msg, self._browser.get_screenshot())
+                raise InvalidOperationError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
 
             if len(operation.combinations) == 2:
                 if index == 0:
@@ -1835,13 +1895,16 @@ class MatchPresentation(PresentationBase):
                     left = 980
                 else:
                     msg = f"{index}: out-of-range index"
-                    raise InvalidOperation(msg, self._browser.get_screenshot())
+                    raise InvalidOperationError(
+                        msg,
+                        self._browser.get_screenshot(),
+                    )
             else:
                 msg = (
                     f"There are {len(operation.combinations)} "
                     "combinations that can be Peng."
                 )
-                raise UnexpectedState(msg, self._browser.get_screenshot())
+                raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
             left = round(left * self._browser.zoom_ratio)
             top = round(691 * self._browser.zoom_ratio)
@@ -1862,7 +1925,7 @@ class MatchPresentation(PresentationBase):
         )
         try:
             template.wait_for_then_click(self._browser, timeout=10.0)
-        except Timeout as e:
+        except PresentationTimeoutError as e:
             ss = self._browser.get_screenshot()
             now = datetime.datetime.now(datetime.UTC)
             img = screenshot_to_opencv(ss)
@@ -1878,7 +1941,7 @@ class MatchPresentation(PresentationBase):
                     "Not implemented operation: "
                     "AnGang when there are 2 or 3 combinations"
                 )
-                raise NotImplementedOperation(
+                raise NotImplementedOperationError(
                     msg,
                     self._browser.get_screenshot(),
                 )
@@ -1887,7 +1950,7 @@ class MatchPresentation(PresentationBase):
                 f"There are {len(operation.combinations)} "
                 "combinations that can be AnGang."
             )
-            raise UnexpectedState(msg, self._browser.get_screenshot())
+            raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
         # Some of the tiles in your hand may slide right
         # after the Angang, so if you don't add a wait time for
@@ -1906,7 +1969,7 @@ class MatchPresentation(PresentationBase):
         )
         try:
             template.wait_for_then_click(self._browser, timeout=10.0)
-        except Timeout as e:
+        except PresentationTimeoutError as e:
             # TODO: Possibly interfered with by Rong from other player.
             ss = self._browser.get_screenshot()
             now = datetime.datetime.now(datetime.UTC)
@@ -1919,7 +1982,7 @@ class MatchPresentation(PresentationBase):
                 f"There are {len(operation.combinations)} "
                 "combinations that can be DamingGang."
             )
-            raise UnexpectedState(msg, self._browser.get_screenshot())
+            raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
         # Some of the tiles in your hand may slide right
         # after the Damingang, so if you don't add a wait time for
@@ -1938,7 +2001,7 @@ class MatchPresentation(PresentationBase):
         )
         try:
             template.wait_for_then_click(self._browser, timeout=10.0)
-        except Timeout as e:
+        except PresentationTimeoutError as e:
             ss = self._browser.get_screenshot()
             now = datetime.datetime.now(datetime.UTC)
             img = screenshot_to_opencv(ss)
@@ -1948,7 +2011,10 @@ class MatchPresentation(PresentationBase):
         if len(operation.combinations) >= 2:
             if index is None:
                 msg = "Must specify an index."
-                raise InvalidOperation(msg, self._browser.get_screenshot())
+                raise InvalidOperationError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
 
             if len(operation.combinations) == 2:
                 if index == 0:
@@ -1957,13 +2023,16 @@ class MatchPresentation(PresentationBase):
                     left = 960
                 else:
                     msg = f"{index}: out-of-range index"
-                    raise InvalidOperation(msg, self._browser.get_screenshot())
+                    raise InvalidOperationError(
+                        msg,
+                        self._browser.get_screenshot(),
+                    )
             elif len(operation.combinations) == 3:
                 msg = (
                     "Not implemented operation: "
                     "Jiagang when there are 3 possible combinations"
                 )
-                raise NotImplementedOperation(
+                raise NotImplementedOperationError(
                     msg,
                     self._browser.get_screenshot(),
                 )
@@ -1972,7 +2041,7 @@ class MatchPresentation(PresentationBase):
                     f"There are {len(operation.combinations)} "
                     "combinations that can be JiaGang."
                 )
-                raise UnexpectedState(msg, self._browser.get_screenshot())
+                raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
             left = round(left * self._browser.zoom_ratio)
             top = round(691 * self._browser.zoom_ratio)
@@ -1993,7 +2062,7 @@ class MatchPresentation(PresentationBase):
         )
         try:
             template.wait_for_then_click(self._browser, timeout=5.0)
-        except Timeout as e:
+        except PresentationTimeoutError as e:
             # It is highly likely that the drawing on
             # the screen is distorted and the "Lizhi" button
             # cannot be clicked. Therefore, it is
@@ -2007,19 +2076,19 @@ class MatchPresentation(PresentationBase):
 
         if index < len(self.shoupai):
             if self.shoupai[index] not in operation.candidate_dapai_list:
-                raise InvalidOperation(
+                raise InvalidOperationError(
                     str(index),
                     self._browser.get_screenshot(),
                 )
         elif index == len(self.shoupai):
             if self.zimopai not in operation.candidate_dapai_list:
-                raise InvalidOperation(
+                raise InvalidOperationError(
                     str(index),
                     self._browser.get_screenshot(),
                 )
         else:
             msg = f"{index}: out-of-range index"
-            raise InvalidOperation(msg, self._browser.get_screenshot())
+            raise InvalidOperationError(msg, self._browser.get_screenshot())
 
         time.sleep(0.4)
         self._dapai(index, [])
@@ -2047,7 +2116,7 @@ class MatchPresentation(PresentationBase):
         )
         try:
             template.wait_for_then_click(self._browser, timeout=5.0)
-        except Timeout as e:
+        except PresentationTimeoutError as e:
             # It is highly likely that the drawing on
             # the screen is distorted and the "Liuju" button
             # cannot be clicked. Therefore, it is
@@ -2066,7 +2135,7 @@ class MatchPresentation(PresentationBase):
         )
         try:
             template.wait_for_then_click(self._browser, timeout=10.0)
-        except Timeout as e:
+        except PresentationTimeoutError as e:
             # It is highly likely that the drawing on
             # the screen is distorted and the "Babei" button
             # cannot be clicked. Therefore, it is
