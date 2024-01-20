@@ -437,7 +437,7 @@ class HomePresentation(PresentationBase):
         room_id: str,
         timeout: TimeoutType = 60.0,
     ) -> bool:
-        if re.match(r"(\d{5})", room_id) is None:
+        if re.fullmatch(r"\d{5}", room_id) is None:
             msg = "Room ID must be a 5-digit number."
             raise ValueError(msg)
 
@@ -482,11 +482,11 @@ class HomePresentation(PresentationBase):
         # Click "Confirm"
         template.click(self._browser)
 
-        template = Template.open_file(
-            "template/home/room_join/error_close",
-            self._browser.zoom_ratio,
-        )
         try:
+            template = Template.open_file(
+                "template/home/room_join/error_close",
+                self._browser.zoom_ratio,
+            )
             template.wait_for_then_click(self._browser, 1.5)
         except Timeout:
             pass
