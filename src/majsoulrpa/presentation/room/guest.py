@@ -84,7 +84,7 @@ class RoomGuestPresentation(RoomPresentationBase):
 
         if not isinstance(response, Mapping):
             msg = f"`{name}` response does not have a dict."
-            raise InconsistentMessageError(msg, None)
+            raise InconsistentMessageError(msg)
 
         room: dict = response["room"]
         room_id: int = room["room_id"]

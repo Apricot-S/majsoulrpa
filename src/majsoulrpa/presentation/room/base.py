@@ -87,13 +87,13 @@ class RoomPresentationBase(PresentationBase):
             logger.info(message)
             if direction != "inbound":
                 msg = "`.lq.NotifyRoomPlayerUpdate` is not inbound."
-                raise InconsistentMessageError(msg, None)
+                raise InconsistentMessageError(msg)
             if response is not None:
                 msg = "`.lq.NotifyRoomPlayerUpdate` has a response."
-                raise InconsistentMessageError(msg, None)
+                raise InconsistentMessageError(msg)
             if not isinstance(request, Mapping):
                 msg = "`.lq.NotifyRoomPlayerUpdate` does not have a dict."
-                raise InconsistentMessageError(msg, None)
+                raise InconsistentMessageError(msg)
             host_account_id = request["owner_id"]
             new_players: list[RoomPlayer] = []
             for p in request["player_list"]:
@@ -114,13 +114,13 @@ class RoomPresentationBase(PresentationBase):
             logger.info(message)
             if direction != "inbound":
                 msg = "`.lq.NotifyRoomPlayerReady` is not inbound."
-                raise InconsistentMessageError(msg, None)
+                raise InconsistentMessageError(msg)
             if response is not None:
                 msg = "`.lq.NotifyRoomPlayerReady` has a response."
-                raise InconsistentMessageError(msg, None)
+                raise InconsistentMessageError(msg)
             if not isinstance(request, Mapping):
                 msg = "`.lq.NotifyRoomPlayerReady` does not have a dict."
-                raise InconsistentMessageError(msg, None)
+                raise InconsistentMessageError(msg)
             account_id = request["account_id"]
             try:
                 i = next(
@@ -130,13 +130,13 @@ class RoomPresentationBase(PresentationBase):
                 )
             except StopIteration:
                 msg = "An inconsistent `.lq.NotifyRoomPlayerReady` message."
-                raise InconsistentMessageError(msg, None) from None
+                raise InconsistentMessageError(msg) from None
             self._players[i]._set_ready(is_ready=request["ready"])  # noqa: SLF001
             message = self._message_queue_client.dequeue_message(1.0)
             if message is not None:
                 _, name, _, _, _ = message
                 if name != ".lq.Lobby.readyPlay":
-                    raise InconsistentMessageError(str(message), None)
+                    raise InconsistentMessageError(str(message))
                 logger.info(message)
 
             return True
@@ -149,7 +149,7 @@ class RoomPresentationBase(PresentationBase):
             f"response: {response}\n"
             f"timestamp: {timestamp}"
         )
-        raise InconsistentMessageError(msg, None)
+        raise InconsistentMessageError(msg)
 
     @property
     def room_id(self) -> int:
