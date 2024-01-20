@@ -14,12 +14,12 @@ from ._impl.browser import (
 from ._impl.zmq_client import ZMQClient
 from .common import timeout_to_deadline
 from .presentation import AuthPresentation, HomePresentation, LoginPresentation
+from .presentation._presentation_creator import PresentationCreator
 from .presentation.presentation_base import (
     PresentationBase,
     PresentationNotDetected,
     Timeout,
 )
-from .presentation.presentation_creator import PresentationCreator
 
 if TYPE_CHECKING:
     from ._impl.message_queue_client import MessageQueueClientBase
