@@ -482,11 +482,11 @@ class HomePresentation(PresentationBase):
         # Click "Confirm"
         template.click(self._browser)
 
-        template = Template.open_file(
-            "template/home/room_join/error_close",
-            self._browser.zoom_ratio,
-        )
         try:
+            template = Template.open_file(
+                "template/home/room_join/error_close",
+                self._browser.zoom_ratio,
+            )
             template.wait_for_then_click(self._browser, 1.5)
         except Timeout:
             pass
