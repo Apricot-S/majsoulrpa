@@ -10,12 +10,12 @@ from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 
 from .presentation_base import (
-    InconsistentMessage,
+    InconsistentMessageError,
     Presentation,
     PresentationBase,
     PresentationCreatorBase,
-    PresentationNotDetected,
-    Timeout,
+    PresentationNotDetectedError,
+    PresentationTimeoutError,
 )
 
 logger = getLogger(__name__)
@@ -44,7 +44,7 @@ class HomePresentation(PresentationBase):
         try:
             jade = Template.open_file("template/home/jade", browser.zoom_ratio)
             jade.wait_for_then_click(browser, 4.0)
-        except Timeout:
+        except PresentationTimeoutError:
             pass
         else:
             time.sleep(0.4)
@@ -65,7 +65,7 @@ class HomePresentation(PresentationBase):
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout."
-                raise Timeout(msg, browser.get_screenshot())
+                raise PresentationTimeoutError(msg, browser.get_screenshot())
 
             ss = browser.get_screenshot()
 
@@ -108,7 +108,10 @@ class HomePresentation(PresentationBase):
                 while True:
                     if datetime.datetime.now(datetime.UTC) > deadline:
                         msg = "Timeout."
-                        raise Timeout(msg, browser.get_screenshot())
+                        raise PresentationTimeoutError(
+                            msg,
+                            browser.get_screenshot(),
+                        )
                     ss = browser.get_screenshot()
                     x, y, score = rewards_confirm.best_template_match(ss)
                     if score >= rewards_confirm.threshold:
@@ -150,7 +153,7 @@ class HomePresentation(PresentationBase):
         ss = browser.get_screenshot()
         if not template.match(ss):
             msg = "Could not detect `HomePresentation`."
-            raise PresentationNotDetected(msg, ss)
+            raise PresentationNotDetectedError(msg, ss)
 
         # Wait for markers to display on the home screen.
         time.sleep(0.5)
@@ -165,7 +168,10 @@ class HomePresentation(PresentationBase):
             while True:
                 if datetime.datetime.now(datetime.UTC) > deadline:
                     msg = "Timeout."
-                    raise Timeout(msg, browser.get_screenshot())
+                    raise PresentationTimeoutError(
+                        msg,
+                        browser.get_screenshot(),
+                    )
                 if HomePresentation._match_markers(
                     browser.get_screenshot(),
                     browser.zoom_ratio,
@@ -180,7 +186,7 @@ class HomePresentation(PresentationBase):
             )
             if message is None:
                 msg = "Timeout."
-                raise Timeout(msg, browser.get_screenshot())
+                raise PresentationTimeoutError(msg, browser.get_screenshot())
             _, name, _, _, _ = message
 
             match name:
@@ -274,7 +280,10 @@ class HomePresentation(PresentationBase):
                         break
                     continue
 
-            raise InconsistentMessage(str(message), browser.get_screenshot())
+            raise InconsistentMessageError(
+                str(message),
+                browser.get_screenshot(),
+            )
 
         while True:
             message = self._message_queue_client.dequeue_message(0.1)
@@ -309,7 +318,10 @@ class HomePresentation(PresentationBase):
                     self._message_queue_client.put_back(message)
                     continue
 
-            raise InconsistentMessage(str(message), browser.get_screenshot())
+            raise InconsistentMessageError(
+                str(message),
+                browser.get_screenshot(),
+            )
 
     def _discard_messages_across_dates(self) -> None:
         while True:
@@ -334,7 +346,7 @@ class HomePresentation(PresentationBase):
                     logger.info(message)
                     continue
                 case _:
-                    raise InconsistentMessage(
+                    raise InconsistentMessageError(
                         str(message),
                         self._browser.get_screenshot(),
                     )
@@ -381,7 +393,10 @@ class HomePresentation(PresentationBase):
             while True:
                 if datetime.datetime.now(datetime.UTC) > deadline:
                     msg = "Timeout."
-                    raise Timeout(msg, self._browser.get_screenshot())
+                    raise PresentationTimeoutError(
+                        msg,
+                        self._browser.get_screenshot(),
+                    )
                 if template.match(self._browser.get_screenshot()):
                     break
                 template.click(self._browser)
@@ -488,7 +503,7 @@ class HomePresentation(PresentationBase):
                 self._browser.zoom_ratio,
             )
             template.wait_for_then_click(self._browser, 1.5)
-        except Timeout:
+        except PresentationTimeoutError:
             pass
         else:
             time.sleep(0.5)

@@ -9,12 +9,12 @@ from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 
 from .presentation_base import (
-    InvalidOperation,
+    InvalidOperationError,
     Presentation,
     PresentationBase,
     PresentationCreatorBase,
-    PresentationNotDetected,
-    Timeout,
+    PresentationNotDetectedError,
+    PresentationTimeoutError,
 )
 
 _MAX_EMAIL_ADDRESS_LENGTH: Final[int] = 50  # JP ver
@@ -38,7 +38,7 @@ class AuthPresentation(PresentationBase):
         ss = browser.get_screenshot()
         if not template.match(ss):
             msg = "Could not detect `AuthPresentation`."
-            raise PresentationNotDetected(msg, ss)
+            raise PresentationNotDetectedError(msg, ss)
 
     @staticmethod
     def _wait(browser: BrowserBase, timeout: TimeoutType = 10.0) -> None:
@@ -114,7 +114,7 @@ class AuthPresentation(PresentationBase):
 
         if self._entered_email_address is False:
             msg = "Email address has not been entered yet."
-            raise InvalidOperation(msg, self._browser.get_screenshot())
+            raise InvalidOperationError(msg, self._browser.get_screenshot())
 
         # Validate the format of verification code.
         if re.fullmatch(r"\d{6}", auth_code) is None:
@@ -152,7 +152,7 @@ class AuthPresentation(PresentationBase):
                 self._browser.zoom_ratio,
             )
             template.wait_for_then_click(self._browser, 1.0)
-        except Timeout:
+        except PresentationTimeoutError:
             pass
         else:
             # After clicking "Confirm",
@@ -186,7 +186,10 @@ class AuthPresentation(PresentationBase):
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout."
-                raise Timeout(msg, self._browser.get_screenshot())
+                raise PresentationTimeoutError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
             index = Template.match_one_of(
                 self._browser.get_screenshot(),
                 templates,

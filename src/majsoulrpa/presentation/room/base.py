@@ -6,11 +6,11 @@ from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import Player, TimeoutType
 from majsoulrpa.presentation.presentation_base import (
-    InconsistentMessage,
+    InconsistentMessageError,
     Presentation,
     PresentationBase,
     PresentationCreatorBase,
-    UnexpectedState,
+    UnexpectedStateError,
 )
 
 logger = getLogger(__name__)
@@ -87,13 +87,13 @@ class RoomPresentationBase(PresentationBase):
             logger.info(message)
             if direction != "inbound":
                 msg = "`.lq.NotifyRoomPlayerUpdate` is not inbound."
-                raise InconsistentMessage(msg, None)
+                raise InconsistentMessageError(msg)
             if response is not None:
                 msg = "`.lq.NotifyRoomPlayerUpdate` has a response."
-                raise InconsistentMessage(msg, None)
+                raise InconsistentMessageError(msg)
             if not isinstance(request, Mapping):
                 msg = "`.lq.NotifyRoomPlayerUpdate` does not have a dict."
-                raise InconsistentMessage(msg, None)
+                raise InconsistentMessageError(msg)
             host_account_id = request["owner_id"]
             new_players: list[RoomPlayer] = []
             for p in request["player_list"]:
@@ -114,13 +114,13 @@ class RoomPresentationBase(PresentationBase):
             logger.info(message)
             if direction != "inbound":
                 msg = "`.lq.NotifyRoomPlayerReady` is not inbound."
-                raise InconsistentMessage(msg, None)
+                raise InconsistentMessageError(msg)
             if response is not None:
                 msg = "`.lq.NotifyRoomPlayerReady` has a response."
-                raise InconsistentMessage(msg, None)
+                raise InconsistentMessageError(msg)
             if not isinstance(request, Mapping):
                 msg = "`.lq.NotifyRoomPlayerReady` does not have a dict."
-                raise InconsistentMessage(msg, None)
+                raise InconsistentMessageError(msg)
             account_id = request["account_id"]
             try:
                 i = next(
@@ -130,13 +130,13 @@ class RoomPresentationBase(PresentationBase):
                 )
             except StopIteration:
                 msg = "An inconsistent `.lq.NotifyRoomPlayerReady` message."
-                raise InconsistentMessage(msg, None) from None
+                raise InconsistentMessageError(msg) from None
             self._players[i]._set_ready(is_ready=request["ready"])  # noqa: SLF001
             message = self._message_queue_client.dequeue_message(1.0)
             if message is not None:
                 _, name, _, _, _ = message
                 if name != ".lq.Lobby.readyPlay":
-                    raise InconsistentMessage(str(message), None)
+                    raise InconsistentMessageError(str(message))
                 logger.info(message)
 
             return True
@@ -149,7 +149,7 @@ class RoomPresentationBase(PresentationBase):
             f"response: {response}\n"
             f"timestamp: {timestamp}"
         )
-        raise InconsistentMessage(msg, None)
+        raise InconsistentMessageError(msg)
 
     @property
     def room_id(self) -> int:
@@ -177,7 +177,7 @@ class RoomPresentationBase(PresentationBase):
         )
         if not template.click_if_match(self._browser):
             msg = "Could not leave the room."
-            raise UnexpectedState(msg, self._browser.get_screenshot())
+            raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
         # Wait until the home screen is displayed.
         self._creator.wait(self._browser, timeout, Presentation.HOME)

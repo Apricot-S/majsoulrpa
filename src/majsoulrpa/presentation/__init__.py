@@ -3,12 +3,14 @@ from .auth import AuthPresentation
 from .home import HomePresentation
 from .login import LoginPresentation
 from .presentation_base import (
-    ErrorBase,
-    InconsistentMessage,
-    InvalidOperation,
-    PresentationNotDetected,
-    PresentationNotUpdated,
-    StalePresentation,
-    Timeout,
+    BaseError,
+    BrowserRefreshRequest,
+    InconsistentMessageError,
+    InvalidOperationError,
+    NotImplementedOperationError,
+    PresentationBase,
+    PresentationNotDetectedError,
+    PresentationTimeoutError,
+    UnexpectedStateError,
 )
 from .room import RoomGuestPresentation, RoomHostPresentation
