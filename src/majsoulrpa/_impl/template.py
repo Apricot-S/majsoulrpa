@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
-from majsoulrpa.presentation.presentation_base import Timeout
+from majsoulrpa.presentation.presentation_base import PresentationTimeoutError
 
 from .browser import STD_HEIGHT, STD_WIDTH, BrowserBase
 
@@ -170,7 +170,7 @@ class Template:
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = f"Timeout in waiting {self._path}"
-                raise Timeout(msg, browser.get_screenshot())
+                raise PresentationTimeoutError(msg, browser.get_screenshot())
             if self.match(browser.get_screenshot()):
                 break
 
@@ -218,7 +218,7 @@ class Template:
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = f"Timeout in waiting {self._path}"
-                raise Timeout(msg, browser.get_screenshot())
+                raise PresentationTimeoutError(msg, browser.get_screenshot())
             x, y, score = self.best_template_match(browser.get_screenshot())
             if score >= self._threshold:
                 break
@@ -260,7 +260,7 @@ class Template:
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout"
-                raise Timeout(msg, browser.get_screenshot())
+                raise PresentationTimeoutError(msg, browser.get_screenshot())
 
             screenshot = browser.get_screenshot()
             for template in templates:

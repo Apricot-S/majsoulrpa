@@ -14,12 +14,12 @@ from ._impl.browser import (
 from ._impl.zmq_client import ZMQClient
 from .common import timeout_to_deadline
 from .presentation import AuthPresentation, HomePresentation, LoginPresentation
+from .presentation._presentation_creator import PresentationCreator
 from .presentation.presentation_base import (
     PresentationBase,
-    PresentationNotDetected,
-    Timeout,
+    PresentationNotDetectedError,
+    PresentationTimeoutError,
 )
-from .presentation.presentation_creator import PresentationCreator
 
 if TYPE_CHECKING:
     from ._impl.message_queue_client import MessageQueueClientBase
@@ -303,7 +303,7 @@ class RPA:
                     self._message_queue_client,
                     self._creator,
                 )
-            except PresentationNotDetected:
+            except PresentationNotDetectedError:
                 pass
             else:
                 return p
@@ -314,7 +314,7 @@ class RPA:
                     self._message_queue_client,
                     self._creator,
                 )
-            except PresentationNotDetected:
+            except PresentationNotDetectedError:
                 pass
             else:
                 return p
@@ -327,7 +327,7 @@ class RPA:
                     self._creator,
                     deadline - now,
                 )
-            except PresentationNotDetected:
+            except PresentationNotDetectedError:
                 pass
             else:
                 return p
@@ -335,4 +335,7 @@ class RPA:
             now = datetime.datetime.now(datetime.UTC)
             if now > deadline:
                 msg = "Timeout."
-                raise Timeout(msg, self._browser.get_screenshot())
+                raise PresentationTimeoutError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )

@@ -8,12 +8,12 @@ from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 from majsoulrpa.presentation.presentation_base import (
-    InconsistentMessage,
+    InconsistentMessageError,
     Presentation,
     PresentationCreatorBase,
-    PresentationNotDetected,
-    Timeout,
-    UnexpectedState,
+    PresentationNotDetectedError,
+    PresentationTimeoutError,
+    UnexpectedStateError,
 )
 
 from . import host
@@ -60,14 +60,14 @@ class RoomGuestPresentation(RoomPresentationBase):
         ss = browser.get_screenshot()
         if not template.match(ss):
             msg = "Could not detect `room`."
-            raise PresentationNotDetected(msg, ss)
+            raise PresentationNotDetectedError(msg, ss)
 
         while True:
             now = datetime.datetime.now(datetime.UTC)
             message = message_queue_client.dequeue_message(deadline - now)
             if message is None:
                 msg = "Timeout."
-                raise Timeout(msg, ss)
+                raise PresentationTimeoutError(msg, ss)
             _, name, _, response, _ = message
 
             match name:
@@ -80,11 +80,11 @@ class RoomGuestPresentation(RoomPresentationBase):
                     logger.info(message)
                     continue
 
-            raise InconsistentMessage(str(message), ss)
+            raise InconsistentMessageError(str(message), ss)
 
         if not isinstance(response, Mapping):
             msg = f"`{name}` response does not have a dict."
-            raise InconsistentMessage(msg, None)
+            raise InconsistentMessageError(msg)
 
         room: dict = response["room"]
         room_id: int = room["room_id"]
@@ -130,7 +130,7 @@ class RoomGuestPresentation(RoomPresentationBase):
         while True:
             if datetime.datetime.now(datetime.UTC) > deadline:
                 msg = "Timeout."
-                raise Timeout(msg, browser.get_screenshot())
+                raise PresentationTimeoutError(msg, browser.get_screenshot())
 
             now = datetime.datetime.now(datetime.UTC)
             message = message_queue_client.dequeue_message(deadline - now)
@@ -151,7 +151,10 @@ class RoomGuestPresentation(RoomPresentationBase):
                     logger.info(message)
                     continue
 
-            raise InconsistentMessage(str(message), browser.get_screenshot())
+            raise InconsistentMessageError(
+                str(message),
+                browser.get_screenshot(),
+            )
 
         add_ai = Template.open_file(
             "template/room/add_ai",
@@ -199,7 +202,7 @@ class RoomGuestPresentation(RoomPresentationBase):
         )
         if own_player_index == -1:
             msg = "Own player is not included in the player list."
-            raise UnexpectedState(msg, self._browser.get_screenshot())
+            raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
         while not self.players[own_player_index].is_ready:
             now = datetime.datetime.now(datetime.UTC)
@@ -212,7 +215,7 @@ class RoomGuestPresentation(RoomPresentationBase):
                 deadline - now,
                 Presentation.MATCH,
             )
-        except Timeout:
+        except PresentationTimeoutError:
             cancel_template = Template.open_file(
                 "template/room/cancel",
                 self._browser.zoom_ratio,

@@ -3,7 +3,7 @@ import datetime
 from collections.abc import Mapping
 from typing import Any
 
-from majsoulrpa.presentation.presentation_base import InconsistentMessage
+from majsoulrpa.presentation.presentation_base import InconsistentMessageError
 
 from ._base import EventBase
 
@@ -30,7 +30,7 @@ class LiujuEvent(EventBase):
         else:
             if data["seat"] != 0:
                 msg = f'type = {data["type"]}, seat = {data["seat"]}'
-                raise InconsistentMessage(msg)
+                raise InconsistentMessageError(msg)
             self._seat = None
 
     @property
