@@ -32,7 +32,7 @@ class ZMQClient(MessageQueueClientBase):
         self._socket.close()
         self._context.destroy()
 
-    def dequeue_message(self, timeout: TimeoutType) -> Message | None:  # noqa: C901, PLR0912, PLR0915
+    def dequeue_message(self, timeout: TimeoutType) -> Message | None:  # noqa: C901
         timeout = to_timedelta(timeout)
 
         if timeout.total_seconds() <= 0.0:  # noqa: PLR2004

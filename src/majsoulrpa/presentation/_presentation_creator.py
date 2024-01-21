@@ -43,7 +43,7 @@ class PresentationCreator(PresentationCreatorBase):
             case _:
                 raise AssertionError
 
-    def create_new_presentation(  # noqa: PLR0911
+    def create_new_presentation(
         self,
         current_presentation: Presentation,
         next_presentation: Presentation,

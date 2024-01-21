@@ -8,7 +8,7 @@ from majsoulrpa.presentation.presentation_base import InconsistentMessageError
 
 
 class MatchPlayer(Player):
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         account_id: int,
         name: str,
@@ -255,7 +255,7 @@ class RoundState:
 
         assert (seat == self._match_state.seat) or ("operation" not in data)
 
-    def _on_angang_jiagang(self, data: Mapping[str, Any]) -> None:  # noqa: PLR0915, PLR0912, C901
+    def _on_angang_jiagang(self, data: Mapping[str, Any]) -> None:  # noqa: C901
         assert self._prev_dapai_seat is None
         assert self._prev_dapai is None
 

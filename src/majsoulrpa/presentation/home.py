@@ -135,7 +135,7 @@ class HomePresentation(PresentationBase):
         )
         template.wait_for(browser, timeout)
 
-    def __init__(  # noqa: PLR0912, PLR0915, C901
+    def __init__(  # noqa: C901
         self,
         browser: BrowserBase,
         message_queue_client: MessageQueueClientBase,
