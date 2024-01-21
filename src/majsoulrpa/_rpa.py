@@ -30,7 +30,7 @@ _SNIFFER_PATH: Final = Path(__file__).parent / "_mitmproxy/sniffer.py"
 
 
 class RPA:
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         remote_host: str | None = None,
@@ -67,7 +67,7 @@ class RPA:
         self._creator = PresentationCreator()
 
     @classmethod
-    def from_config(cls, config: dict[str, Any]) -> Self:  # noqa: C901, PLR0912, PLR0915
+    def from_config(cls, config: dict[str, Any]) -> Self:  # noqa: C901
         remote_host_config = config.get("remote_host")
         match remote_host_config:
             case None:
@@ -281,7 +281,7 @@ class RPA:
             raise RuntimeError(msg)
         return self._browser.get_screenshot()
 
-    def wait(self, timeout: float) -> PresentationBase:  # noqa: PLR0912, C901
+    def wait(self, timeout: float) -> PresentationBase:  # noqa: C901
         deadline = timeout_to_deadline(timeout)
 
         if self._browser is None:

@@ -27,7 +27,7 @@ def screenshot_to_opencv(screenshot_bytes: bytes) -> np.ndarray:
 
 
 class Template:
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         path: Path,
         zoom_ratio: float,
@@ -81,7 +81,7 @@ class Template:
         return self._threshold
 
     @classmethod
-    def open_file(cls, name_or_path: str | Path, zoom_ratio: float) -> Self:  # noqa: C901, PLR0912
+    def open_file(cls, name_or_path: str | Path, zoom_ratio: float) -> Self:  # noqa: C901
         if isinstance(name_or_path, str):
             path = _PATH_TEMPLATE / Path(name_or_path)
         else:

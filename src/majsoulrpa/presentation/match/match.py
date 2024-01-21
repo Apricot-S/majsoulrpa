@@ -1,4 +1,4 @@
-# ruff: noqa: C901, PLR0911, PLR0912, PLR0913, PLR0915, PLR2004, S101
+# ruff: noqa: C901, PLR2004, S101
 import datetime
 import time
 from logging import getLogger

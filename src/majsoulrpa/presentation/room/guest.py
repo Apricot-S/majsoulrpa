@@ -23,7 +23,7 @@ logger = getLogger(__name__)
 
 
 class RoomGuestPresentation(RoomPresentationBase):
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         browser: BrowserBase,
         message_queue_client: MessageQueueClientBase,
@@ -114,7 +114,7 @@ class RoomGuestPresentation(RoomPresentationBase):
         )
 
     @classmethod
-    def _return_from_match(  # noqa: PLR0913
+    def _return_from_match(
         cls,
         browser: BrowserBase,
         message_queue_client: MessageQueueClientBase,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# ruff: noqa: PLR0913, PLR2004
+# ruff: noqa: PLR2004
 import argparse
 import base64
 from ipaddress import ip_address
@@ -61,7 +61,7 @@ def validate_option(
         raise ValueError(msg)
 
 
-def _launch_remote_browser_core(  # noqa: PLR0915
+def _launch_remote_browser_core(
     browser_context: BrowserContext,
     remote_host: str,
     remote_port: int,
