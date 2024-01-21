@@ -229,9 +229,9 @@ class RoundState:
             for tile in data["tiles"][:-1]:
                 for i, t in enumerate(self._shoupai):
                     if t == tile:
+                        assert i < len(self._shoupai)
+                        self._shoupai.pop(i)
                         break
-                    assert i < len(self._shoupai)
-                    self._shoupai.pop(i)
 
         assert self._zimopai is None
 
@@ -326,11 +326,16 @@ class RoundState:
             # replace the existing Peng with Jiagang.
             for i, fulu in enumerate(self._fulu[seat]):
                 if fulu[3] == data["tiles"][:-1]:
+                    assert i < len(self._fulu[seat])
+                    from_ = self._fulu[seat][i][1]
+                    he_index = self._fulu[seat][i][2]
+                    self._fulu[seat][i] = (
+                        type_,
+                        from_,
+                        he_index,
+                        data["tiles"],
+                    )
                     break
-                assert i < len(self._fulu[seat])
-                from_ = self._fulu[seat][i][1]
-                he_index = self._fulu[seat][i][2]
-                self._fulu[seat][i] = (type_, from_, he_index, data["tiles"])
         else:
             # In case of Angang
             self._fulu[seat].append((type_, None, None, data["tiles"]))
