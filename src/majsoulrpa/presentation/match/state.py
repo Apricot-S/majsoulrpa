@@ -229,9 +229,9 @@ class RoundState:
             for tile in data["tiles"][:-1]:
                 for i, t in enumerate(self._shoupai):
                     if t == tile:
+                        assert i < len(self._shoupai)
+                        self._shoupai.pop(i)
                         break
-                    assert i < len(self._shoupai)
-                    self._shoupai.pop(i)
 
         assert self._zimopai is None
 
