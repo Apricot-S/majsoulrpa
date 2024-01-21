@@ -1,4 +1,3 @@
-# ruff: noqa: F401
 from majsoulrpa.presentation.match.event.angangjiagang import (
     AngangJiagangEvent,
 )
@@ -10,3 +9,15 @@ from majsoulrpa.presentation.match.event.liuju import LiujuEvent
 from majsoulrpa.presentation.match.event.new_round import NewRoundEvent
 from majsoulrpa.presentation.match.event.no_tile import NoTileEvent
 from majsoulrpa.presentation.match.event.zimo import ZimoEvent
+
+__all__ = [
+    "AngangJiagangEvent",
+    "BabeiEvent",
+    "ChiPengGangEvent",
+    "DapaiEvent",
+    "HuleEvent",
+    "LiujuEvent",
+    "NewRoundEvent",
+    "NoTileEvent",
+    "ZimoEvent",
+]
