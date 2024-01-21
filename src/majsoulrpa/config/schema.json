@@ -3,7 +3,7 @@
     "title": "ConfigFileValidation",
     "description": "Schema for validating config file",
     "type": "object",
-    "oneOf": [
+    "anyOf": [
         {
             "$ref": "#/definitions/single_config_schema"
         },
@@ -38,10 +38,7 @@
         },
         "single_config_schema": {
             "type": "object",
-            "required": [
-                "authentication"
-            ],
-            "proprties": {
+            "properties": {
                 "authentication": {
                     "$ref": "#/definitions/authentication"
                 },
@@ -63,8 +60,7 @@
             "items": {
                 "type": "object",
                 "required": [
-                    "name",
-                    "authentication"
+                    "name"
                 ],
                 "properties": {
                     "name": {
