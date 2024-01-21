@@ -46,15 +46,23 @@ majsoulrpa_remote_browser = "src.majsoulrpa.remote_browser._remote_browser:main"
 
 [tool.ruff]
 target-version = "py311"
+src = ["src"]
 extend-exclude = ["src/majsoulrpa/_impl/protobuf_liqi"]
-ignore = [
-    "ANN101", # missing-type-self
-    "ANN102", # missing-type-cls
-    "ANN002", # missing-type-args
-    "ANN003", # missing-type-kwargs
-
-    "D", # pydocstyle
-]
 line-length = 79
 select = ["ALL"]
-src = ["src"]
+ignore = [
+    "D", # pydocstyle
+
+    # "C901",    # complex-structure
+    "ANN002",  # missing-type-args
+    "ANN003",  # missing-type-kwargs
+    "ANN101",  # missing-type-self
+    "ANN102",  # missing-type-cls
+    "PLR0911", # too-many-return-statements
+    "PLR0912", # too-many-branches
+    "PLR0913", # too-many-arguments
+    "PLR0915", # too-many-statements
+]
+
+[tool.ruff.extend-per-file-ignores]
+"./examples/*" = ["S101", "INP001", "T201", "TRY004"]

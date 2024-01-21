@@ -1,4 +1,3 @@
-# ruff: noqa: INP001, T201, TRY004, S101
 import time
 import traceback
 from logging import INFO, StreamHandler, basicConfig

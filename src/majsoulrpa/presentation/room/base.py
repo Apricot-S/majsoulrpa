@@ -42,7 +42,7 @@ class RoomPlayer(Player):
 
 
 class RoomPresentationBase(PresentationBase):
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         browser: BrowserBase,
         message_queue_client: MessageQueueClientBase,
@@ -67,7 +67,7 @@ class RoomPresentationBase(PresentationBase):
         )
         template.wait_for(browser, timeout)
 
-    def _update(self, timeout: TimeoutType) -> bool:  # noqa: C901, PLR0912, PLR0915
+    def _update(self, timeout: TimeoutType) -> bool:  # noqa: C901
         self._assert_not_stale()
 
         message = self._message_queue_client.dequeue_message(timeout)
