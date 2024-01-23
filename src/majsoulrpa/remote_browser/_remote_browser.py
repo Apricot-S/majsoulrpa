@@ -5,6 +5,7 @@ import base64
 from ipaddress import ip_address
 from pathlib import Path
 from subprocess import Popen
+from time import sleep
 from typing import Final
 
 import zmq
@@ -196,6 +197,14 @@ def launch_remote_browser(
     ]
 
     sniffer_process = Popen(sniffer_args)  # noqa: S603
+    # After starting the sniffer process, if the browser is launched
+    # immediately, there may be cases where the browser attempts to connect to
+    # the proxy port before the sniffer process begins listening on it. As a
+    # result, the browser may fail to connect to the proxy (sniffer) and throw
+    # a `net::ERR_PROXY_CONNECTION_FAILED` exception. The following `sleep` is
+    # to avoid this problem, by waiting for a while after starting the sniffer
+    # process before initiating the launch of the browser.
+    sleep(10.0)
     try:
         initial_position = f"--window-position={initial_left},{initial_top}"
         proxy_server = f"--proxy-server=http://localhost:{proxy_port}"
