@@ -6,7 +6,7 @@ from typing import Any, TypeGuard
 
 import cv2
 
-from majsoulrpa import common
+from majsoulrpa._impl import id
 from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.message_queue_client import (
     Message,
@@ -290,11 +290,11 @@ class MatchPresentation(PresentationBase):
                     for p in response["players"]:
                         account_id = p["account_id"]
                         nickname = p["nickname"]
-                        level4 = common.id_to_level(p["level"]["id"])
-                        level3 = common.id_to_level(p["level3"]["id"])
+                        level4 = id.id_to_level(p["level"]["id"])
+                        level3 = id.id_to_level(p["level3"]["id"])
                         charid = p["character"]["charid"]
                         try:
-                            character = common.id_to_character(charid)
+                            character = id.id_to_character(charid)
                         except KeyError:
                             # When encountering a character whose
                             # character ID is unknown
