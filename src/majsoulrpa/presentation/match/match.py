@@ -1724,7 +1724,7 @@ class MatchPresentation(PresentationBase):
                     self._browser.get_screenshot(),
                 ) from e
 
-        if len(operation.combinations) >= 2:
+        if (num_combinations := len(operation.combinations)) >= 2:
             if index is None:
                 msg = "Must specify an index."
                 raise InvalidOperationError(
@@ -1732,7 +1732,7 @@ class MatchPresentation(PresentationBase):
                     self._browser.get_screenshot(),
                 )
 
-            if len(operation.combinations) == 2:
+            if num_combinations == 2:
                 if index == 0:
                     left = 780
                 elif index == 1:
@@ -1743,7 +1743,7 @@ class MatchPresentation(PresentationBase):
                         msg,
                         self._browser.get_screenshot(),
                     )
-            elif len(operation.combinations) == 3:
+            elif num_combinations == 3:
                 if index == 0:
                     left = 680
                 elif index == 1:
@@ -1756,7 +1756,7 @@ class MatchPresentation(PresentationBase):
                         msg,
                         self._browser.get_screenshot(),
                     )
-            elif len(operation.combinations) == 4:
+            elif num_combinations == 4:
                 if index == 0:
                     left = 580
                 elif index == 1:
@@ -1771,7 +1771,7 @@ class MatchPresentation(PresentationBase):
                         msg,
                         self._browser.get_screenshot(),
                     )
-            elif len(operation.combinations) == 5:
+            elif num_combinations == 5:
                 if index == 0:
                     left = 480
                 elif index == 1:
@@ -1790,7 +1790,7 @@ class MatchPresentation(PresentationBase):
                     )
             else:
                 msg = (
-                    f"There are {len(operation.combinations)} "
+                    f"There are {num_combinations} "
                     "combinations that can be Chi."
                 )
                 raise UnexpectedStateError(msg, self._browser.get_screenshot())
@@ -1878,7 +1878,7 @@ class MatchPresentation(PresentationBase):
                     self._browser.get_screenshot(),
                 ) from e
 
-        if len(operation.combinations) >= 2:
+        if (num_combinations := len(operation.combinations)) >= 2:
             if index is None:
                 msg = "Must specify an index."
                 raise InvalidOperationError(
@@ -1886,7 +1886,7 @@ class MatchPresentation(PresentationBase):
                     self._browser.get_screenshot(),
                 )
 
-            if len(operation.combinations) == 2:
+            if num_combinations == 2:
                 if index == 0:
                     left = 780
                 elif index == 1:
@@ -1899,7 +1899,7 @@ class MatchPresentation(PresentationBase):
                     )
             else:
                 msg = (
-                    f"There are {len(operation.combinations)} "
+                    f"There are {num_combinations} "
                     "combinations that can be Peng."
                 )
                 raise UnexpectedStateError(msg, self._browser.get_screenshot())
@@ -1935,11 +1935,8 @@ class MatchPresentation(PresentationBase):
             rare_error.save_screenshot()
             raise rare_error from e
 
-        if len(operation.combinations) >= 2:
-            if (
-                len(operation.combinations) == 2
-                or len(operation.combinations) == 3
-            ):
+        if (num_combinations := len(operation.combinations)) >= 2:
+            if num_combinations in (2, 3):
                 msg = (
                     "Not implemented operation: "
                     "AnGang when there are 2 or 3 combinations."
@@ -1952,7 +1949,7 @@ class MatchPresentation(PresentationBase):
                 raise error
 
             msg = (
-                f"There are {len(operation.combinations)} "
+                f"There are {num_combinations} "
                 "combinations that can be AnGang."
             )
             raise UnexpectedStateError(msg, self._browser.get_screenshot())
@@ -2023,7 +2020,7 @@ class MatchPresentation(PresentationBase):
             rare_error.save_screenshot()
             raise rare_error from e
 
-        if len(operation.combinations) >= 2:
+        if (num_combinations := len(operation.combinations)) >= 2:
             if index is None:
                 msg = "Must specify an index."
                 raise InvalidOperationError(
@@ -2031,7 +2028,7 @@ class MatchPresentation(PresentationBase):
                     self._browser.get_screenshot(),
                 )
 
-            if len(operation.combinations) == 2:
+            if num_combinations == 2:
                 if index == 0:
                     left = 600
                 elif index == 1:
@@ -2042,7 +2039,7 @@ class MatchPresentation(PresentationBase):
                         msg,
                         self._browser.get_screenshot(),
                     )
-            elif len(operation.combinations) == 3:
+            elif num_combinations == 3:
                 msg = (
                     "Not implemented operation: "
                     "Jiagang when there are 3 possible combinations."
@@ -2055,7 +2052,7 @@ class MatchPresentation(PresentationBase):
                 raise error
             else:
                 msg = (
-                    f"There are {len(operation.combinations)} "
+                    f"There are {num_combinations} "
                     "combinations that can be JiaGang."
                 )
                 raise UnexpectedStateError(msg, self._browser.get_screenshot())
