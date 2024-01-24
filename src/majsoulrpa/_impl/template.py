@@ -58,7 +58,7 @@ class Template:
         templ = cv2.imread(str(path), cv2.IMREAD_COLOR)
         if templ is None:
             msg = "Failed to open template image file."
-            raise ValueError(msg)
+            raise RuntimeError(msg)
         if templ.shape[0] == 0:
             msg = "The height of the template is equal to 0."
             raise ValueError(msg)
@@ -106,7 +106,7 @@ class Template:
 
         if not path.exists():
             msg = f"{path}: does not exist."
-            raise ValueError(msg)
+            raise FileNotFoundError(msg)
 
         with path.open("rb") as f:
             config = tomllib.load(f)
@@ -123,7 +123,7 @@ class Template:
 
         if not png_path.exists():
             msg = f"{path}: does not exist."
-            raise RuntimeError(msg)
+            raise FileNotFoundError(msg)
 
         return cls(png_path, zoom_ratio, **config)
 
