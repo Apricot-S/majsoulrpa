@@ -1,5 +1,5 @@
 remote_host = "127.0.0.1" # Optional. IP address of remote browser. If not specified, desktop mode will be used.
-[authentication] # Required (all items below are also required).
+[authentication] # Optional (the following items are required if set).
 email_address = "your_email_address@example.cfg" # Must be 50 characters or less.
 [port] # Optional (all items below are also optional).
 remote_port = 19222        # Port for browser remote control (default: 19222). Ignored in desktop mode.
