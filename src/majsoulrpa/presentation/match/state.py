@@ -105,8 +105,8 @@ class RoundState:
         else:
             self._zimopai = None
         self._num_player = len(self._scores)
-        self._he: list[list] = [[]] * self._num_player
-        self._fulu: list[list] = [[]] * self._num_player
+        self._he: list[list] = [[] for _ in range(self._num_player)]
+        self._fulu: list[list] = [[] for _ in range(self._num_player)]
         self._num_babei: list[int] = [0] * self._num_player
         self._liqi = [False] * self._num_player
         self._wliqi = [False] * self._num_player
