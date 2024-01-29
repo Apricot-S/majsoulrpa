@@ -239,6 +239,7 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.readyPlay"
                     | ".lq.Lobby.payMonthTicket"
                     | ".lq.Lobby.fetchInfo"  # TODO: Analyzing content
+                    | ".lq.Lobby.fetchActivityFlipInfo"
                 ):
                     logger.info(message)
                     continue
