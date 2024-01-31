@@ -81,6 +81,7 @@ class MatchPresentation(PresentationBase):
     _COMMON_MESSAGE_NAMES = (
         ".lq.Lobby.heatbeat",
         ".lq.Lobby.loginBeat",
+        ".lq.Lobby.fetchServerTime",
         ".lq.NotifyReviveCoinUpdate",
         ".lq.NotifyGiftSendRefresh",
         ".lq.NotifyDailyTaskUpdate",
@@ -108,6 +109,10 @@ class MatchPresentation(PresentationBase):
             case ".lq.Lobby.loginBeat":
                 # rarely exchanged
                 logger.warning(message)
+                return
+            case ".lq.Lobby.fetchServerTime":
+                # occasionally exchanged
+                logger.info(message)
                 return
             case (
                 ".lq.NotifyReviveCoinUpdate"
