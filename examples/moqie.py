@@ -10,6 +10,22 @@ from majsoulrpa.presentation import (
 from majsoulrpa.presentation.match import MatchPresentation
 from majsoulrpa.presentation.match.operation import DapaiOperation
 
+
+def print_state(presentation: MatchPresentation, seat: int) -> None:
+    changs = ["東", "南", "西", "北"]
+    print("---------------------------------------------")
+    print(
+        f"{changs[presentation.chang]}{presentation.ju + 1}局"
+        f"{presentation.ben}本場 (供託{presentation.liqibang}本)",
+    )
+    print(f"スコア: {','.join([str(s) for s in presentation.scores])}")
+    print(f"表ドラ表示牌: {presentation.dora_indicators[0]}")
+    print(f"自風: {changs[seat - presentation.ju]}")
+    print(f"手牌: {','.join(presentation.shoupai)}")
+    if presentation.zimopai is not None:
+        print(f"自摸牌: {presentation.zimopai}")
+
+
 if __name__ == "__main__":
     with RPA() as rpa:
         presentation = rpa.wait(timeout=20.0)
@@ -69,17 +85,7 @@ if __name__ == "__main__":
                     seat = i
                 print(f"{player.name} ({player.level4}, {player.character})")
             assert seat is not None
-            changs = ["東", "南", "西", "北"]
-            print(
-                f"{changs[presentation.chang]}{presentation.ju + 1}局"
-                f"{presentation.ben}本場 (供託{presentation.liqibang}本)",
-            )
-            print(f"スコア: {','.join([str(s) for s in presentation.scores])}")
-            print(f"表ドラ表示牌: {presentation.dora_indicators[0]}")
-            print(f"自風: {changs[seat]}")
-            print(f"手牌: {','.join(presentation.shoupai)}")
-            if presentation.zimopai is not None:
-                print(f"自摸牌: {presentation.zimopai}")
+            print_state(presentation, seat)
 
             while True:
                 ops = presentation.operation_list
@@ -101,6 +107,7 @@ if __name__ == "__main__":
                 if presentation.new_presentation is not None:
                     presentation = presentation.new_presentation
                     if isinstance(presentation, MatchPresentation):
+                        print_state(presentation, seat)
                         continue
                     assert isinstance(presentation, RoomHostPresentation)
                     break
