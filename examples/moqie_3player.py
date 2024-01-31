@@ -83,7 +83,7 @@ if __name__ == "__main__":
                         assert seat is None
                         seat = i
                     print(
-                        f"{player.name} ({player.level4}, {player.character})",
+                        f"{player.name} ({player.level3}, {player.character})",
                     )
                 assert seat is not None
                 changs = ["東", "南", "西", "北"]
