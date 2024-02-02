@@ -181,7 +181,6 @@ class RPA:
                     raise TypeError(msg)
 
             _userdata_dir = browser_config.get("userdata_dir")
-            print(">>>>", _userdata_dir)
             match _userdata_dir:
                 case None:
                     userdata_dir = None
