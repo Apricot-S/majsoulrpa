@@ -71,6 +71,9 @@ class RoomHostPresentation(RoomPresentationBase):
             _, name, _, response, _ = message
 
             match name:
+                case ".lq.Lobby.heatbeat" | ".lq.FastTest.checkNetworkDelay":
+                    logger.info(message)
+                    continue
                 case ".lq.Lobby.createRoom" | ".lq.Lobby.fetchRoom":
                     logger.info(message)
                     break

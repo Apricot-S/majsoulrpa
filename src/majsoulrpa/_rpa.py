@@ -41,6 +41,7 @@ class RPA:
         initial_top: int = 0,
         viewport_height: int = 1080,
         headless: bool = False,
+        userdata_dir: str | None = None,
     ) -> None:
         if len({remote_port, proxy_port, message_queue_port}) != 3:  # noqa: PLR2004
             msg = (
@@ -60,6 +61,7 @@ class RPA:
         self._viewport_width = int(viewport_height * ASPECT_RATIO)
         self._viewport_height = viewport_height
         self._headless = headless
+        self._userdata_dir = userdata_dir
 
         self._mitmproxy_process: Popen[bytes] | None = None
         self._browser: BrowserBase | None = None
@@ -128,6 +130,7 @@ class RPA:
             initial_top = 0
             viewport_height = 1080
             headless = False
+            userdata_dir = None
         elif isinstance(browser_config, dict):
             _initial_position = browser_config.get("initial_position")
             if _initial_position is None:
@@ -176,6 +179,18 @@ class RPA:
                 case _ as invalid_arg:
                     msg = f"`headless` must be bool: {invalid_arg}"
                     raise TypeError(msg)
+
+            _userdata_dir = browser_config.get("userdata_dir")
+            print(">>>>", _userdata_dir)
+            match _userdata_dir:
+                case None:
+                    userdata_dir = None
+                case str():
+                    userdata_dir = _userdata_dir
+                case _ as invalid_arg:
+                    msg = f"`headless` must be bool: {invalid_arg}"
+                    raise TypeError(msg)
+
         else:
             msg = "`browser` must be dict"
             raise TypeError(msg)
@@ -189,6 +204,7 @@ class RPA:
             initial_top=initial_top,
             viewport_height=viewport_height,
             headless=headless,
+            userdata_dir=userdata_dir,
         )
 
     def launch(self) -> None:
@@ -218,6 +234,7 @@ class RPA:
                 self._viewport_width,
                 self._viewport_height,
                 headless=self._headless,
+                userdata_dir=self._userdata_dir,
             )
 
         # Construct a class instance
