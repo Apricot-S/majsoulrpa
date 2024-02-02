@@ -13,6 +13,7 @@ from .presentation_base import (
     UnexpectedStateError,
 )
 from .room import RoomGuestPresentation, RoomHostPresentation
+from .tournament import TournamentLobbyPresentation
 
 __all__ = [
     "BaseError",
@@ -29,4 +30,5 @@ __all__ = [
     "HomePresentation",
     "RoomHostPresentation",
     "RoomGuestPresentation",
+    "TournamentLobbyPresentation",
 ]
