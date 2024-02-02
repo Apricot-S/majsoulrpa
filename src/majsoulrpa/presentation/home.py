@@ -352,6 +352,44 @@ class HomePresentation(PresentationBase):
                         self._browser.get_screenshot(),
                     )
 
+    def enter_tournament_lobby(self, timeout: TimeoutType = 60.0) -> None:
+        self._assert_not_stale()
+
+        deadline = timeout_to_deadline(timeout)
+        self._discard_messages_across_dates()
+
+        # Click "Tournament Match".
+        template = Template.open_file(
+            "template/home/marker2",
+            self._browser.zoom_ratio,
+        )
+        template.click(self._browser)
+
+        # Wait until "Tournament Lobby" is displayed and then click.
+        template = Template.open_file(
+            "template/home/tournament_lobby",
+            self._browser.zoom_ratio,
+        )
+        template.wait_until_then_click(self._browser, deadline)
+
+        # Wait until tournament lobby screen is displayed.
+        now = datetime.datetime.now(datetime.UTC)
+        self._creator.wait(
+            self._browser,
+            deadline - now,
+            Presentation.TOURNAMENT_LOBBY,
+        )
+
+        now = datetime.datetime.now(datetime.UTC)
+        new_presentation = self._creator.create_new_presentation(
+            Presentation.HOME,
+            Presentation.TOURNAMENT_LOBBY,
+            self._browser,
+            self._message_queue_client,
+            timeout=(deadline - now),
+        )
+        self._set_new_presentation(new_presentation)
+
     def create_room(
         self,
         mode: Literal["4-Player", "3-Player"] = "4-Player",
