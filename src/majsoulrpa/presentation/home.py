@@ -386,7 +386,6 @@ class HomePresentation(PresentationBase):
             Presentation.TOURNAMENT_LOBBY,
             self._browser,
             self._message_queue_client,
-            timeout=(deadline - now),
         )
         self._set_new_presentation(new_presentation)
 
