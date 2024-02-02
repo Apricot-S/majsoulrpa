@@ -189,7 +189,9 @@ class DesktopBrowser(BrowserBase):
                 ignore_default_args=mute_audio_off,
                 headless=headless,
             )
-            self._context = self._browser.new_context(viewport=self._viewport_size)  # type: ignore[arg-type]
+            self._context = self._browser.new_context(
+                viewport=self._viewport_size  # type: ignore[arg-type]
+            )
 
         self._page = self._context.new_page()
         self._page.goto(URL_MAJSOUL)

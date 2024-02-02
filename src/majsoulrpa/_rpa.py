@@ -43,7 +43,7 @@ class RPA:
         headless: bool = False,
         userdata_dir: str | None = None,
     ) -> None:
-        if len({remote_port, proxy_port, message_queue_port}) != 3:  # noqa: PLR2004
+        if len({remote_port, proxy_port, message_queue_port}) != 3:  # noqa: PLR2004,E501
             msg = (
                 "Ports must be different. "
                 f"{remote_port=}, {proxy_port=}, {message_queue_port=}"
