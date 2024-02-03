@@ -187,7 +187,7 @@ class RPA:
                 case str():
                     userdata_dir = _userdata_dir
                 case _ as invalid_arg:
-                    msg = f"`headless` must be bool: {invalid_arg}"
+                    msg = f"`userdata_dir` must be str: {invalid_arg}"
                     raise TypeError(msg)
 
         else:
