@@ -136,7 +136,7 @@ class RoomPresentationBase(PresentationBase):
             except StopIteration:
                 msg = "An inconsistent `.lq.NotifyRoomPlayerReady` message."
                 raise InconsistentMessageError(msg) from None
-            self._players[i]._set_ready(is_ready=request["ready"])  # noqa: SLF001,E501
+            self._players[i]._set_ready(is_ready=request["ready"])  # noqa: SLF001
             message = self._message_queue_client.dequeue_message(1.0)
             if message is not None:
                 _, name, _, _, _ = message
