@@ -257,11 +257,11 @@ class HomePresentation(PresentationBase):
                     if num_login_beats == 2:  # noqa: PLR2004
                         break
                     continue
-
-            raise InconsistentMessageError(
-                str(message),
-                browser.get_screenshot(),
-            )
+                case _:
+                    raise InconsistentMessageError(
+                        str(message),
+                        browser.get_screenshot(),
+                    )
 
         while True:
             message = self._message_queue_client.dequeue_message(0.1)
@@ -295,11 +295,11 @@ class HomePresentation(PresentationBase):
                     # proceed to the next.
                     self._message_queue_client.put_back(message)
                     continue
-
-            raise InconsistentMessageError(
-                str(message),
-                browser.get_screenshot(),
-            )
+                case _:
+                    raise InconsistentMessageError(
+                        str(message),
+                        browser.get_screenshot(),
+                    )
 
         # Wait for markers to display on the home screen.
         time.sleep(0.5)
