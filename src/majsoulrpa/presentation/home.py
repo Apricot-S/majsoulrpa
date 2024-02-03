@@ -155,29 +155,6 @@ class HomePresentation(PresentationBase):
             msg = "Could not detect `HomePresentation`."
             raise PresentationNotDetectedError(msg, ss)
 
-        # Wait for markers to display on the home screen.
-        time.sleep(0.5)
-
-        if not HomePresentation._match_markers(
-            browser.get_screenshot(),
-            browser.zoom_ratio,
-        ):
-            # Close any notifications displayed on the home screen.
-            HomePresentation._close_notifications(browser, deadline)
-
-            while True:
-                if datetime.datetime.now(datetime.UTC) > deadline:
-                    msg = "Timeout."
-                    raise PresentationTimeoutError(
-                        msg,
-                        browser.get_screenshot(),
-                    )
-                if HomePresentation._match_markers(
-                    browser.get_screenshot(),
-                    browser.zoom_ratio,
-                ):
-                    break
-
         num_login_beats = 0
         while True:
             now = datetime.datetime.now(datetime.UTC)
@@ -323,6 +300,29 @@ class HomePresentation(PresentationBase):
                 str(message),
                 browser.get_screenshot(),
             )
+
+        # Wait for markers to display on the home screen.
+        time.sleep(0.5)
+
+        if not HomePresentation._match_markers(
+            browser.get_screenshot(),
+            browser.zoom_ratio,
+        ):
+            # Close any notifications displayed on the home screen.
+            HomePresentation._close_notifications(browser, deadline)
+
+            while True:
+                if datetime.datetime.now(datetime.UTC) > deadline:
+                    msg = "Timeout."
+                    raise PresentationTimeoutError(
+                        msg,
+                        browser.get_screenshot(),
+                    )
+                if HomePresentation._match_markers(
+                    browser.get_screenshot(),
+                    browser.zoom_ratio,
+                ):
+                    break
 
     def _discard_messages_across_dates(self) -> None:
         while True:
