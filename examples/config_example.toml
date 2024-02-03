@@ -12,3 +12,4 @@ message_queue_port = 37247 # Port of the message queue that stores Websocket mes
 initial_position = { left = 100, top = 100 } # Either one can be set.
 viewport_height = 720                        # Support from 720 to 2160 (default: 1080).
 headless = false                             # Whether to run the browser headless (default: false).
+user_data_dir = "./user_data"                # User data directory (comment out this line to use incognito mode).
