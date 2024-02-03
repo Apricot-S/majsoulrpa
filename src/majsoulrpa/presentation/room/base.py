@@ -75,10 +75,9 @@ class RoomPresentationBase(PresentationBase):
             return False
         direction, name, request, response, timestamp = message
 
-        match name:
-            case ".lq.Lobby.heatbeat" | ".lq.FastTest.checkNetworkDelay":
-                logger.info(message)
-                return False
+        if name == ".lq.Lobby.heatbeat":
+            logger.info(message)
+            return False
 
         if name == ".lq.Lobby.modifyRoom":
             logger.info(message)

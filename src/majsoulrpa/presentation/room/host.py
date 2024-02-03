@@ -139,7 +139,7 @@ class RoomHostPresentation(RoomPresentationBase):
             _, name, _, _, _ = message
 
             match name:
-                case ".lq.Lobby.heatbeat" | ".lq.FastTest.checkNetworkDelay":
+                case ".lq.Lobby.heatbeat":
                     logger.info(message)
                     continue
                 case ".lq.Lobby.fetchAccountInfo":
