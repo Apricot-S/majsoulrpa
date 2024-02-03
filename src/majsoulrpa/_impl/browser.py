@@ -176,8 +176,7 @@ class DesktopBrowser(BrowserBase):
 
         self._browser = None
         if userdata_dir:
-            self._context = self._context_manager.start(
-            ).chromium.launch_persistent_context(
+            self._context = self._context_manager.start().chromium.launch_persistent_context(  # noqa: E501
                 userdata_dir,
                 args=options,
                 ignore_default_args=mute_audio_off,
@@ -190,7 +189,7 @@ class DesktopBrowser(BrowserBase):
                 headless=headless,
             )
             self._context = self._browser.new_context(
-                viewport=self._viewport_size  # type: ignore[arg-type]
+                viewport=self._viewport_size,  # type: ignore[arg-type]
             )
 
         self._page = self._context.new_page()
