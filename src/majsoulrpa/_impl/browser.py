@@ -181,6 +181,7 @@ class DesktopBrowser(BrowserBase):
                 args=options,
                 ignore_default_args=mute_audio_off,
                 headless=headless,
+                viewport=self._viewport_size,  # type: ignore[arg-type]
             )
         else:
             self._browser = self._context_manager.start().chromium.launch(
