@@ -51,7 +51,13 @@ class HomePresentation(PresentationBase):
         browser: BrowserBase,
         deadline: datetime.datetime,
     ) -> None:
-        """Close home screen notifications if they are visible."""
+        """Close home screen notifications if they are visible.
+
+        Note:
+            Does not support special events such as
+            collaboration events.
+
+        """
         notification_close = Template.open_file(
             "template/home/notification_close",
             browser.zoom_ratio,
