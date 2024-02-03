@@ -62,5 +62,15 @@ if __name__ == "__main__":
 
         tournament_id = input("Tournament ID: ")
         presentation.enter_room(tournament_id)
+        time.sleep(3.0)
+        presentation.leave()
+        if presentation.new_presentation is None:
+            msg = "Could not transit to `home`."
+            raise RuntimeError(msg)
+        presentation = presentation.new_presentation
+
+        if not isinstance(presentation, HomePresentation):
+            msg = "Could not transit to `home`."
+            raise RuntimeError(msg)
 
         time.sleep(5.0)
