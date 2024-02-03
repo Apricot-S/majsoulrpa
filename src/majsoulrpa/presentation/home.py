@@ -34,21 +34,24 @@ class HomePresentation(PresentationBase):
         return True
 
     @staticmethod
-    def _close_notifications(  # noqa: C901
+    def _receive_daily_bonus(
+        browser: BrowserBase,
+        deadline: datetime.datetime,
+    ) -> None:
+        """Receive the daily bonus by clicking on the jade
+        that appears at the end of the fortune charm animation.
+
+        """
+        jade = Template.open_file("template/home/jade", browser.zoom_ratio)
+        jade.wait_until_then_click(browser, deadline)
+        time.sleep(0.4)
+
+    @staticmethod
+    def _close_notifications(
         browser: BrowserBase,
         deadline: datetime.datetime,
     ) -> None:
         """Close home screen notifications if they are visible."""
-
-        # Wait for the fortune charm's effect to end.
-        try:
-            jade = Template.open_file("template/home/jade", browser.zoom_ratio)
-            jade.wait_for_then_click(browser, 4.0)
-        except PresentationTimeoutError:
-            pass
-        else:
-            time.sleep(0.4)
-
         notification_close = Template.open_file(
             "template/home/notification_close",
             browser.zoom_ratio,
@@ -155,6 +158,7 @@ class HomePresentation(PresentationBase):
             msg = "Could not detect `HomePresentation`."
             raise PresentationNotDetectedError(msg, ss)
 
+        has_month_ticket = False
         num_login_beats = 0
         while True:
             now = datetime.datetime.now(datetime.UTC)
@@ -214,11 +218,14 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.modifyRoom"
                     | ".lq.NotifyRoomPlayerReady"
                     | ".lq.Lobby.readyPlay"
-                    | ".lq.Lobby.payMonthTicket"
                     | ".lq.Lobby.fetchInfo"  # TODO: Analyzing content
                     | ".lq.Lobby.fetchActivityFlipInfo"
                 ):
                     logger.info(message)
+                    continue
+                case ".lq.Lobby.payMonthTicket":
+                    logger.info(message)
+                    has_month_ticket = True
                     continue
                 case (
                     ".lq.Lobby.fetchDailyTask"
@@ -277,9 +284,12 @@ class HomePresentation(PresentationBase):
                     | ".lq.NotifyAnnouncementUpdate"
                     | ".lq.Lobby.readAnnouncement"
                     | ".lq.Lobby.doActivitySignIn"
-                    | ".lq.Lobby.payMonthTicket"
                 ):
                     logger.info(message)
+                    continue
+                case ".lq.Lobby.payMonthTicket":
+                    logger.info(message)
+                    has_month_ticket = True
                     continue
                 case ".lq.Lobby.fetchDailyTask":  # TODO: Analyzing content
                     logger.info(message)
@@ -308,7 +318,8 @@ class HomePresentation(PresentationBase):
             browser.get_screenshot(),
             browser.zoom_ratio,
         ):
-            # Close any notifications displayed on the home screen.
+            if has_month_ticket:
+                HomePresentation._receive_daily_bonus(browser, deadline)
             HomePresentation._close_notifications(browser, deadline)
 
             while True:
