@@ -16,6 +16,7 @@ mail_folder = "INBOX"
 [config_list.browser]
 initial_position = { left = -2150, top = -360 }
 headless = true
+user_data_dir = "./user_data"  # Optional.
 
 [[config_list]]
 name = "Remote S3 1920 x 1080"

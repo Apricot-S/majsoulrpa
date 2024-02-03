@@ -41,6 +41,7 @@ class RPA:
         initial_top: int = 0,
         viewport_height: int = 1080,
         headless: bool = False,
+        user_data_dir: str | None = None,
     ) -> None:
         if len({remote_port, proxy_port, message_queue_port}) != 3:  # noqa: PLR2004
             msg = (
@@ -60,6 +61,7 @@ class RPA:
         self._viewport_width = int(viewport_height * ASPECT_RATIO)
         self._viewport_height = viewport_height
         self._headless = headless
+        self._user_data_dir = user_data_dir
 
         self._mitmproxy_process: Popen[bytes] | None = None
         self._browser: BrowserBase | None = None
@@ -128,6 +130,7 @@ class RPA:
             initial_top = 0
             viewport_height = 1080
             headless = False
+            user_data_dir = None
         elif isinstance(browser_config, dict):
             _initial_position = browser_config.get("initial_position")
             if _initial_position is None:
@@ -176,6 +179,17 @@ class RPA:
                 case _ as invalid_arg:
                     msg = f"`headless` must be bool: {invalid_arg}"
                     raise TypeError(msg)
+
+            _user_data_dir = browser_config.get("user_data_dir")
+            match _user_data_dir:
+                case None:
+                    user_data_dir = None
+                case str():
+                    user_data_dir = _user_data_dir
+                case _ as invalid_arg:
+                    msg = f"`user_data_dir` must be str: {invalid_arg}"
+                    raise TypeError(msg)
+
         else:
             msg = "`browser` must be dict"
             raise TypeError(msg)
@@ -189,6 +203,7 @@ class RPA:
             initial_top=initial_top,
             viewport_height=viewport_height,
             headless=headless,
+            user_data_dir=user_data_dir,
         )
 
     def launch(self) -> None:
@@ -218,6 +233,7 @@ class RPA:
                 self._viewport_width,
                 self._viewport_height,
                 headless=self._headless,
+                user_data_dir=self._user_data_dir,
             )
 
         # Construct a class instance

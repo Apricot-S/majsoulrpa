@@ -75,6 +75,10 @@ class RoomPresentationBase(PresentationBase):
             return False
         direction, name, request, response, timestamp = message
 
+        if name == ".lq.Lobby.heatbeat":
+            logger.info(message)
+            return False
+
         if name == ".lq.Lobby.modifyRoom":
             logger.info(message)
             return False

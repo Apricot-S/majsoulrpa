@@ -8,12 +8,13 @@ from majsoulrpa.presentation import (
     HomePresentation,
     LoginPresentation,
 )
-from majsoulrpa.yostar_login import YostarLoginIMAP
+from majsoulrpa.yostar_login import YostarLoginS3
 
 LOG_LEVEL = INFO
 stream_handler = StreamHandler()
 stream_handler.setLevel(LOG_LEVEL)
 basicConfig(level=LOG_LEVEL, handlers=[stream_handler])
+
 
 if __name__ == "__main__":
     my_config = config.get_config("examples/config.toml")
@@ -36,9 +37,9 @@ if __name__ == "__main__":
                 raise RuntimeError(msg)
 
             auth_start_time = datetime.datetime.now(datetime.UTC)
-            login_imap = YostarLoginIMAP(my_config)
-            presentation.enter_email_address(login_imap.get_email_address())
-            auth_code = login_imap.get_auth_code(start_time=auth_start_time)
+            login_s3 = YostarLoginS3(my_config)
+            presentation.enter_email_address(login_s3.get_email_address())
+            auth_code = login_s3.get_auth_code(start_time=auth_start_time)
 
             presentation.enter_auth_code(auth_code, timeout=60.0)
             if presentation.new_presentation is None:
