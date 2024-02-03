@@ -154,7 +154,7 @@ class DesktopBrowser(BrowserBase):
         height: int = STD_HEIGHT,
         *,
         headless: bool = False,
-        userdata_dir: str | None = None,
+        user_data_dir: str | None = None,
     ) -> None:
         super().__init__()
         validate_user_port(proxy_port)
@@ -175,9 +175,9 @@ class DesktopBrowser(BrowserBase):
         self._context_manager = sync_playwright()
 
         self._browser = None
-        if userdata_dir:
+        if user_data_dir:
             self._context = self._context_manager.start().chromium.launch_persistent_context(  # noqa: E501
-                userdata_dir,
+                user_data_dir,
                 args=options,
                 ignore_default_args=mute_audio_off,
                 headless=headless,
