@@ -154,6 +154,7 @@ class DesktopBrowser(BrowserBase):
         height: int = STD_HEIGHT,
         *,
         headless: bool = False,
+        user_data_dir: str | None = None,
     ) -> None:
         super().__init__()
         validate_user_port(proxy_port)
@@ -164,16 +165,34 @@ class DesktopBrowser(BrowserBase):
         initial_position = f"--window-position={initial_left},{initial_top}"
         proxy_server = f"--proxy-server=http://localhost:{proxy_port}"
         ignore_certifi_errors = "--ignore-certificate-errors"
-        options = [initial_position, proxy_server, ignore_certifi_errors]
+        options = [
+            initial_position,
+            proxy_server,
+            ignore_certifi_errors,
+        ]
         mute_audio_off = None if headless else ["--mute-audio"]
 
         self._context_manager = sync_playwright()
-        self._browser = self._context_manager.start().chromium.launch(
-            args=options,
-            ignore_default_args=mute_audio_off,
-            headless=headless,
-        )
-        self._context = self._browser.new_context(viewport=self._viewport_size)  # type: ignore[arg-type]
+
+        self._browser = None
+        if user_data_dir:
+            self._context = self._context_manager.start().chromium.launch_persistent_context(  # noqa: E501
+                user_data_dir,
+                args=options,
+                ignore_default_args=mute_audio_off,
+                headless=headless,
+                viewport=self._viewport_size,  # type: ignore[arg-type]
+            )
+        else:
+            self._browser = self._context_manager.start().chromium.launch(
+                args=options,
+                ignore_default_args=mute_audio_off,
+                headless=headless,
+            )
+            self._context = self._browser.new_context(
+                viewport=self._viewport_size,  # type: ignore[arg-type]
+            )
+
         self._page = self._context.new_page()
         self._page.goto(URL_MAJSOUL)
 
@@ -250,7 +269,8 @@ class DesktopBrowser(BrowserBase):
 
     def close(self) -> None:
         self._context.close()
-        self._browser.close()
+        if self._browser is not None:
+            self._browser.close()
         self._context_manager.__exit__()
 
 

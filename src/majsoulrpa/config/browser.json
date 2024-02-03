@@ -18,6 +18,9 @@
         },
         "headless": {
             "type": "boolean"
+        },
+        "user_data_dir": {
+            "type": "string"
         }
     }
 }
