@@ -34,21 +34,30 @@ class HomePresentation(PresentationBase):
         return True
 
     @staticmethod
-    def _close_notifications(  # noqa: C901
+    def _receive_daily_bonus(
         browser: BrowserBase,
         deadline: datetime.datetime,
     ) -> None:
-        """Close home screen notifications if they are visible."""
+        """Receive the daily bonus by clicking on the jade
+        that appears at the end of the fortune charm animation.
 
-        # Wait for the fortune charm's effect to end.
-        try:
-            jade = Template.open_file("template/home/jade", browser.zoom_ratio)
-            jade.wait_for_then_click(browser, 4.0)
-        except PresentationTimeoutError:
-            pass
-        else:
-            time.sleep(0.4)
+        """
+        jade = Template.open_file("template/home/jade", browser.zoom_ratio)
+        jade.wait_until_then_click(browser, deadline)
+        time.sleep(0.4)
 
+    @staticmethod
+    def _close_notifications(
+        browser: BrowserBase,
+        deadline: datetime.datetime,
+    ) -> None:
+        """Close home screen notifications if they are visible.
+
+        Note:
+            Does not support special events such as
+            collaboration events.
+
+        """
         notification_close = Template.open_file(
             "template/home/notification_close",
             browser.zoom_ratio,
@@ -155,29 +164,7 @@ class HomePresentation(PresentationBase):
             msg = "Could not detect `HomePresentation`."
             raise PresentationNotDetectedError(msg, ss)
 
-        # Wait for markers to display on the home screen.
-        time.sleep(0.5)
-
-        if not HomePresentation._match_markers(
-            browser.get_screenshot(),
-            browser.zoom_ratio,
-        ):
-            # Close any notifications displayed on the home screen.
-            HomePresentation._close_notifications(browser, deadline)
-
-            while True:
-                if datetime.datetime.now(datetime.UTC) > deadline:
-                    msg = "Timeout."
-                    raise PresentationTimeoutError(
-                        msg,
-                        browser.get_screenshot(),
-                    )
-                if HomePresentation._match_markers(
-                    browser.get_screenshot(),
-                    browser.zoom_ratio,
-                ):
-                    break
-
+        has_month_ticket = False
         num_login_beats = 0
         while True:
             now = datetime.datetime.now(datetime.UTC)
@@ -237,11 +224,14 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.modifyRoom"
                     | ".lq.NotifyRoomPlayerReady"
                     | ".lq.Lobby.readyPlay"
-                    | ".lq.Lobby.payMonthTicket"
                     | ".lq.Lobby.fetchInfo"  # TODO: Analyzing content
                     | ".lq.Lobby.fetchActivityFlipInfo"
                 ):
                     logger.info(message)
+                    continue
+                case ".lq.Lobby.payMonthTicket":
+                    logger.info(message)
+                    has_month_ticket = True
                     continue
                 case (
                     ".lq.Lobby.fetchDailyTask"
@@ -280,11 +270,11 @@ class HomePresentation(PresentationBase):
                     if num_login_beats == 2:  # noqa: PLR2004
                         break
                     continue
-
-            raise InconsistentMessageError(
-                str(message),
-                browser.get_screenshot(),
-            )
+                case _:
+                    raise InconsistentMessageError(
+                        str(message),
+                        browser.get_screenshot(),
+                    )
 
         while True:
             message = self._message_queue_client.dequeue_message(0.1)
@@ -300,9 +290,12 @@ class HomePresentation(PresentationBase):
                     | ".lq.NotifyAnnouncementUpdate"
                     | ".lq.Lobby.readAnnouncement"
                     | ".lq.Lobby.doActivitySignIn"
-                    | ".lq.Lobby.payMonthTicket"
                 ):
                     logger.info(message)
+                    continue
+                case ".lq.Lobby.payMonthTicket":
+                    logger.info(message)
+                    has_month_ticket = True
                     continue
                 case ".lq.Lobby.fetchDailyTask":  # TODO: Analyzing content
                     logger.info(message)
@@ -318,11 +311,35 @@ class HomePresentation(PresentationBase):
                     # proceed to the next.
                     self._message_queue_client.put_back(message)
                     continue
+                case _:
+                    raise InconsistentMessageError(
+                        str(message),
+                        browser.get_screenshot(),
+                    )
 
-            raise InconsistentMessageError(
-                str(message),
-                browser.get_screenshot(),
-            )
+        # Wait for markers to display on the home screen.
+        time.sleep(0.5)
+
+        if not HomePresentation._match_markers(
+            browser.get_screenshot(),
+            browser.zoom_ratio,
+        ):
+            if has_month_ticket:
+                HomePresentation._receive_daily_bonus(browser, deadline)
+            HomePresentation._close_notifications(browser, deadline)
+
+            while True:
+                if datetime.datetime.now(datetime.UTC) > deadline:
+                    msg = "Timeout."
+                    raise PresentationTimeoutError(
+                        msg,
+                        browser.get_screenshot(),
+                    )
+                if HomePresentation._match_markers(
+                    browser.get_screenshot(),
+                    browser.zoom_ratio,
+                ):
+                    break
 
     def _discard_messages_across_dates(self) -> None:
         while True:
