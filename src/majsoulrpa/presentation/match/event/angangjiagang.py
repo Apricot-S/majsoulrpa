@@ -14,7 +14,7 @@ class AngangJiagangEvent(EventBase):
     ) -> None:
         super().__init__(timestamp)
         self._seat = data["seat"]
-        self._type = (None, None, "暗槓", "加槓")[data["type"]]
+        self._type = (None, None, "加槓", "暗槓")[data["type"]]
         self._tile = data["tiles"]
 
     @property
@@ -25,7 +25,7 @@ class AngangJiagangEvent(EventBase):
 
     @property
     def type_(self) -> str:
-        assert self._type in ("暗槓", "加槓")
+        assert self._type in ("加槓", "暗槓")
         return self._type
 
     @property
