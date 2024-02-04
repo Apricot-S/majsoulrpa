@@ -61,24 +61,22 @@ class RPA:
         """Creates an instance of `RPA`.
 
         Args:
-            remote_host (str | None, optional): Hostname of the remote
-                browser. If `None`, a local browser will be used.
-                Defaults to `None`.
-            remote_port (int, optional): Port number for the remote
-                browser. Defaults to `19222`.
-            proxy_port (int, optional): Port number for mitmproxy.
-                Defaults to `8080`.
-            message_queue_port (int | None, optional): Port number for
-                the message queue server. If `None`, a local message
-                queue server will be used. Defaults to `37247`.
-            initial_left (int, optional): Initial left position of the
-                browser window. Defaults to `0`.
-            initial_top (int, optional): Initial top position of the
-                browser window. Defaults to `0`.
-            viewport_height (int, optional): Height of the browser's
-                viewport. Defaults to `1080`.
-            headless (bool, optional): Indicates whether the browser
-                should run in headless mode. Defaults to `False`.
+            remote_host: Hostname of the remote browser. If `None`, a
+                local browser will be used. Defaults to `None`.
+            remote_port: Port number for the remote browser. Defaults to
+                `19222`.
+            proxy_port: Port number for mitmproxy. Defaults to `8080`.
+            message_queue_port: Port number for the message queue
+                server. If `None`, a local message queue server will be
+                used. Defaults to `37247`.
+            initial_left: Initial left position of the browser window.
+                Defaults to `0`.
+            initial_top: Initial top position of the browser window.
+                Defaults to `0`.
+            viewport_height: Height of the browser's viewport. Defaults
+                to `1080`.
+            headless: Indicates whether the browser should run in
+                headless mode. Defaults to `False`.
         """
         if len({remote_port, proxy_port, message_queue_port}) != 3:  # noqa: PLR2004
             msg = (
@@ -109,11 +107,10 @@ class RPA:
         """Creates an instance of RPA using the provided configuration.
 
         Args:
-            config (dict[str, Any]): A dictionary containing the
-                configuration settings.
+            config: A dictionary containing the configuration settings.
 
         Returns:
-            Self: An instance of `RPA`.
+            An instance of `RPA`.
 
         Raises:
             TypeError: Type of a value in `config` is incorrect.
@@ -316,7 +313,7 @@ class RPA:
             self._mitmproxy_process = None
 
     def is_running(self) -> bool:
-        """Check if the RPA client is running."""
+        """Checks if the RPA client is currently running."""
         if self._message_queue_client is None:
             return False
         if self._browser is None:
@@ -339,7 +336,7 @@ class RPA:
         """Retrieves the account ID of the user.
 
         Returns:
-            int: The account ID of the user.
+            The account ID of the user.
 
         Raises:
             RuntimeError: If the message queue client has not been
@@ -355,13 +352,14 @@ class RPA:
         return self._message_queue_client.account_id
 
     def get_screenshot(self) -> bytes:
-        """Get a screenshot of the browser.
+        """Retrieves a screenshot of the browser.
 
         Returns:
-            bytes: Screenshot of the browser.
+            A screenshot captured from the browser.
 
         Raises:
-            RuntimeError: If the browser has not been launched yet.
+            RuntimeError: If the browser has not been launched at the
+                time of this request.
         """
         if self._browser is None:
             msg = "Browser has not been launched yet."
@@ -372,10 +370,10 @@ class RPA:
         """Waits for a presentation to be detected.
 
         Args:
-            timeout (float): Timeout in seconds.
+            timeout: Timeout in seconds.
 
         Returns:
-            PresentationBase: The detected presentation.
+            The detected presentation.
 
         Raises:
             RuntimeError: If the browser or the message queue client
