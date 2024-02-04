@@ -601,9 +601,6 @@ class MatchPresentation(PresentationBase):
                     # TODO: Processing message content
                     # Only during the event?
                     continue
-                    # now = datetime.datetime.now(datetime.UTC)
-                    # self._reset_to_prev_presentation(deadline - now)
-                    # return
                 case (
                     ".lq.NotifyAccountUpdate"
                     | ".lq.NotifyGameFinishReward"
