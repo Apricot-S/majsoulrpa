@@ -67,8 +67,10 @@ class RPA:
                 `19222`.
             proxy_port: Port number for mitmproxy. Defaults to `8080`.
             message_queue_port: Port number for the message queue
-                server. If `None`, a local message queue server will be
-                used. Defaults to `37247`.
+                server. Specifying `None` will use the default port
+                number, but this option is maintained solely for
+                backward compatibility and is planned to be removed in
+                the future. Defaults to `37247`.
             initial_left: Initial left position of the browser window.
                 Defaults to `0`.
             initial_top: Initial top position of the browser window.
