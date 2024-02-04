@@ -65,7 +65,10 @@ ignore = [
 ]
 
 [tool.ruff.lint.pycodestyle]
-max-doc-length = 71
+max-doc-length = 72
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.ruff.extend-per-file-ignores]
 "./examples/*" = ["S101", "INP001", "T201", "TRY004"]
