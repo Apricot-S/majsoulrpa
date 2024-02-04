@@ -355,7 +355,8 @@ class RPA:
         """Retrieves a screenshot of the browser.
 
         Returns:
-            A screenshot captured from the browser.
+            A screenshot captured from the browser, encoded in PNG
+            format.
 
         Raises:
             RuntimeError: If the browser has not been launched at the
