@@ -570,6 +570,30 @@ class MatchPresentation(PresentationBase):
             raise NotImplementedError(self._prev_presentation)
         raise NotImplementedError(self._prev_presentation.name)
 
+    def _obtain_event_reward(self, deadline: datetime.datetime) -> None:
+        # Clicks on the screen until the "Confirm" button
+        # is displayed when receiving the event reward.
+        template = Template.open_file(
+            "template/match/match_result_confirm",
+            self._browser.zoom_ratio,
+        )
+        while True:
+            if datetime.datetime.now(datetime.UTC) > deadline:
+                msg = "Timeout"
+                raise PresentationTimeoutError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
+            if template.match(self._browser.get_screenshot()):
+                break
+            # Avoid clicking the "Confirm" button by accident.
+            self._browser.click_region(
+                0,
+                0,
+                int(1625 * self._browser.zoom_ratio),
+                int(952 * self._browser.zoom_ratio),
+            )
+
     def _on_end_of_match(self, deadline: datetime.datetime) -> None:
         while True:
             now = datetime.datetime.now(datetime.UTC)
@@ -610,6 +634,10 @@ class MatchPresentation(PresentationBase):
                 ):
                     logger.info(message)
                     # TODO: Processing message content
+                    continue
+                case ".lq.NotifyActivityRewardV2":
+                    logger.info(message)
+                    self._obtain_event_reward(deadline)
                     continue
                 case ".lq.NotifyActivityPointV2":
                     logger.info(message)
