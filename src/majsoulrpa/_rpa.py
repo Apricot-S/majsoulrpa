@@ -30,34 +30,20 @@ _SNIFFER_PATH: Final = Path(__file__).parent / "_mitmproxy/sniffer.py"
 
 
 class RPA:
-    """Robotic Process Automation (RPA) client class for Mahjong Soul (雀魂).
+    """Robotic Process Automation (RPA) client for Mahjong Soul (雀魂).
 
-    This class has four responsibilities. The first is to manage an mitmproxy
-    process that sniffs messages exchanged between the browser and the Mahjong
-    Soul server. The second is to manage a browser process. The third is to
-    abstract browser operations by absorbing the differences between local and
-    remote browsers. The fourth is to manage a ZeroMQ client that retrieves
-    messages sniffed by mitmproxy. Note that the first two responsibilities
-    become those of the remote host when using a remote browser.
+    This class has four primary responsibilities:
 
-    Args:
-        remote_host (str | None, optional): Hostname of the remote browser.
-            If `None`, a local browser will be used. Defaults to `None`.
-        remote_port (int, optional): Port number of the remote browser.
-            Defaults to `19222`.
-        proxy_port (int, optional): Port number of mitmproxy.
-            Defaults to `8080`.
-        message_queue_port (int | None, optional): Port number of the message
-            queue server. If `None`, a local message queue server will be used.
-            Defaults to `37247`.
-        initial_left (int, optional): Initial left position of the browser.
-            Defaults to `0`.
-        initial_top (int, optional): Initial top position of the browser.
-            Defaults to `0`.
-        viewport_height (int, optional): Height of the viewport of the browser.
-            Defaults to `1080`.
-        headless (bool, optional): Whether to run the browser in headless mode.
-            Defaults to `False`.
+    * Managing an mitmproxy process to sniff messages exchanged between
+      the browser and the Mahjong Soul server.
+    * Managing a browser process.
+    * Abstracting browser operations to harmonize the differences
+      between local and remote browsers.
+    * Managing a ZeroMQ client that retrieves messages sniffed by
+      mitmproxy.
+
+    It is important to note that when using a remote browser, the first
+    two responsibilities are delegated to the remote host.
     """
 
     def __init__(
@@ -72,6 +58,28 @@ class RPA:
         viewport_height: int = 1080,
         headless: bool = False,
     ) -> None:
+        """Creates an instance of `RPA`.
+
+        Args:
+            remote_host (str | None, optional): Hostname of the remote
+                browser. If `None`, a local browser will be used.
+                Defaults to `None`.
+            remote_port (int, optional): Port number for the remote
+                browser. Defaults to `19222`.
+            proxy_port (int, optional): Port number for mitmproxy.
+                Defaults to `8080`.
+            message_queue_port (int | None, optional): Port number for
+                the message queue server. If `None`, a local message
+                queue server will be used. Defaults to `37247`.
+            initial_left (int, optional): Initial left position of the
+                browser window. Defaults to `0`.
+            initial_top (int, optional): Initial top position of the
+                browser window. Defaults to `0`.
+            viewport_height (int, optional): Height of the browser's
+                viewport. Defaults to `1080`.
+            headless (bool, optional): Indicates whether the browser
+                should run in headless mode. Defaults to `False`.
+        """
         if len({remote_port, proxy_port, message_queue_port}) != 3:  # noqa: PLR2004
             msg = (
                 "Ports must be different. "
@@ -98,10 +106,11 @@ class RPA:
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> Self:  # noqa: C901
-        """Create an instance of `RPA` from configuration.
+        """Creates an instance of RPA using the provided configuration.
 
         Args:
-            config (dict[str, Any]): Configuration.
+            config (dict[str, Any]): A dictionary containing the
+                configuration settings.
 
         Returns:
             Self: An instance of `RPA`.
@@ -233,13 +242,14 @@ class RPA:
         )
 
     def launch(self) -> None:
-        """Launch processes for RPA.
+        """Launches necessary processes for the RPA operation.
 
-        Launch the following processes:
-        - an mitmproxy process if a local browser is used,
-        - a browser process if a local browser is used,
-        - an abstraction layer for the browser, and
-        - a ZeroMQ client.
+        This includes:
+
+        - An mitmproxy process, if a local browser is used.
+        - A browser process, also if a local browser is used.
+        - An abstraction layer for browser operations.
+        - A ZeroMQ client for message handling.
         """
         # Run network sniffering process
         if self._remote_host is None:
@@ -287,13 +297,14 @@ class RPA:
             )
 
     def close(self) -> None:
-        """Close processes for RPA.
+        """Closes all processes associated with the RPA.
 
-        Close the following processes:
-        - the mitmproxy process if any,
-        - the browser process if any,
-        - the abstraction layer for the browser, and
-        - the ZeroMQ client.
+        This includes:
+
+        - The mitmproxy process, if it is running.
+        - The browser process, if it is running.
+        - The abstraction layer for the browser.
+        - The ZeroMQ client.
         """
         self._message_queue_client = None
         if self._browser is not None:
@@ -325,15 +336,15 @@ class RPA:
         self.close()
 
     def get_account_id(self) -> int:
-        """Get the account ID of the user.
+        """Retrieves the account ID of the user.
 
         Returns:
-            int: Account ID of the user.
+            int: The account ID of the user.
 
         Raises:
-            RuntimeError: If the message queue client has not been launched
-                yet.
-            RuntimeError: If `account_id` has not been fetched yet.
+            RuntimeError: If the message queue client has not been
+                launched yet, or if the `account_id` has not been
+                fetched yet.
         """
         if self._message_queue_client is None:
             msg = "Message queue client has not been launched yet."
@@ -358,20 +369,20 @@ class RPA:
         return self._browser.get_screenshot()
 
     def wait(self, timeout: float) -> PresentationBase:  # noqa: C901
-        """Wait for a presentation to be detected.
+        """Waits for a presentation to be detected.
 
         Args:
             timeout (float): Timeout in seconds.
 
         Returns:
-            PresentationBase: Presentation detected.
+            PresentationBase: The detected presentation.
 
         Raises:
-            RuntimeError: If the browser has not been launched yet.
-            RuntimeError: If the message queue client has not been launched
-                yet.
-            RuntimeError: If the RPA client is not running.
-            PresentationTimeoutError: If the timeout has been reached.
+            RuntimeError: If the browser or the message queue client
+                has not been launched yet, or if the RPA client is not
+                running.
+            PresentationTimeoutError: If the presentation is not
+                detected within the specified timeout period.
         """
         deadline = timeout_to_deadline(timeout)
 
