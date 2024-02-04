@@ -522,9 +522,7 @@ class MatchPresentation(PresentationBase):
         # Backfill the prefetched message.
         self._message_queue_client.put_back(message)
 
-    def _reset_to_prev_presentation(self, timeout: TimeoutType) -> None:
-        deadline = timeout_to_deadline(timeout)
-
+    def _reset_to_prev_presentation(self, deadline: datetime.datetime) -> None:
         # If there is an additional "confirm" button
         # such as when receiving rewards, click it.
         template = Template.open_file(
@@ -647,8 +645,7 @@ class MatchPresentation(PresentationBase):
                     # return to the home screen
                     message = self._message_queue_client.dequeue_message(5)
                     if message is None:
-                        now = datetime.datetime.now(datetime.UTC)
-                        self._reset_to_prev_presentation(deadline - now)
+                        self._reset_to_prev_presentation(deadline)
                         return
 
                     # Backfill the prefetched message and
@@ -658,8 +655,7 @@ class MatchPresentation(PresentationBase):
                 case ".lq.Lobby.fetchRoom":
                     # Backfill the prefetched message.
                     self._message_queue_client.put_back(message)
-                    now = datetime.datetime.now(datetime.UTC)
-                    self._reset_to_prev_presentation(deadline - now)
+                    self._reset_to_prev_presentation(deadline)
                     return
 
             raise InconsistentMessageError(
