@@ -290,26 +290,13 @@ class HomePresentation(PresentationBase):
                     | ".lq.NotifyAnnouncementUpdate"
                     | ".lq.Lobby.readAnnouncement"
                     | ".lq.Lobby.doActivitySignIn"
+                    | ".lq.Lobby.fetchDailyTask"  # TODO: Analyzing content
                 ):
                     logger.info(message)
                     continue
                 case ".lq.Lobby.payMonthTicket":
                     logger.info(message)
                     has_month_ticket = True
-                    continue
-                case ".lq.Lobby.fetchDailyTask":  # TODO: Analyzing content
-                    logger.info(message)
-
-                    # If there are no more messages,
-                    # the transition to the home screen
-                    # has been completed.
-                    message = self._message_queue_client.dequeue_message(5)
-                    if message is None:
-                        break
-
-                    # Backfill the prefetched message and
-                    # proceed to the next.
-                    self._message_queue_client.put_back(message)
                     continue
                 case _:
                     raise InconsistentMessageError(
