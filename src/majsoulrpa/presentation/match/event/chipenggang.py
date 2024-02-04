@@ -33,5 +33,5 @@ class ChiPengGangEvent(EventBase):
         return self._from
 
     @property
-    def tiles(self) -> str:
+    def tiles(self) -> list[str]:
         return self._tiles
