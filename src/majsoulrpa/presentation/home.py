@@ -305,7 +305,7 @@ class HomePresentation(PresentationBase):
                     # has been completed.
                     message = self._message_queue_client.dequeue_message(5)
                     if message is None:
-                        return
+                        break
 
                     # Backfill the prefetched message and
                     # proceed to the next.
