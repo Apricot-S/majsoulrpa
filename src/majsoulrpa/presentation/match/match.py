@@ -570,7 +570,7 @@ class MatchPresentation(PresentationBase):
 
     def _obtain_event_reward(self, deadline: datetime.datetime) -> None:
         # Clicks on the screen until the "Confirm" button
-        # is displayed when receiving the event reward.
+        # is displayed when obtaining the event reward.
         template = Template.open_file(
             "template/match/match_result_confirm",
             self._browser.zoom_ratio,
