@@ -12,7 +12,7 @@ _REF = RefResolver(_SCHEMA_PATH.as_uri() + "/", _CONFIG_SCHEMA)
 
 
 def get_config(path: str | Path) -> dict[str, Any]:
-    """Get the configuration from a TOML format file.
+    """Gets the configuration from a TOML format file.
 
     If there are multiple configurations, select one with input from
     `stdin`.
