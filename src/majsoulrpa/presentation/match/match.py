@@ -522,9 +522,7 @@ class MatchPresentation(PresentationBase):
         # Backfill the prefetched message.
         self._message_queue_client.put_back(message)
 
-    def _reset_to_prev_presentation(self, timeout: TimeoutType) -> None:
-        deadline = timeout_to_deadline(timeout)
-
+    def _reset_to_prev_presentation(self, deadline: datetime.datetime) -> None:
         # If there is an additional "confirm" button
         # such as when receiving rewards, click it.
         template = Template.open_file(
@@ -570,6 +568,30 @@ class MatchPresentation(PresentationBase):
             raise NotImplementedError(self._prev_presentation)
         raise NotImplementedError(self._prev_presentation.name)
 
+    def _obtain_event_reward(self, deadline: datetime.datetime) -> None:
+        # Clicks on the screen until the "Confirm" button
+        # is displayed when obtaining the event reward.
+        template = Template.open_file(
+            "template/match/match_result_confirm",
+            self._browser.zoom_ratio,
+        )
+        while True:
+            if datetime.datetime.now(datetime.UTC) > deadline:
+                msg = "Timeout"
+                raise PresentationTimeoutError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
+            if template.match(self._browser.get_screenshot()):
+                break
+            # Avoid clicking the "Confirm" button by accident.
+            self._browser.click_region(
+                0,
+                0,
+                int(1625 * self._browser.zoom_ratio),
+                int(952 * self._browser.zoom_ratio),
+            )
+
     def _on_end_of_match(self, deadline: datetime.datetime) -> None:
         while True:
             now = datetime.datetime.now(datetime.UTC)
@@ -601,9 +623,6 @@ class MatchPresentation(PresentationBase):
                     # TODO: Processing message content
                     # Only during the event?
                     continue
-                    # now = datetime.datetime.now(datetime.UTC)
-                    # self._reset_to_prev_presentation(deadline - now)
-                    # return
                 case (
                     ".lq.NotifyAccountUpdate"
                     | ".lq.NotifyGameFinishReward"
@@ -614,6 +633,10 @@ class MatchPresentation(PresentationBase):
                     logger.info(message)
                     # TODO: Processing message content
                     continue
+                case ".lq.NotifyActivityRewardV2":
+                    logger.info(message)
+                    self._obtain_event_reward(deadline)
+                    continue
                 case ".lq.NotifyActivityPointV2":
                     logger.info(message)
                     # TODO: Processing message content
@@ -622,8 +645,7 @@ class MatchPresentation(PresentationBase):
                     # return to the home screen
                     message = self._message_queue_client.dequeue_message(5)
                     if message is None:
-                        now = datetime.datetime.now(datetime.UTC)
-                        self._reset_to_prev_presentation(deadline - now)
+                        self._reset_to_prev_presentation(deadline)
                         return
 
                     # Backfill the prefetched message and
@@ -633,8 +655,7 @@ class MatchPresentation(PresentationBase):
                 case ".lq.Lobby.fetchRoom":
                     # Backfill the prefetched message.
                     self._message_queue_client.put_back(message)
-                    now = datetime.datetime.now(datetime.UTC)
-                    self._reset_to_prev_presentation(deadline - now)
+                    self._reset_to_prev_presentation(deadline)
                     return
 
             raise InconsistentMessageError(
