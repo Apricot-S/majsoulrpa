@@ -12,36 +12,27 @@ _REF = RefResolver(_SCHEMA_PATH.as_uri() + "/", _CONFIG_SCHEMA)
 
 
 def get_config(path: str | Path) -> dict[str, Any]:
-    """
-    Get the config from a TOML format file.
-    If there are multiple configs, select one and input from stdin.
+    """Get the configuration from a TOML format file.
 
-    Parameters
-    ----------
-    path : str or pathlib.Path
-        Path of config file.
+    If there are multiple configurations, select one with input from
+    `stdin`.
 
-    Returns
-    -------
-    dict[str, Any]
-        dict of config.
+    Args:
+        path: A path of configuration file.
 
-    Raises
-    ------
-    FileNotFoundError
-        If opening a file fails.
-    IndexError
-        If there are multiple configs
-        and the specified number is outside the range of the list.
-    ValueError
-        If there are multiple configs
-        and non-numeric value is specified.
-        If there are multiple configs
-        and the config names are duplicated.
-    tomllib.TOMLDecodeError
-        If config file is invalid TOML document.
-    jsonschema.exceptions.ValidationError
-        If config is invalid format.
+    Returns:
+        A dict containing the configuration settings.
+
+    Raises:
+        FileNotFoundError: Failed to open file.
+        IndexError: A specified number was outside the range of the list
+            when selecting one from multiple configurations.
+        ValueError: A non-numeric value is specified when selecting one
+            from multiple configurations, or a configuration name is
+            duplicated.
+        tomllib.TOMLDecodeError: A file was invalid TOML document.
+        jsonschema.ValidationError: The configuration was not in
+            the correct format.
     """
     if isinstance(path, str):
         path = Path(path)
