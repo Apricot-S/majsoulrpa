@@ -3,25 +3,13 @@ from typing import TypeAlias
 
 
 def validate_user_port(port: int) -> None:
-    """
-    Validate if the given port is
-    in the range of user ports (1024-49151).
+    """Validates port is in the range of user ports (1024-49151).
 
-    If not, raise a ValueError.
+    Args:
+        port: A port number to validate.
 
-    Parameters
-    ----------
-    port : int
-        The port number to validate.
-
-    Returns
-    -------
-    None
-
-    Raises
-    ------
-    ValueError
-        If the port is not in the range of user ports.
+    Raises:
+        ValueError: A port was not in the range of user ports.
     """
     if (port < 1024) or (port > 49151):  # noqa: PLR2004
         msg = "The port must be in the range 1024-49151."

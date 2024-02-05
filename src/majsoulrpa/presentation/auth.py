@@ -182,7 +182,7 @@ class AuthPresentation(PresentationBase):
 
         deadline = timeout_to_deadline(timeout)
 
-        if self._entered_email_address is False:
+        if not self._entered_email_address:
             msg = "Email address has not been entered yet."
             raise InvalidOperationError(msg, self._browser.get_screenshot())
 
