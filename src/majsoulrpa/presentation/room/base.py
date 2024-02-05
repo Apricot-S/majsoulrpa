@@ -17,6 +17,8 @@ logger = getLogger(__name__)
 
 
 class RoomPlayer(Player):
+    """Represents a player in a room for friendly matches."""
+
     def __init__(
         self,
         account_id: int,
@@ -25,16 +27,28 @@ class RoomPlayer(Player):
         is_host: bool,
         is_ready: bool,
     ) -> None:
+        """Creates an instance of `RoomPlayer`.
+
+        Args:
+            account_id: The account ID of the player.
+            name: The name of the player.
+            is_host: `True` if the player is the host of the room;
+                `False` otherwise.
+            is_ready: `True` if the player is ready to start the match;
+                `False` otherwise.
+        """
         super().__init__(account_id, name)
         self._is_host = is_host
         self._is_ready = is_ready
 
     @property
     def is_host(self) -> bool:
+        """Indicates whether the player is the host of the room."""
         return self._is_host
 
     @property
     def is_ready(self) -> bool:
+        """Indicates whether the player is ready to start the match."""
         return self._is_ready
 
     def _set_ready(self, *, is_ready: bool) -> None:
@@ -42,6 +56,8 @@ class RoomPlayer(Player):
 
 
 class RoomPresentationBase(PresentationBase):
+    """Provides common functionality for room presentations."""
+
     def __init__(
         self,
         browser: BrowserBase,
@@ -52,6 +68,25 @@ class RoomPresentationBase(PresentationBase):
         players: Iterable[RoomPlayer],
         num_ais: int,
     ) -> None:
+        """Creates an instance of `RoomPresentationBase`.
+
+        This constructor is intended to be called only within the
+        framework. Users should not directly call this constructor.
+
+        Args:
+            browser: The browser instance that is currently displaying a
+                room screen.
+            message_queue_client: A message queue client that is
+                currently connected to the queue where mitmproxy is
+                pushing messages.
+            creator: A presentation creator responsible for
+                instantiating presentations.
+            room_id: The room ID.
+            max_num_players: The maximum number of players allowed
+                in the room.
+            players: The players in the room.
+            num_ais: The number of AI players in the room.
+        """
         super().__init__(browser, message_queue_client, creator)
 
         self._room_id = room_id
@@ -157,21 +192,38 @@ class RoomPresentationBase(PresentationBase):
 
     @property
     def room_id(self) -> int:
+        """The room ID."""
         return self._room_id
 
     @property
     def max_num_players(self) -> int:
+        """The maximum number of players allowed in the room."""
         return self._max_num_players
 
     @property
     def players(self) -> list[RoomPlayer]:
+        """The players in the room."""
         return self._players
 
     @property
     def num_ais(self) -> int:
+        """The number of AI players in the room."""
         return self._num_ais
 
     def leave(self, timeout: TimeoutType = 10.0) -> None:
+        """Leaves the room.
+
+        Initiates a transition to the `HomePresentation` by clicking the
+        icon to leave the room, and waits for the home screen to appear.
+
+        Args:
+            timeout: The maximum duration, in seconds, to wait for the
+                home screen to appear. Defaults to `10.0`.
+
+        Raises:
+            UnexpectedStateError: Indicates that the room could not be
+                left, suggesting an unexpected state was encountered.
+        """
         self._assert_not_stale()
 
         # Click on the icon to leave the room.
