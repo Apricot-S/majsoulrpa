@@ -21,12 +21,44 @@ _MAX_EMAIL_ADDRESS_LENGTH: Final[int] = 50  # JP ver
 
 
 class AuthPresentation(PresentationBase):
+    """Authentication presentation.
+
+    The `AuthPresentation` represents a dialog box that appears after
+    the "Login" button is clicked in the `LoginPresentation`. It
+    features two text boxes for entering an email address and a
+    verification code, respectively. Users can perform the following
+    operations with an instance of `AuthPresentation`:
+
+    * Enter an email address in the first text box and click the "Send
+      Code" button.
+    * Enter a verification code in the second text box and click the
+      "Login" button.
+    """
+
     def __init__(
         self,
         browser: BrowserBase,
         message_queue_client: MessageQueueClientBase,
         creator: PresentationCreatorBase,
     ) -> None:
+        """Creates an instance of `AuthPresentation`.
+
+        This constructor is intended to be called only within the
+        framework. Users should not directly call this constructor.
+
+        Args:
+            browser: The browser instance currently displaying the
+                authentication screen.
+            message_queue_client: A message queue client currently
+                connected to the queue where mitmproxy is pushing
+                messages.
+            creator: A presentation creator responsible for
+                instantiating presentations.
+
+        Raises:
+            PresentationNotDetectedError: If the authentication screen
+                is not detected.
+        """
         super().__init__(browser, message_queue_client, creator)
 
         self._entered_email_address: bool = False
@@ -53,6 +85,20 @@ class AuthPresentation(PresentationBase):
         email_address: str,
         timeout: TimeoutType = 10.0,
     ) -> None:
+        """Enters an email address and clicks the "Send Code" button.
+
+        Args:
+            email_address: The email address to enter.
+            timeout: The maximum duration, in seconds, to wait for the
+                "Confirm" button to appear after entering the email
+                address. Defaults to `10.0`.
+
+        Raises:
+            ValueError: If the email address is either unavailable or
+                invalid.
+            PresentationTimeoutError: If the "Confirm" button does not
+                appear within the specified timeout period.
+        """
         self._assert_not_stale()
 
         if len(email_address) > _MAX_EMAIL_ADDRESS_LENGTH:
@@ -108,11 +154,35 @@ class AuthPresentation(PresentationBase):
         auth_code: str,
         timeout: TimeoutType = 120.0,
     ) -> None:
+        """Enters a verification code and clicks the "Login" button.
+
+        Initiates a transition to the `HomePresentation` by entering a
+        verification code and clicking the "Login" button, and waits
+        for the home screen to appear.
+
+        Note:
+            The process to rejoin an interrupted game is not
+            implemented.
+
+        Args:
+            auth_code: The verification code to enter.
+            timeout: The maximum duration, in seconds, to wait for the
+                home screen to appear after entering the code. Defaults
+                to `120.0`.
+
+        Raises:
+            InvalidOperationError: If the email address has not been
+                entered prior to this operation.
+            ValueError: If the verification code is invalid or
+                incorrect.
+            PresentationTimeoutError: If the home screen does not
+                appear within the specified timeout period.
+        """
         self._assert_not_stale()
 
         deadline = timeout_to_deadline(timeout)
 
-        if self._entered_email_address is False:
+        if not self._entered_email_address:
             msg = "Email address has not been entered yet."
             raise InvalidOperationError(msg, self._browser.get_screenshot())
 

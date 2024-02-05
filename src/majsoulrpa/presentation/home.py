@@ -22,6 +22,18 @@ logger = getLogger(__name__)
 
 
 class HomePresentation(PresentationBase):
+    """Home presentation.
+
+    The `HomePresentation` represents the main game screen, often
+    referred to as the "lobby" screen, which is displayed after
+    successfully completing the login/authentication process. Users can
+    perform the following operations with an instance of
+    `HomePresentation`:
+
+    * Create a room for friendly matches.
+    * Join a room for friendly matches by entering a room ID.
+    """
+
     @staticmethod
     def _match_markers(screenshot: bytes, zoom_ratio: float) -> bool:
         for i in range(1, 4):
@@ -151,6 +163,38 @@ class HomePresentation(PresentationBase):
         creator: PresentationCreatorBase,
         timeout: TimeoutType,
     ) -> None:
+        """Creates an instance of `HomePresentation`.
+
+        This constructor is intended to be called only within the
+        framework. Users should not directly call this constructor.
+
+        Args:
+            browser: The browser instance currently displaying the home
+                screen.
+            message_queue_client: A message queue client currently
+                connected to the queue where mitmproxy is pushing
+                messages.
+            creator: A presentation creator responsible for
+                instantiating presentations.
+            timeout: The maximum duration, in seconds, to wait for the
+                exchange of messages related to authentication and login
+                to complete.
+
+        Raises:
+            PresentationNotDetectedError: If the home screen is not
+                detected.
+            PresentationTimeoutError: If the following conditions do not
+                complete within the specified timeout period: (1) The
+                exchange of messages related to authentication and
+                login. (2) The display of the home screen, which
+                includes finishing all operations such as acquiring
+                jades through a valid Fortune Charm, closing
+                announcement dialog boxes, and ultimately reaching a
+                state where the "Ranked Match," "Tournament Match," and
+                "Friendly Match" buttons are clickable.
+            InconsistentMessageError: If an unexpected message is found
+                in the message queue.
+        """
         super().__init__(browser, message_queue_client, creator)
 
         deadline = timeout_to_deadline(timeout)
@@ -404,6 +448,24 @@ class HomePresentation(PresentationBase):
         ] = "Two-Wind Match",
         timeout: TimeoutType = 60.0,
     ) -> None:
+        """Creates a room for friendly matches.
+
+        Initiates a transition to the `RoomHostPresentation` by creating
+        a room for friendly matches, and waits for the room screen to
+        appear.
+
+        Args:
+            mode: The mode of the room. Defaults to "4-Player".
+            length: The length of matches in the room. Defaults to
+                "Two-Wind Match".
+            timeout: The maximum duration, in seconds, to wait for the
+                room screen to appear. Defaults to `60.0`.
+
+        Raises:
+            PresentationTimeoutError: If the room screen does not
+                appear within the specified timeout period.
+            ValueError: If an unsupported mode or length is selected.
+        """
         self._assert_not_stale()
 
         deadline = timeout_to_deadline(timeout)
@@ -494,6 +556,24 @@ class HomePresentation(PresentationBase):
         room_id: str,
         timeout: TimeoutType = 60.0,
     ) -> bool:
+        """Joins a room for friendly matches by entering a room ID.
+
+        Attempts to initiate a transition to the `RoomGuestPresentation`
+        by joining a room with the specified room ID, and waits for the
+        room screen to appear.
+
+        Args:
+            room_id: The room ID to join.
+            timeout: The maximum duration, in seconds, to wait for the
+                room screen to appear. Defaults to `60.0`.
+
+        Returns:
+            `True` if successfully joined the room; `False` if the room
+            ID is invalid or the transition fails for some reason.
+
+        Raises:
+            ValueError: If the room ID is not a 5-digit number.
+        """
         if re.fullmatch(r"\d{5}", room_id) is None:
             msg = "Room ID must be a 5-digit number."
             raise ValueError(msg)
