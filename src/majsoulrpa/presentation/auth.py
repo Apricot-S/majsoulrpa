@@ -25,13 +25,13 @@ class AuthPresentation(PresentationBase):
 
     The `AuthPresentation` represents a dialog box that appears after
     the "Login" button is clicked in the `LoginPresentation`. It
-    features two text boxes for entering an email address and an
-    authentication code, respectively. Users can perform the following
+    features two text boxes for entering an email address and a
+    verification code, respectively. Users can perform the following
     operations with an instance of `AuthPresentation`:
 
     * Enter an email address in the first text box and click the "Send
       Code" button.
-    * Enter an authentication code in the second text box and click the
+    * Enter a verification code in the second text box and click the
       "Login" button.
     """
 
@@ -154,14 +154,18 @@ class AuthPresentation(PresentationBase):
         auth_code: str,
         timeout: TimeoutType = 120.0,
     ) -> None:
-        """Enters an authentication code and clicks the "Login" button.
+        """Enters a verification code and clicks the "Login" button.
 
-        Initiates a transition to the `HomePresentation` by entering an
-        authentication code and clicking the "Login" button, and waits
+        Initiates a transition to the `HomePresentation` by entering a
+        verification code and clicking the "Login" button, and waits
         for the home screen to appear.
 
+        Note:
+            The process to rejoin an interrupted game is not
+            implemented.
+
         Args:
-            auth_code: The authentication code to enter.
+            auth_code: The verification code to enter.
             timeout: The maximum duration, in seconds, to wait for the
                 home screen to appear after entering the code. Defaults
                 to `120.0`.
@@ -169,7 +173,7 @@ class AuthPresentation(PresentationBase):
         Raises:
             InvalidOperationError: If the email address has not been
                 entered prior to this operation.
-            ValueError: If the authentication code is invalid or
+            ValueError: If the verification code is invalid or
                 incorrect.
             PresentationTimeoutError: If the home screen does not
                 appear within the specified timeout period.
