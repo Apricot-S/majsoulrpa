@@ -183,9 +183,15 @@ class HomePresentation(PresentationBase):
         Raises:
             PresentationNotDetectedError: If the home screen is not
                 detected.
-            PresentationTimeoutError: If the exchange of messages
-                related to authentication and login is not completed
-                within the specified timeout period.
+            PresentationTimeoutError: If the following conditions do not
+                complete within the specified timeout period: (1) The
+                exchange of messages related to authentication and
+                login. (2) The display of the home screen, which
+                includes finishing all operations such as acquiring
+                jades through a valid Fortune Charm, closing
+                announcement dialog boxes, and ultimately reaching a
+                state where the "Ranked Match," "Tournament Match," and
+                "Friendly Match" buttons are clickable.
             InconsistentMessageError: If an unexpected message is found
                 in the message queue.
         """
