@@ -23,6 +23,14 @@ logger = getLogger(__name__)
 
 
 class RoomGuestPresentation(RoomPresentationBase):
+    """Room guest presentation.
+
+    Represents the room screen as seen by a guest. Users can perform
+    the following operation with an instance of `RoomGuestPresentation`:
+
+    * Notify that the guest is ready to start the match.
+    """
+
     def __init__(
         self,
         browser: BrowserBase,
@@ -33,6 +41,25 @@ class RoomGuestPresentation(RoomPresentationBase):
         players: Iterable[RoomPlayer],
         num_ais: int,
     ) -> None:
+        """Creates an instance of `RoomGuestPresentation`.
+
+        This constructor is intended to be called only within the
+        framework. Users should not directly call this constructor.
+
+        Args:
+            browser: The browser instance currently displaying the room
+                screen.
+            message_queue_client: A message queue client currently
+                connected to the queue where mitmproxy is pushing
+                messages.
+            creator: A presentation creator responsible for
+                instantiating presentations.
+            room_id: The room ID.
+            max_num_players: The maximum number of players allowed in
+                the room.
+            players: The players in the room.
+            num_ais: The number of AI players in the room.
+        """
         super().__init__(
             browser,
             message_queue_client,
@@ -182,6 +209,18 @@ class RoomGuestPresentation(RoomPresentationBase):
         )
 
     def ready(self, timeout: TimeoutType = 60.0) -> None:
+        """Notifies that the guest is ready to start the match.
+
+        Args:
+            timeout: The maximum duration, in seconds, to wait for the
+                guest to become ready. Defaults to `60.0`.
+
+        Raises:
+            UnexpectedStateError: If the guest is not included in the
+                player list.
+            PresentationTimeoutError: If the guest does not become
+                ready within the specified timeout period.
+        """
         self._assert_not_stale()
 
         deadline = timeout_to_deadline(timeout)
