@@ -223,6 +223,8 @@ class RoomPresentationBase(PresentationBase):
         Raises:
             UnexpectedStateError: Indicates that the room could not be
                 left, suggesting an unexpected state was encountered.
+            PresentationTimeoutError: If the home screen does not appear
+                within the specified timeout period.
         """
         self._assert_not_stale()
 
