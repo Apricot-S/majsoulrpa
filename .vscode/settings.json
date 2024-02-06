@@ -1,0 +1,21 @@
+{
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit",
+        }
+    },
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.diagnosticMode": "workspace",
+    "ruff.enable": true,
+    "ruff.lint.run": "onSave",
+    "ruff.organizeImports": true,
+    "[json]": {
+        "editor.formatOnSave": true,
+        "editor.quickSuggestions": {
+            "strings": true,
+        },
+        "editor.suggest.insertMode": "replace"
+    }
+}
