@@ -235,6 +235,10 @@ class RoomHostPresentation(RoomPresentationBase):
         Args:
             timeout: The maximum duration, in seconds, to wait for the
                 match to start. Defaults to `60.0`.
+
+        Raises:
+            PresentationTimeoutError: If the match does not start
+                within the specified timeout period.
         """
         self._assert_not_stale()
 
