@@ -22,13 +22,27 @@ YOSTAR_EMAIL_SUBJECT: Final[str] = "Eメールアドレスの確認"
 
 
 class YostarLoginBase(metaclass=ABCMeta):
+    """Provides common functionality for Yostar account logins."""
+
     @abstractmethod
     def __init__(self, config: dict[str, Any]) -> None:
-        pass
+        """Creates an instance of `YostarLoginBase`.
+
+        Creates an instance of `YostarLoginBase` using the provided
+        configuration. Subclasses can extract the necessary information
+        from the `config` dictionary.
+
+        Args:
+            config: A configuration.
+        """
 
     @abstractmethod
     def get_email_address(self) -> str:
-        pass
+        """Returns the email address used for login.
+
+        Returns:
+            The email address used for login.
+        """
 
     # The verification code is a 6-digit number
     # sandwiched between HTML tags,
@@ -53,10 +67,21 @@ class YostarLoginBase(metaclass=ABCMeta):
         start_time: datetime.datetime,
         timeout: TimeoutType = 1800,
     ) -> str:
-        pass
+        """Retrieves the verification code.
+
+        Args:
+            start_time: The time when the login process started.
+            timeout: The maximum duration, in seconds, to wait for the
+                verification code to be obtained. Defaults to `1800`.
+
+        Returns:
+            The obtained verification code.
+        """
 
 
 class YostarLoginIMAP(YostarLoginBase):
+    """Retrieves the verification code using IMAP."""
+
     def __init__(self, config: dict[str, Any]) -> None:
         authentication_config = config["authentication"]
         self._email_address = authentication_config["email_address"]
@@ -182,6 +207,8 @@ class YostarLoginIMAP(YostarLoginBase):
 
 
 class YostarLoginS3(YostarLoginBase):
+    """Retrieves the verification code using an S3 bucket."""
+
     def __init__(self, config: dict[str, Any]) -> None:
         authentication_config = config["authentication"]
         method = authentication_config["method"]
