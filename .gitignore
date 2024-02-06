@@ -211,9 +211,6 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# VSCode
-.vscode/
-
 # config for example
 examples/config.toml
 
