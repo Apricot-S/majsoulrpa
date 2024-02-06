@@ -67,20 +67,20 @@ class YostarLoginBase(metaclass=ABCMeta):
         start_time: datetime.datetime,
         timeout: TimeoutType = 1800,
     ) -> str:
-        """Retrieves the authentication code.
+        """Retrieves the verification code.
 
         Args:
             start_time: The time when the login process started.
             timeout: The maximum duration, in seconds, to wait for the
-                authentication code to be obtained. Defaults to `1800`.
+                verification code to be obtained. Defaults to `1800`.
 
         Returns:
-            The obtained authentication code.
+            The obtained verification code.
         """
 
 
 class YostarLoginIMAP(YostarLoginBase):
-    """Retrieves the authentication code using IMAP."""
+    """Retrieves the verification code using IMAP."""
 
     def __init__(self, config: dict[str, Any]) -> None:
         authentication_config = config["authentication"]
@@ -207,7 +207,7 @@ class YostarLoginIMAP(YostarLoginBase):
 
 
 class YostarLoginS3(YostarLoginBase):
-    """Retrieves the authentication code using an S3 bucket."""
+    """Retrieves the verification code using an S3 bucket."""
 
     def __init__(self, config: dict[str, Any]) -> None:
         authentication_config = config["authentication"]
