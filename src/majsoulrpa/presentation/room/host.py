@@ -23,6 +23,15 @@ logger = getLogger(__name__)
 
 
 class RoomHostPresentation(RoomPresentationBase):
+    """Room host presentation.
+
+    Represents the room screen as seen by the host. Users can perform
+    the following operations with an instance of `RoomHostPresentation`:
+
+    * Add AI players to the room.
+    * Start a match.
+    """
+
     def __init__(
         self,
         browser: BrowserBase,
@@ -33,6 +42,25 @@ class RoomHostPresentation(RoomPresentationBase):
         players: Iterable[RoomPlayer],
         num_ais: int,
     ) -> None:
+        """Creates an instance of `RoomHostPresentation`.
+
+        This constructor is intended to be called only within the
+        framework. Users should not directly call this constructor.
+
+        Args:
+            browser: The browser instance currently displaying the room
+                screen.
+            message_queue_client: A message queue client currently
+                connected to the queue where mitmproxy is pushing
+                messages.
+            creator: A presentation creator responsible for
+                instantiating presentations.
+            room_id: The room ID.
+            max_num_players: The maximum number of players allowed in
+                the room.
+            players: The players in the room.
+            num_ais: The number of AI players in the room.
+        """
         super().__init__(
             browser,
             message_queue_client,
@@ -164,6 +192,16 @@ class RoomHostPresentation(RoomPresentationBase):
         )
 
     def add_ai(self, timeout: TimeoutType = 10.0) -> None:
+        """Adds an AI player to the room.
+
+        Args:
+            timeout: The maximum duration, in seconds, to wait for the
+                AI to be added. Defaults to `10.0`.
+
+        Raises:
+            InvalidOperationError: If the "Add AI" button is not
+                clickable because the room is full.
+        """
         self._assert_not_stale()
 
         deadline = timeout_to_deadline(timeout)
@@ -192,6 +230,16 @@ class RoomHostPresentation(RoomPresentationBase):
             self._update(deadline - now)
 
     def start(self, timeout: TimeoutType = 60.0) -> None:
+        """Starts a match.
+
+        Args:
+            timeout: The maximum duration, in seconds, to wait for the
+                match to start. Defaults to `60.0`.
+
+        Raises:
+            PresentationTimeoutError: If the match does not start
+                within the specified timeout period.
+        """
         self._assert_not_stale()
 
         deadline = timeout_to_deadline(timeout)
