@@ -1996,19 +1996,65 @@ class MatchPresentation(PresentationBase):
             self._browser.zoom_ratio,
         )
         try:
-            template.wait_for_then_click(self._browser, timeout=10.0)
+            # If you do not set the `timeout` to a short value,
+            # you will not be able to respond to the hule screen
+            # when you are interrupted by Rong from other player.
+            template.wait_for_then_click(self._browser, timeout=5.0)
         except PresentationTimeoutError as e:
-            # TODO: Possibly interfered with by Rong from other player.
-            msg = (
-                "Rare situation encountered: "
-                "Failed to click 'Gang' when DamingGang. "
-                "Please cooperate by providing a screenshot of the error. "
-                "Thank you for your cooperation."
-            )
-            ss = self._browser.get_screenshot()
-            rare_error = UnexpectedStateError(msg, ss)
-            rare_error.save_screenshot()
-            raise rare_error from e
+            # Possibly interfered with by Rong from other player.
+            while True:
+                now = datetime.datetime.now(datetime.UTC)
+                message = self._message_queue_client.dequeue_message(
+                    deadline - now,
+                )
+                if message is None:
+                    msg = (
+                        "The WebSocket message that "
+                        "was supposed to be present is missing."
+                    )
+                    raise UnexpectedStateError(
+                        msg,
+                        self._browser.get_screenshot(),
+                    ) from e
+                _, name, request, _, _ = message
+                if name in MatchPresentation._COMMON_MESSAGE_NAMES:
+                    self._on_common_message(message)
+                    continue
+                if name == ".lq.ActionPrototype":
+                    _, action_name, _ = _common.parse_action(request)
+                    if action_name == "ActionHule":
+                        # You were being disturbed by
+                        # Rong from other player.
+                        # Backfill prefetched messages.
+                        self._message_queue_client.put_back(message)
+                        self._operation_list = None
+                        now = datetime.datetime.now(datetime.UTC)
+                        self._wait_impl(deadline - now)
+                        return
+                    raise InconsistentMessageError(
+                        str(message),
+                        self._browser.get_screenshot(),
+                    ) from e
+                if name == ".lq.FastTest.inputOperation":
+                    raise InconsistentMessageError(
+                        str(message),
+                        self._browser.get_screenshot(),
+                    ) from e
+                if name == ".lq.FastTest.inputChiPengGang":
+                    # It is highly likely that the drawing on
+                    # the screen is distorted and the "Gang" button
+                    # cannot be clicked. Therefore, it is
+                    # recommended to refresh the browser.
+                    msg = "A rendering problem may occur."
+                    raise BrowserRefreshRequest(
+                        msg,
+                        self._browser,
+                        self._browser.get_screenshot(),
+                    ) from e
+                raise InconsistentMessageError(
+                    str(message),
+                    self._browser.get_screenshot(),
+                ) from e
 
         if len(operation.combinations) >= 2:
             msg = (
