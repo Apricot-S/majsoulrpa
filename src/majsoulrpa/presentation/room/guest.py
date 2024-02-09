@@ -101,6 +101,9 @@ class RoomGuestPresentation(RoomPresentationBase):
                 case ".lq.Lobby.joinRoom" | ".lq.Lobby.fetchRoom":
                     logger.info(message)
                     break
+                case ".lq.Lobby.heatbeat":
+                    logger.info(message)
+                    continue
                 case ".lq.NotifyRoomPlayerUpdate":
                     # Sometimes `.lq.NotifyRoomPlayerUpdate`
                     # is sent before .lq.Lobby.joinRoom.
