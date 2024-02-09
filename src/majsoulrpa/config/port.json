@@ -10,15 +10,8 @@
             "minimum": 0
         },
         "message_queue_port": {
-            "oneOf": [
-                {
-                    "type": "integer",
-                    "minimum": 0
-                },
-                {
-                    "const": "None"
-                }
-            ]
+            "type": "integer",
+            "minimum": 0
         }
     }
 }
