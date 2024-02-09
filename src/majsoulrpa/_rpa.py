@@ -52,7 +52,7 @@ class RPA:
         remote_host: str | None = None,
         remote_port: int = 19222,
         proxy_port: int = 8080,
-        message_queue_port: int | None = 37247,
+        message_queue_port: int = 37247,
         initial_left: int = 0,
         initial_top: int = 0,
         viewport_height: int = 1080,
@@ -68,10 +68,7 @@ class RPA:
                 `19222`.
             proxy_port: Port number for mitmproxy. Defaults to `8080`.
             message_queue_port: Port number for the message queue
-                server. Specifying `None` will use the default port
-                number, but this option is maintained solely for
-                backward compatibility and is planned to be removed in
-                the future. Defaults to `37247`.
+                server. Defaults to `37247`.
             initial_left: Initial left position of the browser window.
                 Defaults to `0`.
             initial_top: Initial top position of the browser window.
@@ -159,15 +156,10 @@ class RPA:
             match _message_queue_port:
                 case None:
                     message_queue_port = 37247
-                case "None":
-                    message_queue_port = None
                 case int():
                     message_queue_port = _message_queue_port
                 case _ as invalid_arg:
-                    msg = (
-                        "`message_queue_port` must be "
-                        f'int or "None": {invalid_arg}'
-                    )
+                    msg = f"`message_queue_port` must be int: {invalid_arg}"
                     raise TypeError(msg)
         else:
             msg = "`port` must be dict"
@@ -297,15 +289,10 @@ class RPA:
         # Construct a class instance
         # that abstracts message queue client
         if self._remote_host is not None:
-            if self._message_queue_port is None:
-                self._message_queue_client = ZMQClient(self._remote_host)
-            else:
-                self._message_queue_client = ZMQClient(
-                    self._remote_host,
-                    self._message_queue_port,
-                )
-        elif self._message_queue_port is None:
-            self._message_queue_client = ZMQClient()
+            self._message_queue_client = ZMQClient(
+                self._remote_host,
+                self._message_queue_port,
+            )
         else:
             self._message_queue_client = ZMQClient(
                 port=self._message_queue_port,
