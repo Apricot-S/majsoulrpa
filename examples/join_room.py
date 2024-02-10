@@ -28,35 +28,37 @@ if __name__ == "__main__":
         with RPA.from_config(my_config) as rpa:
             presentation = rpa.wait(timeout=20.0)
 
-            if not isinstance(presentation, LoginPresentation):
-                msg = "Could not transit to `login`."
-                raise RuntimeError(msg)
-            presentation.login(timeout=60.0)
-            if presentation.new_presentation is None:
-                msg = "Could not transit to `auth`."
-                raise RuntimeError(msg)
-            presentation = presentation.new_presentation
+            if not isinstance(presentation, HomePresentation):
+                if not isinstance(presentation, LoginPresentation):
+                    msg = "Could not transit to `login`."
+                    raise RuntimeError(msg)
+                presentation.login(timeout=60.0)
+                if presentation.new_presentation is None:
+                    msg = "Could not transit to `auth`."
+                    raise RuntimeError(msg)
+                presentation = presentation.new_presentation
 
-            if not isinstance(presentation, AuthPresentation):
-                msg = "Could not transit to `auth`."
-                raise RuntimeError(msg)
-            presentation.enter_email_address(
-                my_config["authentication"]["email_address"],
-            )
-            auth_code = input("verification code: ")
-            presentation.enter_auth_code(auth_code, timeout=60.0)
-            if presentation.new_presentation is None:
-                msg = "Could not transit to `home`."
-                raise RuntimeError
-            presentation = presentation.new_presentation
+                if not isinstance(presentation, AuthPresentation):
+                    msg = "Could not transit to `auth`."
+                    raise RuntimeError(msg)
+                presentation.enter_email_address(
+                    my_config["authentication"]["email_address"],
+                )
+                auth_code = input("verification code: ")
+                presentation.enter_auth_code(auth_code, timeout=60.0)
+                if presentation.new_presentation is None:
+                    msg = "Could not transit to `home`."
+                    raise RuntimeError
+                presentation = presentation.new_presentation
 
             if not isinstance(presentation, HomePresentation):
                 msg = "Could not transit to `home`."
                 raise RuntimeError(msg)
             room_id = str(input("room id: "))
-            presentation.join_room(room_id)
+            reason = presentation.join_room(room_id)
             if presentation.new_presentation is None:
-                msg = "Could not transit to `room`."
+                assert reason is not None
+                msg = f"Could not transit to `room`. Reason: {reason.name}"
                 raise RuntimeError(msg)
             presentation = presentation.new_presentation
 

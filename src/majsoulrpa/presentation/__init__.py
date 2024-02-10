@@ -8,7 +8,7 @@ manages interactions with widgets on the screen.
 """
 
 from .auth import AuthPresentation
-from .home import HomePresentation
+from .home import HomePresentation, JoinRoomFailureReason
 from .login import LoginPresentation
 from .presentation_base import (
     BaseError,
@@ -37,6 +37,7 @@ __all__ = [
     "LoginPresentation",
     "AuthPresentation",
     "HomePresentation",
+    "JoinRoomFailureReason",
     "RoomHostPresentation",
     "RoomGuestPresentation",
     "TournamentLobbyPresentation",

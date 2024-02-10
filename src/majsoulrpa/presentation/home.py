@@ -1,6 +1,7 @@
 import datetime
 import re
 import time
+from enum import IntEnum
 from logging import getLogger
 from typing import Literal
 
@@ -19,6 +20,20 @@ from .presentation_base import (
 )
 
 logger = getLogger(__name__)
+
+
+class JoinRoomFailureReason(IntEnum):
+    """Indicates the reason for failure to join a friendly match room.
+
+    Attributes:
+        NOT_FOUND: The room was not found.
+        FULL: The room was full.
+        ALREADY_STARTED: A match was already started.
+    """
+
+    NOT_FOUND = 1100
+    FULL = 1101
+    ALREADY_STARTED = 1109
 
 
 class HomePresentation(PresentationBase):
@@ -551,11 +566,11 @@ class HomePresentation(PresentationBase):
         )
         self._set_new_presentation(new_presentation)
 
-    def join_room(
+    def join_room(  # noqa: C901
         self,
         room_id: str,
         timeout: TimeoutType = 60.0,
-    ) -> bool:
+    ) -> JoinRoomFailureReason | None:
         """Joins a room for friendly matches by entering a room ID.
 
         Attempts to initiate a transition to the `RoomGuestPresentation`
@@ -568,8 +583,9 @@ class HomePresentation(PresentationBase):
                 room screen to appear. Defaults to `60.0`.
 
         Returns:
-            `True` if successfully joined the room; `False` if the room
-            ID is invalid or the transition fails for some reason.
+            `None` if successfully joined the room;
+                `JoinRoomFailureReason` if the room ID is invalid or the
+                transition fails for some reason.
 
         Raises:
             ValueError: If the room ID is not a 5-digit number.
@@ -624,11 +640,16 @@ class HomePresentation(PresentationBase):
                 "template/home/room_join/error_close",
                 self._browser.zoom_ratio,
             )
-            template.wait_for_then_click(self._browser, 1.5)
+            template.wait_for(self._browser, 1.5)
         except PresentationTimeoutError:
             pass
         else:
+            # For check the error code and reason for the error.
+            ss = self._browser.get_screenshot()
+
+            template.click(self._browser)
             time.sleep(0.5)
+
             # Click "Back".
             self._browser.click_region(
                 int(1175 * self._browser.zoom_ratio),
@@ -638,13 +659,51 @@ class HomePresentation(PresentationBase):
             )
             time.sleep(1.0)
 
+            reason = None
             while True:
-                message = self._message_queue_client.dequeue_message(0.1)
-                if message is None:
-                    break
-                logger.info(message)
+                if datetime.datetime.now(datetime.UTC) > deadline:
+                    msg = "Timeout."
+                    raise PresentationTimeoutError(msg, ss)
 
-            return False
+                message = self._message_queue_client.dequeue_message(1)
+                if message is None:
+                    if reason is not None:
+                        return reason
+                    msg = "`.lq.Lobby.joinRoom` was not exchanged."
+                    raise InconsistentMessageError(msg, ss)
+                _, name, _, response, _ = message
+
+                match name:
+                    case ".lq.Lobby.joinRoom":
+                        if response is None:
+                            # If there was no response that was supposed
+                            # to be there.
+                            raise InconsistentMessageError(str(message), ss)
+
+                        try:
+                            error_code: int = response["error"]["code"]
+                        except KeyError as k:
+                            # If there was no error code that was
+                            # supposed to be there.
+                            raise InconsistentMessageError(
+                                str(message),
+                                ss,
+                            ) from k
+
+                        try:
+                            reason = JoinRoomFailureReason(error_code)
+                        except ValueError as v:
+                            # In case of unknown error code.
+                            raise InconsistentMessageError(
+                                str(message),
+                                ss,
+                            ) from v
+
+                        logger.info(message)
+                    case ".lq.Lobby.heatbeat":
+                        logger.info(message)
+                    case _:
+                        raise InconsistentMessageError(str(message), ss)
 
         # Wait until room screen is displayed.
         now = datetime.datetime.now(datetime.UTC)
@@ -664,4 +723,4 @@ class HomePresentation(PresentationBase):
         )
         self._set_new_presentation(new_presentation)
 
-        return True
+        return None
