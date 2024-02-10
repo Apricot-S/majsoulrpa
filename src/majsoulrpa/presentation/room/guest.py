@@ -101,13 +101,16 @@ class RoomGuestPresentation(RoomPresentationBase):
                 case ".lq.Lobby.joinRoom" | ".lq.Lobby.fetchRoom":
                     logger.info(message)
                     break
+                case ".lq.Lobby.heatbeat":
+                    logger.info(message)
+                    continue
                 case ".lq.NotifyRoomPlayerUpdate":
                     # Sometimes `.lq.NotifyRoomPlayerUpdate`
                     # is sent before .lq.Lobby.joinRoom.
                     logger.info(message)
                     continue
-
-            raise InconsistentMessageError(str(message), ss)
+                case _:
+                    raise InconsistentMessageError(str(message), ss)
 
         if not isinstance(response, Mapping):
             msg = f"`{name}` response does not have a dict."
