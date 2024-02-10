@@ -18,6 +18,7 @@ class DapaiEvent(EventBase):
         self._moqie = data["moqie"]
         self._liqi = data["is_liqi"]
         self._wliqi = data["is_wliqi"]
+        self._doras = data["doras"]
 
     @property
     def seat(self) -> int:
@@ -40,3 +41,7 @@ class DapaiEvent(EventBase):
     @property
     def wliqi(self) -> bool:
         return self._wliqi
+
+    @property
+    def doras(self) -> list[str]:
+        return self._doras
