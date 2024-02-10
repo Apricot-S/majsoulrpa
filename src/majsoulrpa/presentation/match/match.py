@@ -1033,6 +1033,17 @@ class MatchPresentation(PresentationBase):
         step, name, data = _common.parse_action(action, restore=True)
         if step != 0:
             raise InconsistentMessageError(str(action))
+
+        if name == "ActionMJStart":
+            if len(actions) == 0:
+                raise InconsistentMessageError(str(message))
+
+            action = action.pop(0)
+            step, name, data = _common.parse_action(action, restore=True)
+            if step != 1:
+                raise InconsistentMessageError(str(action))
+            self._step += 1
+
         if name != "ActionNewRound":
             raise InconsistentMessageError(str(action))
         self._step = 0
