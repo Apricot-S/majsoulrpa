@@ -1773,9 +1773,9 @@ class MatchPresentation(PresentationBase):
 
             if num_combinations == 2:
                 if index == 0:
-                    left = 780
+                    left = 761
                 elif index == 1:
-                    left = 980
+                    left = 961
                 else:
                     msg = f"{index}: out-of-range index"
                     raise InvalidOperationError(
@@ -1784,11 +1784,11 @@ class MatchPresentation(PresentationBase):
                     )
             elif num_combinations == 3:
                 if index == 0:
-                    left = 680
+                    left = 661
                 elif index == 1:
-                    left = 880
+                    left = 861
                 elif index == 2:
-                    left = 1080
+                    left = 1061
                 else:
                     msg = f"{index}: out-of-range index"
                     raise InvalidOperationError(
@@ -1797,13 +1797,13 @@ class MatchPresentation(PresentationBase):
                     )
             elif num_combinations == 4:
                 if index == 0:
-                    left = 580
+                    left = 561
                 elif index == 1:
-                    left = 780
+                    left = 761
                 elif index == 2:
-                    left = 980
+                    left = 961
                 elif index == 3:
-                    left = 1180
+                    left = 1161
                 else:
                     msg = f"{index}: out-of-range index"
                     raise InvalidOperationError(
@@ -1812,15 +1812,15 @@ class MatchPresentation(PresentationBase):
                     )
             elif num_combinations == 5:
                 if index == 0:
-                    left = 480
+                    left = 461
                 elif index == 1:
-                    left = 680
+                    left = 661
                 elif index == 2:
-                    left = 880
+                    left = 861
                 elif index == 3:
-                    left = 1080
+                    left = 1061
                 elif index == 4:
-                    left = 1280
+                    left = 1261
                 else:
                     msg = f"{index}: out-of-range index"
                     raise InvalidOperationError(
@@ -1835,9 +1835,9 @@ class MatchPresentation(PresentationBase):
                 raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
             left = int(left * self._browser.zoom_ratio)
-            top = int(691 * self._browser.zoom_ratio)
-            width = int(160 * self._browser.zoom_ratio)
-            height = int(120 * self._browser.zoom_ratio)
+            top = int(692 * self._browser.zoom_ratio)
+            width = int(157 * self._browser.zoom_ratio)
+            height = int(117 * self._browser.zoom_ratio)
             self._browser.click_region(left, top, width, height)
 
         # Some of the tiles in your hand may slide right
@@ -1927,9 +1927,9 @@ class MatchPresentation(PresentationBase):
 
             if num_combinations == 2:
                 if index == 0:
-                    left = 780
+                    left = 761
                 elif index == 1:
-                    left = 980
+                    left = 961
                 else:
                     msg = f"{index}: out-of-range index"
                     raise InvalidOperationError(
@@ -1944,9 +1944,9 @@ class MatchPresentation(PresentationBase):
                 raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
             left = int(left * self._browser.zoom_ratio)
-            top = int(691 * self._browser.zoom_ratio)
-            width = int(160 * self._browser.zoom_ratio)
-            height = int(120 * self._browser.zoom_ratio)
+            top = int(692 * self._browser.zoom_ratio)
+            width = int(157 * self._browser.zoom_ratio)
+            height = int(117 * self._browser.zoom_ratio)
             self._browser.click_region(left, top, width, height)
 
         # Some of the tiles in your hand may slide right
@@ -2115,9 +2115,9 @@ class MatchPresentation(PresentationBase):
 
             if num_combinations == 2:
                 if index == 0:
-                    left = 600
+                    left = 601
                 elif index == 1:
-                    left = 960
+                    left = 961
                 else:
                     msg = f"{index}: out-of-range index"
                     raise InvalidOperationError(
@@ -2143,9 +2143,9 @@ class MatchPresentation(PresentationBase):
                 raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
             left = int(left * self._browser.zoom_ratio)
-            top = int(691 * self._browser.zoom_ratio)
-            width = int(320 * self._browser.zoom_ratio)
-            height = int(120 * self._browser.zoom_ratio)
+            top = int(692 * self._browser.zoom_ratio)
+            width = int(317 * self._browser.zoom_ratio)
+            height = int(117 * self._browser.zoom_ratio)
             self._browser.click_region(left, top, width, height)
 
         # Some of the tiles in your hand may slide right
