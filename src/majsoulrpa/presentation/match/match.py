@@ -1533,7 +1533,7 @@ class MatchPresentation(PresentationBase):
                     # don't wait until the effect ends before playing
                     # the tiles, you may end up clicking on an
                     # unintended tile and discarding it.
-                    time.sleep(1.0)
+                    time.sleep(2.0)
                 if index is None:
                     msg = "Index not specified."
                     raise InvalidOperationError(
