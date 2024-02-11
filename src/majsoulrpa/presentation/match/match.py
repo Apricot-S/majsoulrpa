@@ -1433,7 +1433,7 @@ class MatchPresentation(PresentationBase):
         else:
             # Discard from hand
             # Coordinates of hand
-            left = round(224 + index * 94.91)
+            left = int(224 + index * 94.91)
 
         top = 922
         height = 149
@@ -1441,16 +1441,16 @@ class MatchPresentation(PresentationBase):
 
         # Click 10% inside the tile because you can touch
         # the adjacent tile at the very edge of the tile.
-        left += round(width * 0.1)
-        top += round(height * 0.1)
-        width = round(width * 0.8)
+        left += int(width * 0.1)
+        top += int(height * 0.1)
+        width = int(width * 0.8)
         # Clicking fails with `height * 0.8`.
-        height = round(height * 0.7)
+        height = int(height * 0.7)
 
-        left = round(left * self._browser.zoom_ratio)
-        top = round(top * self._browser.zoom_ratio)
-        width = round(width * self._browser.zoom_ratio)
-        height = round(height * self._browser.zoom_ratio)
+        left = int(left * self._browser.zoom_ratio)
+        top = int(top * self._browser.zoom_ratio)
+        width = int(width * self._browser.zoom_ratio)
+        height = int(height * self._browser.zoom_ratio)
 
         # `timeout=5.0` may be too short
         # when the screen display freezes.
@@ -1653,10 +1653,10 @@ class MatchPresentation(PresentationBase):
                 ) from e
 
     def _skip_by_no_melding(self, deadline: datetime.datetime) -> None:
-        left = round(14 * self._browser.zoom_ratio)
-        top = round(623 * self._browser.zoom_ratio)
-        width = round(43 * self._browser.zoom_ratio)
-        height = round(43 * self._browser.zoom_ratio)
+        left = int(18 * self._browser.zoom_ratio)
+        top = int(625 * self._browser.zoom_ratio)
+        width = int(40 * self._browser.zoom_ratio)
+        height = int(40 * self._browser.zoom_ratio)
         self._browser.click_region(left, top, width, height, edge_sigma=1.0)
 
         while True:
@@ -1773,9 +1773,9 @@ class MatchPresentation(PresentationBase):
 
             if num_combinations == 2:
                 if index == 0:
-                    left = 780
+                    left = 761
                 elif index == 1:
-                    left = 980
+                    left = 961
                 else:
                     msg = f"{index}: out-of-range index"
                     raise InvalidOperationError(
@@ -1784,11 +1784,11 @@ class MatchPresentation(PresentationBase):
                     )
             elif num_combinations == 3:
                 if index == 0:
-                    left = 680
+                    left = 661
                 elif index == 1:
-                    left = 880
+                    left = 861
                 elif index == 2:
-                    left = 1080
+                    left = 1061
                 else:
                     msg = f"{index}: out-of-range index"
                     raise InvalidOperationError(
@@ -1797,13 +1797,13 @@ class MatchPresentation(PresentationBase):
                     )
             elif num_combinations == 4:
                 if index == 0:
-                    left = 580
+                    left = 561
                 elif index == 1:
-                    left = 780
+                    left = 761
                 elif index == 2:
-                    left = 980
+                    left = 961
                 elif index == 3:
-                    left = 1180
+                    left = 1161
                 else:
                     msg = f"{index}: out-of-range index"
                     raise InvalidOperationError(
@@ -1812,15 +1812,15 @@ class MatchPresentation(PresentationBase):
                     )
             elif num_combinations == 5:
                 if index == 0:
-                    left = 480
+                    left = 461
                 elif index == 1:
-                    left = 680
+                    left = 661
                 elif index == 2:
-                    left = 880
+                    left = 861
                 elif index == 3:
-                    left = 1080
+                    left = 1061
                 elif index == 4:
-                    left = 1280
+                    left = 1261
                 else:
                     msg = f"{index}: out-of-range index"
                     raise InvalidOperationError(
@@ -1834,10 +1834,12 @@ class MatchPresentation(PresentationBase):
                 )
                 raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
-            left = round(left * self._browser.zoom_ratio)
-            top = round(691 * self._browser.zoom_ratio)
-            width = round(160 * self._browser.zoom_ratio)
-            height = round(120 * self._browser.zoom_ratio)
+            left = int(left * self._browser.zoom_ratio)
+            top = int(692 * self._browser.zoom_ratio)
+            width = int(157 * self._browser.zoom_ratio)
+            height = int(117 * self._browser.zoom_ratio)
+
+            time.sleep(0.4)
             self._browser.click_region(left, top, width, height)
 
         # Some of the tiles in your hand may slide right
@@ -1927,9 +1929,9 @@ class MatchPresentation(PresentationBase):
 
             if num_combinations == 2:
                 if index == 0:
-                    left = 780
+                    left = 761
                 elif index == 1:
-                    left = 980
+                    left = 961
                 else:
                     msg = f"{index}: out-of-range index"
                     raise InvalidOperationError(
@@ -1943,10 +1945,12 @@ class MatchPresentation(PresentationBase):
                 )
                 raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
-            left = round(left * self._browser.zoom_ratio)
-            top = round(691 * self._browser.zoom_ratio)
-            width = round(160 * self._browser.zoom_ratio)
-            height = round(120 * self._browser.zoom_ratio)
+            left = int(left * self._browser.zoom_ratio)
+            top = int(692 * self._browser.zoom_ratio)
+            width = int(157 * self._browser.zoom_ratio)
+            height = int(117 * self._browser.zoom_ratio)
+
+            time.sleep(0.4)
             self._browser.click_region(left, top, width, height)
 
         # Some of the tiles in your hand may slide right
@@ -2115,9 +2119,9 @@ class MatchPresentation(PresentationBase):
 
             if num_combinations == 2:
                 if index == 0:
-                    left = 600
+                    left = 601
                 elif index == 1:
-                    left = 960
+                    left = 961
                 else:
                     msg = f"{index}: out-of-range index"
                     raise InvalidOperationError(
@@ -2142,10 +2146,12 @@ class MatchPresentation(PresentationBase):
                 )
                 raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
-            left = round(left * self._browser.zoom_ratio)
-            top = round(691 * self._browser.zoom_ratio)
-            width = round(320 * self._browser.zoom_ratio)
-            height = round(120 * self._browser.zoom_ratio)
+            left = int(left * self._browser.zoom_ratio)
+            top = int(692 * self._browser.zoom_ratio)
+            width = int(317 * self._browser.zoom_ratio)
+            height = int(117 * self._browser.zoom_ratio)
+
+            time.sleep(0.4)
             self._browser.click_region(left, top, width, height)
 
         # Some of the tiles in your hand may slide right
@@ -2199,10 +2205,10 @@ class MatchPresentation(PresentationBase):
         # (even after the option of Zimohu or Ronghu appears,
         # clicking the "Auto Call Win" button has the same effect
         # as clicking the "Zimo" or "Rong" button)
-        left = round(14 * self._browser.zoom_ratio)
-        top = round(557 * self._browser.zoom_ratio)
-        width = round(43 * self._browser.zoom_ratio)
-        height = round(43 * self._browser.zoom_ratio)
+        left = int(18 * self._browser.zoom_ratio)
+        top = int(557 * self._browser.zoom_ratio)
+        width = int(40 * self._browser.zoom_ratio)
+        height = int(40 * self._browser.zoom_ratio)
         self._browser.click_region(left, top, width, height, edge_sigma=1.0)
         self._operation_list = None
         now = datetime.datetime.now(datetime.UTC)
