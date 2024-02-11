@@ -1040,7 +1040,7 @@ class MatchPresentation(PresentationBase):
             if len(actions) == 0:
                 raise InconsistentMessageError(str(message))
 
-            action = action.pop(0)
+            action = actions.pop(0)
             step, name, data = _common.parse_action(action, restore=True)
             if step != 1:
                 raise InconsistentMessageError(str(action))
