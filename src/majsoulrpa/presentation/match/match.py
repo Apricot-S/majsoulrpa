@@ -1838,6 +1838,8 @@ class MatchPresentation(PresentationBase):
             top = int(692 * self._browser.zoom_ratio)
             width = int(157 * self._browser.zoom_ratio)
             height = int(117 * self._browser.zoom_ratio)
+
+            time.sleep(0.4)
             self._browser.click_region(left, top, width, height)
 
         # Some of the tiles in your hand may slide right
@@ -1947,6 +1949,8 @@ class MatchPresentation(PresentationBase):
             top = int(692 * self._browser.zoom_ratio)
             width = int(157 * self._browser.zoom_ratio)
             height = int(117 * self._browser.zoom_ratio)
+
+            time.sleep(0.4)
             self._browser.click_region(left, top, width, height)
 
         # Some of the tiles in your hand may slide right
@@ -2146,6 +2150,8 @@ class MatchPresentation(PresentationBase):
             top = int(692 * self._browser.zoom_ratio)
             width = int(317 * self._browser.zoom_ratio)
             height = int(117 * self._browser.zoom_ratio)
+
+            time.sleep(0.4)
             self._browser.click_region(left, top, width, height)
 
         # Some of the tiles in your hand may slide right
