@@ -183,6 +183,18 @@ class MatchPresentation(PresentationBase):
         self._match_state = match_state
         self._operation_list = None
 
+        # If the mouse cursor is placed over the tiles in the hand,
+        # winning tile candidates may be displayed and interfere with
+        # template matching. Therefore, move the mouse cursor to an
+        # appropriate position where there are no tiles in the hand.
+        self._browser.move_to_region(
+            int(986 * self._browser.zoom_ratio),
+            int(806 * self._browser.zoom_ratio),
+            int(134 * self._browser.zoom_ratio),
+            int(57 * self._browser.zoom_ratio),
+            edge_sigma=1.0,
+        )
+
         paths = [f"template/match/marker{i}" for i in range(4)]
         templates = [Template.open_file(p, browser.zoom_ratio) for p in paths]
         ss = browser.get_screenshot()
@@ -1452,6 +1464,11 @@ class MatchPresentation(PresentationBase):
         width = int(width * self._browser.zoom_ratio)
         height = int(height * self._browser.zoom_ratio)
 
+        # Clicking won't discard a tile unless it position the mouse
+        # cursor over it in advance.
+        self._browser.move_to_region(left, top, width, height, edge_sigma=1.0)
+        time.sleep(0.04)
+
         # `timeout=5.0` may be too short
         # when the screen display freezes.
         self._robust_click_region(
@@ -1461,6 +1478,18 @@ class MatchPresentation(PresentationBase):
             height,
             interval=1.0,
             timeout=25.0,
+            edge_sigma=1.0,
+        )
+
+        # If the mouse cursor is placed over the tiles in the hand,
+        # winning tile candidates may be displayed and interfere with
+        # template matching. Therefore, move the mouse cursor to an
+        # appropriate position where there are no tiles in the hand.
+        self._browser.move_to_region(
+            int(986 * self._browser.zoom_ratio),
+            int(806 * self._browser.zoom_ratio),
+            int(134 * self._browser.zoom_ratio),
+            int(57 * self._browser.zoom_ratio),
             edge_sigma=1.0,
         )
 
