@@ -2199,10 +2199,10 @@ class MatchPresentation(PresentationBase):
         # (even after the option of Zimohu or Ronghu appears,
         # clicking the "Auto Call Win" button has the same effect
         # as clicking the "Zimo" or "Rong" button)
-        left = round(14 * self._browser.zoom_ratio)
+        left = round(18 * self._browser.zoom_ratio)
         top = round(557 * self._browser.zoom_ratio)
-        width = round(43 * self._browser.zoom_ratio)
-        height = round(43 * self._browser.zoom_ratio)
+        width = round(40 * self._browser.zoom_ratio)
+        height = round(40 * self._browser.zoom_ratio)
         self._browser.click_region(left, top, width, height, edge_sigma=1.0)
         self._operation_list = None
         now = datetime.datetime.now(datetime.UTC)
