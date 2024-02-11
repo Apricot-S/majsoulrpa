@@ -46,11 +46,11 @@ class TournamentLobbyPresentation(PresentationBase):
 
             match name:
                 case (
-                    ".lq.Lobby.fetchCustomizedContestList"
+                    ".lq.Lobby.heatbeat"
+                    | ".lq.Lobby.fetchCustomizedContestList"
                     | ".lq.Lobby.fetchCustomizedContestExtendInfo"
                 ):
                     logger.info(message)
-                    continue
                 case _:
                     raise InconsistentMessageError(
                         str(message),
@@ -115,9 +115,11 @@ class TournamentLobbyPresentation(PresentationBase):
             _, name, _, _, _ = message
 
             match name:
-                case ".lq.Lobby.fetchCustomizedContestByContestId":
+                case (
+                    ".lq.Lobby.heatbeat"
+                    | ".lq.Lobby.fetchCustomizedContestByContestId"
+                ):
                     logger.info(message)
-                    continue
                 case _:
                     raise InconsistentMessageError(
                         str(message),
