@@ -26,7 +26,7 @@ MAX_WIDTH: Final[int] = STD_WIDTH * 2
 MAX_HEIGHT: Final[int] = STD_HEIGHT * 2
 ASPECT_RATIO: Final[Fraction] = Fraction(16, 9)
 
-MAX_LATENCY: Final[int] = 1_000  # ms
+MAX_LATENCY: Final[int] = 2_000  # ms
 
 
 def validate_viewport_size(width: int, height: int) -> None:
