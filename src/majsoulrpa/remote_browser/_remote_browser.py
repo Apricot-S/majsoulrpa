@@ -136,6 +136,12 @@ def _launch_remote_browser_core(
                     page.keyboard.press(keys)
                     response = {"result": "O.K."}
                     socket.send_json(response)
+                case "move":
+                    x = request["x"]
+                    y = request["y"]
+                    page.mouse.move(x, y)
+                    response = {"result": "O.K."}
+                    socket.send_json(response)
                 case "scroll":
                     response = {"result": "Error: Not implemented."}
                     socket.send_json(response)
