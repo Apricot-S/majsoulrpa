@@ -1031,6 +1031,8 @@ class MatchPresentation(PresentationBase):
 
         action = actions.pop(0)
         step, name, data = _common.parse_action(action, restore=True)
+        self._step = 0
+
         if step != 0:
             raise InconsistentMessageError(str(action))
 
@@ -1046,7 +1048,7 @@ class MatchPresentation(PresentationBase):
 
         if name != "ActionNewRound":
             raise InconsistentMessageError(str(action))
-        self._step = 0
+
         self._events.clear()
         self._events.append(NewRoundEvent(data, timestamp))
         self._round_state = RoundState(self._match_state, data)
