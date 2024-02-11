@@ -1653,10 +1653,10 @@ class MatchPresentation(PresentationBase):
                 ) from e
 
     def _skip_by_no_melding(self, deadline: datetime.datetime) -> None:
-        left = round(14 * self._browser.zoom_ratio)
-        top = round(623 * self._browser.zoom_ratio)
-        width = round(43 * self._browser.zoom_ratio)
-        height = round(43 * self._browser.zoom_ratio)
+        left = round(18 * self._browser.zoom_ratio)
+        top = round(625 * self._browser.zoom_ratio)
+        width = round(40 * self._browser.zoom_ratio)
+        height = round(40 * self._browser.zoom_ratio)
         self._browser.click_region(left, top, width, height, edge_sigma=1.0)
 
         while True:
