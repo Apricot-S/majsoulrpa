@@ -26,7 +26,7 @@ MAX_WIDTH: Final[int] = STD_WIDTH * 2
 MAX_HEIGHT: Final[int] = STD_HEIGHT * 2
 ASPECT_RATIO: Final[Fraction] = Fraction(16, 9)
 
-MAX_LATENCY: Final[int] = 1_000  # ms
+MAX_LATENCY: Final[int] = 2_000  # ms
 
 
 def validate_viewport_size(width: int, height: int) -> None:
@@ -118,6 +118,17 @@ class BrowserBase(metaclass=ABCMeta):
 
     @abstractmethod
     def press_hotkey(self, *args: str) -> None:
+        pass
+
+    @abstractmethod
+    def move_to_region(
+        self,
+        left: int,
+        top: int,
+        width: int,
+        height: int,
+        edge_sigma: float = 2.0,
+    ) -> None:
         pass
 
     @abstractmethod
@@ -216,6 +227,35 @@ class DesktopBrowser(BrowserBase):
     def press_hotkey(self, *args: str) -> None:
         keys = "+".join(args)
         self._page.keyboard.press(keys)
+
+    def move_to_region(
+        self,
+        left: int,
+        top: int,
+        width: int,
+        height: int,
+        edge_sigma: float = 2.0,
+    ) -> None:
+        validate_region(
+            left,
+            top,
+            width,
+            height,
+            self._viewport_size["width"],
+            self._viewport_size["height"],
+        )
+        if edge_sigma <= 0.0:  # noqa: PLR2004
+            msg = "Invalid edge sigma was input."
+            raise ValueError(msg)
+
+        x, y = _get_random_point_in_region(
+            left,
+            top,
+            width,
+            height,
+            edge_sigma=edge_sigma,
+        )
+        self._page.mouse.move(x, y)
 
     def scroll(self, clicks: int) -> None:
         if clicks == 0:
@@ -346,6 +386,40 @@ class RemoteBrowser(BrowserBase):
 
     def press_hotkey(self, *args: str) -> None:
         request = {"type": "press_hotkey", "args": list(args)}
+        response = self._communicate(request)
+        self._check_response(response)
+
+    def move_to_region(
+        self,
+        left: int,
+        top: int,
+        width: int,
+        height: int,
+        edge_sigma: float = 2.0,
+    ) -> None:
+        viewport_size = self._get_viewport_size()
+
+        validate_region(
+            left,
+            top,
+            width,
+            height,
+            viewport_size["width"],
+            viewport_size["height"],
+        )
+        if edge_sigma <= 0.0:  # noqa: PLR2004
+            msg = "Invalid edge sigma was input."
+            raise ValueError(msg)
+
+        x, y = _get_random_point_in_region(
+            left,
+            top,
+            width,
+            height,
+            edge_sigma=edge_sigma,
+        )
+
+        request = {"type": "move", "x": x, "y": y}
         response = self._communicate(request)
         self._check_response(response)
 
