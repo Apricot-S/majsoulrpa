@@ -15,7 +15,6 @@ stream_handler = StreamHandler()
 stream_handler.setLevel(LOG_LEVEL)
 basicConfig(level=LOG_LEVEL, handlers=[stream_handler])
 
-
 if __name__ == "__main__":
     my_config = config.get_config("examples/config.toml")
 

@@ -1427,7 +1427,7 @@ class MatchPresentation(PresentationBase):
                 case 4:
                     left = 633
                 case 1:
-                    left = 224
+                    left = 348
                 case _:
                     raise AssertionError
         else:
