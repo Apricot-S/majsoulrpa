@@ -1433,7 +1433,7 @@ class MatchPresentation(PresentationBase):
         else:
             # Discard from hand
             # Coordinates of hand
-            left = round(224 + index * 94.91)
+            left = int(224 + index * 94.91)
 
         top = 922
         height = 149
@@ -1441,16 +1441,16 @@ class MatchPresentation(PresentationBase):
 
         # Click 10% inside the tile because you can touch
         # the adjacent tile at the very edge of the tile.
-        left += round(width * 0.1)
-        top += round(height * 0.1)
-        width = round(width * 0.8)
+        left += int(width * 0.1)
+        top += int(height * 0.1)
+        width = int(width * 0.8)
         # Clicking fails with `height * 0.8`.
-        height = round(height * 0.7)
+        height = int(height * 0.7)
 
-        left = round(left * self._browser.zoom_ratio)
-        top = round(top * self._browser.zoom_ratio)
-        width = round(width * self._browser.zoom_ratio)
-        height = round(height * self._browser.zoom_ratio)
+        left = int(left * self._browser.zoom_ratio)
+        top = int(top * self._browser.zoom_ratio)
+        width = int(width * self._browser.zoom_ratio)
+        height = int(height * self._browser.zoom_ratio)
 
         # `timeout=5.0` may be too short
         # when the screen display freezes.
@@ -1653,10 +1653,10 @@ class MatchPresentation(PresentationBase):
                 ) from e
 
     def _skip_by_no_melding(self, deadline: datetime.datetime) -> None:
-        left = round(18 * self._browser.zoom_ratio)
-        top = round(625 * self._browser.zoom_ratio)
-        width = round(40 * self._browser.zoom_ratio)
-        height = round(40 * self._browser.zoom_ratio)
+        left = int(18 * self._browser.zoom_ratio)
+        top = int(625 * self._browser.zoom_ratio)
+        width = int(40 * self._browser.zoom_ratio)
+        height = int(40 * self._browser.zoom_ratio)
         self._browser.click_region(left, top, width, height, edge_sigma=1.0)
 
         while True:
@@ -1834,10 +1834,10 @@ class MatchPresentation(PresentationBase):
                 )
                 raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
-            left = round(left * self._browser.zoom_ratio)
-            top = round(691 * self._browser.zoom_ratio)
-            width = round(160 * self._browser.zoom_ratio)
-            height = round(120 * self._browser.zoom_ratio)
+            left = int(left * self._browser.zoom_ratio)
+            top = int(691 * self._browser.zoom_ratio)
+            width = int(160 * self._browser.zoom_ratio)
+            height = int(120 * self._browser.zoom_ratio)
             self._browser.click_region(left, top, width, height)
 
         # Some of the tiles in your hand may slide right
@@ -1943,10 +1943,10 @@ class MatchPresentation(PresentationBase):
                 )
                 raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
-            left = round(left * self._browser.zoom_ratio)
-            top = round(691 * self._browser.zoom_ratio)
-            width = round(160 * self._browser.zoom_ratio)
-            height = round(120 * self._browser.zoom_ratio)
+            left = int(left * self._browser.zoom_ratio)
+            top = int(691 * self._browser.zoom_ratio)
+            width = int(160 * self._browser.zoom_ratio)
+            height = int(120 * self._browser.zoom_ratio)
             self._browser.click_region(left, top, width, height)
 
         # Some of the tiles in your hand may slide right
@@ -2142,10 +2142,10 @@ class MatchPresentation(PresentationBase):
                 )
                 raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
-            left = round(left * self._browser.zoom_ratio)
-            top = round(691 * self._browser.zoom_ratio)
-            width = round(320 * self._browser.zoom_ratio)
-            height = round(120 * self._browser.zoom_ratio)
+            left = int(left * self._browser.zoom_ratio)
+            top = int(691 * self._browser.zoom_ratio)
+            width = int(320 * self._browser.zoom_ratio)
+            height = int(120 * self._browser.zoom_ratio)
             self._browser.click_region(left, top, width, height)
 
         # Some of the tiles in your hand may slide right
@@ -2199,10 +2199,10 @@ class MatchPresentation(PresentationBase):
         # (even after the option of Zimohu or Ronghu appears,
         # clicking the "Auto Call Win" button has the same effect
         # as clicking the "Zimo" or "Rong" button)
-        left = round(18 * self._browser.zoom_ratio)
-        top = round(557 * self._browser.zoom_ratio)
-        width = round(40 * self._browser.zoom_ratio)
-        height = round(40 * self._browser.zoom_ratio)
+        left = int(18 * self._browser.zoom_ratio)
+        top = int(557 * self._browser.zoom_ratio)
+        width = int(40 * self._browser.zoom_ratio)
+        height = int(40 * self._browser.zoom_ratio)
         self._browser.click_region(left, top, width, height, edge_sigma=1.0)
         self._operation_list = None
         now = datetime.datetime.now(datetime.UTC)
