@@ -7,7 +7,7 @@ from majsoulrpa.presentation import (
     AuthPresentation,
     HomePresentation,
     LoginPresentation,
-    TournamentLobbyPresentation,
+    TournamentPresentation,
 )
 from majsoulrpa.yostar_login import YostarLoginIMAP
 
@@ -51,20 +51,21 @@ if __name__ == "__main__":
             msg = "Could not transit to `home`."
             raise RuntimeError(msg)
 
-        presentation.enter_tournament_lobby()
+        tournament_id = input("Tournament ID: ")
+        presentation.enter_tournament(tournament_id)
         if presentation.new_presentation is None:
             msg = "Could not transit to `tournament lobby`."
             raise RuntimeError(msg)
         presentation = presentation.new_presentation
 
-        if not isinstance(presentation, TournamentLobbyPresentation):
+        if not isinstance(presentation, TournamentPresentation):
             msg = "Could not transit to `tournament lobby`."
             raise RuntimeError(msg)
 
-        tournament_id = input("Tournament ID: ")
-        presentation.enter_room(tournament_id)
-        time.sleep(3.0)
+        if input("Do you want to prepare for match? y/n: ") == "y":
+            presentation.prepare(2)
         presentation.leave()
+
         if presentation.new_presentation is None:
             msg = "Could not transit to `home`."
             raise RuntimeError(msg)
