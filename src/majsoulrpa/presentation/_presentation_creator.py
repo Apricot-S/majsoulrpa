@@ -16,7 +16,7 @@ from .presentation_base import (
     PresentationCreatorBase,
 )
 from .room import RoomGuestPresentation, RoomHostPresentation
-from .tournament import TournamentLobbyPresentation
+from .tournament import TournamentPresentation
 
 
 class PresentationCreator(PresentationCreatorBase):
@@ -33,10 +33,8 @@ class PresentationCreator(PresentationCreatorBase):
                 AuthPresentation._wait(browser, timeout)
             case Presentation.HOME:
                 HomePresentation._wait(browser, timeout)
-            case Presentation.TOURNAMENT_LOBBY:
-                TournamentLobbyPresentation._wait(browser, timeout)
-            case Presentation.TOURNAMENT_ROOM:
-                raise NotImplementedError
+            case Presentation.TOURNAMENT:
+                TournamentPresentation._wait(browser, timeout)
             case Presentation.ROOM_HOST:
                 RoomHostPresentation._wait(browser, timeout)
             case Presentation.ROOM_GUEST:
@@ -71,14 +69,12 @@ class PresentationCreator(PresentationCreatorBase):
                     self,
                     kwargs["timeout"],
                 )
-            case Presentation.TOURNAMENT_LOBBY:
-                return TournamentLobbyPresentation(
+            case Presentation.TOURNAMENT:
+                return TournamentPresentation(
                     browser,
                     message_queue_client,
                     self,
                 )
-            case Presentation.TOURNAMENT_ROOM:
-                raise NotImplementedError
             case Presentation.ROOM_HOST:
                 match current_presentation:
                     case Presentation.HOME | Presentation.MATCH:

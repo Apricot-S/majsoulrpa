@@ -285,6 +285,8 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.readyPlay"
                     | ".lq.Lobby.fetchInfo"  # TODO: Analyzing content
                     | ".lq.Lobby.fetchActivityFlipInfo"
+                    | ".lq.Lobby.startCustomizedContest"
+                    | ".lq.Lobby.stopCustomizedContest"
                 ):
                     logger.info(message)
                     continue
@@ -296,6 +298,9 @@ class HomePresentation(PresentationBase):
                     ".lq.Lobby.fetchDailyTask"
                     | ".lq.Lobby.leaveRoom"
                     | ".lq.Lobby.fetchAccountActivityData"
+                    | ".lq.Lobby.fetchCustomizedContestOnlineInfo"
+                    | ".lq.Lobby.leaveCustomizedContest"
+                    | ".lq.Lobby.leaveCustomizedContestChatRoom"
                 ):
                     logger.info(message)
 
@@ -415,10 +420,19 @@ class HomePresentation(PresentationBase):
                         self._browser.get_screenshot(),
                     )
 
-    def enter_tournament_lobby(self, timeout: TimeoutType = 60.0) -> None:
+    def enter_tournament(
+        self,
+        tournament_id: str,
+        timeout: TimeoutType = 60.0,
+    ) -> bool:
         self._assert_not_stale()
 
         deadline = timeout_to_deadline(timeout)
+
+        if re.fullmatch(r"\d{6}", tournament_id) is None:
+            msg = "Tournament ID must be a 6-digit number."
+            raise ValueError(msg)
+
         self._discard_messages_across_dates()
 
         # Click "Tournament Match".
@@ -435,22 +449,117 @@ class HomePresentation(PresentationBase):
         )
         template.wait_until_then_click(self._browser, deadline)
 
+        template = Template.open_file(
+            "template/home/tournament_lobby/marker",
+            self._browser.zoom_ratio,
+        )
+        template.wait_until(self._browser, deadline)
+
+        while True:
+            message = self._message_queue_client.dequeue_message(1)
+            if message is None:
+                break
+            _, name, _, _, _ = message
+
+            match name:
+                case (
+                    ".lq.Lobby.heatbeat"
+                    | ".lq.Lobby.fetchCustomizedContestList"
+                    | ".lq.Lobby.fetchCustomizedContestExtendInfo"
+                ):
+                    logger.info(message)
+                case _:
+                    raise InconsistentMessageError(
+                        str(message),
+                        self._browser.get_screenshot(),
+                    )
+
+        # Wait until "Enter Tournament ID" is displayed and then click.
+        template = Template.open_file(
+            "template/home/tournament_lobby/enter_tournament_id",
+            self._browser.zoom_ratio,
+        )
+        template.wait_until_then_click(self._browser, deadline)
+
+        # Wait until "Confirm" is displayed.
+        template = Template.open_file(
+            "template/home/tournament_lobby/confirm",
+            self._browser.zoom_ratio,
+        )
+        template.wait_until(self._browser, deadline)
+
+        # Click the text box to focus it.
+        self._browser.click_region(
+            int(660 * self._browser.zoom_ratio),
+            int(340 * self._browser.zoom_ratio),
+            int(410 * self._browser.zoom_ratio),
+            int(40 * self._browser.zoom_ratio),
+        )
+        time.sleep(0.1)
+
+        # Enter an room id in the text box.
+        self._browser.write(tournament_id)
+
+        # Click "Confirm"
+        template.click(self._browser)
+
+        try:
+            template = Template.open_file(
+                "template/home/tournament_lobby/error_close",
+                self._browser.zoom_ratio,
+            )
+            template.wait_for_then_click(self._browser, 1.5)
+        except PresentationTimeoutError:
+            pass
+        else:
+            time.sleep(0.5)
+
+            while True:
+                message = self._message_queue_client.dequeue_message(1)
+                if message is None:
+                    break
+                _, name, _, _, _ = message
+
+                match name:
+                    case (
+                        ".lq.Lobby.heatbeat"
+                        | ".lq.Lobby.fetchCustomizedContestByContestId"
+                    ):
+                        logger.info(message)
+                    case _:
+                        raise InconsistentMessageError(
+                            str(message),
+                            self._browser.get_screenshot(),
+                        )
+
+            # Click on the icon to leave the tournament lobby.
+            template = Template.open_file(
+                "template/home/tournament_lobby/leave",
+                self._browser.zoom_ratio,
+            )
+            template.wait_until_then_click(self._browser, deadline)
+            time.sleep(1.5)
+
+            return False
+
         # Wait until tournament lobby screen is displayed.
         now = datetime.datetime.now(datetime.UTC)
         self._creator.wait(
             self._browser,
             deadline - now,
-            Presentation.TOURNAMENT_LOBBY,
+            Presentation.TOURNAMENT,
         )
 
         now = datetime.datetime.now(datetime.UTC)
         new_presentation = self._creator.create_new_presentation(
             Presentation.HOME,
-            Presentation.TOURNAMENT_LOBBY,
+            Presentation.TOURNAMENT,
             self._browser,
             self._message_queue_client,
         )
         self._set_new_presentation(new_presentation)
+
+        return True
 
     def create_room(
         self,
