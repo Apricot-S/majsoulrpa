@@ -165,25 +165,6 @@ class TournamentPresentation(PresentationBase):
             )
             self._set_new_presentation(new_presentation)
 
-    def cancel(self) -> None:
-        self._assert_not_stale()
-
-        self._validate_participation_availability()
-
-        # Click on "Waiting to start...".
-        template = Template.open_file(
-            "template/tournament/waiting_to_start",
-            self._browser.zoom_ratio,
-        )
-        if not template.click_if_match(self._browser):
-            msg = 'The current state is not "Waiting to start...".'
-            raise InvalidOperationError(msg, self._browser.get_screenshot())
-
-        # Clicking "Waiting to start..." will generate an effect,
-        # which will interfere with template matching,
-        # so wait until the effect disappears.
-        time.sleep(1.5)
-
     def leave(self, timeout: TimeoutType = 10.0) -> None:
         self._assert_not_stale()
 
