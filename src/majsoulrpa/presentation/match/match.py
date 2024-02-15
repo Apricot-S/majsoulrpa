@@ -380,8 +380,9 @@ class MatchPresentation(PresentationBase):
 
                     raise InconsistentMessageError(str(action_info), ss)
 
-            # The conditional statement regarding `.lq.FastTest.authGame`
-            # must come before this conditional statement.
+            # The conditional statement regarding
+            # `.lq.FastTest.authGame` must come before this conditional
+            # statement.
             if name in MatchPresentation._COMMON_MESSAGE_NAMES:
                 self._on_common_message(message)
                 continue
