@@ -268,6 +268,14 @@ class MatchPresentation(PresentationBase):
                     # exchanged regularly in the tournament room
                     logger.info(message)
                     continue
+                case ".lq.Lobby.startCustomizedContest":
+                    # exchanged when clicking on "Prepare for match"
+                    logger.info(message)
+                    continue
+                case ".lq.Lobby.stopCustomizedContest":
+                    # exchanged when clicking on "Waiting to start..."
+                    logger.info(message)
+                    continue
                 case (
                     ".lq.NotifyCustomContestSystemMsg"
                     | ".lq.Lobby.leaveCustomizedContestChatRoom"
