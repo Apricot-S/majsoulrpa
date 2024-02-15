@@ -264,6 +264,17 @@ class MatchPresentation(PresentationBase):
                     logger.info(message)
                     self._on_sync_game(message)
                     continue
+                case ".lq.Lobby.fetchCustomizedContestOnlineInfo":
+                    # exchanged regularly in the tournament room
+                    logger.info(message)
+                    continue
+                case (
+                    ".lq.NotifyCustomContestSystemMsg"
+                    | ".lq.Lobby.leaveCustomizedContestChatRoom"
+                ):
+                    # Tournament match starts.
+                    logger.info(message)
+                    continue
                 case ".lq.Lobby.modifyRoom":
                     # If an API response message regarding changing
                     # the friendly match waiting room is returned
@@ -280,7 +291,7 @@ class MatchPresentation(PresentationBase):
                     logger.info(message)
                     continue
                 case ".lq.NotifyRoomGameStart":
-                    # Friendly match starts.
+                    # Tournament match or friendly match starts.
                     logger.info(message)
                     uuid = request["game_uuid"]
                     self._match_state._set_uuid(uuid)  # noqa: SLF001
@@ -665,7 +676,18 @@ class MatchPresentation(PresentationBase):
                     # proceed to the next.
                     self._message_queue_client.put_back(message)
                     continue
+                case (
+                    ".lq.Lobby.enterCustomizedContest"
+                    | ".lq.Lobby.joinCustomizedContestChatRoom"
+                    | ".lq.Lobby.fetchCustomizedContestOnlineInfo"
+                ):
+                    # Return to tournament match room.
+                    # Backfill the prefetched message.
+                    self._message_queue_client.put_back(message)
+                    self._reset_to_prev_presentation(deadline)
+                    return
                 case ".lq.Lobby.fetchRoom":
+                    # Return to friendly match room.
                     # Backfill the prefetched message.
                     self._message_queue_client.put_back(message)
                     self._reset_to_prev_presentation(deadline)
