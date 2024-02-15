@@ -565,6 +565,23 @@ class MatchPresentation(PresentationBase):
             except PresentationTimeoutError:
                 break
 
+        if self._prev_presentation == Presentation.TOURNAMENT:
+            now = datetime.datetime.now(datetime.UTC)
+            self._creator.wait(
+                self._browser,
+                deadline - now,
+                self._prev_presentation,
+            )
+            now = datetime.datetime.now(datetime.UTC)
+            new_presentation = self._creator.create_new_presentation(
+                Presentation.MATCH,
+                self._prev_presentation,
+                self._browser,
+                self._message_queue_client,
+            )
+            self._set_new_presentation(new_presentation)
+            return
+
         if self._prev_presentation in (
             Presentation.ROOM_HOST,
             Presentation.ROOM_GUEST,
