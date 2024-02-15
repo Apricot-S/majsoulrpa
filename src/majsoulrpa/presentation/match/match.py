@@ -692,11 +692,11 @@ class MatchPresentation(PresentationBase):
                     self._message_queue_client.put_back(message)
                     self._reset_to_prev_presentation(deadline)
                     return
-
-            raise InconsistentMessageError(
-                str(message),
-                self._browser.get_screenshot(),
-            )
+                case _:
+                    raise InconsistentMessageError(
+                        str(message),
+                        self._browser.get_screenshot(),
+                    )
 
     def _workaround_for_reordered_actions(
         self,
