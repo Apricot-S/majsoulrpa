@@ -285,6 +285,9 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.readyPlay"
                     | ".lq.Lobby.fetchInfo"  # TODO: Analyzing content
                     | ".lq.Lobby.fetchActivityFlipInfo"
+                    | ".lq.Lobby.fetchCustomizedContestList"
+                    | ".lq.Lobby.fetchCustomizedContestExtendInfo"
+                    | ".lq.Lobby.fetchCustomizedContestOnlineInfo"
                     | ".lq.Lobby.startCustomizedContest"
                     | ".lq.Lobby.stopCustomizedContest"
                 ):
@@ -297,10 +300,9 @@ class HomePresentation(PresentationBase):
                 case (
                     ".lq.Lobby.fetchDailyTask"
                     | ".lq.Lobby.leaveRoom"
-                    | ".lq.Lobby.fetchAccountActivityData"
-                    | ".lq.Lobby.fetchCustomizedContestOnlineInfo"
                     | ".lq.Lobby.leaveCustomizedContest"
                     | ".lq.Lobby.leaveCustomizedContestChatRoom"
+                    | ".lq.Lobby.fetchAccountActivityData"
                 ):
                     logger.info(message)
 
