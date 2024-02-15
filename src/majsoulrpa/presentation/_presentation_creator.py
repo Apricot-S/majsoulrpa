@@ -44,7 +44,7 @@ class PresentationCreator(PresentationCreatorBase):
             case _:
                 raise AssertionError
 
-    def create_new_presentation(
+    def create_new_presentation(  # noqa: C901
         self,
         current_presentation: Presentation,
         next_presentation: Presentation,
@@ -70,11 +70,15 @@ class PresentationCreator(PresentationCreatorBase):
                     kwargs["timeout"],
                 )
             case Presentation.TOURNAMENT:
-                return TournamentPresentation(
-                    browser,
-                    message_queue_client,
-                    self,
-                )
+                match current_presentation:
+                    case Presentation.HOME | Presentation.MATCH:
+                        return TournamentPresentation(
+                            browser,
+                            message_queue_client,
+                            self,
+                        )
+                    case _:
+                        raise NotImplementedError
             case Presentation.ROOM_HOST:
                 match current_presentation:
                     case Presentation.HOME | Presentation.MATCH:
@@ -123,7 +127,11 @@ class PresentationCreator(PresentationCreatorBase):
                             current_presentation,
                             kwargs["timeout"],
                         )
-                    case Presentation.ROOM_HOST | Presentation.ROOM_GUEST:
+                    case (
+                        Presentation.TOURNAMENT
+                        | Presentation.ROOM_HOST
+                        | Presentation.ROOM_GUEST
+                    ):
                         return MatchPresentation(
                             browser,
                             message_queue_client,
