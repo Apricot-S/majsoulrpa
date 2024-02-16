@@ -670,7 +670,17 @@ class MatchPresentation(PresentationBase):
                 case ".lq.Lobby.fetchAccountInfo":
                     logger.info(message)
                     # TODO: Processing message content
-                    # Only during the event?
+                    # Apparently only during an event.
+                    # If there are no more messages,
+                    # return to the home screen
+                    message = self._message_queue_client.dequeue_message(5)
+                    if message is None:
+                        self._reset_to_prev_presentation(deadline)
+                        return
+
+                    # Backfill the prefetched message and
+                    # proceed to the next.
+                    self._message_queue_client.put_back(message)
                     continue
                 case (
                     ".lq.NotifyAccountUpdate"
