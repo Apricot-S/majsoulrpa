@@ -1,0 +1,6 @@
+# Tournament Lobby - Enter Tournament ID
+left = 1004
+top = 207
+width = 280
+height = 80
+threshold = 0.95

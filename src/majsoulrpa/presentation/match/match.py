@@ -264,6 +264,25 @@ class MatchPresentation(PresentationBase):
                     logger.info(message)
                     self._on_sync_game(message)
                     continue
+                case ".lq.Lobby.fetchCustomizedContestOnlineInfo":
+                    # exchanged regularly in the tournament room
+                    logger.info(message)
+                    continue
+                case ".lq.Lobby.startCustomizedContest":
+                    # exchanged when clicking on "Prepare for match"
+                    logger.info(message)
+                    continue
+                case ".lq.Lobby.stopCustomizedContest":
+                    # exchanged when clicking on "Waiting to start..."
+                    logger.info(message)
+                    continue
+                case (
+                    ".lq.NotifyCustomContestSystemMsg"
+                    | ".lq.Lobby.leaveCustomizedContestChatRoom"
+                ):
+                    # Tournament match starts.
+                    logger.info(message)
+                    continue
                 case ".lq.Lobby.modifyRoom":
                     # If an API response message regarding changing
                     # the friendly match waiting room is returned
@@ -280,7 +299,7 @@ class MatchPresentation(PresentationBase):
                     logger.info(message)
                     continue
                 case ".lq.NotifyRoomGameStart":
-                    # Friendly match starts.
+                    # Tournament match or friendly match starts.
                     logger.info(message)
                     uuid = request["game_uuid"]
                     self._match_state._set_uuid(uuid)  # noqa: SLF001
@@ -380,8 +399,9 @@ class MatchPresentation(PresentationBase):
 
                     raise InconsistentMessageError(str(action_info), ss)
 
-            # The conditional statement regarding `.lq.FastTest.authGame`
-            # must come before this conditional statement.
+            # The conditional statement regarding
+            # `.lq.FastTest.authGame` must come before this conditional
+            # statement.
             if name in MatchPresentation._COMMON_MESSAGE_NAMES:
                 self._on_common_message(message)
                 continue
@@ -553,6 +573,23 @@ class MatchPresentation(PresentationBase):
             except PresentationTimeoutError:
                 break
 
+        if self._prev_presentation == Presentation.TOURNAMENT:
+            now = datetime.datetime.now(datetime.UTC)
+            self._creator.wait(
+                self._browser,
+                deadline - now,
+                self._prev_presentation,
+            )
+            now = datetime.datetime.now(datetime.UTC)
+            new_presentation = self._creator.create_new_presentation(
+                Presentation.MATCH,
+                self._prev_presentation,
+                self._browser,
+                self._message_queue_client,
+            )
+            self._set_new_presentation(new_presentation)
+            return
+
         if self._prev_presentation in (
             Presentation.ROOM_HOST,
             Presentation.ROOM_GUEST,
@@ -633,7 +670,17 @@ class MatchPresentation(PresentationBase):
                 case ".lq.Lobby.fetchAccountInfo":
                     logger.info(message)
                     # TODO: Processing message content
-                    # Only during the event?
+                    # Apparently only during an event.
+                    # If there are no more messages,
+                    # return to the home screen
+                    message = self._message_queue_client.dequeue_message(5)
+                    if message is None:
+                        self._reset_to_prev_presentation(deadline)
+                        return
+
+                    # Backfill the prefetched message and
+                    # proceed to the next.
+                    self._message_queue_client.put_back(message)
                     continue
                 case (
                     ".lq.NotifyAccountUpdate"
@@ -664,16 +711,27 @@ class MatchPresentation(PresentationBase):
                     # proceed to the next.
                     self._message_queue_client.put_back(message)
                     continue
-                case ".lq.Lobby.fetchRoom":
+                case (
+                    ".lq.Lobby.enterCustomizedContest"
+                    | ".lq.Lobby.joinCustomizedContestChatRoom"
+                    | ".lq.Lobby.fetchCustomizedContestOnlineInfo"
+                ):
+                    # Return to tournament match room.
                     # Backfill the prefetched message.
                     self._message_queue_client.put_back(message)
                     self._reset_to_prev_presentation(deadline)
                     return
-
-            raise InconsistentMessageError(
-                str(message),
-                self._browser.get_screenshot(),
-            )
+                case ".lq.Lobby.fetchRoom":
+                    # Return to friendly match room.
+                    # Backfill the prefetched message.
+                    self._message_queue_client.put_back(message)
+                    self._reset_to_prev_presentation(deadline)
+                    return
+                case _:
+                    raise InconsistentMessageError(
+                        str(message),
+                        self._browser.get_screenshot(),
+                    )
 
     def _workaround_for_reordered_actions(
         self,
