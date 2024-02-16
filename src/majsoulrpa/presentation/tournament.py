@@ -168,7 +168,36 @@ class TournamentPresentation(PresentationBase):
     def leave(self, timeout: TimeoutType = 10.0) -> None:
         self._assert_not_stale()
 
-        self._validate_participation_availability()
+        ss = self._browser.get_screenshot()
+
+        template0 = Template.open_file(
+            "template/tournament/match_hasnt_started",
+            self._browser.zoom_ratio,
+        )
+        template1 = Template.open_file(
+            "template/tournament/match_has_ended",
+            self._browser.zoom_ratio,
+        )
+        template2 = Template.open_file(
+            "template/tournament/prepare_for_match",
+            self._browser.zoom_ratio,
+        )
+        template3 = Template.open_file(
+            "template/tournament/waiting_to_start",
+            self._browser.zoom_ratio,
+        )
+        templates = [template0, template1, template2, template3]
+
+        if Template.match_one_of(ss, templates) == -1:
+            msg = (
+                "Unexpected state: "
+                "The tournament room may have been closed. "
+                "Please cooperate by providing a screenshot of the error. "
+                "Thank you for your cooperation."
+            )
+            error = UnexpectedStateError(msg, ss)
+            error.save_screenshot()
+            raise error
 
         # Click on the icon to leave the tournament room.
         template = Template.open_file(
