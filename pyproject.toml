@@ -66,6 +66,7 @@ ignore = [
 
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 72
+ignore-overlong-task-comments = true
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

@@ -16,6 +16,7 @@ from .presentation_base import (
     PresentationCreatorBase,
 )
 from .room import RoomGuestPresentation, RoomHostPresentation
+from .tournament import TournamentPresentation
 
 
 class PresentationCreator(PresentationCreatorBase):
@@ -33,7 +34,7 @@ class PresentationCreator(PresentationCreatorBase):
             case Presentation.HOME:
                 HomePresentation._wait(browser, timeout)
             case Presentation.TOURNAMENT:
-                raise NotImplementedError
+                TournamentPresentation._wait(browser, timeout)
             case Presentation.ROOM_HOST:
                 RoomHostPresentation._wait(browser, timeout)
             case Presentation.ROOM_GUEST:
@@ -43,7 +44,7 @@ class PresentationCreator(PresentationCreatorBase):
             case _:
                 raise AssertionError
 
-    def create_new_presentation(
+    def create_new_presentation(  # noqa: C901
         self,
         current_presentation: Presentation,
         next_presentation: Presentation,
@@ -69,7 +70,15 @@ class PresentationCreator(PresentationCreatorBase):
                     kwargs["timeout"],
                 )
             case Presentation.TOURNAMENT:
-                raise NotImplementedError
+                match current_presentation:
+                    case Presentation.HOME | Presentation.MATCH:
+                        return TournamentPresentation(
+                            browser,
+                            message_queue_client,
+                            self,
+                        )
+                    case _:
+                        raise NotImplementedError
             case Presentation.ROOM_HOST:
                 match current_presentation:
                     case Presentation.HOME | Presentation.MATCH:
@@ -118,7 +127,11 @@ class PresentationCreator(PresentationCreatorBase):
                             current_presentation,
                             kwargs["timeout"],
                         )
-                    case Presentation.ROOM_HOST | Presentation.ROOM_GUEST:
+                    case (
+                        Presentation.TOURNAMENT
+                        | Presentation.ROOM_HOST
+                        | Presentation.ROOM_GUEST
+                    ):
                         return MatchPresentation(
                             browser,
                             message_queue_client,
