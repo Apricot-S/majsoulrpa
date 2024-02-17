@@ -1,8 +1,8 @@
 import base64
 import datetime
 import json
-import subprocess
 from ipaddress import ip_address
+from pathlib import Path
 from typing import Any
 
 import google.protobuf.json_format
@@ -107,44 +107,32 @@ class ZMQClient(MessageQueueClientBase):
                 try:
                     parser = self._message_type_map[name][1]()
                 except IndexError as ie:
-                    proc = subprocess.run(
-                        ["protoc", "--decode_raw"],  # noqa: S603, S607
-                        input=data,
-                        capture_output=True,
-                        check=True,
-                    )
-                    stdout = proc.stdout.decode("utf-8")
+                    now = datetime.datetime.now(datetime.UTC)
+                    file_name = now.strftime(f"%Y-%m-%d-%H-%M-%S-{name}.bin")
+                    with Path(file_name).open("wb") as fp:
+                        fp.write(data)
                     msg = (
                         "A new API found:\n"
                         f"  name: {name}\n"
-                        f"  data: {data!r}\n"
-                        "\n"
-                        "===============================\n"
-                        "Output of `protoc --decode_raw`\n"
-                        "===============================\n"
-                        f"{stdout}"
+                        f"Raw data was saved to {file_name}.\n"
+                        "Please cooperate by providing data. "
+                        "Thank you for your cooperation."
                     )
                     raise RuntimeError(msg) from ie
             else:
                 try:
                     parser = self._message_type_map[name][0]()
                 except KeyError as ke:
-                    proc = subprocess.run(
-                        ["protoc", "--decode_raw"],  # noqa: S603, S607
-                        input=data,
-                        capture_output=True,
-                        check=True,
-                    )
-                    stdout = proc.stdout.decode("utf-8")
+                    now = datetime.datetime.now(datetime.UTC)
+                    file_name = now.strftime(f"%Y-%m-%d-%H-%M-%S-{name}.bin")
+                    with Path(file_name).open("wb") as fp:
+                        fp.write(data)
                     msg = (
                         "A new API found:\n"
                         f"  name: {name}\n"
-                        f"  data: {data!r}\n"
-                        "\n"
-                        "===============================\n"
-                        "Output of `protoc --decode_raw`\n"
-                        "===============================\n"
-                        f"{stdout}"
+                        f"Raw data was saved to {file_name}.\n"
+                        "Please cooperate by providing data. "
+                        "Thank you for your cooperation."
                     )
                     raise RuntimeError(msg) from ke
 
