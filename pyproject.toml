@@ -34,7 +34,6 @@ boto3 = "^1.34.11"
 pyzmq = "^25.1.2"
 
 [tool.poetry.group.dev.dependencies]
-build = "^1.0.3"
 mypy = "^1.8.0"
 ruff = "^0.2.0"
 types-protobuf = "^4.24.0.4"
