@@ -5,12 +5,14 @@ from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import Player, TimeoutType
-from majsoulrpa.presentation.presentation_base import (
+from majsoulrpa.presentation.exceptions import (
     InconsistentMessageError,
+    UnexpectedStateError,
+)
+from majsoulrpa.presentation.presentation_base import (
     Presentation,
     PresentationBase,
     PresentationCreatorBase,
-    UnexpectedStateError,
 )
 
 logger = getLogger(__name__)

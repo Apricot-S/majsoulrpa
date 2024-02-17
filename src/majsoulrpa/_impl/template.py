@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
-from majsoulrpa.presentation.presentation_base import PresentationTimeoutError
+from majsoulrpa.presentation.exceptions import PresentationTimeoutError
 
 from .browser import STD_HEIGHT, STD_WIDTH, BrowserBase
 

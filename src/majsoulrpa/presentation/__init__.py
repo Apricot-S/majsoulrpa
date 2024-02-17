@@ -8,19 +8,19 @@ manages interactions with widgets on the screen.
 """
 
 from .auth import AuthPresentation
-from .home import HomePresentation, JoinRoomFailureReason
-from .login import LoginPresentation
-from .presentation_base import (
+from .exceptions import (
     BaseError,
     BrowserRefreshRequest,
     InconsistentMessageError,
     InvalidOperationError,
     NotImplementedOperationError,
-    PresentationBase,
     PresentationNotDetectedError,
     PresentationTimeoutError,
     UnexpectedStateError,
 )
+from .home import HomePresentation, JoinRoomFailureReason
+from .login import LoginPresentation
+from .presentation_base import PresentationBase
 from .room import RoomGuestPresentation, RoomHostPresentation
 from .tournament import TournamentPresentation
 

@@ -8,13 +8,15 @@ from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
-from majsoulrpa.presentation.presentation_base import (
+from majsoulrpa.presentation.exceptions import (
     InconsistentMessageError,
     InvalidOperationError,
-    Presentation,
-    PresentationCreatorBase,
     PresentationNotDetectedError,
     PresentationTimeoutError,
+)
+from majsoulrpa.presentation.presentation_base import (
+    Presentation,
+    PresentationCreatorBase,
 )
 
 from .base import RoomPlayer, RoomPresentationBase
@@ -171,11 +173,11 @@ class RoomHostPresentation(RoomPresentationBase):
                     logger.info(message)
                     continue
                 case ".lq.Lobby.fetchAccountInfo":
-                    # TODO(Apricot-S): Update account information  # noqa: TD003, E501
+                    # TODO(Apricot-S): Update account information  # noqa: TD003
                     logger.info(message)
                     continue
                 case ".lq.Lobby.fetchRoom":
-                    # TODO(Apricot-S): Update of room information  # noqa: TD003, E501
+                    # TODO(Apricot-S): Update of room information  # noqa: TD003
                     logger.info(message)
                     continue
 

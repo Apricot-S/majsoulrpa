@@ -4,7 +4,7 @@ from collections.abc import Iterable, Mapping
 from typing import Any
 
 from majsoulrpa.common import Player
-from majsoulrpa.presentation.presentation_base import InconsistentMessageError
+from majsoulrpa.presentation.exceptions import InconsistentMessageError
 
 
 class MatchPlayer(Player):
