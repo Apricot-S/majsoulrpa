@@ -13,4 +13,4 @@ class NoTileEvent(EventBase):
         timestamp: datetime.datetime,
     ) -> None:
         super().__init__(timestamp)
-        # TODO
+        # TODO: Decide what information to extract from `data`
