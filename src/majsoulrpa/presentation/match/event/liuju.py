@@ -3,7 +3,7 @@ import datetime
 from collections.abc import Mapping
 from typing import Any
 
-from majsoulrpa.presentation.presentation_base import InconsistentMessageError
+from majsoulrpa.presentation.exceptions import InconsistentMessageError
 
 from ._base import EventBase
 

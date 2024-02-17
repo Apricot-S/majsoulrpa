@@ -5,12 +5,11 @@ from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 
+from .exceptions import PresentationNotDetectedError, PresentationTimeoutError
 from .presentation_base import (
     Presentation,
     PresentationBase,
     PresentationCreatorBase,
-    PresentationNotDetectedError,
-    PresentationTimeoutError,
 )
 
 
