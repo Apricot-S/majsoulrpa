@@ -173,11 +173,11 @@ class RoomHostPresentation(RoomPresentationBase):
                     logger.info(message)
                     continue
                 case ".lq.Lobby.fetchAccountInfo":
-                    # TODO(Apricot-S): Update account information  # noqa: TD003, E501
+                    # TODO(Apricot-S): Update account information  # noqa: TD003
                     logger.info(message)
                     continue
                 case ".lq.Lobby.fetchRoom":
-                    # TODO(Apricot-S): Update of room information  # noqa: TD003, E501
+                    # TODO(Apricot-S): Update of room information  # noqa: TD003
                     logger.info(message)
                     continue
 
