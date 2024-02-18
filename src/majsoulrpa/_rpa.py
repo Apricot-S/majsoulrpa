@@ -19,6 +19,7 @@ from .presentation.exceptions import (
     PresentationNotDetectedError,
     PresentationTimeoutError,
 )
+from .presentation.match import MatchPresentation
 from .presentation.presentation_base import PresentationBase
 
 if TYPE_CHECKING:
@@ -431,6 +432,20 @@ class RPA:
                     self._browser,
                     self._message_queue_client,
                     self._creator,
+                    deadline - now,
+                )
+            except PresentationNotDetectedError:
+                pass
+            else:
+                return p
+
+            try:
+                now = datetime.datetime.now(datetime.UTC)
+                p = MatchPresentation(
+                    self._browser,
+                    self._message_queue_client,
+                    self._creator,
+                    None,
                     deadline - now,
                 )
             except PresentationNotDetectedError:
