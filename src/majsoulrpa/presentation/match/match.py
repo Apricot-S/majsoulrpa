@@ -387,6 +387,7 @@ class MatchPresentation(PresentationBase):
                     | ".lq.Lobby.loginSuccess"
                     | ".lq.Lobby.fetchCharacterInfo"
                     | ".lq.Lobby.fetchAllCommonViews"
+                    | ".lq.Lobby.fetchInfo"
                     | ".lq.FastTest.checkNetworkDelay"
                     | ".lq.FastTest.fetchGamePlayerState"
                     | ".lq.FastTest.finishSyncGame"
