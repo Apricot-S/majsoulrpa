@@ -213,6 +213,134 @@ class MatchPresentation(PresentationBase):
                 players.append(player_map[account_id])
         self._match_state._set_players(players)  # noqa: SLF001
 
+    def _on_sync_game(self, message: Message) -> None:
+        direction, name, _, response, timestamp = message
+        if direction != "outbound":
+            raise ValueError(message)
+        if name != ".lq.FastTest.syncGame":
+            raise ValueError(message)
+        if response is None:
+            raise ValueError(message)
+
+        game_restore = response["game_restore"]
+
+        if game_restore["game_state"] != 1:
+            raise NotImplementedError(message)
+
+        actions: list[Any] = game_restore["actions"]
+        if len(actions) == 0:
+            raise InconsistentMessageError(str(message))
+        if len(actions) != response["step"]:
+            raise InconsistentMessageError(str(message))
+
+        action = actions.pop(0)
+        step, name, data = _common.parse_action(action, restore=True)
+        self._step = 0
+
+        if step != 0:
+            raise InconsistentMessageError(str(action))
+
+        if name == "ActionMJStart":
+            if len(actions) == 0:
+                raise InconsistentMessageError(str(message))
+
+            action = actions.pop(0)
+            step, name, data = _common.parse_action(action, restore=True)
+            if step != 1:
+                raise InconsistentMessageError(str(action))
+            self._step += 1
+
+        if name != "ActionNewRound":
+            raise InconsistentMessageError(str(action))
+
+        self._events.clear()
+        self._events.append(NewRoundEvent(data, timestamp))
+        self._round_state = RoundState(self._match_state, data)
+        self._operation_list = None
+        if ("operation" in data) and len(
+            data["operation"]["operation_list"],
+        ) > 0:
+            self._operation_list = OperationList(data["operation"])
+        else:
+            self._operation_list = None
+        self._step += 1
+
+        for action in actions:
+            step, name, data = _common.parse_action(action, restore=True)
+            if step != self._step:
+                raise InconsistentMessageError(str(action))
+
+            if name == "ActionDealTile":
+                self._events.append(ZimoEvent(data, timestamp))
+                self._round_state._on_zimo(data)  # noqa: SLF001
+                if ("operation" in data) and len(
+                    data["operation"]["operation_list"],
+                ) > 0:
+                    self._operation_list = OperationList(data["operation"])
+                else:
+                    self._operation_list = None
+                self._step += 1
+                continue
+
+            if name == "ActionDiscardTile":
+                self._events.append(DapaiEvent(data, timestamp))
+                self._round_state._on_dapai(data)  # noqa: SLF001
+                if ("operation" in data) and len(
+                    data["operation"]["operation_list"],
+                ) > 0:
+                    self._operation_list = OperationList(data["operation"])
+                else:
+                    self._operation_list = None
+                self._step += 1
+                continue
+
+            if name == "ActionChiPengGang":
+                self._events.append(ChiPengGangEvent(data, timestamp))
+                self._round_state._on_chipenggang(data)  # noqa: SLF001
+                if ("operation" in data) and len(
+                    data["operation"]["operation_list"],
+                ) > 0:
+                    self._operation_list = OperationList(data["operation"])
+                else:
+                    self._operation_list = None
+                self._step += 1
+                continue
+
+            if name == "ActionAnGangAddGang":
+                self._events.append(AngangJiagangEvent(data, timestamp))
+                self._round_state._on_angang_jiagang(data)  # noqa: SLF001
+                if ("operation" in data) and len(
+                    data["operation"]["operation_list"],
+                ) > 0:
+                    self._operation_list = OperationList(data["operation"])
+                else:
+                    self._operation_list = None
+                self._step += 1
+                continue
+
+            if name == "ActionBaBei":
+                self._events.append(BabeiEvent(data, timestamp))
+                self._round_state._on_babei(data)  # noqa: SLF001
+                if ("operation" in data) and len(
+                    data["operation"]["operation_list"],
+                ) > 0:
+                    self._operation_list = OperationList(data["operation"])
+                else:
+                    self._operation_list = None
+                self._step += 1
+                continue
+
+            if name == "ActionHule":
+                raise InconsistentMessageError(str(action))
+
+            if name == "ActionNoTile":
+                raise InconsistentMessageError(str(action))
+
+            if name == "ActionLiuJu":
+                raise InconsistentMessageError(str(action))
+
+            raise InconsistentMessageError(str(action))
+
     def __init__(
         self,
         browser: BrowserBase,
@@ -1075,133 +1203,6 @@ class MatchPresentation(PresentationBase):
                 str(message),
                 self._browser.get_screenshot(),
             )
-
-    def _on_sync_game(self, message: Message) -> None:
-        direction, name, _, response, timestamp = message
-        if direction != "outbound":
-            raise ValueError(message)
-        if name != ".lq.FastTest.syncGame":
-            raise ValueError(message)
-        if response is None:
-            raise ValueError(message)
-
-        game_restore = response["game_restore"]
-
-        if game_restore["game_state"] != 1:
-            raise NotImplementedError(message)
-
-        actions: list[Any] = game_restore["actions"]
-        if len(actions) == 0:
-            raise InconsistentMessageError(str(message))
-        if len(actions) != response["step"]:
-            raise InconsistentMessageError(str(message))
-
-        action = actions.pop(0)
-        step, name, data = _common.parse_action(action, restore=True)
-        self._step = 0
-
-        if step != 0:
-            raise InconsistentMessageError(str(action))
-
-        if name == "ActionMJStart":
-            if len(actions) == 0:
-                raise InconsistentMessageError(str(message))
-
-            action = actions.pop(0)
-            step, name, data = _common.parse_action(action, restore=True)
-            if step != 1:
-                raise InconsistentMessageError(str(action))
-            self._step += 1
-
-        if name != "ActionNewRound":
-            raise InconsistentMessageError(str(action))
-
-        self._events.clear()
-        self._events.append(NewRoundEvent(data, timestamp))
-        self._round_state = RoundState(self._match_state, data)
-        if ("operation" in data) and len(
-            data["operation"]["operation_list"],
-        ) > 0:
-            self._operation_list = OperationList(data["operation"])
-        else:
-            self._operation_list = None
-        self._step += 1
-
-        for action in actions:
-            step, name, data = _common.parse_action(action, restore=True)
-            if step != self._step:
-                raise InconsistentMessageError(str(action))
-
-            if name == "ActionDealTile":
-                self._events.append(ZimoEvent(data, timestamp))
-                self._round_state._on_zimo(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionDiscardTile":
-                self._events.append(DapaiEvent(data, timestamp))
-                self._round_state._on_dapai(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionChiPengGang":
-                self._events.append(ChiPengGangEvent(data, timestamp))
-                self._round_state._on_chipenggang(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionAnGangAddGang":
-                self._events.append(AngangJiagangEvent(data, timestamp))
-                self._round_state._on_angang_jiagang(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionBaBei":
-                self._events.append(BabeiEvent(data, timestamp))
-                self._round_state._on_babei(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionHule":
-                raise InconsistentMessageError(str(action))
-
-            if name == "ActionNoTile":
-                raise InconsistentMessageError(str(action))
-
-            if name == "ActionLiuJu":
-                raise InconsistentMessageError(str(action))
-
-            raise InconsistentMessageError(str(action))
 
     def _wait_impl(self, timeout: TimeoutType = 300.0) -> None:
         deadline = timeout_to_deadline(timeout)
