@@ -165,6 +165,54 @@ class MatchPresentation(PresentationBase):
 
         raise AssertionError(message)
 
+    def _on_auth_game(self, message: Message) -> None:
+        _, _, request, response, _ = message
+
+        uuid = request["game_uuid"]
+        self._match_state._set_uuid(uuid)  # noqa: SLF001
+
+        # TODO: Check game settings
+
+        if response is None:
+            msg = "`.lq.FastTest.authGame` has no response message."
+            raise InconsistentMessageError(msg, self._browser.get_screenshot())
+
+        player_map = {}
+        for p in response["players"]:
+            account_id = p["account_id"]
+            nickname = p["nickname"]
+            level4 = id.id_to_level(p["level"]["id"])
+            level3 = id.id_to_level(p["level3"]["id"])
+            charid = p["character"]["charid"]
+
+            try:
+                character = id.id_to_character(charid)
+            except KeyError:
+                # When encountering a character whose
+                # character ID is unknown
+                logger.warning("%s: %s: charid = %s", uuid, nickname, charid)
+                character = "UNKNOWN"
+
+            player_map[account_id] = MatchPlayer(
+                account_id,
+                nickname,
+                level4,
+                level3,
+                character,
+            )
+
+        players = []
+        for i in range(len(response["seat_list"])):
+            account_id = response["seat_list"][i]
+            if account_id == self._message_queue_client.account_id:
+                self._match_state._set_seat(i)  # noqa: SLF001
+            if account_id == 0:
+                player = MatchPlayer(0, "CPU", "初心1", "初心1", "一姫")
+                players.append(player)
+            else:
+                players.append(player_map[account_id])
+        self._match_state._set_players(players)  # noqa: SLF001
+
     def __init__(
         self,
         browser: BrowserBase,
@@ -218,7 +266,7 @@ class MatchPresentation(PresentationBase):
             if message is None:
                 msg = "Timeout."
                 raise PresentationTimeoutError(msg, ss)
-            _, name, request, response, timestamp = message
+            _, name, request, _, timestamp = message
 
             match name:
                 case (
@@ -311,60 +359,7 @@ class MatchPresentation(PresentationBase):
                     continue
                 case ".lq.FastTest.authGame":
                     logger.info(message)
-                    uuid = request["game_uuid"]
-                    self._match_state._set_uuid(uuid)  # noqa: SLF001
-
-                    # TODO: Check game settings
-
-                    if response is None:
-                        msg = (
-                            "`.lq.FastTest.authGame` has no response message."
-                        )
-                        raise InconsistentMessageError(msg, ss)
-
-                    player_map = {}
-                    for p in response["players"]:
-                        account_id = p["account_id"]
-                        nickname = p["nickname"]
-                        level4 = id.id_to_level(p["level"]["id"])
-                        level3 = id.id_to_level(p["level3"]["id"])
-                        charid = p["character"]["charid"]
-                        try:
-                            character = id.id_to_character(charid)
-                        except KeyError:
-                            # When encountering a character whose
-                            # character ID is unknown
-                            logger.warning(
-                                "%s: %s: charid = %s",
-                                uuid,
-                                nickname,
-                                charid,
-                            )
-                            character = "UNKNOWN"
-                        player_map[account_id] = MatchPlayer(
-                            account_id,
-                            nickname,
-                            level4,
-                            level3,
-                            character,
-                        )
-                    players = []
-                    for i in range(len(response["seat_list"])):
-                        account_id = response["seat_list"][i]
-                        if account_id == message_queue_client.account_id:
-                            self._match_state._set_seat(i)  # noqa: SLF001
-                        if account_id == 0:
-                            player = MatchPlayer(
-                                0,
-                                "CPU",
-                                "初心1",
-                                "初心1",
-                                "一姫",
-                            )
-                            players.append(player)
-                        else:
-                            players.append(player_map[account_id])
-                    self._match_state._set_players(players)  # noqa: SLF001
+                    self._on_auth_game(message)
                     continue
                 case ".lq.FastTest.enterGame":
                     # TODO: Resume process for interrupted matches?
