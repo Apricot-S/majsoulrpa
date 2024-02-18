@@ -270,76 +270,65 @@ class MatchPresentation(PresentationBase):
             if step != self._step:
                 raise InconsistentMessageError(str(action))
 
-            if name == "ActionDealTile":
-                self._events.append(ZimoEvent(data, timestamp))
-                self._round_state._on_zimo(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionDiscardTile":
-                self._events.append(DapaiEvent(data, timestamp))
-                self._round_state._on_dapai(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionChiPengGang":
-                self._events.append(ChiPengGangEvent(data, timestamp))
-                self._round_state._on_chipenggang(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionAnGangAddGang":
-                self._events.append(AngangJiagangEvent(data, timestamp))
-                self._round_state._on_angang_jiagang(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionBaBei":
-                self._events.append(BabeiEvent(data, timestamp))
-                self._round_state._on_babei(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionHule":
-                raise InconsistentMessageError(str(action))
-
-            if name == "ActionNoTile":
-                raise InconsistentMessageError(str(action))
-
-            if name == "ActionLiuJu":
-                raise InconsistentMessageError(str(action))
-
-            raise InconsistentMessageError(str(action))
+            match name:
+                case "ActionDealTile":
+                    self._events.append(ZimoEvent(data, timestamp))
+                    self._round_state._on_zimo(data)  # noqa: SLF001
+                    if ("operation" in data) and len(
+                        data["operation"]["operation_list"],
+                    ) > 0:
+                        self._operation_list = OperationList(data["operation"])
+                    else:
+                        self._operation_list = None
+                    self._step += 1
+                case "ActionDiscardTile":
+                    self._events.append(DapaiEvent(data, timestamp))
+                    self._round_state._on_dapai(data)  # noqa: SLF001
+                    if ("operation" in data) and len(
+                        data["operation"]["operation_list"],
+                    ) > 0:
+                        self._operation_list = OperationList(data["operation"])
+                    else:
+                        self._operation_list = None
+                    self._step += 1
+                case "ActionChiPengGang":
+                    self._events.append(ChiPengGangEvent(data, timestamp))
+                    self._round_state._on_chipenggang(data)  # noqa: SLF001
+                    if ("operation" in data) and len(
+                        data["operation"]["operation_list"],
+                    ) > 0:
+                        self._operation_list = OperationList(data["operation"])
+                    else:
+                        self._operation_list = None
+                    self._step += 1
+                case "ActionAnGangAddGang":
+                    self._events.append(AngangJiagangEvent(data, timestamp))
+                    self._round_state._on_angang_jiagang(data)  # noqa: SLF001
+                    if ("operation" in data) and len(
+                        data["operation"]["operation_list"],
+                    ) > 0:
+                        self._operation_list = OperationList(data["operation"])
+                    else:
+                        self._operation_list = None
+                    self._step += 1
+                case "ActionBaBei":
+                    self._events.append(BabeiEvent(data, timestamp))
+                    self._round_state._on_babei(data)  # noqa: SLF001
+                    if ("operation" in data) and len(
+                        data["operation"]["operation_list"],
+                    ) > 0:
+                        self._operation_list = OperationList(data["operation"])
+                    else:
+                        self._operation_list = None
+                    self._step += 1
+                case "ActionHule":
+                    raise InconsistentMessageError(str(action))
+                case "ActionNoTile":
+                    raise InconsistentMessageError(str(action))
+                case "ActionLiuJu":
+                    raise InconsistentMessageError(str(action))
+                case _:
+                    raise InconsistentMessageError(str(action))
 
     def __init__(
         self,
