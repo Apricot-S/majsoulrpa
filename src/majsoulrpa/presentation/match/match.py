@@ -213,14 +213,26 @@ class MatchPresentation(PresentationBase):
                 players.append(player_map[account_id])
         self._match_state._set_players(players)  # noqa: SLF001
 
-    def _on_sync_game(self, message: Message) -> None:
-        direction, name, _, response, timestamp = message
+    def _on_sync_game(self, message: Message, *, restore: bool) -> None:
+        direction, name, request, response, timestamp = message
         if direction != "outbound":
             raise ValueError(message)
         if name != ".lq.FastTest.syncGame":
             raise ValueError(message)
+
+        if restore:
+            if request["round_id"] != "-1":
+                raise InconsistentMessageError(str(message))
+            if request["step"] != 1000000:
+                raise InconsistentMessageError(str(message))
+        else:
+            if request["round_id"] != f"{self.chang}-{self.ju}-{self.ben}":
+                raise InconsistentMessageError(str(message))
+            if request["step"] != 4294967295:
+                raise InconsistentMessageError(str(message))
+
         if response is None:
-            raise ValueError(message)
+            raise InconsistentMessageError(str(message))
 
         game_restore = response["game_restore"]
 
@@ -330,6 +342,65 @@ class MatchPresentation(PresentationBase):
                 case _:
                     raise InconsistentMessageError(str(action))
 
+    def _restore(self, screenshot: bytes, deadline: datetime.datetime) -> None:
+        while True:
+            message = self._message_queue_client.dequeue_message(
+                deadline - datetime.datetime.now(datetime.UTC),
+            )
+            if message is None:
+                msg = "Timeout"
+                raise PresentationTimeoutError(msg, screenshot)
+            _, name, _, _, _ = message
+
+            match name:
+                case (
+                    ".lq.Lobby.heatbeat"
+                    | ".lq.Lobby.oauth2Auth"
+                    | ".lq.Lobby.oauth2Check"
+                    | ".lq.Lobby.oauth2Login"
+                    | ".lq.Lobby.fetchLastPrivacy"
+                    | ".lq.Lobby.fetchServerTime"
+                    | ".lq.Lobby.fetchServerSettings"
+                    | ".lq.Lobby.fetchConnectionInfo"
+                    | ".lq.Lobby.fetchClientValue"
+                    | ".lq.Lobby.fetchFriendList"
+                    | ".lq.Lobby.fetchFriendApplyList"
+                    | ".lq.Lobby.fetchMailInfo"
+                    | ".lq.Lobby.fetchDailyTask"
+                    | ".lq.Lobby.fetchReviveCoinInfo"
+                    | ".lq.Lobby.fetchTitleList"
+                    | ".lq.Lobby.fetchBagInfo"
+                    | ".lq.Lobby.fetchShopInfo"
+                    | ".lq.Lobby.fetchActivityList"
+                    | ".lq.Lobby.fetchAccountActivityData"
+                    | ".lq.Lobby.fetchActivityBuff"
+                    | ".lq.Lobby.fetchVipReward"
+                    | ".lq.Lobby.fetchMonthTicketInfo"
+                    | ".lq.Lobby.fetchAchievement"
+                    | ".lq.Lobby.fetchCommentSetting"
+                    | ".lq.Lobby.fetchAccountSettings"
+                    | ".lq.Lobby.fetchModNicknameTime"
+                    | ".lq.Lobby.fetchMisc"
+                    | ".lq.Lobby.fetchAnnouncement"
+                    | ".lq.Lobby.fetchRollingNotice"
+                    | ".lq.NotifyAccountUpdate"
+                    | ".lq.Lobby.loginSuccess"
+                    | ".lq.Lobby.fetchCharacterInfo"
+                    | ".lq.Lobby.fetchAllCommonViews"
+                    | ".lq.FastTest.checkNetworkDelay"
+                    | ".lq.FastTest.fetchGamePlayerState"
+                    | ".lq.FastTest.finishSyncGame"
+                ):
+                    logger.info(message)
+                case ".lq.FastTest.authGame":
+                    logger.info(message)
+                    self._on_auth_game(message)
+                case ".lq.FastTest.syncGame":
+                    logger.info(message)
+                    self._on_sync_game(message, restore=True)
+                case _:
+                    raise InconsistentMessageError(str(message), screenshot)
+
     def __init__(
         self,
         browser: BrowserBase,
@@ -374,6 +445,10 @@ class MatchPresentation(PresentationBase):
             raise PresentationNotDetectedError(msg, ss)
 
         deadline = timeout_to_deadline(timeout)
+
+        if self._prev_presentation is None:
+            self._restore(ss, deadline)
+            return
 
         while True:
             now = datetime.datetime.now(datetime.UTC)
@@ -429,7 +504,7 @@ class MatchPresentation(PresentationBase):
                 case ".lq.FastTest.syncGame":
                     # Only when restarting a suspended match
                     logger.info(message)
-                    self._on_sync_game(message)
+                    self._on_sync_game(message, restore=True)
                     continue
                 case ".lq.Lobby.fetchCustomizedContestOnlineInfo":
                     # exchanged regularly in the tournament room
@@ -1436,7 +1511,7 @@ class MatchPresentation(PresentationBase):
 
             if name == ".lq.FastTest.syncGame":
                 logger.warning(message)
-                self._on_sync_game(message)
+                self._on_sync_game(message, restore=False)
                 return
 
             if name == ".lq.FastTest.finishSyncGame":
