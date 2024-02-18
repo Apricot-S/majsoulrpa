@@ -445,10 +445,6 @@ class MatchPresentation(PresentationBase):
         templates = [Template.open_file(p, browser.zoom_ratio) for p in paths]
         ss = browser.get_screenshot()
         if Template.match_one_of(ss, templates) == -1:
-            # For postmortem.
-            for t in templates:
-                x, y, score = t.best_template_match(ss)
-                print(f"({x}, {y}): score = {score}")  # noqa: T201
             msg = "Could not detect `match_main`."
             raise PresentationNotDetectedError(msg, ss)
 
