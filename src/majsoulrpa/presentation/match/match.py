@@ -398,6 +398,13 @@ class MatchPresentation(PresentationBase):
                 case ".lq.FastTest.syncGame":
                     logger.info(message)
                     self._on_sync_game(message, restore=True)
+                case (
+                    ".lq.ActionPrototype"
+                    | ".lq.FastTest.inputOperation"
+                    | ".lq.FastTest.inputChiPengGang"
+                ):
+                    self._message_queue_client.put_back(message)
+                    break
                 case _:
                     raise InconsistentMessageError(str(message), screenshot)
 
