@@ -481,11 +481,6 @@ class MatchPresentation(PresentationBase):
             _, name, request, _, timestamp = message
 
             match name:
-                case ".lq.FastTest.syncGame":
-                    # Only when restarting a suspended match
-                    logger.info(message)
-                    self._on_sync_game(message, restore=True)
-                    continue
                 case ".lq.Lobby.fetchCustomizedContestOnlineInfo":
                     # exchanged regularly in the tournament room
                     logger.info(message)
