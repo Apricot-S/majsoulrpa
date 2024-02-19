@@ -146,6 +146,7 @@ class MatchPresentation(PresentationBase):
                     return
                 raise InconsistentMessageError(str(message))
             case ".lq.FastTest.checkNetworkDelay":
+                # frequently exchanged
                 return
             case (
                 ".lq.FastTest.fetchGamePlayerState"
@@ -164,6 +165,266 @@ class MatchPresentation(PresentationBase):
                 return
 
         raise AssertionError(message)
+
+    def _on_auth_game(self, message: Message) -> None:
+        _, _, request, response, _ = message
+
+        uuid = request["game_uuid"]
+        self._match_state._set_uuid(uuid)  # noqa: SLF001
+
+        # TODO: Check game settings
+
+        if response is None:
+            msg = "`.lq.FastTest.authGame` has no response message."
+            raise InconsistentMessageError(msg, self._browser.get_screenshot())
+
+        player_map = {}
+        for p in response["players"]:
+            account_id = p["account_id"]
+            nickname = p["nickname"]
+            level4 = id.id_to_level(p["level"]["id"])
+            level3 = id.id_to_level(p["level3"]["id"])
+            charid = p["character"]["charid"]
+
+            try:
+                character = id.id_to_character(charid)
+            except KeyError:
+                # When encountering a character whose
+                # character ID is unknown
+                logger.warning("%s: %s: charid = %s", uuid, nickname, charid)
+                character = "UNKNOWN"
+
+            player_map[account_id] = MatchPlayer(
+                account_id,
+                nickname,
+                level4,
+                level3,
+                character,
+            )
+
+        players = []
+        for i in range(len(response["seat_list"])):
+            account_id = response["seat_list"][i]
+            if account_id == self._message_queue_client.account_id:
+                self._match_state._set_seat(i)  # noqa: SLF001
+            if account_id == 0:
+                player = MatchPlayer(0, "CPU", "初心1", "初心1", "一姫")
+                players.append(player)
+            else:
+                players.append(player_map[account_id])
+        self._match_state._set_players(players)  # noqa: SLF001
+
+    def _on_sync_game(self, message: Message, *, restore: bool) -> None:
+        direction, name, request, response, timestamp = message
+        if direction != "outbound":
+            raise ValueError(message)
+        if name != ".lq.FastTest.syncGame":
+            raise ValueError(message)
+
+        if restore:
+            if request["round_id"] != "-1":
+                raise InconsistentMessageError(str(message))
+            if request["step"] != 1000000:
+                raise InconsistentMessageError(str(message))
+        else:
+            if request["round_id"] != f"{self.chang}-{self.ju}-{self.ben}":
+                raise InconsistentMessageError(str(message))
+            if request["step"] != 4294967295:
+                raise InconsistentMessageError(str(message))
+
+        if response is None:
+            raise InconsistentMessageError(str(message))
+
+        game_restore = response["game_restore"]
+
+        if game_restore["game_state"] != 1:
+            raise NotImplementedError(message)
+
+        actions: list[Any] = game_restore["actions"]
+        if len(actions) == 0:
+            raise InconsistentMessageError(str(message))
+        if len(actions) != response["step"]:
+            raise InconsistentMessageError(str(message))
+
+        action = actions.pop(0)
+        step, name, data = _common.parse_action(action, restore=True)
+        self._step = 0
+
+        if step != 0:
+            raise InconsistentMessageError(str(action))
+
+        if name == "ActionMJStart":
+            if len(actions) == 0:
+                raise InconsistentMessageError(str(message))
+
+            action = actions.pop(0)
+            step, name, data = _common.parse_action(action, restore=True)
+            if step != 1:
+                raise InconsistentMessageError(str(action))
+            self._step += 1
+
+        if name != "ActionNewRound":
+            raise InconsistentMessageError(str(action))
+
+        self._events.clear()
+        self._events.append(NewRoundEvent(data, timestamp))
+        self._round_state = RoundState(self._match_state, data)
+        self._operation_list = None
+        if ("operation" in data) and len(
+            data["operation"]["operation_list"],
+        ) > 0:
+            self._operation_list = OperationList(data["operation"])
+        else:
+            self._operation_list = None
+        self._step += 1
+
+        for action in actions:
+            step, name, data = _common.parse_action(action, restore=True)
+            if step != self._step:
+                raise InconsistentMessageError(str(action))
+
+            match name:
+                case "ActionDealTile":
+                    self._events.append(ZimoEvent(data, timestamp))
+                    self._round_state._on_zimo(data)  # noqa: SLF001
+                    if ("operation" in data) and len(
+                        data["operation"]["operation_list"],
+                    ) > 0:
+                        self._operation_list = OperationList(data["operation"])
+                    else:
+                        self._operation_list = None
+                    self._step += 1
+                case "ActionDiscardTile":
+                    self._events.append(DapaiEvent(data, timestamp))
+                    self._round_state._on_dapai(data)  # noqa: SLF001
+                    if ("operation" in data) and len(
+                        data["operation"]["operation_list"],
+                    ) > 0:
+                        self._operation_list = OperationList(data["operation"])
+                    else:
+                        self._operation_list = None
+                    self._step += 1
+                case "ActionChiPengGang":
+                    self._events.append(ChiPengGangEvent(data, timestamp))
+                    self._round_state._on_chipenggang(data)  # noqa: SLF001
+                    if ("operation" in data) and len(
+                        data["operation"]["operation_list"],
+                    ) > 0:
+                        self._operation_list = OperationList(data["operation"])
+                    else:
+                        self._operation_list = None
+                    self._step += 1
+                case "ActionAnGangAddGang":
+                    self._events.append(AngangJiagangEvent(data, timestamp))
+                    self._round_state._on_angang_jiagang(data)  # noqa: SLF001
+                    if ("operation" in data) and len(
+                        data["operation"]["operation_list"],
+                    ) > 0:
+                        self._operation_list = OperationList(data["operation"])
+                    else:
+                        self._operation_list = None
+                    self._step += 1
+                case "ActionBaBei":
+                    self._events.append(BabeiEvent(data, timestamp))
+                    self._round_state._on_babei(data)  # noqa: SLF001
+                    if ("operation" in data) and len(
+                        data["operation"]["operation_list"],
+                    ) > 0:
+                        self._operation_list = OperationList(data["operation"])
+                    else:
+                        self._operation_list = None
+                    self._step += 1
+                case "ActionHule":
+                    raise InconsistentMessageError(str(action))
+                case "ActionNoTile":
+                    raise InconsistentMessageError(str(action))
+                case "ActionLiuJu":
+                    raise InconsistentMessageError(str(action))
+                case _:
+                    raise InconsistentMessageError(str(action))
+
+    def _restore(self, screenshot: bytes, deadline: datetime.datetime) -> None:
+        is_received_auth_game = False
+        is_received_sync_game = False
+
+        while True:
+            message = self._message_queue_client.dequeue_message(
+                deadline - datetime.datetime.now(datetime.UTC),
+            )
+            if message is None:
+                msg = "Timeout"
+                raise PresentationTimeoutError(msg, screenshot)
+            _, name, _, _, _ = message
+
+            match name:
+                case (
+                    ".lq.Lobby.heatbeat"
+                    | ".lq.Lobby.oauth2Auth"
+                    | ".lq.Lobby.oauth2Check"
+                    | ".lq.Lobby.oauth2Login"
+                    | ".lq.Lobby.fetchLastPrivacy"
+                    | ".lq.Lobby.fetchServerTime"
+                    | ".lq.Lobby.fetchServerSettings"
+                    | ".lq.Lobby.fetchConnectionInfo"
+                    | ".lq.Lobby.fetchClientValue"
+                    | ".lq.Lobby.fetchFriendList"
+                    | ".lq.Lobby.fetchFriendApplyList"
+                    | ".lq.Lobby.fetchRecentFriend"
+                    | ".lq.Lobby.fetchMailInfo"
+                    | ".lq.Lobby.fetchDailyTask"
+                    | ".lq.Lobby.fetchReviveCoinInfo"
+                    | ".lq.Lobby.fetchTitleList"
+                    | ".lq.Lobby.fetchBagInfo"
+                    | ".lq.Lobby.fetchShopInfo"
+                    | ".lq.Lobby.fetchShopInterval"
+                    | ".lq.Lobby.fetchActivityList"
+                    | ".lq.Lobby.fetchActivityInterval"
+                    | ".lq.Lobby.fetchAccountActivityData"
+                    | ".lq.Lobby.fetchActivityBuff"
+                    | ".lq.Lobby.fetchVipReward"
+                    | ".lq.Lobby.fetchMonthTicketInfo"
+                    | ".lq.Lobby.fetchAchievement"
+                    | ".lq.Lobby.fetchCommentSetting"
+                    | ".lq.Lobby.fetchAccountSettings"
+                    | ".lq.Lobby.fetchModNicknameTime"
+                    | ".lq.Lobby.fetchMisc"
+                    | ".lq.Lobby.fetchAnnouncement"
+                    | ".lq.Lobby.fetchRollingNotice"
+                    | ".lq.NotifyAccountUpdate"
+                    | ".lq.Lobby.loginSuccess"
+                    | ".lq.Lobby.fetchCharacterInfo"
+                    | ".lq.Lobby.fetchAllCommonViews"
+                    | ".lq.Lobby.fetchInfo"
+                    | ".lq.FastTest.checkNetworkDelay"
+                    | ".lq.FastTest.fetchGamePlayerState"
+                    | ".lq.FastTest.finishSyncGame"
+                ):
+                    logger.info(message)
+                case ".lq.FastTest.authGame":
+                    logger.info(message)
+                    self._on_auth_game(message)
+                    is_received_auth_game = True
+                case ".lq.FastTest.syncGame":
+                    logger.info(message)
+                    self._on_sync_game(message, restore=True)
+                    is_received_sync_game = True
+                case (
+                    ".lq.ActionPrototype"
+                    | ".lq.FastTest.inputOperation"
+                    | ".lq.FastTest.inputChiPengGang"
+                ):
+                    self._message_queue_client.put_back(message)
+                    break
+                case _:
+                    raise InconsistentMessageError(str(message), screenshot)
+
+            if is_received_sync_game and is_received_auth_game:
+                next_message = self._message_queue_client.dequeue_message(1)
+                if next_message is None:
+                    # If there are no more messages, it is waiting for
+                    # an operation on own turn.
+                    break
+                self._message_queue_client.put_back(next_message)
 
     def __init__(
         self,
@@ -201,14 +462,18 @@ class MatchPresentation(PresentationBase):
         templates = [Template.open_file(p, browser.zoom_ratio) for p in paths]
         ss = browser.get_screenshot()
         if Template.match_one_of(ss, templates) == -1:
-            # For postmortem.
-            for t in templates:
-                x, y, score = t.best_template_match(ss)
-                print(f"({x}, {y}): score = {score}")  # noqa: T201
             msg = "Could not detect `match_main`."
             raise PresentationNotDetectedError(msg, ss)
 
         deadline = timeout_to_deadline(timeout)
+
+        if self._prev_presentation is None:
+            self._restore(ss, deadline)
+            # As a temporary workaround,
+            # set _prev_presentation to ROOM_GUEST
+            # TODO: Refactor for a proper solution later
+            self._prev_presentation = Presentation.ROOM_GUEST
+            return
 
         while True:
             now = datetime.datetime.now(datetime.UTC)
@@ -218,54 +483,9 @@ class MatchPresentation(PresentationBase):
             if message is None:
                 msg = "Timeout."
                 raise PresentationTimeoutError(msg, ss)
-            _, name, request, response, timestamp = message
+            _, name, request, _, timestamp = message
 
             match name:
-                case (
-                    ".lq.Lobby.oauth2Auth"
-                    | ".lq.Lobby.oauth2Check"
-                    | ".lq.Lobby.oauth2Login"
-                    | ".lq.Lobby.fetchLastPrivacy"
-                    | ".lq.Lobby.fetchServerTime"
-                    | ".lq.Lobby.fetchServerSettings"
-                    | ".lq.Lobby.fetchConnectionInfo"
-                    | ".lq.Lobby.fetchClientValue"
-                    | ".lq.Lobby.fetchFriendList"
-                    | ".lq.Lobby.fetchFriendApplyList"
-                    | ".lq.Lobby.fetchRecentFriend"
-                    | ".lq.Lobby.fetchMailInfo"
-                    | ".lq.Lobby.fetchDailyTask"
-                    | ".lq.Lobby.fetchReviveCoinInfo"
-                    | ".lq.Lobby.fetchTitleList"
-                    | ".lq.Lobby.fetchBagInfo"
-                    | ".lq.Lobby.fetchShopInfo"
-                    | ".lq.Lobby.fetchShopInterval"
-                    | ".lq.Lobby.fetchActivityList"
-                    | ".lq.Lobby.fetchActivityInterval"
-                    | ".lq.Lobby.fetchAccountActivityData"
-                    | ".lq.Lobby.fetchActivityBuff"
-                    | ".lq.Lobby.fetchVipReward"
-                    | ".lq.Lobby.fetchMonthTicketInfo"
-                    | ".lq.Lobby.fetchAchievement"
-                    | ".lq.Lobby.fetchCommentSetting"
-                    | ".lq.Lobby.fetchAccountSettings"
-                    | ".lq.Lobby.fetchModNicknameTime"
-                    | ".lq.Lobby.fetchMisc"
-                    | ".lq.Lobby.fetchAnnouncement"
-                    | ".lq.Lobby.fetchRollingNotice"
-                    | ".lq.Lobby.loginSuccess"
-                    | ".lq.Lobby.fetchCharacterInfo"
-                    | ".lq.Lobby.fetchAllCommonViews"
-                    | ".lq.FastTest.finishSyncGame"
-                ):
-                    # Only when restarting a suspended match
-                    logger.info(message)
-                    continue
-                case ".lq.FastTest.syncGame":
-                    # Only when restarting a suspended match
-                    logger.info(message)
-                    self._on_sync_game(message)
-                    continue
                 case ".lq.Lobby.fetchCustomizedContestOnlineInfo":
                     # exchanged regularly in the tournament room
                     logger.info(message)
@@ -311,60 +531,7 @@ class MatchPresentation(PresentationBase):
                     continue
                 case ".lq.FastTest.authGame":
                     logger.info(message)
-                    uuid = request["game_uuid"]
-                    self._match_state._set_uuid(uuid)  # noqa: SLF001
-
-                    # TODO: Check game settings
-
-                    if response is None:
-                        msg = (
-                            "`.lq.FastTest.authGame` has no response message."
-                        )
-                        raise InconsistentMessageError(msg, ss)
-
-                    player_map = {}
-                    for p in response["players"]:
-                        account_id = p["account_id"]
-                        nickname = p["nickname"]
-                        level4 = id.id_to_level(p["level"]["id"])
-                        level3 = id.id_to_level(p["level3"]["id"])
-                        charid = p["character"]["charid"]
-                        try:
-                            character = id.id_to_character(charid)
-                        except KeyError:
-                            # When encountering a character whose
-                            # character ID is unknown
-                            logger.warning(
-                                "%s: %s: charid = %s",
-                                uuid,
-                                nickname,
-                                charid,
-                            )
-                            character = "UNKNOWN"
-                        player_map[account_id] = MatchPlayer(
-                            account_id,
-                            nickname,
-                            level4,
-                            level3,
-                            character,
-                        )
-                    players = []
-                    for i in range(len(response["seat_list"])):
-                        account_id = response["seat_list"][i]
-                        if account_id == message_queue_client.account_id:
-                            self._match_state._set_seat(i)  # noqa: SLF001
-                        if account_id == 0:
-                            player = MatchPlayer(
-                                0,
-                                "CPU",
-                                "初心1",
-                                "初心1",
-                                "一姫",
-                            )
-                            players.append(player)
-                        else:
-                            players.append(player_map[account_id])
-                    self._match_state._set_players(players)  # noqa: SLF001
+                    self._on_auth_game(message)
                     continue
                 case ".lq.FastTest.enterGame":
                     # TODO: Resume process for interrupted matches?
@@ -1081,133 +1248,6 @@ class MatchPresentation(PresentationBase):
                 self._browser.get_screenshot(),
             )
 
-    def _on_sync_game(self, message: Message) -> None:
-        direction, name, _, response, timestamp = message
-        if direction != "outbound":
-            raise ValueError(message)
-        if name != ".lq.FastTest.syncGame":
-            raise ValueError(message)
-        if response is None:
-            raise ValueError(message)
-
-        game_restore = response["game_restore"]
-
-        if game_restore["game_state"] != 1:
-            raise NotImplementedError(message)
-
-        actions: list[Any] = game_restore["actions"]
-        if len(actions) == 0:
-            raise InconsistentMessageError(str(message))
-        if len(actions) != response["step"]:
-            raise InconsistentMessageError(str(message))
-
-        action = actions.pop(0)
-        step, name, data = _common.parse_action(action, restore=True)
-        self._step = 0
-
-        if step != 0:
-            raise InconsistentMessageError(str(action))
-
-        if name == "ActionMJStart":
-            if len(actions) == 0:
-                raise InconsistentMessageError(str(message))
-
-            action = actions.pop(0)
-            step, name, data = _common.parse_action(action, restore=True)
-            if step != 1:
-                raise InconsistentMessageError(str(action))
-            self._step += 1
-
-        if name != "ActionNewRound":
-            raise InconsistentMessageError(str(action))
-
-        self._events.clear()
-        self._events.append(NewRoundEvent(data, timestamp))
-        self._round_state = RoundState(self._match_state, data)
-        if ("operation" in data) and len(
-            data["operation"]["operation_list"],
-        ) > 0:
-            self._operation_list = OperationList(data["operation"])
-        else:
-            self._operation_list = None
-        self._step += 1
-
-        for action in actions:
-            step, name, data = _common.parse_action(action, restore=True)
-            if step != self._step:
-                raise InconsistentMessageError(str(action))
-
-            if name == "ActionDealTile":
-                self._events.append(ZimoEvent(data, timestamp))
-                self._round_state._on_zimo(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionDiscardTile":
-                self._events.append(DapaiEvent(data, timestamp))
-                self._round_state._on_dapai(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionChiPengGang":
-                self._events.append(ChiPengGangEvent(data, timestamp))
-                self._round_state._on_chipenggang(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionAnGangAddGang":
-                self._events.append(AngangJiagangEvent(data, timestamp))
-                self._round_state._on_angang_jiagang(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionBaBei":
-                self._events.append(BabeiEvent(data, timestamp))
-                self._round_state._on_babei(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionHule":
-                raise InconsistentMessageError(str(action))
-
-            if name == "ActionNoTile":
-                raise InconsistentMessageError(str(action))
-
-            if name == "ActionLiuJu":
-                raise InconsistentMessageError(str(action))
-
-            raise InconsistentMessageError(str(action))
-
     def _wait_impl(self, timeout: TimeoutType = 300.0) -> None:
         deadline = timeout_to_deadline(timeout)
 
@@ -1451,7 +1491,7 @@ class MatchPresentation(PresentationBase):
 
             if name == ".lq.FastTest.syncGame":
                 logger.warning(message)
-                self._on_sync_game(message)
+                self._on_sync_game(message, restore=False)
                 return
 
             if name == ".lq.FastTest.finishSyncGame":
