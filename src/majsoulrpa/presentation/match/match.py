@@ -368,13 +368,16 @@ class MatchPresentation(PresentationBase):
                     | ".lq.Lobby.fetchClientValue"
                     | ".lq.Lobby.fetchFriendList"
                     | ".lq.Lobby.fetchFriendApplyList"
+                    | ".lq.Lobby.fetchRecentFriend"
                     | ".lq.Lobby.fetchMailInfo"
                     | ".lq.Lobby.fetchDailyTask"
                     | ".lq.Lobby.fetchReviveCoinInfo"
                     | ".lq.Lobby.fetchTitleList"
                     | ".lq.Lobby.fetchBagInfo"
                     | ".lq.Lobby.fetchShopInfo"
+                    | ".lq.Lobby.fetchShopInterval"
                     | ".lq.Lobby.fetchActivityList"
+                    | ".lq.Lobby.fetchActivityInterval"
                     | ".lq.Lobby.fetchAccountActivityData"
                     | ".lq.Lobby.fetchActivityBuff"
                     | ".lq.Lobby.fetchVipReward"
@@ -478,46 +481,6 @@ class MatchPresentation(PresentationBase):
             _, name, request, _, timestamp = message
 
             match name:
-                case (
-                    ".lq.Lobby.oauth2Auth"
-                    | ".lq.Lobby.oauth2Check"
-                    | ".lq.Lobby.oauth2Login"
-                    | ".lq.Lobby.fetchLastPrivacy"
-                    | ".lq.Lobby.fetchServerTime"
-                    | ".lq.Lobby.fetchServerSettings"
-                    | ".lq.Lobby.fetchConnectionInfo"
-                    | ".lq.Lobby.fetchClientValue"
-                    | ".lq.Lobby.fetchFriendList"
-                    | ".lq.Lobby.fetchFriendApplyList"
-                    | ".lq.Lobby.fetchRecentFriend"
-                    | ".lq.Lobby.fetchMailInfo"
-                    | ".lq.Lobby.fetchDailyTask"
-                    | ".lq.Lobby.fetchReviveCoinInfo"
-                    | ".lq.Lobby.fetchTitleList"
-                    | ".lq.Lobby.fetchBagInfo"
-                    | ".lq.Lobby.fetchShopInfo"
-                    | ".lq.Lobby.fetchShopInterval"
-                    | ".lq.Lobby.fetchActivityList"
-                    | ".lq.Lobby.fetchActivityInterval"
-                    | ".lq.Lobby.fetchAccountActivityData"
-                    | ".lq.Lobby.fetchActivityBuff"
-                    | ".lq.Lobby.fetchVipReward"
-                    | ".lq.Lobby.fetchMonthTicketInfo"
-                    | ".lq.Lobby.fetchAchievement"
-                    | ".lq.Lobby.fetchCommentSetting"
-                    | ".lq.Lobby.fetchAccountSettings"
-                    | ".lq.Lobby.fetchModNicknameTime"
-                    | ".lq.Lobby.fetchMisc"
-                    | ".lq.Lobby.fetchAnnouncement"
-                    | ".lq.Lobby.fetchRollingNotice"
-                    | ".lq.Lobby.loginSuccess"
-                    | ".lq.Lobby.fetchCharacterInfo"
-                    | ".lq.Lobby.fetchAllCommonViews"
-                    | ".lq.FastTest.finishSyncGame"
-                ):
-                    # Only when restarting a suspended match
-                    logger.info(message)
-                    continue
                 case ".lq.FastTest.syncGame":
                     # Only when restarting a suspended match
                     logger.info(message)
