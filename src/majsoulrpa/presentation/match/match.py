@@ -146,6 +146,7 @@ class MatchPresentation(PresentationBase):
                     return
                 raise InconsistentMessageError(str(message))
             case ".lq.FastTest.checkNetworkDelay":
+                # frequently exchanged
                 return
             case (
                 ".lq.FastTest.fetchGamePlayerState"
