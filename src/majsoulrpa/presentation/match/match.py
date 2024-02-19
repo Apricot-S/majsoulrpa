@@ -469,6 +469,10 @@ class MatchPresentation(PresentationBase):
 
         if self._prev_presentation is None:
             self._restore(ss, deadline)
+            # As a temporary workaround,
+            # set _prev_presentation to ROOM_GUEST
+            # TODO: Refactor for a proper solution later
+            self._prev_presentation = Presentation.ROOM_GUEST
             return
 
         while True:
