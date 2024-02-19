@@ -343,6 +343,9 @@ class MatchPresentation(PresentationBase):
                     raise InconsistentMessageError(str(action))
 
     def _restore(self, screenshot: bytes, deadline: datetime.datetime) -> None:
+        is_received_auth_game = False
+        is_received_sync_game = False
+
         while True:
             message = self._message_queue_client.dequeue_message(
                 deadline - datetime.datetime.now(datetime.UTC),
@@ -396,9 +399,11 @@ class MatchPresentation(PresentationBase):
                 case ".lq.FastTest.authGame":
                     logger.info(message)
                     self._on_auth_game(message)
+                    is_received_auth_game = True
                 case ".lq.FastTest.syncGame":
                     logger.info(message)
                     self._on_sync_game(message, restore=True)
+                    is_received_sync_game = True
                 case (
                     ".lq.ActionPrototype"
                     | ".lq.FastTest.inputOperation"
@@ -408,6 +413,14 @@ class MatchPresentation(PresentationBase):
                     break
                 case _:
                     raise InconsistentMessageError(str(message), screenshot)
+
+            if is_received_sync_game and is_received_auth_game:
+                next_message = self._message_queue_client.dequeue_message(1)
+                if next_message is None:
+                    # If there are no more messages, it is waiting for
+                    # an operation on own turn.
+                    break
+                self._message_queue_client.put_back(next_message)
 
     def __init__(
         self,
