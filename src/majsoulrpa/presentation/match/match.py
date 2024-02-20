@@ -92,6 +92,7 @@ class MatchPresentation(PresentationBase):
         ".lq.NotifyAccountChallengeTaskUpdate",
         ".lq.NotifyAccountUpdate",
         ".lq.NotifyActivityChange",
+        ".lq.Lobby.fetchActivityInterval",
         ".lq.NotifyActivityTaskUpdate",
         ".lq.NotifyAnnouncementUpdate",
         ".lq.FastTest.authGame",
@@ -128,6 +129,7 @@ class MatchPresentation(PresentationBase):
                 | ".lq.NotifyAccountChallengeTaskUpdate"
                 | ".lq.NotifyAccountUpdate"
                 | ".lq.NotifyActivityChange"  # ?
+                | ".lq.Lobby.fetchActivityInterval"
                 | ".lq.NotifyActivityTaskUpdate"
             ):
                 # Exchanged if the date (06:00:00 (UTC+0900)) is crossed
