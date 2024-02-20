@@ -107,6 +107,7 @@ class MatchPresentation(PresentationBase):
         match name:
             case ".lq.Lobby.heatbeat":
                 # frequently exchanged
+                logger.debug(message)
                 return
             case ".lq.Lobby.loginBeat":
                 # rarely exchanged
@@ -147,6 +148,7 @@ class MatchPresentation(PresentationBase):
                 raise InconsistentMessageError(str(message))
             case ".lq.FastTest.checkNetworkDelay":
                 # frequently exchanged
+                logger.debug(message)
                 return
             case (
                 ".lq.FastTest.fetchGamePlayerState"
@@ -535,6 +537,7 @@ class MatchPresentation(PresentationBase):
                     continue
                 case ".lq.FastTest.enterGame":
                     # TODO: Resume process for interrupted matches?
+                    logger.debug(message)
                     continue
                 case ".lq.NotifyPlayerLoadGameReady":
                     logger.info(message)
