@@ -90,7 +90,10 @@ class MatchPresentation(PresentationBase):
         ".lq.NotifyShopUpdate",
         ".lq.NotifyAccountChallengeTaskUpdate",
         ".lq.NotifyAccountUpdate",
+        ".lq.Lobby.fetchShopInterval",
+        ".lq.Lobby.fetchActivityInterval",
         ".lq.NotifyActivityChange",
+        ".lq.NotifyActivityTaskUpdate",
         ".lq.NotifyAnnouncementUpdate",
         ".lq.FastTest.authGame",
         ".lq.Lobby.oauth2Login",
@@ -107,6 +110,7 @@ class MatchPresentation(PresentationBase):
         match name:
             case ".lq.Lobby.heatbeat":
                 # frequently exchanged
+                logger.debug(message)
                 return
             case ".lq.Lobby.loginBeat":
                 # rarely exchanged
@@ -121,13 +125,14 @@ class MatchPresentation(PresentationBase):
                 | ".lq.NotifyGiftSendRefresh"
                 | ".lq.NotifyDailyTaskUpdate"
                 | ".lq.NotifyShopUpdate"
-                | ".lq.Lobby.fetchShopInterval"
                 | ".lq.NotifyAccountChallengeTaskUpdate"
                 | ".lq.NotifyAccountUpdate"
-                | ".lq.NotifyActivityChange"  # ?
+                | ".lq.Lobby.fetchShopInterval"
+                | ".lq.Lobby.fetchActivityInterval"
+                | ".lq.NotifyActivityChange"  # only during events?
+                | ".lq.NotifyActivityTaskUpdate"  # only during events?
             ):
-                # Exchanged if the date (06:00:00 (UTC+0900))
-                # is crossed
+                # Exchanged if the date (06:00:00 (UTC+0900)) is crossed
                 logger.info(message)
                 return
             case ".lq.NotifyAnnouncementUpdate":
@@ -146,6 +151,8 @@ class MatchPresentation(PresentationBase):
                     return
                 raise InconsistentMessageError(str(message))
             case ".lq.FastTest.checkNetworkDelay":
+                # frequently exchanged
+                logger.debug(message)
                 return
             case (
                 ".lq.FastTest.fetchGamePlayerState"
@@ -545,7 +552,6 @@ class MatchPresentation(PresentationBase):
                     | ".lq.FastTest.inputChiPengGang"
                     | ".lq.ActionPrototype"
                 ):
-                    logger.info(message)
                     break
 
             raise InconsistentMessageError(
@@ -1769,10 +1775,8 @@ class MatchPresentation(PresentationBase):
                     self._browser.get_screenshot(),
                 )
             if name == ".lq.FastTest.inputChiPengGang":
-                logger.info(message)
                 break
             if name == ".lq.ActionPrototype":
-                logger.info(message)
                 break
 
         # Backfill prefetched messages.
