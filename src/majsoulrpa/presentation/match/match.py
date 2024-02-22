@@ -88,11 +88,11 @@ class MatchPresentation(PresentationBase):
         ".lq.NotifyGiftSendRefresh",
         ".lq.NotifyDailyTaskUpdate",
         ".lq.NotifyShopUpdate",
-        ".lq.Lobby.fetchShopInterval",
         ".lq.NotifyAccountChallengeTaskUpdate",
         ".lq.NotifyAccountUpdate",
-        ".lq.NotifyActivityChange",
+        ".lq.Lobby.fetchShopInterval",
         ".lq.Lobby.fetchActivityInterval",
+        ".lq.NotifyActivityChange",
         ".lq.NotifyActivityTaskUpdate",
         ".lq.NotifyAnnouncementUpdate",
         ".lq.FastTest.authGame",
@@ -125,12 +125,12 @@ class MatchPresentation(PresentationBase):
                 | ".lq.NotifyGiftSendRefresh"
                 | ".lq.NotifyDailyTaskUpdate"
                 | ".lq.NotifyShopUpdate"
-                | ".lq.Lobby.fetchShopInterval"
                 | ".lq.NotifyAccountChallengeTaskUpdate"
                 | ".lq.NotifyAccountUpdate"
-                | ".lq.NotifyActivityChange"  # ?
+                | ".lq.Lobby.fetchShopInterval"
                 | ".lq.Lobby.fetchActivityInterval"
-                | ".lq.NotifyActivityTaskUpdate"
+                | ".lq.NotifyActivityChange"  # only during events?
+                | ".lq.NotifyActivityTaskUpdate"  # only during events?
             ):
                 # Exchanged if the date (06:00:00 (UTC+0900)) is crossed
                 logger.info(message)
