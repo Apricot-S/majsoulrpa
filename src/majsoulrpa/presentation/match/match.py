@@ -719,7 +719,6 @@ class MatchPresentation(PresentationBase):
                     | ".lq.FastTest.inputChiPengGang"
                     | ".lq.ActionPrototype"
                 ):
-                    logger.info(message)
                     break
 
             raise InconsistentMessageError(
