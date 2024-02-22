@@ -1816,10 +1816,8 @@ class MatchPresentation(PresentationBase):
                     self._browser.get_screenshot(),
                 )
             if name == ".lq.FastTest.inputChiPengGang":
-                logger.info(message)
                 break
             if name == ".lq.ActionPrototype":
-                logger.info(message)
                 break
 
         # Backfill prefetched messages.
