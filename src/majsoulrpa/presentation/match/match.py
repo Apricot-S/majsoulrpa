@@ -131,8 +131,7 @@ class MatchPresentation(PresentationBase):
                 | ".lq.NotifyActivityChange"  # only during events?
                 | ".lq.NotifyActivityTaskUpdate"  # only during events?
             ):
-                # Exchanged if the date (06:00:00 (UTC+0900))
-                # is crossed
+                # Exchanged if the date (06:00:00 (UTC+0900)) is crossed
                 logger.info(message)
                 return
             case ".lq.NotifyAnnouncementUpdate":
