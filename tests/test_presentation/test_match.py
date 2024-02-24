@@ -24,7 +24,7 @@ def test_operate_liqi() -> None:
         Template,
         "open_file",
         return_value=MagicMock(),
-    ), patch.object(Template, "wait_for_then_click", return_value=None):
+    ):
         presentation = DummyMatchPresentation()
         presentation._browser = MagicMock()
         presentation._round_state.shoupai = [  # type: ignore  # noqa: PGH003
