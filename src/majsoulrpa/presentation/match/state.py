@@ -99,11 +99,13 @@ class RoundState:
         self._dora_indicators = data["doras"]
         self._left_tile_count = data["left_tile_count"]
         self._scores = data["scores"]
-        self._shoupai = data["tiles"][:13]
-        if len(data["tiles"]) == 14:
-            self._zimopai = data["tiles"][13]
-        else:
-            self._zimopai = None
+
+        _shouapi = self._sort_tiles(data["tiles"])
+        self._shoupai = _shouapi[:13]
+        self._zimopai: str | None = None
+        if len(_shouapi) == 14:
+            self._zimopai = _shouapi[13]
+
         self._num_player = len(self._scores)
         self._he: list[list] = [[] for _ in range(self._num_player)]
         self._fulu: list[list] = [[] for _ in range(self._num_player)]
@@ -129,13 +131,14 @@ class RoundState:
         self._zimopai = None
 
         # sort the hand
-        shoupai = [
-            RoundState._pattern1.sub(r"\2\1@", t) for t in self._shoupai
-        ]
+        self._shoupai = self._sort_tiles(self._shoupai)
+
+    def _sort_tiles(self, tiles: list[str]) -> list[str]:
+        shoupai = [RoundState._pattern1.sub(r"\2\1@", t) for t in tiles]
         shoupai = [RoundState._pattern2.sub(r"\g<1>5!", t) for t in shoupai]
         shoupai.sort()
         shoupai = [RoundState._pattern3.sub(r"0\1", t) for t in shoupai]
-        self._shoupai = [RoundState._pattern4.sub(r"\2\1", t) for t in shoupai]
+        return [RoundState._pattern4.sub(r"\2\1", t) for t in shoupai]
 
     def _on_zimo(self, data: Mapping[str, Any]) -> None:
         if data["seat"] == self._match_state.seat:
