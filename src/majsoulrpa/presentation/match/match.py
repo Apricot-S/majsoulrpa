@@ -2312,14 +2312,25 @@ class MatchPresentation(PresentationBase):
                 self._browser.get_screenshot(),
             ) from e
 
+        # Note that only red dora appear in the candidate_dapai_list
+        # When 5{p,m,s} and the corresponding red dora are in the hand.
+        deaka_candidate_dapai_list = [
+            _common.deaka(tile) for tile in operation.candidate_dapai_list
+        ]
         if index < len(self.shoupai):
-            if self.shoupai[index] not in operation.candidate_dapai_list:
+            if (
+                _common.deaka(self.shoupai[index])
+                not in deaka_candidate_dapai_list
+            ):
                 raise InvalidOperationError(
                     str(index),
                     self._browser.get_screenshot(),
                 )
         elif index == len(self.shoupai):
-            if self.zimopai not in operation.candidate_dapai_list:
+            if (
+                _common.deaka(self.zimopai or "")
+                not in deaka_candidate_dapai_list
+            ):
                 raise InvalidOperationError(
                     str(index),
                     self._browser.get_screenshot(),
