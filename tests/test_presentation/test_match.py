@@ -13,6 +13,7 @@ def test_operate_liqi() -> None:
     class DummyMatchPresentation(MatchPresentation):
         def __init__(self) -> None:
             self._round_state = MagicMock()
+            self._browser = MagicMock()
 
         def _dapai(self, index: int, dapai: list[str]) -> None:
             pass
@@ -26,7 +27,6 @@ def test_operate_liqi() -> None:
         return_value=MagicMock(),
     ):
         presentation = DummyMatchPresentation()
-        presentation._browser = MagicMock()
         presentation._round_state.shoupai = [  # type: ignore  # noqa: PGH003
             "2m",
             "7m",
