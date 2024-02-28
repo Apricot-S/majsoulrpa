@@ -2313,7 +2313,7 @@ class MatchPresentation(PresentationBase):
             ) from e
 
         # Note that only red dora appear in the candidate_dapai_list
-        # When 5{p,m,s} and the corresponding red dora are in the hand.
+        # When 5{m,p,s} and the corresponding red dora are in the hand.
         deaka_candidate_dapai_list = [
             _common.deaka(tile) for tile in operation.candidate_dapai_list
         ]
