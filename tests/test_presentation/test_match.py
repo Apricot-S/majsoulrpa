@@ -122,8 +122,8 @@ def test_operate_liqi__after_gang() -> None:
             "3m",
             "3m",
             "3m",
-            "5p",
             "0p",
+            "5p",
             "6p",
             "1z",
         ]
@@ -146,8 +146,8 @@ def test_operate_liqi__after_gang() -> None:
             "3m",
             "3m",
             "3m",
-            "5p",
             "0p",
+            "5p",
             "6p",
             "1z",
         ]
@@ -167,8 +167,8 @@ def test_operate_liqi__after_gang() -> None:
 
         # Case3: Same as case2 but 1m, 2m and 3m are gang.
         presentation._round_state.shoupai = [  # type: ignore  # noqa: PGH003
-            "5p",
             "0p",
+            "5p",
             "6p",
             "1z",
         ]
