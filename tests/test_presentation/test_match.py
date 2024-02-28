@@ -105,9 +105,6 @@ def test_operate_liqi() -> None:
 
 
 def test_operate_liqi__after_gang() -> None:
-    op = LiqiOperation(combinations=["0p"])
-    assert op.candidate_dapai_list == ["0p"]
-
     with patch.object(
         Template,
         "open_file",
@@ -128,16 +125,19 @@ def test_operate_liqi__after_gang() -> None:
             "1z",
         ]
         presentation._round_state.zimopai = "1z"  # type: ignore  # noqa: PGH003
+        op = LiqiOperation(combinations=["0p", "6p"])
+        assert op.candidate_dapai_list == ["0p", "6p"]
 
         # valid index
         try:
             presentation._operate_liqi(op, 6)
             presentation._operate_liqi(op, 7)
+            presentation._operate_liqi(op, 8)
         except InvalidOperationError:
             pytest.fail("InvalidOperationError raised unexpectedly")
 
         # invalid index
-        for index in [0, 1, 2, 3, 4, 5, 8, 9, 10]:
+        for index in [0, 1, 2, 3, 4, 5, 9, 10]:
             with pytest.raises(InvalidOperationError):
                 presentation._operate_liqi(op, index)
 
@@ -152,16 +152,19 @@ def test_operate_liqi__after_gang() -> None:
             "1z",
         ]
         presentation._round_state.zimopai = "1z"  # type: ignore  # noqa: PGH003
+        op = LiqiOperation(combinations=["0p", "6p"])
+        assert op.candidate_dapai_list == ["0p", "6p"]
 
         # valid index
         try:
             presentation._operate_liqi(op, 3)
             presentation._operate_liqi(op, 4)
+            presentation._operate_liqi(op, 5)
         except InvalidOperationError:
             pytest.fail("InvalidOperationError raised unexpectedly")
 
         # invalid index
-        for index in [0, 1, 2, 5, 6, 7]:
+        for index in [0, 1, 2, 6, 7]:
             with pytest.raises(InvalidOperationError):
                 presentation._operate_liqi(op, index)
 
@@ -173,26 +176,29 @@ def test_operate_liqi__after_gang() -> None:
             "1z",
         ]
         presentation._round_state.zimopai = "1z"  # type: ignore  # noqa: PGH003
+        op = LiqiOperation(combinations=["0p", "6p"])
+        assert op.candidate_dapai_list == ["0p", "6p"]
 
         # valid index
         try:
             presentation._operate_liqi(op, 0)
             presentation._operate_liqi(op, 1)
+            presentation._operate_liqi(op, 2)
         except InvalidOperationError:
             pytest.fail("InvalidOperationError raised unexpectedly")
 
         # invalid index
-        for index in [2, 3, 4]:
+        for index in [3, 4]:
             with pytest.raises(InvalidOperationError):
                 presentation._operate_liqi(op, index)
 
         # Case4: Same as case3 but 1m, 2m, 3m and 4m are gang.
-        op = LiqiOperation(combinations=["0p", "1z"])
-        assert op.candidate_dapai_list == ["0p", "1z"]
         presentation._round_state.shoupai = [  # type: ignore  # noqa: PGH003
             "5p",
         ]
         presentation._round_state.zimopai = "1z"  # type: ignore  # noqa: PGH003
+        op = LiqiOperation(combinations=["0p", "1z"])
+        assert op.candidate_dapai_list == ["0p", "1z"]
 
         # valid index
         try:
