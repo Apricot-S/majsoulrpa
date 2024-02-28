@@ -15,7 +15,7 @@ def test_operate_liqi() -> None:
             self._round_state = MagicMock()
             self._browser = MagicMock()
 
-        def _dapai(self, index: int, dapai: list[str]) -> None:
+        def _dapai(self, index: int, forbidden_tiles: list[str]) -> None:
             pass
 
     op = LiqiOperation(combinations=["0s"])
