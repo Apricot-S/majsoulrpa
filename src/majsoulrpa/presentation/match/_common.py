@@ -45,3 +45,7 @@ def parse_action(
     )
 
     return step, name, result
+
+
+def normalize_akadora(tile: str) -> str:
+    return tile if tile[0] != "0" else "5" + tile[1:]

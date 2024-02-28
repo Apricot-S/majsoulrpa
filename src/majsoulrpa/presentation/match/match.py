@@ -2312,19 +2312,34 @@ class MatchPresentation(PresentationBase):
                 self._browser.get_screenshot(),
             ) from e
 
-        if index < len(self.shoupai):
-            if self.shoupai[index] not in operation.candidate_dapai_list:
-                raise InvalidOperationError(
-                    str(index),
-                    self._browser.get_screenshot(),
-                )
-        elif index == len(self.shoupai):
-            if self.zimopai not in operation.candidate_dapai_list:
-                raise InvalidOperationError(
-                    str(index),
-                    self._browser.get_screenshot(),
-                )
-        else:
+        if self.zimopai is None:
+            msg = "liqi without zimopai"
+            raise InvalidOperationError(
+                msg,
+                self._browser.get_screenshot(),
+            )
+
+        # Note that only red dora appear in the candidate_dapai_list
+        # When 5{m,p,s} and the corresponding red dora are in the hand.
+        normalized_candidate_dapai_list = [
+            _common.normalize_akadora(tile)
+            for tile in operation.candidate_dapai_list
+        ]
+        if (
+            index < len(self.shoupai)
+            and _common.normalize_akadora(self.shoupai[index])
+            not in normalized_candidate_dapai_list
+        ) or (
+            index == len(self.shoupai)
+            and _common.normalize_akadora(self.zimopai)
+            not in normalized_candidate_dapai_list
+        ):
+            raise InvalidOperationError(
+                str(index),
+                self._browser.get_screenshot(),
+            )
+
+        if index > len(self.shoupai):
             msg = f"{index}: out-of-range index"
             raise InvalidOperationError(msg, self._browser.get_screenshot())
 
