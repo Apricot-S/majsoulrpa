@@ -9,15 +9,16 @@ from majsoulrpa.presentation.match import MatchPresentation
 from majsoulrpa.presentation.match.operation import LiqiOperation
 
 
+class DummyMatchPresentation(MatchPresentation):
+    def __init__(self) -> None:
+        self._round_state = MagicMock()
+        self._browser = MagicMock()
+
+    def _dapai(self, index: int, forbidden_tiles: list[str]) -> None:
+        pass
+
+
 def test_operate_liqi() -> None:
-    class DummyMatchPresentation(MatchPresentation):
-        def __init__(self) -> None:
-            self._round_state = MagicMock()
-            self._browser = MagicMock()
-
-        def _dapai(self, index: int, forbidden_tiles: list[str]) -> None:
-            pass
-
     op = LiqiOperation(combinations=["0s"])
     assert op.candidate_dapai_list == ["0s"]
 
@@ -101,3 +102,105 @@ def test_operate_liqi() -> None:
         presentation._round_state.zimopai = None  # type: ignore  # noqa: PGH003
         with pytest.raises(InvalidOperationError):
             presentation._operate_liqi(op, 9)
+
+
+def test_operate_liqi__after_kong() -> None:
+    op = LiqiOperation(combinations=["0p"])
+    assert op.candidate_dapai_list == ["0p"]
+
+    with patch.object(
+        Template,
+        "open_file",
+        return_value=MagicMock(),
+    ):
+        presentation = DummyMatchPresentation()
+        # Case1: 1m is a kong
+        presentation._round_state.shoupai = [  # type: ignore  # noqa: PGH003
+            "2m",
+            "2m",
+            "2m",
+            "3m",
+            "3m",
+            "3m",
+            "5p",
+            "0p",
+            "6p",
+            "1z",
+        ]
+        presentation._round_state.zimopai = "1z"  # type: ignore  # noqa: PGH003
+
+        # valid index
+        try:
+            presentation._operate_liqi(op, 6)
+            presentation._operate_liqi(op, 7)
+        except InvalidOperationError:
+            pytest.fail("InvalidOperationError raised unexpectedly")
+
+        # invalid index
+        for index in [0, 1, 2, 3, 4, 5, 8, 9, 10]:
+            with pytest.raises(InvalidOperationError):
+                presentation._operate_liqi(op, index)
+
+        # Case2: Same as case1 but 1m and 2m are kong.
+        presentation._round_state.shoupai = [  # type: ignore  # noqa: PGH003
+            "3m",
+            "3m",
+            "3m",
+            "5p",
+            "0p",
+            "6p",
+            "1z",
+        ]
+        presentation._round_state.zimopai = "1z"  # type: ignore  # noqa: PGH003
+
+        # valid index
+        try:
+            presentation._operate_liqi(op, 3)
+            presentation._operate_liqi(op, 4)
+        except InvalidOperationError:
+            pytest.fail("InvalidOperationError raised unexpectedly")
+
+        # invalid index
+        for index in [0, 1, 2, 5, 6, 7]:
+            with pytest.raises(InvalidOperationError):
+                presentation._operate_liqi(op, index)
+
+        # Case3: Same as case2 but 1m, 2m and 3m are kong.
+        presentation._round_state.shoupai = [  # type: ignore  # noqa: PGH003
+            "5p",
+            "0p",
+            "6p",
+            "1z",
+        ]
+        presentation._round_state.zimopai = "1z"  # type: ignore  # noqa: PGH003
+
+        # valid index
+        try:
+            presentation._operate_liqi(op, 0)
+            presentation._operate_liqi(op, 1)
+        except InvalidOperationError:
+            pytest.fail("InvalidOperationError raised unexpectedly")
+
+        # invalid index
+        for index in [2, 3, 4]:
+            with pytest.raises(InvalidOperationError):
+                presentation._operate_liqi(op, index)
+
+        # Case4: Same as case3 but 1m, 2m, 3m and 4m are kong.
+        op = LiqiOperation(combinations=["0p", "1z"])
+        assert op.candidate_dapai_list == ["0p", "1z"]
+        presentation._round_state.shoupai = [  # type: ignore  # noqa: PGH003
+            "5p",
+        ]
+        presentation._round_state.zimopai = "1z"  # type: ignore  # noqa: PGH003
+
+        # valid index
+        try:
+            presentation._operate_liqi(op, 0)
+            presentation._operate_liqi(op, 1)
+        except InvalidOperationError:
+            pytest.fail("InvalidOperationError raised unexpectedly")
+
+        # invalid index
+        with pytest.raises(InvalidOperationError):
+            presentation._operate_liqi(op, 2)  # out-of-range
