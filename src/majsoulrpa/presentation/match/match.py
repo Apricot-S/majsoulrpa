@@ -2321,18 +2321,18 @@ class MatchPresentation(PresentationBase):
 
         # Note that only red dora appear in the candidate_dapai_list
         # When 5{m,p,s} and the corresponding red dora are in the hand.
-        deaka_candidate_dapai_list = [
+        normalized_candidate_dapai_list = [
             _common.normalize_akadora(tile)
             for tile in operation.candidate_dapai_list
         ]
         if (
             index < len(self.shoupai)
             and _common.normalize_akadora(self.shoupai[index])
-            not in deaka_candidate_dapai_list
+            not in normalized_candidate_dapai_list
         ) or (
             index == len(self.shoupai)
             and _common.normalize_akadora(self.zimopai)
-            not in deaka_candidate_dapai_list
+            not in normalized_candidate_dapai_list
         ):
             raise InvalidOperationError(
                 str(index),
