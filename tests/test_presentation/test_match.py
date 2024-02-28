@@ -104,7 +104,7 @@ def test_operate_liqi() -> None:
             presentation._operate_liqi(op, 9)
 
 
-def test_operate_liqi__after_kong() -> None:
+def test_operate_liqi__after_gang() -> None:
     op = LiqiOperation(combinations=["0p"])
     assert op.candidate_dapai_list == ["0p"]
 
@@ -114,7 +114,7 @@ def test_operate_liqi__after_kong() -> None:
         return_value=MagicMock(),
     ):
         presentation = DummyMatchPresentation()
-        # Case1: 1m is a kong
+        # Case1: 1m is a gang
         presentation._round_state.shoupai = [  # type: ignore  # noqa: PGH003
             "2m",
             "2m",
@@ -141,7 +141,7 @@ def test_operate_liqi__after_kong() -> None:
             with pytest.raises(InvalidOperationError):
                 presentation._operate_liqi(op, index)
 
-        # Case2: Same as case1 but 1m and 2m are kong.
+        # Case2: Same as case1 but 1m and 2m are gang.
         presentation._round_state.shoupai = [  # type: ignore  # noqa: PGH003
             "3m",
             "3m",
@@ -165,7 +165,7 @@ def test_operate_liqi__after_kong() -> None:
             with pytest.raises(InvalidOperationError):
                 presentation._operate_liqi(op, index)
 
-        # Case3: Same as case2 but 1m, 2m and 3m are kong.
+        # Case3: Same as case2 but 1m, 2m and 3m are gang.
         presentation._round_state.shoupai = [  # type: ignore  # noqa: PGH003
             "5p",
             "0p",
@@ -186,7 +186,7 @@ def test_operate_liqi__after_kong() -> None:
             with pytest.raises(InvalidOperationError):
                 presentation._operate_liqi(op, index)
 
-        # Case4: Same as case3 but 1m, 2m, 3m and 4m are kong.
+        # Case4: Same as case3 but 1m, 2m, 3m and 4m are gang.
         op = LiqiOperation(combinations=["0p", "1z"])
         assert op.candidate_dapai_list == ["0p", "1z"]
         presentation._round_state.shoupai = [  # type: ignore  # noqa: PGH003
