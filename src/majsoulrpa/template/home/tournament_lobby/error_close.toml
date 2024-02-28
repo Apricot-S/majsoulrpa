@@ -1,6 +1,6 @@
 # Tournament Lobby - Enter Tournament ID - error(confirm button)
-left = 890
-top = 635
-width = 145
-height = 68
+left = 800
+top = 642
+width = 319
+height = 97
 threshold = 0.95

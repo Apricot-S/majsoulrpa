@@ -1,6 +1,6 @@
 # Tournament Lobby - Enter Tournament ID - Confirm
-left = 780
-top = 810
-width = 180
+left = 777
+top = 812
+width = 187
 height = 85
 threshold = 0.95
