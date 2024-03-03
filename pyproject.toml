@@ -80,3 +80,4 @@ convention = "google"
 
 [tool.ruff.lint.extend-per-file-ignores]
 "./examples/*" = ["S101", "INP001", "T201", "TRY004"]
+"./tests/*" = ["S101", "SLF001"]
