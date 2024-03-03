@@ -1,4 +1,3 @@
-# ruff: noqa: S101,SLF001
 from majsoulrpa.presentation.match.state import MatchState, RoundState
 
 
