@@ -1,3 +1,4 @@
+import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -84,6 +85,54 @@ def test_enter_email_address_success() -> None:
         presentation.enter_email_address(email_address)
 
     assert presentation._entered_email_address
+
+
+def test_enter_email_address_resend_within_60_seconds() -> None:
+    presentation = DummyAuthPresentation()
+    email_address = "email_address"
+
+    mock_template = MagicMock()
+    mock_template.match.return_value = False
+    mock_datetime = MagicMock(wraps=datetime.datetime)
+    mock_datetime.now.side_effect = [
+        datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=datetime.UTC),
+        datetime.datetime(2024, 1, 1, 0, 1, 0, tzinfo=datetime.UTC),
+    ]
+
+    with (
+        patch.object(Template, "open_file", return_value=mock_template),
+        patch("datetime.datetime", mock_datetime),
+    ):
+        presentation.enter_email_address(email_address)
+        assert presentation._entered_email_address
+
+        with pytest.raises(InvalidOperationError):
+            presentation.enter_email_address(email_address)
+
+
+def test_enter_email_address_resend_after_61_seconds() -> None:
+    presentation = DummyAuthPresentation()
+    email_address = "email_address"
+
+    mock_template = MagicMock()
+    mock_template.match.return_value = False
+    mock_datetime = MagicMock(wraps=datetime.datetime)
+    mock_datetime.now.side_effect = [
+        datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=datetime.UTC),
+        datetime.datetime(2024, 1, 1, 0, 1, 1, tzinfo=datetime.UTC),
+    ]
+
+    with (
+        patch.object(Template, "open_file", return_value=mock_template),
+        patch("datetime.datetime", mock_datetime),
+    ):
+        presentation.enter_email_address(email_address)
+        assert presentation._entered_email_address
+
+        try:
+            presentation.enter_email_address(email_address)
+        except InvalidOperationError:
+            pytest.fail("InvalidOperationError raised unexpectedly")
 
 
 def test_enter_auth_code_before_enter_email_address() -> None:
