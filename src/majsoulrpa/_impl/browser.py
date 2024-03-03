@@ -244,7 +244,7 @@ class DesktopBrowser(BrowserBase):
             self._viewport_size["width"],
             self._viewport_size["height"],
         )
-        if edge_sigma <= 0.0:  # noqa: PLR2004
+        if edge_sigma <= 0.0:
             msg = "Invalid edge sigma was input."
             raise ValueError(msg)
 
@@ -290,7 +290,7 @@ class DesktopBrowser(BrowserBase):
             self._viewport_size["width"],
             self._viewport_size["height"],
         )
-        if edge_sigma <= 0.0:  # noqa: PLR2004
+        if edge_sigma <= 0.0:
             msg = "Invalid edge sigma was input."
             raise ValueError(msg)
 
@@ -407,7 +407,7 @@ class RemoteBrowser(BrowserBase):
             viewport_size["width"],
             viewport_size["height"],
         )
-        if edge_sigma <= 0.0:  # noqa: PLR2004
+        if edge_sigma <= 0.0:
             msg = "Invalid edge sigma was input."
             raise ValueError(msg)
 
@@ -452,7 +452,7 @@ class RemoteBrowser(BrowserBase):
             viewport_size["width"],
             viewport_size["height"],
         )
-        if edge_sigma <= 0.0:  # noqa: PLR2004
+        if edge_sigma <= 0.0:
             msg = "Invalid edge sigma was input."
             raise ValueError(msg)
 
