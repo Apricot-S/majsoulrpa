@@ -19,6 +19,7 @@ class DummyAuthPresentation(AuthPresentation):
         self._browser = MagicMock()
         self._new_presentation = None
         self._entered_email_address = False
+        self._last_request_time: datetime.datetime | None = None
 
 
 def test_auth_screen_detected() -> None:
@@ -94,8 +95,9 @@ def test_enter_email_address_resend_within_60_seconds() -> None:
     mock_template = MagicMock()
     mock_template.match.return_value = False
     mock_datetime = MagicMock(wraps=datetime.datetime)
-    mock_datetime.now.side_effect = [
+    mock_datetime.now.side_effect = [  # Third time used in exception
         datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=datetime.UTC),
+        datetime.datetime(2024, 1, 1, 0, 1, 0, tzinfo=datetime.UTC),
         datetime.datetime(2024, 1, 1, 0, 1, 0, tzinfo=datetime.UTC),
     ]
 
@@ -119,6 +121,7 @@ def test_enter_email_address_resend_after_61_seconds() -> None:
     mock_datetime = MagicMock(wraps=datetime.datetime)
     mock_datetime.now.side_effect = [
         datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=datetime.UTC),
+        datetime.datetime(2024, 1, 1, 0, 1, 1, tzinfo=datetime.UTC),
         datetime.datetime(2024, 1, 1, 0, 1, 1, tzinfo=datetime.UTC),
     ]
 

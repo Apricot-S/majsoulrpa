@@ -64,6 +64,7 @@ class AuthPresentation(PresentationBase):
         super().__init__(browser, message_queue_client, creator)
 
         self._entered_email_address: bool = False
+        self._last_request_time: datetime.datetime | None = None
 
         template = Template.open_file(
             "template/auth/marker",
@@ -98,10 +99,19 @@ class AuthPresentation(PresentationBase):
         Raises:
             ValueError: If the email address is either unavailable or
                 invalid.
+            InvalidOperationError: If a request to send the verification
+                code is made within 60 seconds of the previous request.
             PresentationTimeoutError: If the "Confirm" button does not
                 appear within the specified timeout period.
         """
         self._assert_not_stale()
+
+        if self._last_request_time is not None and (
+            datetime.datetime.now(datetime.UTC) - self._last_request_time
+            <= datetime.timedelta(seconds=60)
+        ):
+            msg = "Request is too frequent."
+            raise InvalidOperationError(msg, self._browser.get_screenshot())
 
         if len(email_address) > _MAX_EMAIL_ADDRESS_LENGTH:
             msg = (
@@ -150,6 +160,7 @@ class AuthPresentation(PresentationBase):
         time.sleep(0.1)
 
         self._entered_email_address = True
+        self._last_request_time = datetime.datetime.now(datetime.UTC)
 
     def enter_auth_code(
         self,
