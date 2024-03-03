@@ -1,4 +1,3 @@
-# ruff: noqa: S101,SLF001
 from unittest.mock import MagicMock, patch
 
 import pytest
