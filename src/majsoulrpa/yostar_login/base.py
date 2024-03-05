@@ -8,8 +8,8 @@ from majsoulrpa.common import TimeoutType
 
 logger = getLogger(__name__)
 
-YOSTAR_EMAIL_ADDRESS: Final[str] = "info@passport.yostar.co.jp"
-YOSTAR_EMAIL_SUBJECT: Final[str] = "Eメールアドレスの確認"
+_YOSTAR_EMAIL_ADDRESS: Final[str] = "info@passport.yostar.co.jp"
+_YOSTAR_EMAIL_SUBJECT: Final[str] = "Eメールアドレスの確認"
 
 
 class YostarLoginBase(metaclass=ABCMeta):

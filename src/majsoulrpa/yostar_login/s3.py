@@ -10,7 +10,7 @@ import boto3
 
 from majsoulrpa.common import TimeoutType, to_timedelta
 
-from .base import YOSTAR_EMAIL_ADDRESS, YOSTAR_EMAIL_SUBJECT, YostarLoginBase
+from .base import _YOSTAR_EMAIL_ADDRESS, _YOSTAR_EMAIL_SUBJECT, YostarLoginBase
 
 logger = getLogger(__name__)
 
@@ -89,7 +89,7 @@ class YostarLoginS3(YostarLoginBase):
                 delete_object(key)
                 logger.info("Deleted the S3 object `%s`.", key)
                 continue
-            if mail.get("From") != YOSTAR_EMAIL_ADDRESS:
+            if mail.get("From") != _YOSTAR_EMAIL_ADDRESS:
                 # Ignore emails whose `From` is not
                 # `info@passport.yostar.co.jp`
                 # as they may be related to matters other than login.
@@ -97,7 +97,7 @@ class YostarLoginS3(YostarLoginBase):
 
             if "Subject" not in mail:
                 continue
-            if mail.get("Subject") != YOSTAR_EMAIL_SUBJECT:
+            if mail.get("Subject") != _YOSTAR_EMAIL_SUBJECT:
                 # Ignore emails whose `Subject` is not
                 # `Eメールアドレスの確認`
                 # as they may be related to matters other than login.

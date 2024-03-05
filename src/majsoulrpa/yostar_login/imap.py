@@ -12,7 +12,7 @@ from imapclient import IMAPClient  # type: ignore[import-untyped]
 
 from majsoulrpa.common import TimeoutType, to_timedelta
 
-from .base import YOSTAR_EMAIL_ADDRESS, YOSTAR_EMAIL_SUBJECT, YostarLoginBase
+from .base import _YOSTAR_EMAIL_ADDRESS, _YOSTAR_EMAIL_SUBJECT, YostarLoginBase
 
 logger = getLogger(__name__)
 
@@ -45,7 +45,7 @@ class YostarLoginIMAP(YostarLoginBase):
                     "TO",
                     self._email_address,
                     "FROM",
-                    YOSTAR_EMAIL_ADDRESS,
+                    _YOSTAR_EMAIL_ADDRESS,
                     "SINCE",
                     today,
                 ],  # type: ignore[arg-type]
@@ -63,7 +63,7 @@ class YostarLoginIMAP(YostarLoginBase):
                 if not isinstance(msg, EmailMessage):
                     continue
 
-                if msg.get("Subject") != YOSTAR_EMAIL_SUBJECT:
+                if msg.get("Subject") != _YOSTAR_EMAIL_SUBJECT:
                     # Ignore emails whose `Subject` is not
                     # `Eメールアドレスの確認` as they may be
                     # related to matters other than login.
