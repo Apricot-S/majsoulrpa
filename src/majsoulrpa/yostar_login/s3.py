@@ -4,7 +4,7 @@ import time
 from email.message import EmailMessage
 from email.parser import BytesParser
 from logging import getLogger
-from typing import Any
+from typing import Any, Self
 
 import boto3
 
@@ -18,23 +18,36 @@ logger = getLogger(__name__)
 class YostarLoginS3(YostarLoginBase):
     """Retrieves the verification code using an S3 bucket."""
 
-    def __init__(self, config: dict[str, Any]) -> None:
-        authentication_config = config["authentication"]
-        method = authentication_config["method"]
+    def __init__(
+        self,
+        method: str,
+        email_address: str,
+        bucket_name: str,
+        key_prefix: str,
+        aws_profile: str | None = None,
+    ) -> None:
         if method != "s3":
             msg = f"{method}: Authentication method not implemented."
             raise NotImplementedError(msg)
 
-        self._email_address = authentication_config["email_address"]
-        if "aws_profile" not in authentication_config:
+        self._email_address = email_address
+        if aws_profile is None:
             s3_client = boto3.resource("s3")
         else:
-            aws_profile = authentication_config["aws_profile"]
             session = boto3.Session(profile_name=aws_profile)
             s3_client = session.resource("s3")
-        bucket_name = authentication_config["bucket_name"]
         self._s3_bucket = s3_client.Bucket(bucket_name)
-        self._key_prefix = authentication_config["key_prefix"]
+        self._key_prefix = key_prefix
+
+    @classmethod
+    def from_config(cls, config: dict[str, Any]) -> Self:
+        authentication_config: dict[str, Any] = config["authentication"]
+        method = authentication_config["method"]
+        email_address = authentication_config["email_address"]
+        bucket_name = authentication_config["bucket_name"]
+        key_prefix = authentication_config["key_prefix"]
+        aws_profile = authentication_config.get("aws_profile")
+        return cls(method, email_address, bucket_name, key_prefix, aws_profile)
 
     def get_email_address(self) -> str:
         return self._email_address

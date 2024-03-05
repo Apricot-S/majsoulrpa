@@ -2,7 +2,7 @@ import datetime
 import re
 from abc import ABCMeta, abstractmethod
 from logging import getLogger
-from typing import Any, Final
+from typing import Any, Final, Self
 
 from majsoulrpa.common import TimeoutType
 
@@ -16,15 +16,26 @@ class YostarLoginBase(metaclass=ABCMeta):
     """Provides common functionality for Yostar account logins."""
 
     @abstractmethod
-    def __init__(self, config: dict[str, Any]) -> None:
+    def __init__(self) -> None:
         """Creates an instance of `YostarLoginBase`.
 
-        Creates an instance of `YostarLoginBase` using the provided
-        configuration. Subclasses can extract the necessary information
-        from the `config` dictionary.
+        Subclasses must provide the necessary information as arguments.
+        """
+
+    @classmethod
+    @abstractmethod
+    def from_config(cls, config: dict[str, Any]) -> Self:
+        """Creates an instance of `YostarLoginBase` using the provided
+        configuration.
+
+        Subclasses can extract the necessary information from the
+        `config` dictionary.
 
         Args:
-            config: A configuration.
+            config: A dict containing the configuration settings.
+
+        Returns:
+            An instance of `YostarLoginBase`.
         """
 
     @abstractmethod

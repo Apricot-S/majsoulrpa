@@ -6,7 +6,7 @@ from email.message import EmailMessage
 from email.parser import BytesParser
 from email.utils import mktime_tz, parsedate_tz
 from logging import getLogger
-from typing import Any
+from typing import Any, Self
 
 from imapclient import IMAPClient  # type: ignore[import-untyped]
 
@@ -20,12 +20,26 @@ logger = getLogger(__name__)
 class YostarLoginIMAP(YostarLoginBase):
     """Retrieves the verification code using IMAP."""
 
-    def __init__(self, config: dict[str, Any]) -> None:
+    def __init__(
+        self,
+        email_address: str,
+        imap_server: str,
+        password: str,
+        mail_folder: str,
+    ) -> None:
+        self._email_address = email_address
+        self._imap_server = imap_server
+        self._password = password
+        self._mail_folder = mail_folder
+
+    @classmethod
+    def from_config(cls, config: dict[str, Any]) -> Self:
         authentication_config = config["authentication"]
-        self._email_address = authentication_config["email_address"]
-        self._imap_server = authentication_config["imap_server"]
-        self._password = authentication_config["password"]
-        self._mail_folder = authentication_config["mail_folder"]
+        email_address = authentication_config["email_address"]
+        imap_server = authentication_config["imap_server"]
+        password = authentication_config["password"]
+        mail_folder = authentication_config["mail_folder"]
+        return cls(email_address, imap_server, password, mail_folder)
 
     def get_email_address(self) -> str:
         return self._email_address
