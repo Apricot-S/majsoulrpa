@@ -4,18 +4,15 @@ import time
 from email.message import EmailMessage
 from email.parser import BytesParser
 from logging import getLogger
-from typing import Any, Final
+from typing import Any
 
 import boto3
 
 from majsoulrpa.common import TimeoutType, to_timedelta
 
-from .base import YostarLoginBase
+from .base import YOSTAR_EMAIL_ADDRESS, YOSTAR_EMAIL_SUBJECT, YostarLoginBase
 
 logger = getLogger(__name__)
-
-YOSTAR_EMAIL_ADDRESS: Final[str] = "info@passport.yostar.co.jp"
-YOSTAR_EMAIL_SUBJECT: Final[str] = "Eメールアドレスの確認"
 
 
 class YostarLoginS3(YostarLoginBase):
