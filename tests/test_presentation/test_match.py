@@ -11,7 +11,11 @@ from majsoulrpa.presentation.match.operation import LiqiOperation
 class DummyMatchPresentation(MatchPresentation):
     def __init__(self) -> None:
         self._round_state = MagicMock()
-        self._browser = MagicMock()
+        self._mock_browser = MagicMock()
+
+    @property
+    def _browser(self) -> MagicMock:
+        return self._mock_browser
 
     def _dapai(self, index: int, forbidden_tiles: list[str]) -> None:
         pass

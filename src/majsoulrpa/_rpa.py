@@ -13,17 +13,10 @@ from ._impl.browser import (
 )
 from ._impl.zmq_client import ZMQClient
 from .common import timeout_to_deadline
-from .presentation import AuthPresentation, HomePresentation, LoginPresentation
-from .presentation._presentation_creator import PresentationCreator
-from .presentation.exceptions import (
-    PresentationNotDetectedError,
-    PresentationTimeoutError,
-)
-from .presentation.match import MatchPresentation
-from .presentation.presentation_base import PresentationBase
 
 if TYPE_CHECKING:
     from ._impl.message_queue_client import MessageQueueClientBase
+    from .presentation.presentation_base import PresentationBase
 
 logger = getLogger(__name__)
 
@@ -102,7 +95,6 @@ class RPA:
         self._mitmproxy_process: Popen[bytes] | None = None
         self._browser: BrowserBase | None = None
         self._message_queue_client: MessageQueueClientBase | None = None
-        self._creator = PresentationCreator()
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> Self:  # noqa: C901
@@ -373,7 +365,7 @@ class RPA:
             raise RuntimeError(msg)
         return self._browser.get_screenshot()
 
-    def wait(self, timeout: float) -> PresentationBase:  # noqa: C901
+    def wait(self, timeout: float) -> "PresentationBase":  # noqa: C901
         """Waits for a presentation to be detected.
 
         Args:
@@ -398,29 +390,35 @@ class RPA:
             msg = "Message queue client has not been launched yet."
             raise RuntimeError(msg)
 
+        # TODO: Temporary measures for circular import
+        from .presentation import (
+            AuthPresentation,
+            HomePresentation,
+            LoginPresentation,
+        )
+        from .presentation._presentation_creator import PresentationCreator
+        from .presentation.exceptions import (
+            PresentationNotDetectedError,
+            PresentationTimeoutError,
+        )
+        from .presentation.match import MatchPresentation
+
         p: PresentationBase | None = None
+        creator = PresentationCreator()
         while True:
             if not self.is_running():
                 msg = "RPA client is not running."
                 raise RuntimeError(msg)
 
             try:
-                p = LoginPresentation(
-                    self._browser,
-                    self._message_queue_client,
-                    self._creator,
-                )
+                p = LoginPresentation(self, creator)
             except PresentationNotDetectedError:
                 pass
             else:
                 return p
 
             try:
-                p = AuthPresentation(
-                    self._browser,
-                    self._message_queue_client,
-                    self._creator,
-                )
+                p = AuthPresentation(self, creator)
             except PresentationNotDetectedError:
                 pass
             else:
@@ -428,12 +426,7 @@ class RPA:
 
             try:
                 now = datetime.datetime.now(datetime.UTC)
-                p = HomePresentation(
-                    self._browser,
-                    self._message_queue_client,
-                    self._creator,
-                    deadline - now,
-                )
+                p = HomePresentation(self, creator, deadline - now)
             except PresentationNotDetectedError:
                 pass
             else:
@@ -441,13 +434,7 @@ class RPA:
 
             try:
                 now = datetime.datetime.now(datetime.UTC)
-                p = MatchPresentation(
-                    self._browser,
-                    self._message_queue_client,
-                    self._creator,
-                    None,
-                    deadline - now,
-                )
+                p = MatchPresentation(self, creator, None, deadline - now)
             except PresentationNotDetectedError:
                 pass
             else:

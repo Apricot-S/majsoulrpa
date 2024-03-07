@@ -16,10 +16,14 @@ from majsoulrpa.presentation.exceptions import (
 
 class DummyAuthPresentation(AuthPresentation):
     def __init__(self) -> None:
-        self._browser = MagicMock()
+        self._mock_browser = MagicMock()
         self._new_presentation = None
         self._entered_email_address = False
         self._last_request_time: datetime.datetime | None = None
+
+    @property
+    def _browser(self) -> MagicMock:
+        return self._mock_browser
 
 
 def test_auth_screen_detected() -> None:
@@ -28,7 +32,7 @@ def test_auth_screen_detected() -> None:
 
     with patch.object(Template, "open_file", return_value=mock_template):
         try:
-            AuthPresentation(MagicMock(), MagicMock(), MagicMock())
+            AuthPresentation(MagicMock(), MagicMock())
         except PresentationNotDetectedError:
             pytest.fail("PresentationNotDetectedError raised unexpectedly")
 
@@ -41,7 +45,7 @@ def test_auth_screen_not_detected() -> None:
         patch.object(Template, "open_file", return_value=mock_template),
         pytest.raises(PresentationNotDetectedError),
     ):
-        AuthPresentation(MagicMock(), MagicMock(), MagicMock())
+        AuthPresentation(MagicMock(), MagicMock())
 
 
 def test_enter_email_address_too_long() -> None:

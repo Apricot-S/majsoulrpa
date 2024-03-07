@@ -1,7 +1,7 @@
 import datetime
 
+from majsoulrpa import RPA
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 
@@ -24,23 +24,14 @@ class LoginPresentation(PresentationBase):
     * Click the "Login" button to transition to the `AuthPresentation`.
     """
 
-    def __init__(
-        self,
-        browser: BrowserBase,
-        message_queue_client: MessageQueueClientBase,
-        creator: PresentationCreatorBase,
-    ) -> None:
+    def __init__(self, rpa: RPA, creator: PresentationCreatorBase) -> None:
         """Creates an instance of `LoginPresentation`.
 
         This constructor is intended to be called only within the
         framework. Users should not directly call this constructor.
 
         Args:
-            browser: The browser instance currently displaying the login
-                screen.
-            message_queue_client: A message queue client currently
-                connected to the queue where mitmproxy is pushing
-                messages.
+            rpa: A RPA client for Mahjong Soul.
             creator: A presentation creator responsible for
                 instantiating presentations.
 
@@ -48,13 +39,13 @@ class LoginPresentation(PresentationBase):
             PresentationNotDetectedError: If the login screen is not
                 detected.
         """
-        super().__init__(browser, message_queue_client, creator)
+        super().__init__(rpa, creator)
 
         template = Template.open_file(
             "template/login/marker",
-            browser.zoom_ratio,
+            self._browser.zoom_ratio,
         )
-        ss = browser.get_screenshot()
+        ss = self._browser.get_screenshot()
         if not template.match(ss):
             msg = "Could not detect `LoginPresentation`."
             raise PresentationNotDetectedError(msg, ss)
@@ -105,8 +96,7 @@ class LoginPresentation(PresentationBase):
                 new_presentation = self._creator.create_new_presentation(
                     Presentation.LOGIN,
                     Presentation.AUTH,
-                    self._browser,
-                    self._message_queue_client,
+                    self._rpa,
                 )
                 self._set_new_presentation(new_presentation)
             except PresentationNotDetectedError:
@@ -119,8 +109,7 @@ class LoginPresentation(PresentationBase):
                 new_presentation = self._creator.create_new_presentation(
                     Presentation.LOGIN,
                     Presentation.HOME,
-                    self._browser,
-                    self._message_queue_client,
+                    self._rpa,
                     timeout=(deadline - now),
                 )
                 self._set_new_presentation(new_presentation)
