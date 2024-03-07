@@ -63,8 +63,8 @@ class PresentationBase(metaclass=ABCMeta):
             creator: A presentation creator responsible for
                 instantiating presentations.
         """
-        self._browser = browser
-        self._message_queue_client = message_queue_client
+        self.__browser = browser
+        self.__message_queue_client = message_queue_client
         self._creator: PresentationCreatorBase = creator
         self._new_presentation: "PresentationBase | None" = None
 
@@ -86,6 +86,14 @@ class PresentationBase(metaclass=ABCMeta):
     @abstractmethod
     def _wait(browser: BrowserBase, timeout: TimeoutType) -> None:
         pass
+
+    @property
+    def _browser(self) -> BrowserBase:
+        return self.__browser
+
+    @property
+    def _message_queue_client(self) -> MessageQueueClientBase:
+        return self.__message_queue_client
 
     @property
     def new_presentation(self) -> Optional["PresentationBase"]:

@@ -16,10 +16,14 @@ from majsoulrpa.presentation.exceptions import (
 
 class DummyAuthPresentation(AuthPresentation):
     def __init__(self) -> None:
-        self._browser = MagicMock()
+        self._mock_browser = MagicMock()
         self._new_presentation = None
         self._entered_email_address = False
         self._last_request_time: datetime.datetime | None = None
+
+    @property
+    def _browser(self) -> MagicMock:
+        return self._mock_browser
 
 
 def test_auth_screen_detected() -> None:
