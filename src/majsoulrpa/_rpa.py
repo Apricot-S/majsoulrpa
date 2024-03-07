@@ -411,22 +411,14 @@ class RPA:
                 raise RuntimeError(msg)
 
             try:
-                p = LoginPresentation(
-                    self._browser,
-                    self._message_queue_client,
-                    creator,
-                )
+                p = LoginPresentation(self, creator)
             except PresentationNotDetectedError:
                 pass
             else:
                 return p
 
             try:
-                p = AuthPresentation(
-                    self._browser,
-                    self._message_queue_client,
-                    creator,
-                )
+                p = AuthPresentation(self, creator)
             except PresentationNotDetectedError:
                 pass
             else:
@@ -434,12 +426,7 @@ class RPA:
 
             try:
                 now = datetime.datetime.now(datetime.UTC)
-                p = HomePresentation(
-                    self._browser,
-                    self._message_queue_client,
-                    creator,
-                    deadline - now,
-                )
+                p = HomePresentation(self, creator, deadline - now)
             except PresentationNotDetectedError:
                 pass
             else:
@@ -447,13 +434,7 @@ class RPA:
 
             try:
                 now = datetime.datetime.now(datetime.UTC)
-                p = MatchPresentation(
-                    self._browser,
-                    self._message_queue_client,
-                    creator,
-                    None,
-                    deadline - now,
-                )
+                p = MatchPresentation(self, creator, None, deadline - now)
             except PresentationNotDetectedError:
                 pass
             else:

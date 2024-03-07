@@ -2,8 +2,8 @@ import datetime
 import time
 from logging import getLogger
 
+from majsoulrpa import RPA
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 
@@ -28,19 +28,14 @@ __all__ = [
 
 
 class TournamentPresentation(PresentationBase):
-    def __init__(
-        self,
-        browser: BrowserBase,
-        message_queue_client: MessageQueueClientBase,
-        creator: PresentationCreatorBase,
-    ) -> None:
-        super().__init__(browser, message_queue_client, creator)
+    def __init__(self, rpa: RPA, creator: PresentationCreatorBase) -> None:
+        super().__init__(rpa, creator)
 
         template = Template.open_file(
             "template/tournament/marker",
-            browser.zoom_ratio,
+            self._browser.zoom_ratio,
         )
-        ss = browser.get_screenshot()
+        ss = self._browser.get_screenshot()
         if not template.match(ss):
             msg = "Could not detect `TournamentPresentation`."
             raise PresentationNotDetectedError(msg, ss)
@@ -64,7 +59,7 @@ class TournamentPresentation(PresentationBase):
                 case _:
                     raise InconsistentMessageError(
                         str(message),
-                        browser.get_screenshot(),
+                        self._browser.get_screenshot(),
                     )
 
     @staticmethod
@@ -161,8 +156,7 @@ class TournamentPresentation(PresentationBase):
             new_presentation = self._creator.create_new_presentation(
                 Presentation.TOURNAMENT,
                 Presentation.MATCH,
-                self._browser,
-                self._message_queue_client,
+                self._rpa,
                 timeout=(deadline - now),
             )
             self._set_new_presentation(new_presentation)
@@ -228,8 +222,7 @@ class TournamentPresentation(PresentationBase):
         new_presentation = self._creator.create_new_presentation(
             Presentation.TOURNAMENT,
             Presentation.HOME,
-            self._browser,
-            self._message_queue_client,
+            self._rpa,
             timeout=timeout,
         )
         self._set_new_presentation(new_presentation)

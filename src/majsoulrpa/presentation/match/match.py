@@ -4,12 +4,10 @@ import time
 from logging import getLogger
 from typing import Any, TypeGuard
 
+from majsoulrpa import RPA
 from majsoulrpa._impl import id
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.message_queue_client import (
-    Message,
-    MessageQueueClientBase,
-)
+from majsoulrpa._impl.message_queue_client import Message
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline, to_timedelta
 from majsoulrpa.presentation.exceptions import (
@@ -434,15 +432,14 @@ class MatchPresentation(PresentationBase):
 
     def __init__(
         self,
-        browser: BrowserBase,
-        message_queue_client: MessageQueueClientBase,
+        rpa: RPA,
         creator: PresentationCreatorBase,
         prev_presentation: Presentation | None,
         timeout: TimeoutType = 60.0,
         *,
         match_state: MatchState | None = None,
     ) -> None:
-        super().__init__(browser, message_queue_client, creator)
+        super().__init__(rpa, creator)
 
         self._prev_presentation = prev_presentation
         self._step = 0
@@ -465,8 +462,10 @@ class MatchPresentation(PresentationBase):
         )
 
         paths = [f"template/match/marker{i}" for i in range(4)]
-        templates = [Template.open_file(p, browser.zoom_ratio) for p in paths]
-        ss = browser.get_screenshot()
+        templates = [
+            Template.open_file(p, self._browser.zoom_ratio) for p in paths
+        ]
+        ss = self._browser.get_screenshot()
         if Template.match_one_of(ss, templates) == -1:
             msg = "Could not detect `match_main`."
             raise PresentationNotDetectedError(msg, ss)
@@ -759,8 +758,7 @@ class MatchPresentation(PresentationBase):
             new_presentation = self._creator.create_new_presentation(
                 Presentation.MATCH,
                 self._prev_presentation,
-                self._browser,
-                self._message_queue_client,
+                self._rpa,
             )
             self._set_new_presentation(new_presentation)
             return
@@ -779,8 +777,7 @@ class MatchPresentation(PresentationBase):
             new_presentation = self._creator.create_new_presentation(
                 Presentation.MATCH,
                 self._prev_presentation,
-                self._browser,
-                self._message_queue_client,
+                self._rpa,
                 timeout=(deadline - now),
             )
             self._set_new_presentation(new_presentation)
@@ -1046,8 +1043,7 @@ class MatchPresentation(PresentationBase):
         MatchPresentation._wait(self._browser, deadline - now)
         now = datetime.datetime.now(datetime.UTC)
         new_presentation = MatchPresentation(
-            self._browser,
-            self._message_queue_client,
+            self._rpa,
             self._creator,
             self._prev_presentation,
             deadline - now,
@@ -1146,8 +1142,7 @@ class MatchPresentation(PresentationBase):
                 MatchPresentation._wait(self._browser, deadline - now)
                 now = datetime.datetime.now(datetime.UTC)
                 new_presentation = MatchPresentation(
-                    self._browser,
-                    self._message_queue_client,
+                    self._rpa,
                     self._creator,
                     self._prev_presentation,
                     deadline - now,
@@ -1227,8 +1222,7 @@ class MatchPresentation(PresentationBase):
                 MatchPresentation._wait(self._browser, deadline - now)
                 now = datetime.datetime.now(datetime.UTC)
                 new_presentation = MatchPresentation(
-                    self._browser,
-                    self._message_queue_client,
+                    self._rpa,
                     self._creator,
                     self._prev_presentation,
                     deadline - now,

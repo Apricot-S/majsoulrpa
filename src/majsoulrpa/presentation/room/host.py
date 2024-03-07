@@ -4,8 +4,7 @@ from collections.abc import Iterable, Mapping
 from logging import getLogger
 from typing import Self
 
-from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
+from majsoulrpa import RPA
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 from majsoulrpa.presentation.exceptions import (
@@ -36,8 +35,7 @@ class RoomHostPresentation(RoomPresentationBase):
 
     def __init__(
         self,
-        browser: BrowserBase,
-        message_queue_client: MessageQueueClientBase,
+        rpa: RPA,
         creator: PresentationCreatorBase,
         room_id: int,
         max_num_players: int,
@@ -50,11 +48,7 @@ class RoomHostPresentation(RoomPresentationBase):
         framework. Users should not directly call this constructor.
 
         Args:
-            browser: The browser instance currently displaying the room
-                screen.
-            message_queue_client: A message queue client currently
-                connected to the queue where mitmproxy is pushing
-                messages.
+            rpa: A RPA client for Mahjong Soul.
             creator: A presentation creator responsible for
                 instantiating presentations.
             room_id: The room ID.
@@ -64,8 +58,7 @@ class RoomHostPresentation(RoomPresentationBase):
             num_ais: The number of AI players in the room.
         """
         super().__init__(
-            browser,
-            message_queue_client,
+            rpa,
             creator,
             room_id,
             max_num_players,
@@ -76,12 +69,21 @@ class RoomHostPresentation(RoomPresentationBase):
     @classmethod
     def _create(
         cls,
-        browser: BrowserBase,
-        message_queue_client: MessageQueueClientBase,
+        rpa: RPA,
         creator: PresentationCreatorBase,
         timeout: TimeoutType,
     ) -> Self:
         deadline = timeout_to_deadline(timeout)
+
+        browser = rpa._browser  # noqa: SLF001
+        if browser is None:
+            msg = "Browser is not running."
+            raise RuntimeError(msg)
+
+        message_queue_client = rpa._message_queue_client  # noqa: SLF001
+        if message_queue_client is None:
+            msg = "Message queue client is not running."
+            raise RuntimeError(msg)
 
         template = Template.open_file(
             "template/room/marker",
@@ -133,26 +135,27 @@ class RoomHostPresentation(RoomPresentationBase):
             players.append(player)
         num_ais = room["robot_count"]
 
-        return cls(
-            browser,
-            message_queue_client,
-            creator,
-            room_id,
-            max_num_players,
-            players,
-            num_ais,
-        )
+        return cls(rpa, creator, room_id, max_num_players, players, num_ais)
 
     @classmethod
     def _return_from_match(
         cls,
-        browser: BrowserBase,
-        message_queue_client: MessageQueueClientBase,
+        rpa: RPA,
         creator: PresentationCreatorBase,
         prev_presentation: Self,
         timeout: TimeoutType,
     ) -> Self:
         deadline = timeout_to_deadline(timeout)
+
+        browser = rpa._browser  # noqa: SLF001
+        if browser is None:
+            msg = "Browser is not running."
+            raise RuntimeError(msg)
+
+        message_queue_client = rpa._message_queue_client  # noqa: SLF001
+        if message_queue_client is None:
+            msg = "Message queue client is not running."
+            raise RuntimeError(msg)
 
         now = datetime.datetime.now(datetime.UTC)
         cls._wait(browser, deadline - now)
@@ -184,8 +187,7 @@ class RoomHostPresentation(RoomPresentationBase):
             raise InconsistentMessageError(name, browser.get_screenshot())
 
         return cls(
-            browser,
-            message_queue_client,
+            rpa,
             creator,
             prev_presentation.room_id,
             prev_presentation.max_num_players,
@@ -259,8 +261,7 @@ class RoomHostPresentation(RoomPresentationBase):
         new_presentation = self._creator.create_new_presentation(
             Presentation.ROOM_HOST,
             Presentation.MATCH,
-            self._browser,
-            self._message_queue_client,
+            self._rpa,
             timeout=(deadline - now),
         )
         self._set_new_presentation(new_presentation)

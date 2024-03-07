@@ -32,7 +32,7 @@ def test_auth_screen_detected() -> None:
 
     with patch.object(Template, "open_file", return_value=mock_template):
         try:
-            AuthPresentation(MagicMock(), MagicMock(), MagicMock())
+            AuthPresentation(MagicMock(), MagicMock())
         except PresentationNotDetectedError:
             pytest.fail("PresentationNotDetectedError raised unexpectedly")
 
@@ -45,7 +45,7 @@ def test_auth_screen_not_detected() -> None:
         patch.object(Template, "open_file", return_value=mock_template),
         pytest.raises(PresentationNotDetectedError),
     ):
-        AuthPresentation(MagicMock(), MagicMock(), MagicMock())
+        AuthPresentation(MagicMock(), MagicMock())
 
 
 def test_enter_email_address_too_long() -> None:
