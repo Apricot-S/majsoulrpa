@@ -747,47 +747,55 @@ class MatchPresentation(PresentationBase):
             except PresentationTimeoutError:
                 break
 
-        if self._prev_presentation == Presentation.TOURNAMENT:
-            now = datetime.datetime.now(datetime.UTC)
-            self._creator.wait(
-                self._browser,
-                deadline - now,
-                self._prev_presentation,
-            )
-            now = datetime.datetime.now(datetime.UTC)
-            new_presentation = self._creator.create_new_presentation(
-                Presentation.MATCH,
-                self._prev_presentation,
-                self._rpa,
-            )
-            self._set_new_presentation(new_presentation)
-            return
+        while True:
+            try:
+                new_presentation = self._creator.create_new_presentation(
+                    Presentation.MATCH,
+                    Presentation.TOURNAMENT,
+                    self._rpa,
+                )
+            except PresentationNotDetectedError:
+                pass
+            else:
+                self._set_new_presentation(new_presentation)
+                return
 
-        if self._prev_presentation in (
-            Presentation.ROOM_HOST,
-            Presentation.ROOM_GUEST,
-        ):
-            now = datetime.datetime.now(datetime.UTC)
-            self._creator.wait(
-                self._browser,
-                deadline - now,
-                self._prev_presentation,
-            )
-            now = datetime.datetime.now(datetime.UTC)
-            new_presentation = self._creator.create_new_presentation(
-                Presentation.MATCH,
-                self._prev_presentation,
-                self._rpa,
-                timeout=(deadline - now),
-            )
-            self._set_new_presentation(new_presentation)
-            return
+            try:
+                # RoomHost must be detected before RoomGuest
+                now = datetime.datetime.now(datetime.UTC)
+                new_presentation = self._creator.create_new_presentation(
+                    Presentation.MATCH,
+                    Presentation.ROOM_HOST,
+                    self._rpa,
+                    timeout=(deadline - now),
+                )
+            except PresentationNotDetectedError:
+                pass
+            else:
+                self._set_new_presentation(new_presentation)
+                return
 
-        # TODO: What to do when restarting a suspended match.
-        # In this case, `self._prev_presentation` is `None`.
-        if self._prev_presentation is None:
-            raise NotImplementedError(self._prev_presentation)
-        raise NotImplementedError(self._prev_presentation.name)
+            try:
+                now = datetime.datetime.now(datetime.UTC)
+                new_presentation = self._creator.create_new_presentation(
+                    Presentation.MATCH,
+                    Presentation.ROOM_GUEST,
+                    self._rpa,
+                    timeout=(deadline - now),
+                )
+            except PresentationNotDetectedError:
+                pass
+            else:
+                self._set_new_presentation(new_presentation)
+                return
+
+            now = datetime.datetime.now(datetime.UTC)
+            if now > deadline:
+                msg = "Timeout."
+                raise PresentationTimeoutError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
 
     def _obtain_event_reward(self, deadline: datetime.datetime) -> None:
         # Clicks on the screen until the "Confirm" button
