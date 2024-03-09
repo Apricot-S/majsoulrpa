@@ -1,7 +1,7 @@
 import datetime
 from collections.abc import Iterable, Mapping
 from logging import getLogger
-from typing import Self, Union
+from typing import Self
 
 from majsoulrpa import RPA
 from majsoulrpa._impl.template import Template
@@ -17,7 +17,6 @@ from majsoulrpa.presentation.presentation_base import (
     PresentationCreatorBase,
 )
 
-from . import host
 from .base import RoomPlayer, RoomPresentationBase
 
 logger = getLogger(__name__)
@@ -71,7 +70,7 @@ class RoomGuestPresentation(RoomPresentationBase):
         rpa: RPA,
         creator: PresentationCreatorBase,
         timeout: TimeoutType,
-    ) -> Union[Self, "host.RoomHostPresentation"]:
+    ) -> Self:
         deadline = timeout_to_deadline(timeout)
 
         browser = rpa._browser  # noqa: SLF001
