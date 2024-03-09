@@ -137,64 +137,6 @@ class RoomHostPresentation(RoomPresentationBase):
 
         return cls(rpa, creator, room_id, max_num_players, players, num_ais)
 
-    @classmethod
-    def _return_from_match(
-        cls,
-        rpa: RPA,
-        creator: PresentationCreatorBase,
-        prev_presentation: Self,
-        timeout: TimeoutType,
-    ) -> Self:
-        deadline = timeout_to_deadline(timeout)
-
-        browser = rpa._browser  # noqa: SLF001
-        if browser is None:
-            msg = "Browser is not running."
-            raise RuntimeError(msg)
-
-        message_queue_client = rpa._message_queue_client  # noqa: SLF001
-        if message_queue_client is None:
-            msg = "Message queue client is not running."
-            raise RuntimeError(msg)
-
-        now = datetime.datetime.now(datetime.UTC)
-        cls._wait(browser, deadline - now)
-
-        while True:
-            if datetime.datetime.now(datetime.UTC) > deadline:
-                msg = "Timeout."
-                raise PresentationTimeoutError(msg, browser.get_screenshot())
-
-            now = datetime.datetime.now(datetime.UTC)
-            message = message_queue_client.dequeue_message(deadline - now)
-            if message is None:
-                break
-            _, name, _, _, _ = message
-
-            match name:
-                case ".lq.Lobby.heatbeat":
-                    logger.info(message)
-                    continue
-                case ".lq.Lobby.fetchAccountInfo":
-                    # TODO(Apricot-S): Update account information
-                    logger.info(message)
-                    continue
-                case ".lq.Lobby.fetchRoom":
-                    # TODO(Apricot-S): Update of room information
-                    logger.info(message)
-                    continue
-
-            raise InconsistentMessageError(name, browser.get_screenshot())
-
-        return cls(
-            rpa,
-            creator,
-            prev_presentation.room_id,
-            prev_presentation.max_num_players,
-            prev_presentation.players,
-            prev_presentation.num_ais,
-        )
-
     def add_ai(self, timeout: TimeoutType = 10.0) -> None:
         """Adds an AI player to the room.
 
