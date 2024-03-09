@@ -1,7 +1,7 @@
 import datetime
 from collections.abc import Iterable, Mapping
 from logging import getLogger
-from typing import Self, Union
+from typing import Self
 
 from majsoulrpa import RPA
 from majsoulrpa._impl.template import Template
@@ -17,7 +17,6 @@ from majsoulrpa.presentation.presentation_base import (
     PresentationCreatorBase,
 )
 
-from . import host
 from .base import RoomPlayer, RoomPresentationBase
 
 logger = getLogger(__name__)
@@ -71,7 +70,7 @@ class RoomGuestPresentation(RoomPresentationBase):
         rpa: RPA,
         creator: PresentationCreatorBase,
         timeout: TimeoutType,
-    ) -> Union[Self, "host.RoomHostPresentation"]:
+    ) -> Self:
         deadline = timeout_to_deadline(timeout)
 
         browser = rpa._browser  # noqa: SLF001
@@ -138,81 +137,6 @@ class RoomGuestPresentation(RoomPresentationBase):
         num_ais = room["robot_count"]
 
         return cls(rpa, creator, room_id, max_num_players, players, num_ais)
-
-    @classmethod
-    def _return_from_match(
-        cls,
-        rpa: RPA,
-        creator: PresentationCreatorBase,
-        prev_presentation: Self,
-        timeout: TimeoutType,
-    ) -> Union[Self, "host.RoomHostPresentation"]:
-        deadline = timeout_to_deadline(timeout)
-
-        browser = rpa._browser  # noqa: SLF001
-        if browser is None:
-            msg = "Browser is not running."
-            raise RuntimeError(msg)
-
-        message_queue_client = rpa._message_queue_client  # noqa: SLF001
-        if message_queue_client is None:
-            msg = "Message queue client is not running."
-            raise RuntimeError(msg)
-
-        now = datetime.datetime.now(datetime.UTC)
-        cls._wait(browser, deadline - now)
-
-        while True:
-            if datetime.datetime.now(datetime.UTC) > deadline:
-                msg = "Timeout."
-                raise PresentationTimeoutError(msg, browser.get_screenshot())
-
-            now = datetime.datetime.now(datetime.UTC)
-            message = message_queue_client.dequeue_message(deadline - now)
-            if message is None:
-                break
-            _, name, _, _, _ = message
-
-            match name:
-                case ".lq.Lobby.heatbeat":
-                    logger.info(message)
-                    continue
-                case ".lq.Lobby.fetchAccountInfo":
-                    # TODO(Apricot-S): Update account information
-                    logger.info(message)
-                    continue
-                case ".lq.Lobby.fetchRoom":
-                    # TODO(Apricot-S): Update of room information
-                    logger.info(message)
-                    continue
-
-            raise InconsistentMessageError(
-                str(message),
-                browser.get_screenshot(),
-            )
-
-        add_ai = Template.open_file(
-            "template/room/add_ai",
-            browser.zoom_ratio,
-        )
-        if add_ai.match(browser.get_screenshot()):
-            return host.RoomHostPresentation(
-                rpa,
-                creator,
-                prev_presentation.room_id,
-                prev_presentation.max_num_players,
-                prev_presentation.players,
-                prev_presentation.num_ais,
-            )
-
-        return cls(
-            rpa,
-            creator,
-            prev_presentation.room_id,
-            prev_presentation.max_num_players,
-            prev_presentation.players,
-            prev_presentation.num_ais,
-        )
 
     def ready(self, timeout: TimeoutType = 60.0) -> None:
         """Notifies that the guest is ready to start the match.
