@@ -171,7 +171,7 @@ class DesktopBrowser(BrowserBase):
         validate_user_port(proxy_port)
         validate_viewport_size(width, height)
         self._viewport_size = {"width": width, "height": height}
-        self._zoom_ratio = width / STD_WIDTH
+        self._zoom_ratio = height / STD_HEIGHT
 
         initial_position = f"--window-position={initial_left},{initial_top}"
         proxy_server = f"--proxy-server=http://localhost:{proxy_port}"
