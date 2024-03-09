@@ -1,5 +1,4 @@
 import datetime
-import uuid
 from logging import getLogger
 from pathlib import Path
 from subprocess import Popen
@@ -79,7 +78,6 @@ class RPA:
             )
             raise ValueError(msg)
 
-        self._id = uuid.uuid4()
         self._remote_host = remote_host
         self._remote_port = remote_port
         self._proxy_port = proxy_port
