@@ -1,8 +1,8 @@
 from collections.abc import Iterable, Mapping
 from logging import getLogger
 
+from majsoulrpa import RPA
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import Player, TimeoutType
 from majsoulrpa.presentation.exceptions import (
@@ -62,8 +62,7 @@ class RoomPresentationBase(PresentationBase):
 
     def __init__(
         self,
-        browser: BrowserBase,
-        message_queue_client: MessageQueueClientBase,
+        rpa: RPA,
         creator: PresentationCreatorBase,
         room_id: int,
         max_num_players: int,
@@ -76,11 +75,7 @@ class RoomPresentationBase(PresentationBase):
         framework. Users should not directly call this constructor.
 
         Args:
-            browser: The browser instance that is currently displaying a
-                room screen.
-            message_queue_client: A message queue client that is
-                currently connected to the queue where mitmproxy is
-                pushing messages.
+            rpa: A RPA client for Mahjong Soul.
             creator: A presentation creator responsible for
                 instantiating presentations.
             room_id: The room ID.
@@ -89,7 +84,7 @@ class RoomPresentationBase(PresentationBase):
             players: The players in the room.
             num_ais: The number of AI players in the room.
         """
-        super().__init__(browser, message_queue_client, creator)
+        super().__init__(rpa, creator)
 
         self._room_id = room_id
         self._max_num_players = max_num_players
@@ -245,8 +240,7 @@ class RoomPresentationBase(PresentationBase):
         new_presentation = self._creator.create_new_presentation(
             Presentation.ROOM_BASE,
             Presentation.HOME,
-            self._browser,
-            self._message_queue_client,
+            self._rpa,
             timeout=timeout,
         )
         self._set_new_presentation(new_presentation)

@@ -2,6 +2,7 @@ from abc import ABCMeta, abstractmethod
 from enum import Enum, auto
 from typing import Optional
 
+from majsoulrpa import RPA
 from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa.common import TimeoutType
@@ -33,8 +34,7 @@ class PresentationCreatorBase(metaclass=ABCMeta):
         self,
         current_presentation: Presentation,
         next_presentation: Presentation,
-        browser: BrowserBase,
-        message_queue_client: MessageQueueClientBase,
+        rpa: RPA,
         **kwargs,
     ) -> "PresentationBase":
         pass
@@ -43,28 +43,18 @@ class PresentationCreatorBase(metaclass=ABCMeta):
 class PresentationBase(metaclass=ABCMeta):
     """Provides common functionality for all presentations."""
 
-    def __init__(
-        self,
-        browser: BrowserBase,
-        message_queue_client: MessageQueueClientBase,
-        creator: PresentationCreatorBase,
-    ) -> None:
+    def __init__(self, rpa: RPA, creator: PresentationCreatorBase) -> None:
         """Creates an instance of `PresentationBase`.
 
         This constructor is intended to be called only within the
         framework. Users should not directly call this constructor.
 
         Args:
-            browser: The browser instance that is currently displaying a
-                presentation.
-            message_queue_client: A message queue client that is
-                currently connected to the queue where mitmproxy is
-                pushing messages.
+            rpa: A RPA client for Mahjong Soul.
             creator: A presentation creator responsible for
                 instantiating presentations.
         """
-        self._browser = browser
-        self._message_queue_client = message_queue_client
+        self._rpa = rpa
         self._creator: PresentationCreatorBase = creator
         self._new_presentation: "PresentationBase | None" = None
 
@@ -86,6 +76,20 @@ class PresentationBase(metaclass=ABCMeta):
     @abstractmethod
     def _wait(browser: BrowserBase, timeout: TimeoutType) -> None:
         pass
+
+    @property
+    def _browser(self) -> BrowserBase:
+        if self._rpa._browser is None:  # noqa: SLF001
+            msg = "Browser is not running."
+            raise RuntimeError(msg)
+        return self._rpa._browser  # noqa: SLF001
+
+    @property
+    def _message_queue_client(self) -> MessageQueueClientBase:
+        if self._rpa._message_queue_client is None:  # noqa: SLF001
+            msg = "Message queue client is not running."
+            raise RuntimeError(msg)
+        return self._rpa._message_queue_client  # noqa: SLF001
 
     @property
     def new_presentation(self) -> Optional["PresentationBase"]:

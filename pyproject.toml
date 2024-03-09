@@ -35,13 +35,17 @@ pyzmq = "^25.1.2"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.8.0"
-ruff = "^0.2.0"
+ruff = "^0.3.0"
 types-protobuf = "^4.24.0.4"
 types-jsonschema = "^4.20.0.0"
 boto3-stubs = { extras = ["s3"], version = "^1.34.11" }
+pytest = "^8.0.1"
 
 [tool.poetry.scripts]
 majsoulrpa_remote_browser = "majsoulrpa.remote_browser._remote_browser:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.ruff]
 target-version = "py311"
@@ -76,3 +80,4 @@ convention = "google"
 
 [tool.ruff.lint.extend-per-file-ignores]
 "./examples/*" = ["S101", "INP001", "T201", "TRY004"]
+"./tests/*" = ["S101", "SLF001"]

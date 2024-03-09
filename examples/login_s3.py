@@ -36,7 +36,7 @@ if __name__ == "__main__":
                 raise RuntimeError(msg)
 
             auth_start_time = datetime.datetime.now(datetime.UTC)
-            login_s3 = YostarLoginS3(my_config)
+            login_s3 = YostarLoginS3.from_config(my_config)
             presentation.enter_email_address(login_s3.get_email_address())
             auth_code = login_s3.get_auth_code(start_time=auth_start_time)
 

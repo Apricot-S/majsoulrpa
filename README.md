@@ -10,6 +10,10 @@ This is fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-r
 4. Support browser viewport sizes other than 1920 x 1080
 5. Support 3-player mahjong
 
+## Announcements
+
+- [2024/03/06] `YostarLoginBase` and its subclasses no longer take `config` as an argument to `__init__`. When using `config`, please use the `from_config` classmethod.
+
 ## About The Program
 
 - This program is intended to enable the participation of bots in friendly matches and tournaments where bot participation is explicitly allowed.

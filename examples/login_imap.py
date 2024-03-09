@@ -36,7 +36,7 @@ if __name__ == "__main__":
                 raise RuntimeError(msg)
 
             auth_start_time = datetime.datetime.now(datetime.UTC)
-            login_imap = YostarLoginIMAP(my_config)
+            login_imap = YostarLoginIMAP.from_config(my_config)
             presentation.enter_email_address(login_imap.get_email_address())
             auth_code = login_imap.get_auth_code(start_time=auth_start_time)
 

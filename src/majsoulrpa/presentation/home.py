@@ -5,8 +5,8 @@ from enum import IntEnum
 from logging import getLogger
 from typing import Literal
 
+from majsoulrpa import RPA
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 
@@ -175,8 +175,7 @@ class HomePresentation(PresentationBase):
 
     def __init__(  # noqa: C901
         self,
-        browser: BrowserBase,
-        message_queue_client: MessageQueueClientBase,
+        rpa: RPA,
         creator: PresentationCreatorBase,
         timeout: TimeoutType,
     ) -> None:
@@ -186,11 +185,7 @@ class HomePresentation(PresentationBase):
         framework. Users should not directly call this constructor.
 
         Args:
-            browser: The browser instance currently displaying the home
-                screen.
-            message_queue_client: A message queue client currently
-                connected to the queue where mitmproxy is pushing
-                messages.
+            rpa: A RPA client for Mahjong Soul.
             creator: A presentation creator responsible for
                 instantiating presentations.
             timeout: The maximum duration, in seconds, to wait for the
@@ -212,15 +207,15 @@ class HomePresentation(PresentationBase):
             InconsistentMessageError: If an unexpected message is found
                 in the message queue.
         """
-        super().__init__(browser, message_queue_client, creator)
+        super().__init__(rpa, creator)
 
         deadline = timeout_to_deadline(timeout)
 
         template = Template.open_file(
             "template/home/marker0",
-            browser.zoom_ratio,
+            self._browser.zoom_ratio,
         )
-        ss = browser.get_screenshot()
+        ss = self._browser.get_screenshot()
         if not template.match(ss):
             msg = "Could not detect `HomePresentation`."
             raise PresentationNotDetectedError(msg, ss)
@@ -234,7 +229,10 @@ class HomePresentation(PresentationBase):
             )
             if message is None:
                 msg = "Timeout."
-                raise PresentationTimeoutError(msg, browser.get_screenshot())
+                raise PresentationTimeoutError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
             _, name, _, _, _ = message
 
             match name:
@@ -341,7 +339,7 @@ class HomePresentation(PresentationBase):
                 case _:
                     raise InconsistentMessageError(
                         str(message),
-                        browser.get_screenshot(),
+                        self._browser.get_screenshot(),
                     )
 
         while True:
@@ -369,30 +367,30 @@ class HomePresentation(PresentationBase):
                 case _:
                     raise InconsistentMessageError(
                         str(message),
-                        browser.get_screenshot(),
+                        self._browser.get_screenshot(),
                     )
 
         # Wait for markers to display on the home screen.
         time.sleep(0.5)
 
         if not HomePresentation._match_markers(
-            browser.get_screenshot(),
-            browser.zoom_ratio,
+            self._browser.get_screenshot(),
+            self._browser.zoom_ratio,
         ):
             if has_month_ticket:
-                HomePresentation._receive_daily_bonus(browser, deadline)
-            HomePresentation._close_notifications(browser, deadline)
+                HomePresentation._receive_daily_bonus(self._browser, deadline)
+            HomePresentation._close_notifications(self._browser, deadline)
 
             while True:
                 if datetime.datetime.now(datetime.UTC) > deadline:
                     msg = "Timeout."
                     raise PresentationTimeoutError(
                         msg,
-                        browser.get_screenshot(),
+                        self._browser.get_screenshot(),
                     )
                 if HomePresentation._match_markers(
-                    browser.get_screenshot(),
-                    browser.zoom_ratio,
+                    self._browser.get_screenshot(),
+                    self._browser.zoom_ratio,
                 ):
                     break
 
@@ -558,8 +556,7 @@ class HomePresentation(PresentationBase):
         new_presentation = self._creator.create_new_presentation(
             Presentation.HOME,
             Presentation.TOURNAMENT,
-            self._browser,
-            self._message_queue_client,
+            self._rpa,
         )
         self._set_new_presentation(new_presentation)
 
@@ -673,8 +670,7 @@ class HomePresentation(PresentationBase):
         new_presentation = self._creator.create_new_presentation(
             Presentation.HOME,
             Presentation.ROOM_HOST,
-            self._browser,
-            self._message_queue_client,
+            self._rpa,
             timeout=(deadline - now),
         )
         self._set_new_presentation(new_presentation)
@@ -830,8 +826,7 @@ class HomePresentation(PresentationBase):
         new_presentation = self._creator.create_new_presentation(
             Presentation.HOME,
             Presentation.ROOM_GUEST,
-            self._browser,
-            self._message_queue_client,
+            self._rpa,
             timeout=(deadline - now),
         )
         self._set_new_presentation(new_presentation)

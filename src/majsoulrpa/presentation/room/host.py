@@ -4,8 +4,7 @@ from collections.abc import Iterable, Mapping
 from logging import getLogger
 from typing import Self
 
-from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
+from majsoulrpa import RPA
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 from majsoulrpa.presentation.exceptions import (
@@ -36,8 +35,7 @@ class RoomHostPresentation(RoomPresentationBase):
 
     def __init__(
         self,
-        browser: BrowserBase,
-        message_queue_client: MessageQueueClientBase,
+        rpa: RPA,
         creator: PresentationCreatorBase,
         room_id: int,
         max_num_players: int,
@@ -50,11 +48,7 @@ class RoomHostPresentation(RoomPresentationBase):
         framework. Users should not directly call this constructor.
 
         Args:
-            browser: The browser instance currently displaying the room
-                screen.
-            message_queue_client: A message queue client currently
-                connected to the queue where mitmproxy is pushing
-                messages.
+            rpa: A RPA client for Mahjong Soul.
             creator: A presentation creator responsible for
                 instantiating presentations.
             room_id: The room ID.
@@ -64,8 +58,7 @@ class RoomHostPresentation(RoomPresentationBase):
             num_ais: The number of AI players in the room.
         """
         super().__init__(
-            browser,
-            message_queue_client,
+            rpa,
             creator,
             room_id,
             max_num_players,
@@ -76,20 +69,31 @@ class RoomHostPresentation(RoomPresentationBase):
     @classmethod
     def _create(
         cls,
-        browser: BrowserBase,
-        message_queue_client: MessageQueueClientBase,
+        rpa: RPA,
         creator: PresentationCreatorBase,
         timeout: TimeoutType,
     ) -> Self:
         deadline = timeout_to_deadline(timeout)
 
+        browser = rpa._browser  # noqa: SLF001
+        if browser is None:
+            msg = "Browser is not running."
+            raise RuntimeError(msg)
+
+        message_queue_client = rpa._message_queue_client  # noqa: SLF001
+        if message_queue_client is None:
+            msg = "Message queue client is not running."
+            raise RuntimeError(msg)
+
+        # Even if the room is full and the colors are different, it can
+        # be detected using OpenCV template matching.
         template = Template.open_file(
-            "template/room/marker",
+            "template/room/add_ai",
             browser.zoom_ratio,
         )
         ss = browser.get_screenshot()
         if not template.match(ss):
-            msg = "Could not detect `room`."
+            msg = "Could not detect `RoomHostPresentation`."
             raise PresentationNotDetectedError(msg, ss)
 
         while True:
@@ -133,65 +137,7 @@ class RoomHostPresentation(RoomPresentationBase):
             players.append(player)
         num_ais = room["robot_count"]
 
-        return cls(
-            browser,
-            message_queue_client,
-            creator,
-            room_id,
-            max_num_players,
-            players,
-            num_ais,
-        )
-
-    @classmethod
-    def _return_from_match(
-        cls,
-        browser: BrowserBase,
-        message_queue_client: MessageQueueClientBase,
-        creator: PresentationCreatorBase,
-        prev_presentation: Self,
-        timeout: TimeoutType,
-    ) -> Self:
-        deadline = timeout_to_deadline(timeout)
-
-        now = datetime.datetime.now(datetime.UTC)
-        cls._wait(browser, deadline - now)
-
-        while True:
-            if datetime.datetime.now(datetime.UTC) > deadline:
-                msg = "Timeout."
-                raise PresentationTimeoutError(msg, browser.get_screenshot())
-
-            now = datetime.datetime.now(datetime.UTC)
-            message = message_queue_client.dequeue_message(deadline - now)
-            if message is None:
-                break
-            _, name, _, _, _ = message
-
-            match name:
-                case ".lq.Lobby.heatbeat":
-                    logger.info(message)
-                    continue
-                case ".lq.Lobby.fetchAccountInfo":
-                    # TODO(Apricot-S): Update account information
-                    logger.info(message)
-                    continue
-                case ".lq.Lobby.fetchRoom":
-                    # TODO(Apricot-S): Update of room information
-                    logger.info(message)
-                    continue
-
-            raise InconsistentMessageError(name, browser.get_screenshot())
-
-        return cls(
-            browser,
-            message_queue_client,
-            creator,
-            prev_presentation.room_id,
-            prev_presentation.max_num_players,
-            prev_presentation.players,
-            prev_presentation.num_ais,
-        )
+        return cls(rpa, creator, room_id, max_num_players, players, num_ais)
 
     def add_ai(self, timeout: TimeoutType = 10.0) -> None:
         """Adds an AI player to the room.
@@ -259,8 +205,7 @@ class RoomHostPresentation(RoomPresentationBase):
         new_presentation = self._creator.create_new_presentation(
             Presentation.ROOM_HOST,
             Presentation.MATCH,
-            self._browser,
-            self._message_queue_client,
+            self._rpa,
             timeout=(deadline - now),
         )
         self._set_new_presentation(new_presentation)

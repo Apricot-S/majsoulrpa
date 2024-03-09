@@ -4,12 +4,10 @@ import time
 from logging import getLogger
 from typing import Any, TypeGuard
 
+from majsoulrpa import RPA
 from majsoulrpa._impl import id
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.message_queue_client import (
-    Message,
-    MessageQueueClientBase,
-)
+from majsoulrpa._impl.message_queue_client import Message
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline, to_timedelta
 from majsoulrpa.presentation.exceptions import (
@@ -172,64 +170,200 @@ class MatchPresentation(PresentationBase):
 
         raise AssertionError(message)
 
-    def __init__(
-        self,
-        browser: BrowserBase,
-        message_queue_client: MessageQueueClientBase,
-        creator: PresentationCreatorBase,
-        prev_presentation: Presentation | None,
-        timeout: TimeoutType = 60.0,
-        *,
-        match_state: MatchState | None = None,
-    ) -> None:
-        super().__init__(browser, message_queue_client, creator)
+    def _on_auth_game(self, message: Message) -> None:
+        _, _, request, response, _ = message
 
-        self._prev_presentation = prev_presentation
+        uuid = request["game_uuid"]
+        self._match_state._set_uuid(uuid)  # noqa: SLF001
+
+        # TODO: Check game settings
+
+        if response is None:
+            msg = "`.lq.FastTest.authGame` has no response message."
+            raise InconsistentMessageError(msg, self._browser.get_screenshot())
+
+        player_map = {}
+        for p in response["players"]:
+            account_id = p["account_id"]
+            nickname = p["nickname"]
+            level4 = id.id_to_level(p["level"]["id"])
+            level3 = id.id_to_level(p["level3"]["id"])
+            charid = p["character"]["charid"]
+
+            try:
+                character = id.id_to_character(charid)
+            except KeyError:
+                # When encountering a character whose
+                # character ID is unknown
+                logger.warning("%s: %s: charid = %s", uuid, nickname, charid)
+                character = "UNKNOWN"
+
+            player_map[account_id] = MatchPlayer(
+                account_id,
+                nickname,
+                level4,
+                level3,
+                character,
+            )
+
+        players = []
+        for i in range(len(response["seat_list"])):
+            account_id = response["seat_list"][i]
+            if account_id == self._message_queue_client.account_id:
+                self._match_state._set_seat(i)  # noqa: SLF001
+            if account_id == 0:
+                player = MatchPlayer(0, "CPU", "初心1", "初心1", "一姫")
+                players.append(player)
+            else:
+                players.append(player_map[account_id])
+        self._match_state._set_players(players)  # noqa: SLF001
+
+    def _on_sync_game(self, message: Message, *, restore: bool) -> None:
+        direction, name, request, response, timestamp = message
+        if direction != "outbound":
+            raise ValueError(message)
+        if name != ".lq.FastTest.syncGame":
+            raise ValueError(message)
+
+        if restore:
+            if request["round_id"] != "-1":
+                raise InconsistentMessageError(str(message))
+            if request["step"] != 1000000:
+                raise InconsistentMessageError(str(message))
+        else:
+            if request["round_id"] != f"{self.chang}-{self.ju}-{self.ben}":
+                raise InconsistentMessageError(str(message))
+            if request["step"] != 4294967295:
+                raise InconsistentMessageError(str(message))
+
+        if response is None:
+            raise InconsistentMessageError(str(message))
+
+        game_restore = response["game_restore"]
+
+        if game_restore["game_state"] != 1:
+            raise NotImplementedError(message)
+
+        actions: list[Any] = game_restore["actions"]
+        if len(actions) == 0:
+            raise InconsistentMessageError(str(message))
+        if len(actions) != response["step"]:
+            raise InconsistentMessageError(str(message))
+
+        action = actions.pop(0)
+        step, name, data = _common.parse_action(action, restore=True)
         self._step = 0
-        self._events: list[EventBase] = []
-        if match_state is None:
-            match_state = MatchState()
-        self._match_state = match_state
+
+        if step != 0:
+            raise InconsistentMessageError(str(action))
+
+        if name == "ActionMJStart":
+            if len(actions) == 0:
+                raise InconsistentMessageError(str(message))
+
+            action = actions.pop(0)
+            step, name, data = _common.parse_action(action, restore=True)
+            if step != 1:
+                raise InconsistentMessageError(str(action))
+            self._step += 1
+
+        if name != "ActionNewRound":
+            raise InconsistentMessageError(str(action))
+
+        self._events.clear()
+        self._events.append(NewRoundEvent(data, timestamp))
+        self._round_state = RoundState(self._match_state, data)
         self._operation_list = None
+        if ("operation" in data) and len(
+            data["operation"]["operation_list"],
+        ) > 0:
+            self._operation_list = OperationList(data["operation"])
+        else:
+            self._operation_list = None
+        self._step += 1
 
-        # If the mouse cursor is placed over the tiles in the hand,
-        # winning tile candidates may be displayed and interfere with
-        # template matching. Therefore, move the mouse cursor to an
-        # appropriate position where there are no tiles in the hand.
-        self._browser.move_to_region(
-            int(986 * self._browser.zoom_ratio),
-            int(806 * self._browser.zoom_ratio),
-            int(134 * self._browser.zoom_ratio),
-            int(57 * self._browser.zoom_ratio),
-            edge_sigma=1.0,
-        )
+        for action in actions:
+            step, name, data = _common.parse_action(action, restore=True)
+            if step != self._step:
+                raise InconsistentMessageError(str(action))
 
-        paths = [f"template/match/marker{i}" for i in range(4)]
-        templates = [Template.open_file(p, browser.zoom_ratio) for p in paths]
-        ss = browser.get_screenshot()
-        if Template.match_one_of(ss, templates) == -1:
-            # For postmortem.
-            for t in templates:
-                x, y, score = t.best_template_match(ss)
-                print(f"({x}, {y}): score = {score}")  # noqa: T201
-            msg = "Could not detect `match_main`."
-            raise PresentationNotDetectedError(msg, ss)
+            match name:
+                case "ActionDealTile":
+                    self._events.append(ZimoEvent(data, timestamp))
+                    self._round_state._on_zimo(data)  # noqa: SLF001
+                    if ("operation" in data) and len(
+                        data["operation"]["operation_list"],
+                    ) > 0:
+                        self._operation_list = OperationList(data["operation"])
+                    else:
+                        self._operation_list = None
+                    self._step += 1
+                case "ActionDiscardTile":
+                    self._events.append(DapaiEvent(data, timestamp))
+                    self._round_state._on_dapai(data)  # noqa: SLF001
+                    if ("operation" in data) and len(
+                        data["operation"]["operation_list"],
+                    ) > 0:
+                        self._operation_list = OperationList(data["operation"])
+                    else:
+                        self._operation_list = None
+                    self._step += 1
+                case "ActionChiPengGang":
+                    self._events.append(ChiPengGangEvent(data, timestamp))
+                    self._round_state._on_chipenggang(data)  # noqa: SLF001
+                    if ("operation" in data) and len(
+                        data["operation"]["operation_list"],
+                    ) > 0:
+                        self._operation_list = OperationList(data["operation"])
+                    else:
+                        self._operation_list = None
+                    self._step += 1
+                case "ActionAnGangAddGang":
+                    self._events.append(AngangJiagangEvent(data, timestamp))
+                    self._round_state._on_angang_jiagang(data)  # noqa: SLF001
+                    if ("operation" in data) and len(
+                        data["operation"]["operation_list"],
+                    ) > 0:
+                        self._operation_list = OperationList(data["operation"])
+                    else:
+                        self._operation_list = None
+                    self._step += 1
+                case "ActionBaBei":
+                    self._events.append(BabeiEvent(data, timestamp))
+                    self._round_state._on_babei(data)  # noqa: SLF001
+                    if ("operation" in data) and len(
+                        data["operation"]["operation_list"],
+                    ) > 0:
+                        self._operation_list = OperationList(data["operation"])
+                    else:
+                        self._operation_list = None
+                    self._step += 1
+                case "ActionHule":
+                    raise InconsistentMessageError(str(action))
+                case "ActionNoTile":
+                    raise InconsistentMessageError(str(action))
+                case "ActionLiuJu":
+                    raise InconsistentMessageError(str(action))
+                case _:
+                    raise InconsistentMessageError(str(action))
 
-        deadline = timeout_to_deadline(timeout)
+    def _restore(self, screenshot: bytes, deadline: datetime.datetime) -> None:
+        is_received_auth_game = False
+        is_received_sync_game = False
 
         while True:
-            now = datetime.datetime.now(datetime.UTC)
             message = self._message_queue_client.dequeue_message(
-                deadline - now,
+                deadline - datetime.datetime.now(datetime.UTC),
             )
             if message is None:
-                msg = "Timeout."
-                raise PresentationTimeoutError(msg, ss)
-            _, name, request, response, timestamp = message
+                msg = "Timeout"
+                raise PresentationTimeoutError(msg, screenshot)
+            _, name, _, _, _ = message
 
             match name:
                 case (
-                    ".lq.Lobby.oauth2Auth"
+                    ".lq.Lobby.heatbeat"
+                    | ".lq.Lobby.oauth2Auth"
                     | ".lq.Lobby.oauth2Check"
                     | ".lq.Lobby.oauth2Login"
                     | ".lq.Lobby.fetchLastPrivacy"
@@ -260,19 +394,103 @@ class MatchPresentation(PresentationBase):
                     | ".lq.Lobby.fetchMisc"
                     | ".lq.Lobby.fetchAnnouncement"
                     | ".lq.Lobby.fetchRollingNotice"
+                    | ".lq.NotifyAccountUpdate"
                     | ".lq.Lobby.loginSuccess"
                     | ".lq.Lobby.fetchCharacterInfo"
                     | ".lq.Lobby.fetchAllCommonViews"
+                    | ".lq.Lobby.fetchInfo"
+                    | ".lq.FastTest.checkNetworkDelay"
+                    | ".lq.FastTest.fetchGamePlayerState"
                     | ".lq.FastTest.finishSyncGame"
                 ):
-                    # Only when restarting a suspended match
                     logger.info(message)
-                    continue
+                case ".lq.FastTest.authGame":
+                    logger.info(message)
+                    self._on_auth_game(message)
+                    is_received_auth_game = True
                 case ".lq.FastTest.syncGame":
-                    # Only when restarting a suspended match
                     logger.info(message)
-                    self._on_sync_game(message)
-                    continue
+                    self._on_sync_game(message, restore=True)
+                    is_received_sync_game = True
+                case (
+                    ".lq.ActionPrototype"
+                    | ".lq.FastTest.inputOperation"
+                    | ".lq.FastTest.inputChiPengGang"
+                ):
+                    self._message_queue_client.put_back(message)
+                    break
+                case _:
+                    raise InconsistentMessageError(str(message), screenshot)
+
+            if is_received_sync_game and is_received_auth_game:
+                next_message = self._message_queue_client.dequeue_message(1)
+                if next_message is None:
+                    # If there are no more messages, it is waiting for
+                    # an operation on own turn.
+                    break
+                self._message_queue_client.put_back(next_message)
+
+    def __init__(
+        self,
+        rpa: RPA,
+        creator: PresentationCreatorBase,
+        prev_presentation: Presentation | None,
+        timeout: TimeoutType = 60.0,
+        *,
+        match_state: MatchState | None = None,
+    ) -> None:
+        super().__init__(rpa, creator)
+
+        self._prev_presentation = prev_presentation
+        self._step = 0
+        self._events: list[EventBase] = []
+        if match_state is None:
+            match_state = MatchState()
+        self._match_state = match_state
+        self._operation_list = None
+
+        # If the mouse cursor is placed over the tiles in the hand,
+        # winning tile candidates may be displayed and interfere with
+        # template matching. Therefore, move the mouse cursor to an
+        # appropriate position where there are no tiles in the hand.
+        self._browser.move_to_region(
+            int(986 * self._browser.zoom_ratio),
+            int(806 * self._browser.zoom_ratio),
+            int(134 * self._browser.zoom_ratio),
+            int(57 * self._browser.zoom_ratio),
+            edge_sigma=1.0,
+        )
+
+        paths = [f"template/match/marker{i}" for i in range(4)]
+        templates = [
+            Template.open_file(p, self._browser.zoom_ratio) for p in paths
+        ]
+        ss = self._browser.get_screenshot()
+        if Template.match_one_of(ss, templates) == -1:
+            msg = "Could not detect `match_main`."
+            raise PresentationNotDetectedError(msg, ss)
+
+        deadline = timeout_to_deadline(timeout)
+
+        if self._prev_presentation is None:
+            self._restore(ss, deadline)
+            # As a temporary workaround,
+            # set _prev_presentation to ROOM_GUEST
+            # TODO: Refactor for a proper solution later
+            self._prev_presentation = Presentation.ROOM_GUEST
+            return
+
+        while True:
+            now = datetime.datetime.now(datetime.UTC)
+            message = self._message_queue_client.dequeue_message(
+                deadline - now,
+            )
+            if message is None:
+                msg = "Timeout."
+                raise PresentationTimeoutError(msg, ss)
+            _, name, request, _, timestamp = message
+
+            match name:
                 case ".lq.Lobby.fetchCustomizedContestOnlineInfo":
                     # exchanged regularly in the tournament room
                     logger.info(message)
@@ -318,63 +536,11 @@ class MatchPresentation(PresentationBase):
                     continue
                 case ".lq.FastTest.authGame":
                     logger.info(message)
-                    uuid = request["game_uuid"]
-                    self._match_state._set_uuid(uuid)  # noqa: SLF001
-
-                    # TODO: Check game settings
-
-                    if response is None:
-                        msg = (
-                            "`.lq.FastTest.authGame` has no response message."
-                        )
-                        raise InconsistentMessageError(msg, ss)
-
-                    player_map = {}
-                    for p in response["players"]:
-                        account_id = p["account_id"]
-                        nickname = p["nickname"]
-                        level4 = id.id_to_level(p["level"]["id"])
-                        level3 = id.id_to_level(p["level3"]["id"])
-                        charid = p["character"]["charid"]
-                        try:
-                            character = id.id_to_character(charid)
-                        except KeyError:
-                            # When encountering a character whose
-                            # character ID is unknown
-                            logger.warning(
-                                "%s: %s: charid = %s",
-                                uuid,
-                                nickname,
-                                charid,
-                            )
-                            character = "UNKNOWN"
-                        player_map[account_id] = MatchPlayer(
-                            account_id,
-                            nickname,
-                            level4,
-                            level3,
-                            character,
-                        )
-                    players = []
-                    for i in range(len(response["seat_list"])):
-                        account_id = response["seat_list"][i]
-                        if account_id == message_queue_client.account_id:
-                            self._match_state._set_seat(i)  # noqa: SLF001
-                        if account_id == 0:
-                            player = MatchPlayer(
-                                0,
-                                "CPU",
-                                "初心1",
-                                "初心1",
-                                "一姫",
-                            )
-                            players.append(player)
-                        else:
-                            players.append(player_map[account_id])
-                    self._match_state._set_players(players)  # noqa: SLF001
+                    self._on_auth_game(message)
                     continue
                 case ".lq.FastTest.enterGame":
                     # TODO: Resume process for interrupted matches?
+                    logger.debug(message)
                     continue
                 case ".lq.NotifyPlayerLoadGameReady":
                     logger.info(message)
@@ -581,49 +747,55 @@ class MatchPresentation(PresentationBase):
             except PresentationTimeoutError:
                 break
 
-        if self._prev_presentation == Presentation.TOURNAMENT:
-            now = datetime.datetime.now(datetime.UTC)
-            self._creator.wait(
-                self._browser,
-                deadline - now,
-                self._prev_presentation,
-            )
-            now = datetime.datetime.now(datetime.UTC)
-            new_presentation = self._creator.create_new_presentation(
-                Presentation.MATCH,
-                self._prev_presentation,
-                self._browser,
-                self._message_queue_client,
-            )
-            self._set_new_presentation(new_presentation)
-            return
+        while True:
+            try:
+                new_presentation = self._creator.create_new_presentation(
+                    Presentation.MATCH,
+                    Presentation.TOURNAMENT,
+                    self._rpa,
+                )
+            except PresentationNotDetectedError:
+                pass
+            else:
+                self._set_new_presentation(new_presentation)
+                return
 
-        if self._prev_presentation in (
-            Presentation.ROOM_HOST,
-            Presentation.ROOM_GUEST,
-        ):
-            now = datetime.datetime.now(datetime.UTC)
-            self._creator.wait(
-                self._browser,
-                deadline - now,
-                self._prev_presentation,
-            )
-            now = datetime.datetime.now(datetime.UTC)
-            new_presentation = self._creator.create_new_presentation(
-                Presentation.MATCH,
-                self._prev_presentation,
-                self._browser,
-                self._message_queue_client,
-                timeout=(deadline - now),
-            )
-            self._set_new_presentation(new_presentation)
-            return
+            try:
+                # RoomHost must be detected before RoomGuest
+                now = datetime.datetime.now(datetime.UTC)
+                new_presentation = self._creator.create_new_presentation(
+                    Presentation.MATCH,
+                    Presentation.ROOM_HOST,
+                    self._rpa,
+                    timeout=(deadline - now),
+                )
+            except PresentationNotDetectedError:
+                pass
+            else:
+                self._set_new_presentation(new_presentation)
+                return
 
-        # TODO: What to do when restarting a suspended match.
-        # In this case, `self._prev_presentation` is `None`.
-        if self._prev_presentation is None:
-            raise NotImplementedError(self._prev_presentation)
-        raise NotImplementedError(self._prev_presentation.name)
+            try:
+                now = datetime.datetime.now(datetime.UTC)
+                new_presentation = self._creator.create_new_presentation(
+                    Presentation.MATCH,
+                    Presentation.ROOM_GUEST,
+                    self._rpa,
+                    timeout=(deadline - now),
+                )
+            except PresentationNotDetectedError:
+                pass
+            else:
+                self._set_new_presentation(new_presentation)
+                return
+
+            now = datetime.datetime.now(datetime.UTC)
+            if now > deadline:
+                msg = "Timeout."
+                raise PresentationTimeoutError(
+                    msg,
+                    self._browser.get_screenshot(),
+                )
 
     def _obtain_event_reward(self, deadline: datetime.datetime) -> None:
         # Clicks on the screen until the "Confirm" button
@@ -879,8 +1051,7 @@ class MatchPresentation(PresentationBase):
         MatchPresentation._wait(self._browser, deadline - now)
         now = datetime.datetime.now(datetime.UTC)
         new_presentation = MatchPresentation(
-            self._browser,
-            self._message_queue_client,
+            self._rpa,
             self._creator,
             self._prev_presentation,
             deadline - now,
@@ -979,8 +1150,7 @@ class MatchPresentation(PresentationBase):
                 MatchPresentation._wait(self._browser, deadline - now)
                 now = datetime.datetime.now(datetime.UTC)
                 new_presentation = MatchPresentation(
-                    self._browser,
-                    self._message_queue_client,
+                    self._rpa,
                     self._creator,
                     self._prev_presentation,
                     deadline - now,
@@ -1060,8 +1230,7 @@ class MatchPresentation(PresentationBase):
                 MatchPresentation._wait(self._browser, deadline - now)
                 now = datetime.datetime.now(datetime.UTC)
                 new_presentation = MatchPresentation(
-                    self._browser,
-                    self._message_queue_client,
+                    self._rpa,
                     self._creator,
                     self._prev_presentation,
                     deadline - now,
@@ -1086,133 +1255,6 @@ class MatchPresentation(PresentationBase):
                 str(message),
                 self._browser.get_screenshot(),
             )
-
-    def _on_sync_game(self, message: Message) -> None:
-        direction, name, _, response, timestamp = message
-        if direction != "outbound":
-            raise ValueError(message)
-        if name != ".lq.FastTest.syncGame":
-            raise ValueError(message)
-        if response is None:
-            raise ValueError(message)
-
-        game_restore = response["game_restore"]
-
-        if game_restore["game_state"] != 1:
-            raise NotImplementedError(message)
-
-        actions: list[Any] = game_restore["actions"]
-        if len(actions) == 0:
-            raise InconsistentMessageError(str(message))
-        if len(actions) != response["step"]:
-            raise InconsistentMessageError(str(message))
-
-        action = actions.pop(0)
-        step, name, data = _common.parse_action(action, restore=True)
-        self._step = 0
-
-        if step != 0:
-            raise InconsistentMessageError(str(action))
-
-        if name == "ActionMJStart":
-            if len(actions) == 0:
-                raise InconsistentMessageError(str(message))
-
-            action = actions.pop(0)
-            step, name, data = _common.parse_action(action, restore=True)
-            if step != 1:
-                raise InconsistentMessageError(str(action))
-            self._step += 1
-
-        if name != "ActionNewRound":
-            raise InconsistentMessageError(str(action))
-
-        self._events.clear()
-        self._events.append(NewRoundEvent(data, timestamp))
-        self._round_state = RoundState(self._match_state, data)
-        if ("operation" in data) and len(
-            data["operation"]["operation_list"],
-        ) > 0:
-            self._operation_list = OperationList(data["operation"])
-        else:
-            self._operation_list = None
-        self._step += 1
-
-        for action in actions:
-            step, name, data = _common.parse_action(action, restore=True)
-            if step != self._step:
-                raise InconsistentMessageError(str(action))
-
-            if name == "ActionDealTile":
-                self._events.append(ZimoEvent(data, timestamp))
-                self._round_state._on_zimo(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionDiscardTile":
-                self._events.append(DapaiEvent(data, timestamp))
-                self._round_state._on_dapai(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionChiPengGang":
-                self._events.append(ChiPengGangEvent(data, timestamp))
-                self._round_state._on_chipenggang(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionAnGangAddGang":
-                self._events.append(AngangJiagangEvent(data, timestamp))
-                self._round_state._on_angang_jiagang(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionBaBei":
-                self._events.append(BabeiEvent(data, timestamp))
-                self._round_state._on_babei(data)  # noqa: SLF001
-                if ("operation" in data) and len(
-                    data["operation"]["operation_list"],
-                ) > 0:
-                    self._operation_list = OperationList(data["operation"])
-                else:
-                    self._operation_list = None
-                self._step += 1
-                continue
-
-            if name == "ActionHule":
-                raise InconsistentMessageError(str(action))
-
-            if name == "ActionNoTile":
-                raise InconsistentMessageError(str(action))
-
-            if name == "ActionLiuJu":
-                raise InconsistentMessageError(str(action))
-
-            raise InconsistentMessageError(str(action))
 
     def _wait_impl(self, timeout: TimeoutType = 300.0) -> None:
         deadline = timeout_to_deadline(timeout)
@@ -1457,7 +1499,7 @@ class MatchPresentation(PresentationBase):
 
             if name == ".lq.FastTest.syncGame":
                 logger.warning(message)
-                self._on_sync_game(message)
+                self._on_sync_game(message, restore=False)
                 return
 
             if name == ".lq.FastTest.finishSyncGame":
@@ -2272,19 +2314,34 @@ class MatchPresentation(PresentationBase):
                 self._browser.get_screenshot(),
             ) from e
 
-        if index < len(self.shoupai):
-            if self.shoupai[index] not in operation.candidate_dapai_list:
-                raise InvalidOperationError(
-                    str(index),
-                    self._browser.get_screenshot(),
-                )
-        elif index == len(self.shoupai):
-            if self.zimopai not in operation.candidate_dapai_list:
-                raise InvalidOperationError(
-                    str(index),
-                    self._browser.get_screenshot(),
-                )
-        else:
+        if self.zimopai is None:
+            msg = "liqi without zimopai"
+            raise InvalidOperationError(
+                msg,
+                self._browser.get_screenshot(),
+            )
+
+        # Note that only red dora appear in the candidate_dapai_list
+        # When 5{m,p,s} and the corresponding red dora are in the hand.
+        normalized_candidate_dapai_list = [
+            _common.normalize_akadora(tile)
+            for tile in operation.candidate_dapai_list
+        ]
+        if (
+            index < len(self.shoupai)
+            and _common.normalize_akadora(self.shoupai[index])
+            not in normalized_candidate_dapai_list
+        ) or (
+            index == len(self.shoupai)
+            and _common.normalize_akadora(self.zimopai)
+            not in normalized_candidate_dapai_list
+        ):
+            raise InvalidOperationError(
+                str(index),
+                self._browser.get_screenshot(),
+            )
+
+        if index > len(self.shoupai):
             msg = f"{index}: out-of-range index"
             raise InvalidOperationError(msg, self._browser.get_screenshot())
 

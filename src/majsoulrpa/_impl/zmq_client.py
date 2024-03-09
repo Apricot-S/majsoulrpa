@@ -35,7 +35,7 @@ class ZMQClient(MessageQueueClientBase):
     def dequeue_message(self, timeout: TimeoutType) -> Message | None:  # noqa: C901
         timeout = to_timedelta(timeout)
 
-        if timeout.total_seconds() <= 0.0:  # noqa: PLR2004
+        if timeout.total_seconds() <= 0.0:
             return None
 
         if len(self._put_back_messages) > 0:

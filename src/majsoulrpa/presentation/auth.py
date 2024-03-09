@@ -3,8 +3,8 @@ import re
 import time
 from typing import Final
 
+from majsoulrpa import RPA
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 
@@ -37,23 +37,14 @@ class AuthPresentation(PresentationBase):
       "Login" button.
     """
 
-    def __init__(
-        self,
-        browser: BrowserBase,
-        message_queue_client: MessageQueueClientBase,
-        creator: PresentationCreatorBase,
-    ) -> None:
+    def __init__(self, rpa: RPA, creator: PresentationCreatorBase) -> None:
         """Creates an instance of `AuthPresentation`.
 
         This constructor is intended to be called only within the
         framework. Users should not directly call this constructor.
 
         Args:
-            browser: The browser instance currently displaying the
-                authentication screen.
-            message_queue_client: A message queue client currently
-                connected to the queue where mitmproxy is pushing
-                messages.
+            rpa: A RPA client for Mahjong Soul.
             creator: A presentation creator responsible for
                 instantiating presentations.
 
@@ -61,15 +52,16 @@ class AuthPresentation(PresentationBase):
             PresentationNotDetectedError: If the authentication screen
                 is not detected.
         """
-        super().__init__(browser, message_queue_client, creator)
+        super().__init__(rpa, creator)
 
         self._entered_email_address: bool = False
+        self._last_request_time: datetime.datetime | None = None
 
         template = Template.open_file(
             "template/auth/marker",
-            browser.zoom_ratio,
+            self._browser.zoom_ratio,
         )
-        ss = browser.get_screenshot()
+        ss = self._browser.get_screenshot()
         if not template.match(ss):
             msg = "Could not detect `AuthPresentation`."
             raise PresentationNotDetectedError(msg, ss)
@@ -98,10 +90,19 @@ class AuthPresentation(PresentationBase):
         Raises:
             ValueError: If the email address is either unavailable or
                 invalid.
+            InvalidOperationError: If a request to send the verification
+                code is made within 60 seconds of the previous request.
             PresentationTimeoutError: If the "Confirm" button does not
                 appear within the specified timeout period.
         """
         self._assert_not_stale()
+
+        if self._last_request_time is not None and (
+            datetime.datetime.now(datetime.UTC) - self._last_request_time
+            <= datetime.timedelta(seconds=60)
+        ):
+            msg = "Request is too frequent."
+            raise InvalidOperationError(msg, self._browser.get_screenshot())
 
         if len(email_address) > _MAX_EMAIL_ADDRESS_LENGTH:
             msg = (
@@ -150,6 +151,7 @@ class AuthPresentation(PresentationBase):
         time.sleep(0.1)
 
         self._entered_email_address = True
+        self._last_request_time = datetime.datetime.now(datetime.UTC)
 
     def enter_auth_code(
         self,
@@ -276,8 +278,7 @@ class AuthPresentation(PresentationBase):
                 new_presentation = self._creator.create_new_presentation(
                     Presentation.AUTH,
                     Presentation.MATCH,
-                    self._browser,
-                    self._message_queue_client,
+                    self._rpa,
                     timeout=timeout,
                 )
                 self._set_new_presentation(new_presentation)
@@ -290,8 +291,7 @@ class AuthPresentation(PresentationBase):
         new_presentation = self._creator.create_new_presentation(
             Presentation.AUTH,
             Presentation.HOME,
-            self._browser,
-            self._message_queue_client,
+            self._rpa,
             timeout=60.0,
         )
         self._set_new_presentation(new_presentation)

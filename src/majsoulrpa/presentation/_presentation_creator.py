@@ -1,8 +1,8 @@
 # ruff: noqa: SLF001
 import datetime
 
+from majsoulrpa import RPA
 from majsoulrpa._impl.browser import BrowserBase
-from majsoulrpa._impl.message_queue_client import MessageQueueClientBase
 from majsoulrpa.common import TimeoutType
 
 from .auth import AuthPresentation
@@ -48,35 +48,25 @@ class PresentationCreator(PresentationCreatorBase):
         self,
         current_presentation: Presentation,
         next_presentation: Presentation,
-        browser: BrowserBase,
-        message_queue_client: MessageQueueClientBase,
+        rpa: RPA,
         **kwargs,
     ) -> PresentationBase:
         match next_presentation:
             case Presentation.LOGIN:
-                return LoginPresentation(browser, message_queue_client, self)
+                return LoginPresentation(rpa, self)
             case Presentation.AUTH:
-                return AuthPresentation(browser, message_queue_client, self)
+                return AuthPresentation(rpa, self)
             case Presentation.HOME:
                 if not isinstance(
                     kwargs.get("timeout"),
                     int | float | datetime.timedelta,
                 ):
                     raise TypeError
-                return HomePresentation(
-                    browser,
-                    message_queue_client,
-                    self,
-                    kwargs["timeout"],
-                )
+                return HomePresentation(rpa, self, kwargs["timeout"])
             case Presentation.TOURNAMENT:
                 match current_presentation:
                     case Presentation.HOME | Presentation.MATCH:
-                        return TournamentPresentation(
-                            browser,
-                            message_queue_client,
-                            self,
-                        )
+                        return TournamentPresentation(rpa, self)
                     case _:
                         raise NotImplementedError
             case Presentation.ROOM_HOST:
@@ -88,8 +78,7 @@ class PresentationCreator(PresentationCreatorBase):
                         ):
                             raise TypeError
                         return RoomHostPresentation._create(
-                            browser,
-                            message_queue_client,
+                            rpa,
                             self,
                             kwargs["timeout"],
                         )
@@ -104,8 +93,7 @@ class PresentationCreator(PresentationCreatorBase):
                         ):
                             raise TypeError
                         return RoomGuestPresentation._join(
-                            browser,
-                            message_queue_client,
+                            rpa,
                             self,
                             kwargs["timeout"],
                         )
@@ -121,8 +109,7 @@ class PresentationCreator(PresentationCreatorBase):
                     case Presentation.AUTH:
                         # TODO: What to do when a suspended match is resumed.
                         return MatchPresentation(
-                            browser,
-                            message_queue_client,
+                            rpa,
                             self,
                             current_presentation,
                             kwargs["timeout"],
@@ -133,8 +120,7 @@ class PresentationCreator(PresentationCreatorBase):
                         | Presentation.ROOM_GUEST
                     ):
                         return MatchPresentation(
-                            browser,
-                            message_queue_client,
+                            rpa,
                             self,
                             current_presentation,
                             kwargs["timeout"],
@@ -146,8 +132,7 @@ class PresentationCreator(PresentationCreatorBase):
                         ):
                             raise TypeError
                         return MatchPresentation(
-                            browser,
-                            message_queue_client,
+                            rpa,
                             self,
                             current_presentation,
                             kwargs["timeout"],
