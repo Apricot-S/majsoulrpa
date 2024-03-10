@@ -272,11 +272,12 @@ class AuthPresentation(PresentationBase):
                 # Wait until the home screen is displayed.
                 timeout = deadline - datetime.datetime.now(datetime.UTC)
                 self._creator.wait(self._browser, timeout, Presentation.HOME)
+                timeout = deadline - datetime.datetime.now(datetime.UTC)
                 new_presentation = self._creator.create_new_presentation(
                     Presentation.AUTH,
                     Presentation.HOME,
                     self._rpa,
-                    timeout=60.0,
+                    timeout=timeout,
                 )
                 self._set_new_presentation(new_presentation)
                 return
