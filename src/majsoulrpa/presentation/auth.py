@@ -269,7 +269,17 @@ class AuthPresentation(PresentationBase):
                 templates,
             )
             if index in (0,):
-                break
+                # Wait until the home screen is displayed.
+                timeout = deadline - datetime.datetime.now(datetime.UTC)
+                self._creator.wait(self._browser, timeout, Presentation.HOME)
+                new_presentation = self._creator.create_new_presentation(
+                    Presentation.AUTH,
+                    Presentation.HOME,
+                    self._rpa,
+                    timeout=60.0,
+                )
+                self._set_new_presentation(new_presentation)
+                return
             if index in (1, 2, 3, 4):
                 # TODO: What to do when a suspended match is resumed.
                 timeout = deadline - datetime.datetime.now(datetime.UTC)
@@ -283,15 +293,3 @@ class AuthPresentation(PresentationBase):
                 )
                 self._set_new_presentation(new_presentation)
                 return
-
-        # Wait until the home screen is displayed.
-        timeout = deadline - datetime.datetime.now(datetime.UTC)
-        self._creator.wait(self._browser, timeout, Presentation.HOME)
-
-        new_presentation = self._creator.create_new_presentation(
-            Presentation.AUTH,
-            Presentation.HOME,
-            self._rpa,
-            timeout=60.0,
-        )
-        self._set_new_presentation(new_presentation)
