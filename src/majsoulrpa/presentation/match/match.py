@@ -441,7 +441,6 @@ class MatchPresentation(PresentationBase):
     ) -> None:
         super().__init__(rpa, creator)
 
-        self._needs_restore = restore
         self._step = 0
         self._events: list[EventBase] = []
         if match_state is None:
@@ -472,9 +471,8 @@ class MatchPresentation(PresentationBase):
 
         deadline = timeout_to_deadline(timeout)
 
-        if self._needs_restore:
+        if restore:
             self._restore(ss, deadline)
-            self._needs_restore = False
             return
 
         while True:
