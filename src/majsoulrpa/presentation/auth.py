@@ -164,10 +164,6 @@ class AuthPresentation(PresentationBase):
         verification code and clicking the "Login" button, and waits
         for the home screen to appear.
 
-        Note:
-            The process to rejoin an interrupted game is not
-            implemented.
-
         Args:
             auth_code: The verification code to enter.
             timeout: The maximum duration, in seconds, to wait for the
@@ -282,7 +278,7 @@ class AuthPresentation(PresentationBase):
                 self._set_new_presentation(new_presentation)
                 return
             if index in (1, 2, 3, 4):
-                # TODO: What to do when a suspended match is resumed.
+                # Rejoin an interrupted game.
                 timeout = deadline - datetime.datetime.now(datetime.UTC)
                 self._creator.wait(self._browser, timeout, Presentation.MATCH)
                 timeout = deadline - datetime.datetime.now(datetime.UTC)
