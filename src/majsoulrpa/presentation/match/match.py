@@ -434,14 +434,14 @@ class MatchPresentation(PresentationBase):
         self,
         rpa: RPA,
         creator: PresentationCreatorBase,
-        needs_restore: bool,
         timeout: TimeoutType = 60.0,
         *,
+        restore: bool = False,
         match_state: MatchState | None = None,
     ) -> None:
         super().__init__(rpa, creator)
 
-        self._needs_restore = needs_restore
+        self._needs_restore = restore
         self._step = 0
         self._events: list[EventBase] = []
         if match_state is None:
@@ -1050,7 +1050,6 @@ class MatchPresentation(PresentationBase):
         new_presentation = MatchPresentation(
             self._rpa,
             self._creator,
-            self._needs_restore,
             deadline - now,
             match_state=self._match_state,
         )
@@ -1149,7 +1148,6 @@ class MatchPresentation(PresentationBase):
                 new_presentation = MatchPresentation(
                     self._rpa,
                     self._creator,
-                    self._needs_restore,
                     deadline - now,
                     match_state=self._match_state,
                 )
@@ -1229,7 +1227,6 @@ class MatchPresentation(PresentationBase):
                 new_presentation = MatchPresentation(
                     self._rpa,
                     self._creator,
-                    self._needs_restore,
                     deadline - now,
                     match_state=self._match_state,
                 )

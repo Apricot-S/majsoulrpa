@@ -98,20 +98,15 @@ class PresentationCreator(PresentationCreatorBase):
                         return MatchPresentation(
                             rpa,
                             self,
-                            True,
                             kwargs["timeout"],
+                            restore=True,
                         )
                     case (
                         Presentation.TOURNAMENT
                         | Presentation.ROOM_HOST
                         | Presentation.ROOM_GUEST
                     ):
-                        return MatchPresentation(
-                            rpa,
-                            self,
-                            False,
-                            kwargs["timeout"],
-                        )
+                        return MatchPresentation(rpa, self, kwargs["timeout"])
                     case Presentation.MATCH:
                         if not isinstance(
                             kwargs.get("match_state"),
@@ -121,7 +116,6 @@ class PresentationCreator(PresentationCreatorBase):
                         return MatchPresentation(
                             rpa,
                             self,
-                            False,
                             kwargs["timeout"],
                             match_state=kwargs["match_state"],
                         )
