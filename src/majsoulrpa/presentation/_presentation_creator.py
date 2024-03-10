@@ -111,7 +111,7 @@ class PresentationCreator(PresentationCreatorBase):
                         return MatchPresentation(
                             rpa,
                             self,
-                            current_presentation,
+                            False,
                             kwargs["timeout"],
                         )
                     case (
@@ -122,7 +122,7 @@ class PresentationCreator(PresentationCreatorBase):
                         return MatchPresentation(
                             rpa,
                             self,
-                            current_presentation,
+                            False,
                             kwargs["timeout"],
                         )
                     case Presentation.MATCH:
@@ -134,7 +134,7 @@ class PresentationCreator(PresentationCreatorBase):
                         return MatchPresentation(
                             rpa,
                             self,
-                            current_presentation,
+                            False,
                             kwargs["timeout"],
                             match_state=kwargs["match_state"],
                         )
