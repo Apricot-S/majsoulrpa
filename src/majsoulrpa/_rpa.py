@@ -432,7 +432,12 @@ class RPA:
 
             try:
                 now = datetime.datetime.now(datetime.UTC)
-                p = MatchPresentation(self, creator, None, deadline - now)
+                p = MatchPresentation(
+                    self,
+                    creator,
+                    deadline - now,
+                    restore=True,
+                )
             except PresentationNotDetectedError:
                 pass
             else:

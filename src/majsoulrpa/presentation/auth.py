@@ -164,10 +164,6 @@ class AuthPresentation(PresentationBase):
         verification code and clicking the "Login" button, and waits
         for the home screen to appear.
 
-        Note:
-            The process to rejoin an interrupted game is not
-            implemented.
-
         Args:
             auth_code: The verification code to enter.
             timeout: The maximum duration, in seconds, to wait for the
@@ -269,9 +265,20 @@ class AuthPresentation(PresentationBase):
                 templates,
             )
             if index in (0,):
-                break
+                # Wait until the home screen is displayed.
+                timeout = deadline - datetime.datetime.now(datetime.UTC)
+                self._creator.wait(self._browser, timeout, Presentation.HOME)
+                timeout = deadline - datetime.datetime.now(datetime.UTC)
+                new_presentation = self._creator.create_new_presentation(
+                    Presentation.AUTH,
+                    Presentation.HOME,
+                    self._rpa,
+                    timeout=timeout,
+                )
+                self._set_new_presentation(new_presentation)
+                return
             if index in (1, 2, 3, 4):
-                # TODO: What to do when a suspended match is resumed.
+                # Rejoin an interrupted game.
                 timeout = deadline - datetime.datetime.now(datetime.UTC)
                 self._creator.wait(self._browser, timeout, Presentation.MATCH)
                 timeout = deadline - datetime.datetime.now(datetime.UTC)
@@ -283,15 +290,3 @@ class AuthPresentation(PresentationBase):
                 )
                 self._set_new_presentation(new_presentation)
                 return
-
-        # Wait until the home screen is displayed.
-        timeout = deadline - datetime.datetime.now(datetime.UTC)
-        self._creator.wait(self._browser, timeout, Presentation.HOME)
-
-        new_presentation = self._creator.create_new_presentation(
-            Presentation.AUTH,
-            Presentation.HOME,
-            self._rpa,
-            timeout=60.0,
-        )
-        self._set_new_presentation(new_presentation)

@@ -44,7 +44,7 @@ class PresentationCreator(PresentationCreatorBase):
             case _:
                 raise AssertionError
 
-    def create_new_presentation(  # noqa: C901
+    def create_new_presentation(
         self,
         current_presentation: Presentation,
         next_presentation: Presentation,
@@ -64,41 +64,29 @@ class PresentationCreator(PresentationCreatorBase):
                     raise TypeError
                 return HomePresentation(rpa, self, kwargs["timeout"])
             case Presentation.TOURNAMENT:
-                match current_presentation:
-                    case Presentation.HOME | Presentation.MATCH:
-                        return TournamentPresentation(rpa, self)
-                    case _:
-                        raise NotImplementedError
+                return TournamentPresentation(rpa, self)
             case Presentation.ROOM_HOST:
-                match current_presentation:
-                    case Presentation.HOME | Presentation.MATCH:
-                        if not isinstance(
-                            kwargs.get("timeout"),
-                            int | float | datetime.timedelta,
-                        ):
-                            raise TypeError
-                        return RoomHostPresentation._create(
-                            rpa,
-                            self,
-                            kwargs["timeout"],
-                        )
-                    case _:
-                        raise NotImplementedError
+                if not isinstance(
+                    kwargs.get("timeout"),
+                    int | float | datetime.timedelta,
+                ):
+                    raise TypeError
+                return RoomHostPresentation._create(
+                    rpa,
+                    self,
+                    kwargs["timeout"],
+                )
             case Presentation.ROOM_GUEST:
-                match current_presentation:
-                    case Presentation.HOME | Presentation.MATCH:
-                        if not isinstance(
-                            kwargs.get("timeout"),
-                            int | float | datetime.timedelta,
-                        ):
-                            raise TypeError
-                        return RoomGuestPresentation._join(
-                            rpa,
-                            self,
-                            kwargs["timeout"],
-                        )
-                    case _:
-                        raise NotImplementedError
+                if not isinstance(
+                    kwargs.get("timeout"),
+                    int | float | datetime.timedelta,
+                ):
+                    raise TypeError
+                return RoomGuestPresentation._join(
+                    rpa,
+                    self,
+                    kwargs["timeout"],
+                )
             case Presentation.MATCH:
                 if not isinstance(
                     kwargs.get("timeout"),
@@ -107,24 +95,18 @@ class PresentationCreator(PresentationCreatorBase):
                     raise TypeError
                 match current_presentation:
                     case Presentation.AUTH:
-                        # TODO: What to do when a suspended match is resumed.
                         return MatchPresentation(
                             rpa,
                             self,
-                            current_presentation,
                             kwargs["timeout"],
+                            restore=True,
                         )
                     case (
                         Presentation.TOURNAMENT
                         | Presentation.ROOM_HOST
                         | Presentation.ROOM_GUEST
                     ):
-                        return MatchPresentation(
-                            rpa,
-                            self,
-                            current_presentation,
-                            kwargs["timeout"],
-                        )
+                        return MatchPresentation(rpa, self, kwargs["timeout"])
                     case Presentation.MATCH:
                         if not isinstance(
                             kwargs.get("match_state"),
@@ -134,7 +116,6 @@ class PresentationCreator(PresentationCreatorBase):
                         return MatchPresentation(
                             rpa,
                             self,
-                            current_presentation,
                             kwargs["timeout"],
                             match_state=kwargs["match_state"],
                         )

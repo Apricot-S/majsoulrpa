@@ -6,7 +6,6 @@ from majsoulrpa import RPA, config
 from majsoulrpa.presentation import (
     AuthPresentation,
     BaseError,
-    HomePresentation,
     LoginPresentation,
     RoomGuestPresentation,
 )
@@ -29,49 +28,26 @@ if __name__ == "__main__":
             presentation = rpa.wait(timeout=20.0)
 
             if not isinstance(presentation, MatchPresentation):
-                if not isinstance(presentation, HomePresentation):
-                    if not isinstance(presentation, LoginPresentation):
-                        msg = "Could not transit to `login`."
-                        raise RuntimeError(msg)
-                    presentation.login(timeout=60.0)
-                    if presentation.new_presentation is None:
-                        msg = "Could not transit to `auth`."
-                        raise RuntimeError(msg)
-                    presentation = presentation.new_presentation
-
-                    if not isinstance(presentation, AuthPresentation):
-                        msg = "Could not transit to `auth`."
-                        raise RuntimeError(msg)
-                    presentation.enter_email_address(
-                        my_config["authentication"]["email_address"],
-                    )
-                    auth_code = input("verification code: ")
-                    presentation.enter_auth_code(auth_code, timeout=60.0)
-                    if presentation.new_presentation is None:
-                        msg = "Could not transit to `home`."
-                        raise RuntimeError
-                    presentation = presentation.new_presentation
-
-                if not isinstance(presentation, HomePresentation):
-                    msg = "Could not transit to `home`."
+                if not isinstance(presentation, LoginPresentation):
+                    msg = "Could not transit to `login`."
                     raise RuntimeError(msg)
-                room_id = str(input("room id: "))
-                reason = presentation.join_room(room_id)
+                presentation.login(timeout=60.0)
                 if presentation.new_presentation is None:
-                    assert reason is not None
-                    msg = f"Could not transit to `room`. Reason: {reason.name}"
+                    msg = "Could not transit to `auth`."
                     raise RuntimeError(msg)
                 presentation = presentation.new_presentation
 
-                if not isinstance(presentation, RoomGuestPresentation):
-                    msg = "Could not transit to `room`."
+                if not isinstance(presentation, AuthPresentation):
+                    msg = "Could not transit to `auth`."
                     raise RuntimeError(msg)
-                print(f"room id: {presentation.room_id}")
-
-                presentation.ready(timeout=30.0)
+                presentation.enter_email_address(
+                    my_config["authentication"]["email_address"],
+                )
+                auth_code = input("verification code: ")
+                presentation.enter_auth_code(auth_code, timeout=60.0)
                 if presentation.new_presentation is None:
-                    msg = "Could not transit to `match`."
-                    raise RuntimeError(msg)
+                    msg = "Could not transit to `home`."
+                    raise RuntimeError
                 presentation = presentation.new_presentation
 
             if not isinstance(presentation, MatchPresentation):

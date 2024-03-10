@@ -434,14 +434,13 @@ class MatchPresentation(PresentationBase):
         self,
         rpa: RPA,
         creator: PresentationCreatorBase,
-        prev_presentation: Presentation | None,
         timeout: TimeoutType = 60.0,
         *,
+        restore: bool = False,
         match_state: MatchState | None = None,
     ) -> None:
         super().__init__(rpa, creator)
 
-        self._prev_presentation = prev_presentation
         self._step = 0
         self._events: list[EventBase] = []
         if match_state is None:
@@ -472,12 +471,8 @@ class MatchPresentation(PresentationBase):
 
         deadline = timeout_to_deadline(timeout)
 
-        if self._prev_presentation is None:
+        if restore:
             self._restore(ss, deadline)
-            # As a temporary workaround,
-            # set _prev_presentation to ROOM_GUEST
-            # TODO: Refactor for a proper solution later
-            self._prev_presentation = Presentation.ROOM_GUEST
             return
 
         while True:
@@ -1053,7 +1048,6 @@ class MatchPresentation(PresentationBase):
         new_presentation = MatchPresentation(
             self._rpa,
             self._creator,
-            self._prev_presentation,
             deadline - now,
             match_state=self._match_state,
         )
@@ -1152,7 +1146,6 @@ class MatchPresentation(PresentationBase):
                 new_presentation = MatchPresentation(
                     self._rpa,
                     self._creator,
-                    self._prev_presentation,
                     deadline - now,
                     match_state=self._match_state,
                 )
@@ -1232,7 +1225,6 @@ class MatchPresentation(PresentationBase):
                 new_presentation = MatchPresentation(
                     self._rpa,
                     self._creator,
-                    self._prev_presentation,
                     deadline - now,
                     match_state=self._match_state,
                 )
