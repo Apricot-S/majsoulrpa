@@ -373,20 +373,11 @@ class RPA:
             The detected presentation.
 
         Raises:
-            RuntimeError: If the browser or the message queue client
-                has not been launched yet, or if the RPA client is not
-                running.
+            RuntimeError: If the RPA client is not running.
             PresentationTimeoutError: If the presentation is not
                 detected within the specified timeout period.
         """
         deadline = timeout_to_deadline(timeout)
-
-        if self._browser is None:
-            msg = "Browser has not been launched yet."
-            raise RuntimeError(msg)
-        if self._message_queue_client is None:
-            msg = "Message queue client has not been launched yet."
-            raise RuntimeError(msg)
 
         # TODO: Temporary measures for circular import
         from .presentation import (
@@ -407,6 +398,7 @@ class RPA:
             if not self.is_running():
                 msg = "RPA client is not running."
                 raise RuntimeError(msg)
+            assert isinstance(self._browser, BrowserBase)  # noqa: S101
 
             try:
                 p = LoginPresentation(self, creator)
