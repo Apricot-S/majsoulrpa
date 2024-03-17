@@ -146,8 +146,9 @@ class RoomGuestPresentation(RoomPresentationBase):
                 guest to become ready. Defaults to `60.0`.
 
         Raises:
-            UnexpectedStateError: If the guest is not included in the
-                player list.
+            UnexpectedStateError: If the "Ready" button cannot be
+                clicked or if the guest is not included in the player
+                list.
             PresentationTimeoutError: If the guest does not become
                 ready within the specified timeout period.
         """
@@ -159,7 +160,9 @@ class RoomGuestPresentation(RoomPresentationBase):
             "template/room/ready",
             self._browser.zoom_ratio,
         )
-        ready_template.wait_until_then_click(self._browser, deadline)
+        if not ready_template.click_if_match(self._browser):
+            msg = 'The "Ready" button could not be clicked.'
+            raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
         own_player_index = next(
             (
