@@ -12,6 +12,7 @@ from majsoulrpa.presentation.exceptions import (
     InvalidOperationError,
     PresentationNotDetectedError,
     PresentationTimeoutError,
+    UnexpectedStateError,
 )
 from majsoulrpa.presentation.presentation_base import (
     Presentation,
@@ -147,35 +148,53 @@ class RoomHostPresentation(RoomPresentationBase):
                 AI to be added. Defaults to `10.0`.
 
         Raises:
-            InvalidOperationError: If the "Add AI" button is not
-                clickable because the room is full.
+            InvalidOperationError: If the room is full.
+            UnexpectedStateError: If the "Add AI" button is not
+                clickable due to an unexpected state.
         """
         self._assert_not_stale()
 
         deadline = timeout_to_deadline(timeout)
 
+        self._update_until_latest(1)
+
+        old_num_ais = self.num_ais
+        if (old_num_ais + len(self.players)) >= self.max_num_players:
+            msg = "Could not add AI because the room was full."
+            raise InvalidOperationError(msg, self._browser.get_screenshot())
+
         # Check if "Add AI" is clickable, and if so, click it.
+        # Note: Even if the room is full and the button is dark,
+        # it still matches the template image.
         template = Template.open_file(
             "template/room/add_ai",
             self._browser.zoom_ratio,
         )
         if not template.click_if_match(self._browser):
-            msg = "Could not add AI."
-            raise InvalidOperationError(msg, self._browser.get_screenshot())
+            msg = "Could not add AI because the button could not be clicked."
+            raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
-        old_num_ais = self.num_ais
-
-        # An effect occurs when you click "Add AI" and
-        # the effect interferes with template matching
-        # when you click "Add AI" consecutively,
-        # so wait until the effect disappears.
+        # Clicking "Add AI" will generate an effect that will interfere
+        # with template matching, so wait until the effect disappears.
         time.sleep(1.5)
 
-        # Wait until WebSocket messages come in and
-        # the number of AIs actually increases.
-        while self.num_ais <= old_num_ais:
+        # Wait until WebSocket messages come in and the number of AIs
+        # actually increases or the room is full.
+        num_ais = old_num_ais
+        while (
+            num_ais <= old_num_ais
+            and (num_ais + len(self.players)) < self.max_num_players
+        ):
             now = datetime.datetime.now(datetime.UTC)
             self._update(deadline - now)
+            num_ais = self.num_ais
+
+        # If a guest enters the room just before clicking the "Add AI"
+        # button and the room becomes full, resulting in the AI not
+        # being able to be added.
+        if num_ais <= old_num_ais:
+            msg = "Could not add AI because the room was full."
+            raise InvalidOperationError(msg, self._browser.get_screenshot())
 
     def start(self, timeout: TimeoutType = 60.0) -> None:
         """Starts a match.
@@ -185,6 +204,8 @@ class RoomHostPresentation(RoomPresentationBase):
                 match to start. Defaults to `60.0`.
 
         Raises:
+            InvalidOperationError: If the match does not start because
+                the "Start" button could not be clicked.
             PresentationTimeoutError: If the match does not start
                 within the specified timeout period.
         """
@@ -196,7 +217,12 @@ class RoomHostPresentation(RoomPresentationBase):
             "template/room/start",
             self._browser.zoom_ratio,
         )
-        template.wait_until_then_click(self._browser, deadline)
+        if not template.click_if_match(self._browser):
+            msg = (
+                "The match could not start "
+                "because the button could not be clicked."
+            )
+            raise InvalidOperationError(msg, self._browser.get_screenshot())
 
         now = datetime.datetime.now(datetime.UTC)
         self._creator.wait(self._browser, deadline - now, Presentation.MATCH)

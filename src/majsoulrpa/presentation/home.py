@@ -281,6 +281,7 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.fetchAllCommonViews"
                     | ".lq.Lobby.fetchCollectedGameRecordList"
                     | ".lq.Lobby.modifyRoom"
+                    | ".lq.NotifyRoomPlayerUpdate"
                     | ".lq.NotifyRoomPlayerReady"
                     | ".lq.Lobby.readyPlay"
                     | ".lq.Lobby.fetchInfo"  # TODO: Analyzing content
