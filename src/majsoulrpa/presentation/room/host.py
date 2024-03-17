@@ -154,6 +154,8 @@ class RoomHostPresentation(RoomPresentationBase):
 
         deadline = timeout_to_deadline(timeout)
 
+        old_num_ais = self.num_ais
+
         # Check if "Add AI" is clickable, and if so, click it.
         template = Template.open_file(
             "template/room/add_ai",
@@ -162,8 +164,6 @@ class RoomHostPresentation(RoomPresentationBase):
         if not template.click_if_match(self._browser):
             msg = "Could not add AI."
             raise InvalidOperationError(msg, self._browser.get_screenshot())
-
-        old_num_ais = self.num_ais
 
         # An effect occurs when you click "Add AI" and
         # the effect interferes with template matching
