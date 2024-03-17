@@ -204,6 +204,8 @@ class RoomHostPresentation(RoomPresentationBase):
                 match to start. Defaults to `60.0`.
 
         Raises:
+            InvalidOperationError: If the match does not start because
+                the "Start" button could not be clicked.
             PresentationTimeoutError: If the match does not start
                 within the specified timeout period.
         """
@@ -215,7 +217,12 @@ class RoomHostPresentation(RoomPresentationBase):
             "template/room/start",
             self._browser.zoom_ratio,
         )
-        template.wait_until_then_click(self._browser, deadline)
+        if not template.click_if_match(self._browser):
+            msg = (
+                "The match could not start "
+                "because the button could not be clicked."
+            )
+            raise InvalidOperationError(msg, self._browser.get_screenshot())
 
         now = datetime.datetime.now(datetime.UTC)
         self._creator.wait(self._browser, deadline - now, Presentation.MATCH)
