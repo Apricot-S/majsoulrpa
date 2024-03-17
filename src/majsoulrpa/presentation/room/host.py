@@ -157,6 +157,8 @@ class RoomHostPresentation(RoomPresentationBase):
 
         deadline = timeout_to_deadline(timeout)
 
+        self._update_until_latest(1)
+
         old_num_ais = self.num_ais
         old_num_players = len(self.players)
         if (old_num_ais + old_num_players) >= self.max_num_players:
