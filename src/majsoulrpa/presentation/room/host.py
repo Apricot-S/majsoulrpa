@@ -189,6 +189,13 @@ class RoomHostPresentation(RoomPresentationBase):
         # with template matching, so wait until the effect disappears.
         time.sleep(1.5)
 
+        # If a guest enters the room just before clicking the "Add AI"
+        # button and the room becomes full, resulting in the AI not
+        # being able to be added.
+        if num_ais <= old_num_ais:
+            msg = "Could not add AI because the room was full."
+            raise InvalidOperationError(msg, self._browser.get_screenshot())
+
     def start(self, timeout: TimeoutType = 60.0) -> None:
         """Starts a match.
 
