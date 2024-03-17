@@ -12,6 +12,7 @@ from majsoulrpa.presentation.exceptions import (
     InvalidOperationError,
     PresentationNotDetectedError,
     PresentationTimeoutError,
+    UnexpectedStateError,
 )
 from majsoulrpa.presentation.presentation_base import (
     Presentation,
@@ -149,12 +150,18 @@ class RoomHostPresentation(RoomPresentationBase):
         Raises:
             InvalidOperationError: If the "Add AI" button is not
                 clickable because the room is full.
+            UnexpectedStateError: If the "Add AI" button is not
+                clickable due to an unexpected state.
         """
         self._assert_not_stale()
 
         deadline = timeout_to_deadline(timeout)
 
         old_num_ais = self.num_ais
+        old_num_players = len(self.players)
+        if (old_num_ais + old_num_players) >= self.max_num_players:
+            msg = "Could not add AI because the room was full."
+            raise InvalidOperationError(msg, self._browser.get_screenshot())
 
         # Check if "Add AI" is clickable, and if so, click it.
         template = Template.open_file(
@@ -162,8 +169,8 @@ class RoomHostPresentation(RoomPresentationBase):
             self._browser.zoom_ratio,
         )
         if not template.click_if_match(self._browser):
-            msg = "Could not add AI."
-            raise InvalidOperationError(msg, self._browser.get_screenshot())
+            msg = "Could not add AI because the button could not be clicked."
+            raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
         # An effect occurs when you click "Add AI" and
         # the effect interferes with template matching
