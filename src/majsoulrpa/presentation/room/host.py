@@ -159,12 +159,13 @@ class RoomHostPresentation(RoomPresentationBase):
         self._update_until_latest(1)
 
         old_num_ais = self.num_ais
-        old_num_players = len(self.players)
-        if (old_num_ais + old_num_players) >= self.max_num_players:
+        if (old_num_ais + len(self.players)) >= self.max_num_players:
             msg = "Could not add AI because the room was full."
             raise InvalidOperationError(msg, self._browser.get_screenshot())
 
         # Check if "Add AI" is clickable, and if so, click it.
+        # Note: Even if the room is full and the button is dark,
+        # it still matches the template image.
         template = Template.open_file(
             "template/room/add_ai",
             self._browser.zoom_ratio,
@@ -173,11 +174,16 @@ class RoomHostPresentation(RoomPresentationBase):
             msg = "Could not add AI because the button could not be clicked."
             raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
-        # Wait until WebSocket messages come in and
-        # the number of AIs actually increases.
-        while self.num_ais <= old_num_ais:
+        # Wait until WebSocket messages come in and the number of AIs
+        # actually increases or the room is full.
+        num_ais = old_num_ais
+        while (
+            num_ais <= old_num_ais
+            and (num_ais + len(self.players)) < self.max_num_players
+        ):
             now = datetime.datetime.now(datetime.UTC)
             self._update(deadline - now)
+            num_ais = self.num_ais
 
         # Clicking "Add AI" will generate an effect that will interfere
         # with template matching, so wait until the effect disappears.
