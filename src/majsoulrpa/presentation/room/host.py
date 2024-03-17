@@ -172,10 +172,8 @@ class RoomHostPresentation(RoomPresentationBase):
             msg = "Could not add AI because the button could not be clicked."
             raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
-        # An effect occurs when you click "Add AI" and
-        # the effect interferes with template matching
-        # when you click "Add AI" consecutively,
-        # so wait until the effect disappears.
+        # Clicking "Add AI" will generate an effect that will interfere
+        # with template matching, so wait until the effect disappears.
         time.sleep(1.5)
 
         # Wait until WebSocket messages come in and
