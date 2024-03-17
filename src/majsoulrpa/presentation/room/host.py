@@ -148,8 +148,7 @@ class RoomHostPresentation(RoomPresentationBase):
                 AI to be added. Defaults to `10.0`.
 
         Raises:
-            InvalidOperationError: If the "Add AI" button is not
-                clickable because the room is full.
+            InvalidOperationError: If the room is full.
             UnexpectedStateError: If the "Add AI" button is not
                 clickable due to an unexpected state.
         """
