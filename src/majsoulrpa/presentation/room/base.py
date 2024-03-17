@@ -1,10 +1,12 @@
+import datetime
 from collections.abc import Iterable, Mapping
 from logging import getLogger
 
 from majsoulrpa import RPA
 from majsoulrpa._impl.browser import BrowserBase
+from majsoulrpa._impl.message_queue_client import Message
 from majsoulrpa._impl.template import Template
-from majsoulrpa.common import Player, TimeoutType
+from majsoulrpa.common import Player, TimeoutType, timeout_to_deadline
 from majsoulrpa.presentation.exceptions import (
     InconsistentMessageError,
     UnexpectedStateError,
@@ -99,12 +101,7 @@ class RoomPresentationBase(PresentationBase):
         )
         template.wait_for(browser, timeout)
 
-    def _update(self, timeout: TimeoutType) -> bool:  # noqa: C901
-        self._assert_not_stale()
-
-        message = self._message_queue_client.dequeue_message(timeout)
-        if message is None:
-            return False
+    def _update_inner(self, message: Message) -> bool:  # noqa: C901
         direction, name, request, response, timestamp = message
 
         if name == ".lq.Lobby.heatbeat":
@@ -168,12 +165,12 @@ class RoomPresentationBase(PresentationBase):
                 msg = "An inconsistent `.lq.NotifyRoomPlayerReady` message."
                 raise InconsistentMessageError(msg) from None
             self._players[i]._set_ready(is_ready=request["ready"])  # noqa: SLF001
-            message = self._message_queue_client.dequeue_message(1.0)
-            if message is not None:
-                _, name, _, _, _ = message
+            next_message = self._message_queue_client.dequeue_message(1.0)
+            if next_message is not None:
+                _, name, _, _, _ = next_message
                 if name != ".lq.Lobby.readyPlay":
-                    raise InconsistentMessageError(str(message))
-                logger.info(message)
+                    raise InconsistentMessageError(str(next_message))
+                logger.info(next_message)
 
             return True
 
@@ -186,6 +183,27 @@ class RoomPresentationBase(PresentationBase):
             f"timestamp: {timestamp}"
         )
         raise InconsistentMessageError(msg)
+
+    def _update(self, timeout: TimeoutType) -> bool:
+        self._assert_not_stale()
+
+        deadline = timeout_to_deadline(timeout)
+        while True:
+            now = datetime.datetime.now(datetime.UTC)
+            message = self._message_queue_client.dequeue_message(
+                deadline - now,
+            )
+            if message is None:
+                return False
+            if self._update_inner(message):
+                return True
+
+    def _update_until_latest(self, timeout: TimeoutType) -> None:
+        deadline = timeout_to_deadline(timeout)
+        is_updated = True
+        while is_updated:
+            now = datetime.datetime.now(datetime.UTC)
+            is_updated = self._update(deadline - now)
 
     @property
     def room_id(self) -> int:
