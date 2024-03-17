@@ -174,6 +174,10 @@ class RoomHostPresentation(RoomPresentationBase):
             msg = "Could not add AI because the button could not be clicked."
             raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
+        # Clicking "Add AI" will generate an effect that will interfere
+        # with template matching, so wait until the effect disappears.
+        time.sleep(1.5)
+
         # Wait until WebSocket messages come in and the number of AIs
         # actually increases or the room is full.
         num_ais = old_num_ais
@@ -184,10 +188,6 @@ class RoomHostPresentation(RoomPresentationBase):
             now = datetime.datetime.now(datetime.UTC)
             self._update(deadline - now)
             num_ais = self.num_ais
-
-        # Clicking "Add AI" will generate an effect that will interfere
-        # with template matching, so wait until the effect disappears.
-        time.sleep(1.5)
 
         # If a guest enters the room just before clicking the "Add AI"
         # button and the room becomes full, resulting in the AI not
