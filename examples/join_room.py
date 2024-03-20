@@ -48,7 +48,7 @@ if __name__ == "__main__":
                 presentation.enter_auth_code(auth_code, timeout=60.0)
                 if presentation.new_presentation is None:
                     msg = "Could not transit to `home`."
-                    raise RuntimeError
+                    raise RuntimeError(msg)
                 presentation = presentation.new_presentation
 
             if not isinstance(presentation, HomePresentation):
