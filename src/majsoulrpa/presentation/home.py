@@ -411,7 +411,7 @@ class HomePresentation(PresentationBase):
                 ):
                     break
 
-    def _discard_messages_across_dates(self) -> None:
+    def _discard_common_message(self) -> None:
         while True:
             message = self._message_queue_client.dequeue_message(0.1)
             if message is None:
@@ -431,9 +431,13 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.fetchActivityInterval"
                     | ".lq.Lobby.heatbeat"
                 ):
+                    # Exchanged if the date (06:00:00 (UTC+0900)) is
+                    # crossed
                     logger.info(message)
                     continue
                 case ".lq.Lobby.doActivitySignIn":
+                    # Exchanged if receiving a limited time sign-in
+                    # rewards
                     logger.info(message)
                     continue
                 case _:
@@ -455,7 +459,7 @@ class HomePresentation(PresentationBase):
             msg = "Tournament ID must be a 6-digit number."
             raise ValueError(msg)
 
-        self._discard_messages_across_dates()
+        self._discard_common_message()
 
         # Click "Tournament Match".
         template = Template.open_file(
@@ -614,7 +618,7 @@ class HomePresentation(PresentationBase):
         self._assert_not_stale()
 
         deadline = timeout_to_deadline(timeout)
-        self._discard_messages_across_dates()
+        self._discard_common_message()
 
         # Click "Friendly Match".
         template = Template.open_file(
@@ -726,7 +730,7 @@ class HomePresentation(PresentationBase):
         self._assert_not_stale()
 
         deadline = timeout_to_deadline(timeout)
-        self._discard_messages_across_dates()
+        self._discard_common_message()
 
         # Click "Friendly Match".
         template = Template.open_file(
