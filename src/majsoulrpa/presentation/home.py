@@ -438,7 +438,7 @@ class HomePresentation(PresentationBase):
                     logger.info(message)
                     continue
                 case ".lq.Lobby.doActivitySignIn":
-                    # Exchanged if receiving a limited time sign-in
+                    # Exchanged if receiving the limited time sign-in
                     # rewards
                     logger.info(message)
                     continue
