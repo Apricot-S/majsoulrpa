@@ -373,7 +373,6 @@ class HomePresentation(PresentationBase):
                     | ".lq.NotifyAccountUpdate"
                     | ".lq.NotifyAnnouncementUpdate"
                     | ".lq.Lobby.readAnnouncement"
-                    | ".lq.Lobby.doActivitySignIn"
                     | ".lq.Lobby.fetchDailyTask"  # TODO: Analyzing content
                 ):
                     logger.info(message)
@@ -432,6 +431,9 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.fetchActivityInterval"
                     | ".lq.Lobby.heatbeat"
                 ):
+                    logger.info(message)
+                    continue
+                case ".lq.Lobby.doActivitySignIn":
                     logger.info(message)
                     continue
                 case _:
