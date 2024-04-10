@@ -411,6 +411,8 @@ class HomePresentation(PresentationBase):
                 ):
                     break
 
+        self._discard_common_message()
+
     def _discard_common_message(self) -> None:
         while True:
             message = self._message_queue_client.dequeue_message(0.1)
