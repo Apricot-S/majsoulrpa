@@ -6,10 +6,10 @@ This is fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-r
 
 1. Requires Python 3.11 or later
 2. Removed dependencies on Docker and Redis
-3. Support moving browser position after launch
-4. The mouse can be used freely even while RPA is running
-5. Support browser viewport sizes other than 1920 x 1080
-6. Support 3-player mahjong
+3. Supports moving browser position after launch
+4. Mouse can be used freely even while RPA is running
+5. Supports browser viewport sizes other than 1920 x 1080
+6. Supports 3-player mahjong
 
 ## Announcements
 
