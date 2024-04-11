@@ -6,9 +6,10 @@ This is fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-r
 
 1. Requires Python 3.11 or later
 2. Removed dependencies on Docker and Redis
-3. Support moving browser position after launch
-4. Support browser viewport sizes other than 1920 x 1080
-5. Support 3-player mahjong
+3. Supports moving browser position after launch
+4. Mouse can be used freely even while RPA is running
+5. Supports browser viewport sizes other than 1920 x 1080
+6. Supports 3-player mahjong
 
 ## Announcements
 
@@ -26,15 +27,15 @@ This is fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-r
 
 ![remote](./docs/remote.png)
 
-## License
-
-Copyright (c) Apricot S. All rights reserved.
-
-Licensed under the [MIT](LICENSE) license.
-
 ## how to setup
 
 ```text
 poetry install
 poetry shell
 ```
+
+## License
+
+Copyright (c) Apricot S. All rights reserved.
+
+Licensed under the [MIT license](LICENSE).
