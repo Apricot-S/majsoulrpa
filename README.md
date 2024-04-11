@@ -26,15 +26,15 @@ This is fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-r
 
 ![remote](./docs/remote.png)
 
-## License
-
-Copyright (c) Apricot S. All rights reserved.
-
-Licensed under the [MIT](LICENSE) license.
-
 ## how to setup
 
 ```text
 poetry install
 poetry shell
 ```
+
+## License
+
+Copyright (c) Apricot S. All rights reserved.
+
+Licensed under the [MIT license](LICENSE).
