@@ -113,8 +113,7 @@ class HomePresentation(PresentationBase):
         """Close home screen notifications if they are visible.
 
         Note:
-            Supports Blue Archive collaboration commemorative event.
-            2024-04-08 6:00 - 2024-04-17 5:59 (UTC+9)
+            Does not support special events such as collab events.
         """
         notification_close = Template.open_file(
             "template/home/notification_close",
@@ -125,8 +124,7 @@ class HomePresentation(PresentationBase):
             browser.zoom_ratio,
         )
         rewards_sign_in = Template.open_file(
-            # Only during collaboration commemorative event period
-            "template/home/accumulated_sign_in_rewards_sign_in_202404",
+            "template/home/accumulated_sign_in_rewards_sign_in",
             browser.zoom_ratio,
         )
 
@@ -170,9 +168,7 @@ class HomePresentation(PresentationBase):
                 time.sleep(1.9)
 
                 rewards_confirm = Template.open_file(
-                    # Only during collaboration commemorative event
-                    # period
-                    "template/home/accumulated_sign_in_rewards_confirm_202404",
+                    "template/home/accumulated_sign_in_rewards_confirm",
                     browser.zoom_ratio,
                 )
                 while True:
@@ -185,19 +181,6 @@ class HomePresentation(PresentationBase):
                     ss = browser.get_screenshot()
                     x, y, score = rewards_confirm.best_template_match(ss)
                     if score >= rewards_confirm.threshold:
-                        # Only during collaboration commemorative event
-                        # period
-                        # Closes a item icon.
-                        browser.click_region(
-                            x,
-                            y,
-                            rewards_confirm.img_width,
-                            rewards_confirm.img_height,
-                        )
-                        # Only during collaboration commemorative event
-                        # period
-                        # Waits for closing a item icon.
-                        time.sleep(0.4)
                         # Closes the event dialog.
                         browser.click_region(
                             x,
