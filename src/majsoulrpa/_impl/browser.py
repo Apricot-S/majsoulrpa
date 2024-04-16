@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from fractions import Fraction
 from ipaddress import ip_address
 from logging import getLogger
+from pathlib import Path
 from typing import Any, Final
 
 import zmq
@@ -165,7 +166,7 @@ class DesktopBrowser(BrowserBase):
         height: int = STD_HEIGHT,
         *,
         headless: bool = False,
-        user_data_dir: str | None = None,
+        user_data_dir: str | Path | None = None,
     ) -> None:
         super().__init__()
         validate_user_port(proxy_port)
