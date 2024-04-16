@@ -70,6 +70,9 @@ class RPA:
                 to `1080`.
             headless: Indicates whether the browser should run in
                 headless mode. Defaults to `False`.
+            user_data_dir: Path to the local browser's user data
+                directory. If it is `None`, it becomes incognito mode.
+                Defaults to `None`.
         """
         if len({remote_port, proxy_port, message_queue_port}) != 3:  # noqa: PLR2004
             msg = (
