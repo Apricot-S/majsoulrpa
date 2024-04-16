@@ -100,7 +100,6 @@ class HomePresentation(PresentationBase):
     ) -> None:
         """Receive the daily bonus by clicking on the jade
         that appears at the end of the fortune charm animation.
-
         """
         jade = Template.open_file("template/home/jade", browser.zoom_ratio)
         jade.wait_until_then_click(browser, deadline)
@@ -116,7 +115,6 @@ class HomePresentation(PresentationBase):
         Note:
             Supports Blue Archive collaboration commemorative event.
             2024-04-08 6:00 - 2024-04-17 5:59 (UTC+9)
-
         """
         notification_close = Template.open_file(
             "template/home/notification_close",
