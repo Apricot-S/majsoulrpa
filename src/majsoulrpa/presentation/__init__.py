@@ -18,7 +18,7 @@ from .exceptions import (
     PresentationTimeoutError,
     UnexpectedStateError,
 )
-from .home import HomePresentation, JoinRoomFailureReason
+from .home import HomePresentation, JoinRoomFailureReason, RoomLength, RoomMode
 from .login import LoginPresentation
 from .presentation_base import PresentationBase
 from .room import RoomGuestPresentation, RoomHostPresentation
@@ -38,6 +38,8 @@ __all__ = [
     "AuthPresentation",
     "HomePresentation",
     "JoinRoomFailureReason",
+    "RoomLength",
+    "RoomMode",
     "RoomHostPresentation",
     "RoomGuestPresentation",
     "TournamentPresentation",

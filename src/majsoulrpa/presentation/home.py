@@ -1,9 +1,8 @@
 import datetime
 import re
 import time
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 from logging import getLogger
-from typing import Literal
 
 from majsoulrpa import RPA
 from majsoulrpa._impl.browser import BrowserBase
@@ -22,6 +21,38 @@ from .presentation_base import (
 )
 
 logger = getLogger(__name__)
+
+
+class RoomMode(StrEnum):
+    """Enumeration representing the mode of the room.
+
+    This enumeration is used when creating a room for friendly matches.
+
+    Attributes:
+        FOUR_PLAYER: "4-Player".
+        THREE_PLAYER: "3-Player".
+    """
+
+    FOUR_PLAYER = "4-Player"
+    THREE_PLAYER = "3-Player"
+
+
+class RoomLength(StrEnum):
+    """Enumeration representing the length of matches in the room.
+
+    This enumeration is used when creating a room for friendly matches.
+
+    Attributes:
+        ONE_GAME: "1 Game".
+        EAST_ONLY: "East Only".
+        TWO_WIND_MATCH: "Two-Wind Match".
+        VS_AI: "Vs AI".
+    """
+
+    ONE_GAME = "1 Game"
+    EAST_ONLY = "East Only"
+    TWO_WIND_MATCH = "Two-Wind Match"
+    VS_AI = "Vs AI"
 
 
 class JoinRoomFailureReason(IntEnum):
@@ -590,13 +621,8 @@ class HomePresentation(PresentationBase):
 
     def create_room(
         self,
-        mode: Literal["4-Player", "3-Player"] = "4-Player",
-        length: Literal[
-            "1 Game",
-            "East Only",
-            "Two-Wind Match",
-            "Vs AI",
-        ] = "Two-Wind Match",
+        mode: RoomMode | str = "4-Player",
+        length: RoomLength | str = "Two-Wind Match",
         timeout: TimeoutType = 60.0,
     ) -> None:
         """Creates a room for friendly matches.
@@ -659,9 +685,9 @@ class HomePresentation(PresentationBase):
 
         # Select Mode
         match mode:
-            case "4-Player":
+            case RoomMode.FOUR_PLAYER:
                 select_option("template/home/room_creation/4-player")
-            case "3-Player":
+            case RoomMode.THREE_PLAYER:
                 select_option("template/home/room_creation/3-player")
             case _ as unsupported_mode:
                 msg = f"Unsupported mode selected: {unsupported_mode}"
@@ -669,13 +695,13 @@ class HomePresentation(PresentationBase):
 
         # Select Length
         match length:
-            case "1 Game":
+            case RoomLength.ONE_GAME:
                 select_option("template/home/room_creation/1_game")
-            case "East Only":
+            case RoomLength.EAST_ONLY:
                 select_option("template/home/room_creation/east_only")
-            case "Two-Wind Match":
+            case RoomLength.TWO_WIND_MATCH:
                 select_option("template/home/room_creation/two-wind_match")
-            case "Vs AI":
+            case RoomLength.VS_AI:
                 select_option("template/home/room_creation/vs_ai")
             case _ as unsupported_length:
                 msg = f"Unsupported length selected: {unsupported_length}"
