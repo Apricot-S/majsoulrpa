@@ -50,7 +50,7 @@ class RPA:
         initial_top: int = 0,
         viewport_height: int = 1080,
         headless: bool = False,
-        user_data_dir: str | None = None,
+        user_data_dir: str | Path | None = None,
     ) -> None:
         """Creates an instance of `RPA`.
 
