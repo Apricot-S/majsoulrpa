@@ -13,7 +13,8 @@ This is fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-r
 
 ## Announcements
 
-- [2024/03/06] `YostarLoginBase` and its subclasses no longer take `config` as an argument to `__init__`. When using `config`, please use the `from_config` classmethod.
+- [2024/04/16] `mode` and `length` of `HomePresentation.create_room` can now be specified with non-literal variables. Please check the [source code](./src/majsoulrpa/presentation/home.py) for details.
+- [2024/04/16] `user_data_dir` of `RPA.__init__` can now be specified with `pathlib.Path`.
 
 ## About The Program
 
