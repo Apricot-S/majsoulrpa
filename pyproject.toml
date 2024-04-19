@@ -31,7 +31,7 @@ playwright = "^1.40.0"
 protobuf = "^4.25.1"
 jsonschema = "^4.20.0"
 boto3 = "^1.34.11"
-pyzmq = "^25.1.2"
+pyzmq = "^26.0.0"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.8.0"
