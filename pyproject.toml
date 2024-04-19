@@ -25,7 +25,7 @@ include = [
 [tool.poetry.dependencies]
 python = "^3.11"
 imapclient = "^3.0.1"
-mitmproxy = "^10.1.6"
+mitmproxy = "^10.3.0"
 opencv-python = "^4.9.0.80"
 playwright = "^1.40.0"
 protobuf = "^4.25.1"
