@@ -1,5 +1,6 @@
 import json
 import tomllib
+from functools import cache
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -8,8 +9,6 @@ from jsonschema import Draft7Validator
 from referencing import Registry, Resource
 
 _SCHEMA_DIR = Path(__file__).parent
-with (_SCHEMA_DIR / "schema.json").open() as _fp:
-    _CONFIG_SCHEMA = json.load(_fp)
 
 
 def _retrieve(uri: str) -> Resource:
@@ -19,9 +18,13 @@ def _retrieve(uri: str) -> Resource:
         return Resource.from_contents(json.load(fp))
 
 
-_resource = Resource.from_contents(_CONFIG_SCHEMA)
-_registry: Registry = _resource @ Registry(retrieve=_retrieve)  # type: ignore[call-arg]
-_validator = Draft7Validator(_resource.contents, registry=_registry)
+@cache
+def _get_validator() -> Draft7Validator:
+    with (_SCHEMA_DIR / "schema.json").open() as _fp:
+        config_schema = json.load(_fp)
+    resource = Resource.from_contents(config_schema)
+    registry: Registry = resource @ Registry(retrieve=_retrieve)  # type: ignore[call-arg]
+    return Draft7Validator(resource.contents, registry=registry)
 
 
 def get_config(path: str | Path) -> dict[str, Any]:
@@ -52,7 +55,7 @@ def get_config(path: str | Path) -> dict[str, Any]:
 
     with path.open("rb") as fp:
         config = tomllib.load(fp)
-    _validator.validate(config)
+    _get_validator().validate(config)
 
     config_list = next(iter(config.values()))
     if not isinstance(config_list, list):
