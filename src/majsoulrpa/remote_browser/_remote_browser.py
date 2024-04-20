@@ -237,6 +237,8 @@ def launch_remote_browser(
                 timeout,
             )
             input("Type something to close the remote browser.")
+    except KeyboardInterrupt:
+        pass
     finally:
         if sniffer_process.poll() is None:
             sniffer_process.terminate()
