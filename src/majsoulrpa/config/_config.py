@@ -15,13 +15,14 @@ def _retrieve(uri: str) -> Resource:
     parsed_uri = urlparse(uri)
     p = Path(parsed_uri.path).relative_to("/")
     with (_SCHEMA_DIR / p).open() as fp:
-        return Resource.from_contents(json.load(fp))
+        schema = json.load(fp)
+    return Resource.from_contents(schema)
 
 
 @cache
 def _get_validator() -> Draft7Validator:
-    with (_SCHEMA_DIR / "schema.json").open() as _fp:
-        config_schema = json.load(_fp)
+    with (_SCHEMA_DIR / "schema.json").open() as fp:
+        config_schema = json.load(fp)
     resource = Resource.from_contents(config_schema)
     registry: Registry = resource @ Registry(retrieve=_retrieve)  # type: ignore[call-arg]
     return Draft7Validator(resource.contents, registry=registry)
