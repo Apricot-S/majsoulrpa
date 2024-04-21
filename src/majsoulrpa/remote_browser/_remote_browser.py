@@ -244,7 +244,7 @@ def launch_remote_browser(
             sniffer_process.terminate()
 
 
-def main() -> None:
+def main() -> int:
     args = parse_option()
 
     remote_host: str = args.remote_host
@@ -272,6 +272,11 @@ def main() -> None:
         )
     except KeyboardInterrupt:
         print("Ctrl+C was pressed. Interrupting the remote browser.")  # noqa: T201
+        exit_code = 1
+    else:
+        exit_code = 0
+
+    return exit_code
 
 
 if __name__ == "__main__":
