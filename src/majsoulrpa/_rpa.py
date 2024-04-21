@@ -2,7 +2,7 @@ import datetime
 from logging import getLogger
 from pathlib import Path
 from subprocess import Popen
-from typing import TYPE_CHECKING, Any, Final, Self
+from typing import TYPE_CHECKING, Any, Self
 
 from ._impl.browser import (
     ASPECT_RATIO,
@@ -11,6 +11,7 @@ from ._impl.browser import (
     RemoteBrowser,
 )
 from ._impl.zmq_client import ZMQClient
+from ._mitmproxy import _SNIFFER_PATH
 from .common import timeout_to_deadline
 
 if TYPE_CHECKING:
@@ -18,8 +19,6 @@ if TYPE_CHECKING:
     from .presentation.presentation_base import PresentationBase
 
 logger = getLogger(__name__)
-
-_SNIFFER_PATH: Final = Path(__file__).parent / "_mitmproxy/sniffer.py"
 
 
 class RPA:
