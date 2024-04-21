@@ -1,4 +1,4 @@
-# ruff: noqa: S101, INP001
+# ruff: noqa: S101
 import base64
 import datetime
 import json
