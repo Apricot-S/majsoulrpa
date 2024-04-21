@@ -215,8 +215,6 @@ def launch_remote_browser(
     sleep(1.0)
 
     try:
-        print("Press Ctrl+C to interrupt.")  # noqa: T201
-
         initial_position = f"--window-position={initial_left},{initial_top}"
         proxy_server = f"--proxy-server=http://localhost:{proxy_port}"
         ignore_certifi_errors = "--ignore-certificate-errors"
@@ -241,9 +239,6 @@ def launch_remote_browser(
                 timeout,
             )
             input("Type something to close the remote browser. ")
-    except KeyboardInterrupt:
-        print("Ctrl+C was pressed. Interrupting the remote browser.")  # noqa: T201
-        raise
     finally:
         if sniffer_process.poll() is None:
             sniffer_process.terminate()
@@ -262,7 +257,8 @@ def main() -> None:
     timeout: int = args.timeout
     headless: bool = args.headless
 
-    try:  # noqa: SIM105
+    try:
+        print("Press Ctrl+C to interrupt the remote browser.")  # noqa: T201
         launch_remote_browser(
             remote_host,
             remote_port,
@@ -275,7 +271,7 @@ def main() -> None:
             headless=headless,
         )
     except KeyboardInterrupt:
-        pass
+        print("Ctrl+C was pressed. Interrupting the remote browser.")  # noqa: T201
 
 
 if __name__ == "__main__":
