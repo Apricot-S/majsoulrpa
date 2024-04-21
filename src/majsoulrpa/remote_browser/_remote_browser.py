@@ -3,10 +3,9 @@
 import argparse
 import base64
 from ipaddress import ip_address
-from pathlib import Path
 from subprocess import Popen
 from time import sleep
-from typing import Final
+from typing import TYPE_CHECKING
 
 import zmq
 from playwright.sync_api import BrowserContext, sync_playwright
@@ -18,9 +17,11 @@ from majsoulrpa._impl.browser import (
     URL_MAJSOUL,
     validate_viewport_size,
 )
+from majsoulrpa._mitmproxy import _SNIFFER_PATH
 from majsoulrpa.common import validate_user_port
 
-_SNIFFER_PATH: Final = Path(__file__).parents[1] / "_mitmproxy/sniffer.py"
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def parse_option() -> argparse.Namespace:
