@@ -242,6 +242,7 @@ def launch_remote_browser(
             input("Type something to close the remote browser. ")
     except KeyboardInterrupt:
         print("Ctrl+C was pressed. Interrupting the remote browser.")  # noqa: T201
+        raise
     finally:
         if sniffer_process.poll() is None:
             sniffer_process.terminate()
@@ -260,17 +261,20 @@ def main() -> None:
     timeout: int = args.timeout
     headless: bool = args.headless
 
-    launch_remote_browser(
-        remote_host,
-        remote_port,
-        proxy_port,
-        message_queue_port,
-        initial_left,
-        initial_top,
-        viewport_height,
-        timeout,
-        headless=headless,
-    )
+    try:  # noqa: SIM105
+        launch_remote_browser(
+            remote_host,
+            remote_port,
+            proxy_port,
+            message_queue_port,
+            initial_left,
+            initial_top,
+            viewport_height,
+            timeout,
+            headless=headless,
+        )
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":
