@@ -233,23 +233,43 @@ def launch_remote_browser(
         viewport_size = {"width": viewport_width, "height": viewport_height}
         mute_audio_off = None if headless else ["--mute-audio"]
 
-        with (
-            sync_playwright() as playwright,
-            playwright.chromium.launch(
-                args=options,
-                ignore_default_args=mute_audio_off,
-                headless=headless,
-            ) as browser,
-            browser.new_context(viewport=viewport_size) as context,  # type: ignore[arg-type]
-        ):
-            _launch_remote_browser_core(
-                context,
-                remote_host,
-                remote_port,
-                viewport_size,
-                timeout,
-            )
-            input("Type something to close the remote browser.")
+        if user_data_dir:
+            with (
+                sync_playwright() as playwright,
+                playwright.chromium.launch_persistent_context(
+                    user_data_dir,
+                    args=options,
+                    ignore_default_args=mute_audio_off,
+                    headless=headless,
+                    viewport=viewport_size,  # type: ignore[arg-type]
+                ) as context,
+            ):
+                _launch_remote_browser_core(
+                    context,
+                    remote_host,
+                    remote_port,
+                    viewport_size,
+                    timeout,
+                )
+                input("Type something to close the remote browser.")
+        else:
+            with (
+                sync_playwright() as playwright,
+                playwright.chromium.launch(
+                    args=options,
+                    ignore_default_args=mute_audio_off,
+                    headless=headless,
+                ) as browser,
+                browser.new_context(viewport=viewport_size) as context,  # type: ignore[arg-type]
+            ):
+                _launch_remote_browser_core(
+                    context,
+                    remote_host,
+                    remote_port,
+                    viewport_size,
+                    timeout,
+                )
+                input("Type something to close the remote browser.")
     finally:
         if sniffer_process.poll() is None:
             sniffer_process.terminate()
