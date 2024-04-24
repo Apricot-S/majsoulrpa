@@ -179,6 +179,9 @@ def _launch_remote_browser_core(
                     msg = f"{unexpected}: An unknown message."
                     raise RuntimeError(msg)
 
+    # Keep browser open until input after RPA client times out.
+    input("Type something to close the remote browser. ")
+
 
 def launch_remote_browser(
     remote_host: str = "127.0.0.1",
@@ -251,7 +254,6 @@ def launch_remote_browser(
                     viewport_size,
                     timeout,
                 )
-                input("Type something to close the remote browser.")
         else:
             with (
                 sync_playwright() as playwright,
@@ -269,7 +271,6 @@ def launch_remote_browser(
                     viewport_size,
                     timeout,
                 )
-                input("Type something to close the remote browser.")
     finally:
         if sniffer_process.poll() is None:
             sniffer_process.terminate()
