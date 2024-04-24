@@ -46,6 +46,7 @@ def validate_option(
     user_data_dir: str | Path | None = None,
 ) -> None:
     ip_address(remote_host)
+
     validate_user_port(remote_port)
     validate_user_port(proxy_port)
     validate_user_port(message_queue_port)
@@ -55,8 +56,10 @@ def validate_option(
             f"{remote_port=}, {proxy_port=}, {message_queue_port=}"
         )
         raise ValueError(msg)
+
     viewport_width = int(viewport_height * ASPECT_RATIO)
     validate_viewport_size(viewport_width, viewport_height)
+
     if timeout <= 0:
         msg = "Timeout must be a positive integer."
         raise ValueError(msg)
@@ -211,7 +214,6 @@ def launch_remote_browser(
         "--set",
         f"port={message_queue_port}",
     ]
-
     sniffer_process = Popen(sniffer_args)  # noqa: S603
     # After starting the sniffer process, if the browser is launched
     # immediately, there may be cases where the browser attempts to
@@ -222,6 +224,7 @@ def launch_remote_browser(
     # waiting for a while after starting the sniffer process before
     # initiating the launch of the browser.
     sleep(1.0)
+
     try:
         initial_position = f"--window-position={initial_left},{initial_top}"
         proxy_server = f"--proxy-server=http://localhost:{proxy_port}"
