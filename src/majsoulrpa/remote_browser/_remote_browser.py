@@ -180,7 +180,7 @@ def _launch_remote_browser_core(
                     raise RuntimeError(msg)
 
     # Keep browser open until input after RPA client times out.
-    input("Type something to close the remote browser. ")
+    input("Press the Enter key to close the remote browser. ")
 
 
 def launch_remote_browser(
