@@ -3,9 +3,9 @@
 import argparse
 import base64
 from ipaddress import ip_address
+from pathlib import Path
 from subprocess import Popen
 from time import sleep
-from typing import TYPE_CHECKING
 
 import zmq
 from playwright.sync_api import BrowserContext, sync_playwright
@@ -20,9 +20,6 @@ from majsoulrpa._impl.browser import (
 from majsoulrpa._mitmproxy import _SNIFFER_PATH
 from majsoulrpa.common import validate_user_port
 
-if TYPE_CHECKING:
-    from pathlib import Path
-
 
 def parse_option() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -35,6 +32,7 @@ def parse_option() -> argparse.Namespace:
     parser.add_argument("--viewport_height", type=int, default=STD_HEIGHT)
     parser.add_argument("--timeout", type=int, default=600)
     parser.add_argument("--headless", action="store_true")
+    parser.add_argument("--user_data_dir", type=str, default=None)
     return parser.parse_args()
 
 
@@ -45,6 +43,7 @@ def validate_option(
     message_queue_port: int,
     viewport_height: int,
     timeout: int,
+    user_data_dir: str | Path | None = None,
 ) -> None:
     ip_address(remote_host)
     validate_user_port(remote_port)
@@ -61,6 +60,14 @@ def validate_option(
     if timeout <= 0:
         msg = "Timeout must be a positive integer."
         raise ValueError(msg)
+
+    if user_data_dir is None:
+        return
+    if isinstance(user_data_dir, str):
+        user_data_dir = Path(user_data_dir)
+    if not user_data_dir.is_dir():
+        msg = f"{user_data_dir}: does not exist."
+        raise FileNotFoundError(msg)
 
 
 def _launch_remote_browser_core(
@@ -181,6 +188,7 @@ def launch_remote_browser(
     timeout: int = 600,
     *,
     headless: bool = False,
+    user_data_dir: str | Path | None = None,
 ) -> None:
     validate_option(
         remote_host,
@@ -189,6 +197,7 @@ def launch_remote_browser(
         message_queue_port,
         viewport_height,
         timeout,
+        user_data_dir,
     )
     viewport_width = int(viewport_height * ASPECT_RATIO)
 
@@ -255,6 +264,7 @@ def main() -> None:
     viewport_height: int = args.viewport_height
     timeout: int = args.timeout
     headless: bool = args.headless
+    user_data_dir: str | None = args.user_data_dir
 
     launch_remote_browser(
         remote_host,
@@ -266,6 +276,7 @@ def main() -> None:
         viewport_height,
         timeout,
         headless=headless,
+        user_data_dir=user_data_dir,
     )
 
 
