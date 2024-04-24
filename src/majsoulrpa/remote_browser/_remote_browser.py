@@ -3,9 +3,9 @@
 import argparse
 import base64
 from ipaddress import ip_address
+from pathlib import Path
 from subprocess import Popen
 from time import sleep
-from typing import TYPE_CHECKING
 
 import zmq
 from playwright.sync_api import BrowserContext, sync_playwright
@@ -20,9 +20,6 @@ from majsoulrpa._impl.browser import (
 from majsoulrpa._mitmproxy import _SNIFFER_PATH
 from majsoulrpa.common import validate_user_port
 
-if TYPE_CHECKING:
-    from pathlib import Path
-
 
 def parse_option() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -35,6 +32,7 @@ def parse_option() -> argparse.Namespace:
     parser.add_argument("--viewport_height", type=int, default=STD_HEIGHT)
     parser.add_argument("--timeout", type=int, default=600)
     parser.add_argument("--headless", action="store_true")
+    parser.add_argument("--user_data_dir", type=str, default=None)
     return parser.parse_args()
 
 
@@ -45,8 +43,10 @@ def validate_option(
     message_queue_port: int,
     viewport_height: int,
     timeout: int,
+    user_data_dir: str | Path | None = None,
 ) -> None:
     ip_address(remote_host)
+
     validate_user_port(remote_port)
     validate_user_port(proxy_port)
     validate_user_port(message_queue_port)
@@ -56,11 +56,21 @@ def validate_option(
             f"{remote_port=}, {proxy_port=}, {message_queue_port=}"
         )
         raise ValueError(msg)
+
     viewport_width = int(viewport_height * ASPECT_RATIO)
     validate_viewport_size(viewport_width, viewport_height)
+
     if timeout <= 0:
         msg = "Timeout must be a positive integer."
         raise ValueError(msg)
+
+    if user_data_dir is None:
+        return
+    if isinstance(user_data_dir, str):
+        user_data_dir = Path(user_data_dir)
+    if not user_data_dir.is_dir():
+        msg = f"{user_data_dir}: does not exist."
+        raise FileNotFoundError(msg)
 
 
 def _launch_remote_browser_core(
@@ -169,6 +179,9 @@ def _launch_remote_browser_core(
                     msg = f"{unexpected}: An unknown message."
                     raise RuntimeError(msg)
 
+    # Keep browser open until input after RPA client times out.
+    input("Press the Enter key to close the remote browser. ")
+
 
 def launch_remote_browser(
     remote_host: str = "127.0.0.1",
@@ -181,6 +194,7 @@ def launch_remote_browser(
     timeout: int = 600,
     *,
     headless: bool = False,
+    user_data_dir: str | Path | None = None,
 ) -> None:
     validate_option(
         remote_host,
@@ -189,6 +203,7 @@ def launch_remote_browser(
         message_queue_port,
         viewport_height,
         timeout,
+        user_data_dir,
     )
     viewport_width = int(viewport_height * ASPECT_RATIO)
 
@@ -202,7 +217,6 @@ def launch_remote_browser(
         "--set",
         f"port={message_queue_port}",
     ]
-
     sniffer_process = Popen(sniffer_args)  # noqa: S603
     # After starting the sniffer process, if the browser is launched
     # immediately, there may be cases where the browser attempts to
@@ -213,6 +227,7 @@ def launch_remote_browser(
     # waiting for a while after starting the sniffer process before
     # initiating the launch of the browser.
     sleep(1.0)
+
     try:
         initial_position = f"--window-position={initial_left},{initial_top}"
         proxy_server = f"--proxy-server=http://localhost:{proxy_port}"
@@ -221,23 +236,41 @@ def launch_remote_browser(
         viewport_size = {"width": viewport_width, "height": viewport_height}
         mute_audio_off = None if headless else ["--mute-audio"]
 
-        with (
-            sync_playwright() as playwright,
-            playwright.chromium.launch(
-                args=options,
-                ignore_default_args=mute_audio_off,
-                headless=headless,
-            ) as browser,
-            browser.new_context(viewport=viewport_size) as context,  # type: ignore[arg-type]
-        ):
-            _launch_remote_browser_core(
-                context,
-                remote_host,
-                remote_port,
-                viewport_size,
-                timeout,
-            )
-            input("Type something to close the remote browser.")
+        if user_data_dir:
+            with (
+                sync_playwright() as playwright,
+                playwright.chromium.launch_persistent_context(
+                    user_data_dir,
+                    args=options,
+                    ignore_default_args=mute_audio_off,
+                    headless=headless,
+                    viewport=viewport_size,  # type: ignore[arg-type]
+                ) as context,
+            ):
+                _launch_remote_browser_core(
+                    context,
+                    remote_host,
+                    remote_port,
+                    viewport_size,
+                    timeout,
+                )
+        else:
+            with (
+                sync_playwright() as playwright,
+                playwright.chromium.launch(
+                    args=options,
+                    ignore_default_args=mute_audio_off,
+                    headless=headless,
+                ) as browser,
+                browser.new_context(viewport=viewport_size) as context,  # type: ignore[arg-type]
+            ):
+                _launch_remote_browser_core(
+                    context,
+                    remote_host,
+                    remote_port,
+                    viewport_size,
+                    timeout,
+                )
     finally:
         if sniffer_process.poll() is None:
             sniffer_process.terminate()
@@ -255,6 +288,7 @@ def main() -> None:
     viewport_height: int = args.viewport_height
     timeout: int = args.timeout
     headless: bool = args.headless
+    user_data_dir: str | None = args.user_data_dir
 
     launch_remote_browser(
         remote_host,
@@ -266,6 +300,7 @@ def main() -> None:
         viewport_height,
         timeout,
         headless=headless,
+        user_data_dir=user_data_dir,
     )
 
 
