@@ -454,6 +454,10 @@ class HomePresentation(PresentationBase):
                     # rewards
                     logger.info(message)
                     continue
+                case ".lq.Lobby.readAnnouncement":
+                    # Exchanged if the notification dialog gets closed
+                    logger.info(message)
+                    continue
                 case _:
                     raise InconsistentMessageError(
                         str(message),
