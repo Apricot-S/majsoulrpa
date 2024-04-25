@@ -43,7 +43,6 @@ def validate_option(
     message_queue_port: int,
     viewport_height: int,
     timeout: int,
-    user_data_dir: str | Path | None = None,
 ) -> None:
     ip_address(remote_host)
 
@@ -63,14 +62,6 @@ def validate_option(
     if timeout <= 0:
         msg = "Timeout must be a positive integer."
         raise ValueError(msg)
-
-    if user_data_dir is None:
-        return
-    if isinstance(user_data_dir, str):
-        user_data_dir = Path(user_data_dir)
-    if not user_data_dir.is_dir():
-        msg = f"{user_data_dir}: does not exist."
-        raise FileNotFoundError(msg)
 
 
 def _launch_remote_browser_core(
@@ -203,7 +194,6 @@ def launch_remote_browser(
         message_queue_port,
         viewport_height,
         timeout,
-        user_data_dir,
     )
     viewport_width = int(viewport_height * ASPECT_RATIO)
 
