@@ -281,7 +281,7 @@ def main() -> int:
     user_data_dir: str | None = args.user_data_dir
 
     try:
-        print("Press Ctrl+C to interrupt the remote browser.")  # noqa: T201
+        print("Press Ctrl+C to terminate the remote browser.")  # noqa: T201
         launch_remote_browser(
             remote_host,
             remote_port,
@@ -295,7 +295,7 @@ def main() -> int:
             user_data_dir=user_data_dir,
         )
     except KeyboardInterrupt:
-        print("Ctrl+C was pressed. Interrupting the remote browser.")  # noqa: T201
+        print("Ctrl+C was pressed. Terminates the remote browser.")  # noqa: T201
         exit_code = 1
     else:
         exit_code = 0
