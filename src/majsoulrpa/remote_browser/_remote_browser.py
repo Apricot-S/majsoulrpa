@@ -266,7 +266,7 @@ def launch_remote_browser(
             sniffer_process.terminate()
 
 
-def main() -> None:
+def main() -> int:
     args = parse_option()
 
     remote_host: str = args.remote_host
@@ -280,18 +280,27 @@ def main() -> None:
     headless: bool = args.headless
     user_data_dir: str | None = args.user_data_dir
 
-    launch_remote_browser(
-        remote_host,
-        remote_port,
-        proxy_port,
-        message_queue_port,
-        initial_left,
-        initial_top,
-        viewport_height,
-        timeout,
-        headless=headless,
-        user_data_dir=user_data_dir,
-    )
+    try:
+        print("Press Ctrl+C to terminate the remote browser.")  # noqa: T201
+        launch_remote_browser(
+            remote_host,
+            remote_port,
+            proxy_port,
+            message_queue_port,
+            initial_left,
+            initial_top,
+            viewport_height,
+            timeout,
+            headless=headless,
+            user_data_dir=user_data_dir,
+        )
+    except KeyboardInterrupt:
+        print("Ctrl+C was pressed. Terminates the remote browser.")  # noqa: T201
+        exit_code = 1
+    else:
+        exit_code = 0
+
+    return exit_code
 
 
 if __name__ == "__main__":
