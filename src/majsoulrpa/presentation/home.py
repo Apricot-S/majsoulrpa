@@ -320,6 +320,7 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.fetchCustomizedContestOnlineInfo"
                     | ".lq.Lobby.startCustomizedContest"
                     | ".lq.Lobby.stopCustomizedContest"
+                    | ".lq.Lobby.fetchVoteActivity"
                 ):
                     logger.info(message)
                     continue
