@@ -402,6 +402,7 @@ class MatchPresentation(PresentationBase):
                     | ".lq.FastTest.checkNetworkDelay"
                     | ".lq.FastTest.fetchGamePlayerState"
                     | ".lq.FastTest.finishSyncGame"
+                    | ".lq.Lobby.fetchVoteActivity"
                 ):
                     logger.info(message)
                 case ".lq.FastTest.authGame":
