@@ -171,14 +171,7 @@ class RoomHostPresentation(RoomPresentationBase):
         templates = [
             Template.open_file(p, self._browser.zoom_ratio) for p in paths
         ]
-
-        clicked = False
-        for template in templates:
-            if template.click_if_match(self._browser):
-                clicked = True
-                break
-
-        if not clicked:
+        if Template.click_if_match_one_of(templates, self._browser) == -1:
             msg = "Could not add AI because the button could not be clicked."
             raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
