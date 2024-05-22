@@ -1,6 +1,6 @@
 # Friendly Match - Create Room - Create
-left = 855
-top = 935
-width = 220
+left = 820
+top = 892
+width = 282
 height = 110
 threshold = 0.95
