@@ -168,13 +168,18 @@ class RoomHostPresentation(RoomPresentationBase):
             raise InvalidOperationError(msg, self._browser.get_screenshot())
 
         # Check if "Add AI" is clickable, and if so, click it.
-        # Note: Even if the room is full and the button is dark,
-        # it still matches the template image.
-        template = Template.open_file(
-            "template/room/add_ai",
-            self._browser.zoom_ratio,
-        )
-        if not template.click_if_match(self._browser):
+        paths = [f"template/room/add_ai{i}" for i in range(4)]
+        templates = [
+            Template.open_file(p, self._browser.zoom_ratio) for p in paths
+        ]
+
+        clicked = False
+        for template in templates:
+            if template.click_if_match(self._browser):
+                clicked = True
+                break
+
+        if not clicked:
             msg = "Could not add AI because the button could not be clicked."
             raise UnexpectedStateError(msg, self._browser.get_screenshot())
 
