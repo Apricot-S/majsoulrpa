@@ -1,6 +1,6 @@
 # Friendly Match - Create Room - 3-Player
-left = 758
-top = 207
+left = 692
+top = 255
 width = 216
 height = 81
 threshold = 0.95
