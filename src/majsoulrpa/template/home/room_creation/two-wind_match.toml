@@ -1,6 +1,6 @@
 # Friendly Match - Create Room - Two-Wind Match
-left = 1023
-top = 319
+left = 959
+top = 365
 width = 216
 height = 81
 threshold = 0.95
