@@ -1,6 +1,6 @@
 import datetime
 import tomllib
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Final, Self
 
@@ -243,7 +243,7 @@ class Template:
     @staticmethod
     def match_one_of(
         screenshot: bytes,
-        templates: Sequence["Template"],
+        templates: Iterable["Template"],
     ) -> int:
         for i, template in enumerate(templates):
             if template.match(screenshot):
