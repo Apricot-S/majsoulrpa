@@ -1,6 +1,6 @@
 import datetime
 import tomllib
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Final, Self
 
@@ -243,10 +243,55 @@ class Template:
     @staticmethod
     def match_one_of(
         screenshot: bytes,
-        templates: Sequence["Template"],
+        templates: Iterable["Template"],
     ) -> int:
         for i, template in enumerate(templates):
             if template.match(screenshot):
+                return i
+        return -1
+
+    @staticmethod
+    def wait_until_one_of(
+        templates: Iterable["Template"],
+        browser: BrowserBase,
+        deadline: datetime.datetime,
+    ) -> None:
+        while True:
+            if datetime.datetime.now(datetime.UTC) > deadline:
+                msg = "Timeout"
+                raise PresentationTimeoutError(msg, browser.get_screenshot())
+
+            screenshot = browser.get_screenshot()
+            for template in templates:
+                if template.match(screenshot):
+                    return
+
+    @staticmethod
+    def wait_for_one_of(
+        templates: Iterable["Template"],
+        browser: BrowserBase,
+        timeout: TimeoutType,
+    ) -> None:
+        deadline = timeout_to_deadline(timeout)
+        Template.wait_until_one_of(templates, browser, deadline)
+
+    @staticmethod
+    def click_if_match_one_of(
+        templates: Iterable["Template"],
+        browser: BrowserBase,
+        edge_sigma: float = _STD_EDGE_SIGMA,
+    ) -> int:
+        screenshot = browser.get_screenshot()
+        for i, template in enumerate(templates):
+            x, y, score = template.best_template_match(screenshot)
+            if score >= template.threshold:
+                browser.click_region(
+                    x,
+                    y,
+                    template.img_width,
+                    template.img_height,
+                    edge_sigma,
+                )
                 return i
         return -1
 
