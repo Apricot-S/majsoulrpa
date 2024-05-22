@@ -65,18 +65,9 @@ logger = getLogger(__name__)
 class MatchPresentation(PresentationBase):
     @staticmethod
     def _wait(browser: BrowserBase, timeout: TimeoutType = 60.0) -> None:
-        deadline = timeout_to_deadline(timeout)
         paths = [f"template/match/marker{i}" for i in range(4)]
         templates = [Template.open_file(p, browser.zoom_ratio) for p in paths]
-        while True:
-            if datetime.datetime.now(datetime.UTC) > deadline:
-                msg = "Timeout."
-                raise PresentationTimeoutError(msg, browser.get_screenshot())
-            if (
-                Template.match_one_of(browser.get_screenshot(), templates)
-                != -1
-            ):
-                break
+        Template.wait_for_one_of(templates, browser, timeout)
 
     _COMMON_MESSAGE_NAMES = (
         ".lq.Lobby.heatbeat",

@@ -1,6 +1,6 @@
 # Friendly Match - Create Room - Vs AI
-left = 1286
-top = 319
+left = 1226
+top = 365
 width = 216
 height = 81
 threshold = 0.95
