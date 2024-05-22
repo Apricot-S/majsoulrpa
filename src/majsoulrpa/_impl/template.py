@@ -251,6 +251,31 @@ class Template:
         return -1
 
     @staticmethod
+    def wait_until_one_of(
+        templates: Iterable["Template"],
+        browser: BrowserBase,
+        deadline: datetime.datetime,
+    ) -> None:
+        while True:
+            if datetime.datetime.now(datetime.UTC) > deadline:
+                msg = "Timeout"
+                raise PresentationTimeoutError(msg, browser.get_screenshot())
+
+            screenshot = browser.get_screenshot()
+            for template in templates:
+                if template.match(screenshot):
+                    return
+
+    @staticmethod
+    def wait_for_one_of(
+        templates: Iterable["Template"],
+        browser: BrowserBase,
+        timeout: TimeoutType,
+    ) -> None:
+        deadline = timeout_to_deadline(timeout)
+        Template.wait_until_one_of(templates, browser, deadline)
+
+    @staticmethod
     def wait_until_one_of_then_click(
         templates: Iterable["Template"],
         browser: BrowserBase,
