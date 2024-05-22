@@ -86,14 +86,18 @@ class RoomHostPresentation(RoomPresentationBase):
             msg = "Message queue client is not running."
             raise RuntimeError(msg)
 
-        # Even if the room is full and the colors are different, it can
-        # be detected using OpenCV template matching.
-        template = Template.open_file(
-            "template/room/add_ai",
-            browser.zoom_ratio,
+        templates = (
+            Template.open_file(
+                "template/room/start",
+                browser.zoom_ratio,
+            ),
+            Template.open_file(
+                "template/room/start_disabled",
+                browser.zoom_ratio,
+            ),
         )
         ss = browser.get_screenshot()
-        if not template.match(ss):
+        if Template.match_one_of(ss, templates) == -1:
             msg = "Could not detect `RoomHostPresentation`."
             raise PresentationNotDetectedError(msg, ss)
 
