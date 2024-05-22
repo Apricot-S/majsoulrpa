@@ -276,6 +276,26 @@ class Template:
         Template.wait_until_one_of(templates, browser, deadline)
 
     @staticmethod
+    def click_if_match_one_of(
+        templates: Iterable["Template"],
+        browser: BrowserBase,
+        edge_sigma: float = _STD_EDGE_SIGMA,
+    ) -> int:
+        screenshot = browser.get_screenshot()
+        for i, template in enumerate(templates):
+            x, y, score = template.best_template_match(screenshot)
+            if score >= template.threshold:
+                browser.click_region(
+                    x,
+                    y,
+                    template.img_width,
+                    template.img_height,
+                    edge_sigma,
+                )
+                return i
+        return -1
+
+    @staticmethod
     def wait_until_one_of_then_click(
         templates: Iterable["Template"],
         browser: BrowserBase,
