@@ -195,6 +195,7 @@ class DesktopBrowser(BrowserBase):
                 headless=headless,
                 viewport=self._viewport_size,  # type: ignore[arg-type]
             )
+            self._page = self._context.pages[0]
         else:
             self._browser = self._context_manager.start().chromium.launch(
                 args=options,
@@ -204,8 +205,8 @@ class DesktopBrowser(BrowserBase):
             self._context = self._browser.new_context(
                 viewport=self._viewport_size,  # type: ignore[arg-type]
             )
+            self._page = self._context.new_page()
 
-        self._page = self._context.new_page()
         self._page.goto(URL_MAJSOUL)
 
     @property
