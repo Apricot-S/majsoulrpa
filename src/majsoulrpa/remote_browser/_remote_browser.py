@@ -64,7 +64,7 @@ def validate_option(
         raise ValueError(msg)
 
 
-def _launch_remote_browser_core(
+def _launch_remote_browser_core(  # noqa: C901
     browser_context: BrowserContext,
     remote_host: str,
     remote_port: int,
@@ -73,7 +73,11 @@ def _launch_remote_browser_core(
 ) -> None:
     zoom_ratio = viewport_size["height"] / STD_HEIGHT
 
-    page = browser_context.new_page()
+    if browser_context.pages:
+        page = browser_context.pages[0]
+    else:
+        page = browser_context.new_page()
+
     page.goto(URL_MAJSOUL)
     page.wait_for_selector("#layaCanvas", timeout=60000)
 
