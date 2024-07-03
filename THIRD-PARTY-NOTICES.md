@@ -10,7 +10,7 @@ The attached notices are provided for information only.
 
 ## IMAPClient
 
-**Source**: [https://github.com/mjs/imapclient](https://github.com/mjs/imapclient)
+**Source**: <https://github.com/mjs/imapclient>
 
 **License**:
 
@@ -43,7 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## mitmproxy
 
-**Source**: [https://github.com/mitmproxy/mitmproxy](https://github.com/mitmproxy/mitmproxy)
+**Source**: <https://github.com/mitmproxy/mitmproxy>
 
 **License**:
 
@@ -71,7 +71,7 @@ SOFTWARE.
 
 ## opencv-python
 
-**Source**: [https://github.com/opencv/opencv-python](https://github.com/opencv/opencv-python)
+**Source**: <https://github.com/opencv/opencv-python>
 
 **License**:
 
@@ -101,7 +101,7 @@ SOFTWARE.
 
 ## Playwright for Python
 
-**Source**: [https://github.com/microsoft/playwright-python](https://github.com/microsoft/playwright-python)
+**Source**: <https://github.com/microsoft/playwright-python>
 
 **License**:
 
@@ -312,7 +312,7 @@ SOFTWARE.
 
 ## protobuf/python
 
-**Source**: [https://github.com/protocolbuffers/protobuf/tree/main/python](https://github.com/protocolbuffers/protobuf/tree/main/python)
+**Source**: <https://github.com/protocolbuffers/protobuf/tree/main/python>
 
 **License**:
 
@@ -353,7 +353,7 @@ support library is itself covered by the above license.
 
 ## jsonschema
 
-**Source**: [https://github.com/python-jsonschema/jsonschema](https://github.com/python-jsonschema/jsonschema)
+**Source**: <https://github.com/python-jsonschema/jsonschema>
 
 **License**:
 
@@ -381,7 +381,7 @@ THE SOFTWARE.
 
 ## Boto3
 
-**Source**: [https://github.com/boto/boto3](https://github.com/boto/boto3)
+**Source**: <https://github.com/boto/boto3>
 
 **Notice**:
 
@@ -574,7 +574,7 @@ Copyright 2013-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 
 ## PyZMQ
 
-**Source**: [https://github.com/zeromq/pyzmq](https://github.com/zeromq/pyzmq)
+**Source**: <https://github.com/zeromq/pyzmq>
 
 **Authors**:
 
@@ -731,7 +731,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## referencing
 
-**Source**: [https://github.com/python-jsonschema/referencing](https://github.com/python-jsonschema/referencing)
+**Source**: <https://github.com/python-jsonschema/referencing>
 
 **License**:
 
@@ -759,7 +759,7 @@ THE SOFTWARE.
 
 ## NumPy
 
-**Source**: [https://github.com/numpy/numpy](https://github.com/numpy/numpy)
+**Source**: <https://github.com/numpy/numpy>
 
 **License**:
 
@@ -798,7 +798,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## wsproto
 
-**Source**: [https://github.com/python-hyper/wsproto](https://github.com/python-hyper/wsproto)
+**Source**: <https://github.com/python-hyper/wsproto>
 
 **License**:
 
