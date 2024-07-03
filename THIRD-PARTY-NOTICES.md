@@ -10,7 +10,7 @@ The attached notices are provided for information only.
 
 ## IMAPClient
 
-**Source**: [https://github.com/mjs/imapclient](https://github.com/mjs/imapclient)
+**Source**: <https://github.com/mjs/imapclient>
 
 **License**:
 
@@ -43,7 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## mitmproxy
 
-**Source**: [https://github.com/mitmproxy/mitmproxy](https://github.com/mitmproxy/mitmproxy)
+**Source**: <https://github.com/mitmproxy/mitmproxy>
 
 **License**:
 
@@ -71,7 +71,7 @@ SOFTWARE.
 
 ## opencv-python
 
-**Source**: [https://github.com/opencv/opencv-python](https://github.com/opencv/opencv-python)
+**Source**: <https://github.com/opencv/opencv-python>
 
 **License**:
 
@@ -101,7 +101,7 @@ SOFTWARE.
 
 ## Playwright for Python
 
-**Source**: [https://github.com/microsoft/playwright-python](https://github.com/microsoft/playwright-python)
+**Source**: <https://github.com/microsoft/playwright-python>
 
 **License**:
 
@@ -312,7 +312,7 @@ SOFTWARE.
 
 ## protobuf/python
 
-**Source**: [https://github.com/protocolbuffers/protobuf/tree/main/python](https://github.com/protocolbuffers/protobuf/tree/main/python)
+**Source**: <https://github.com/protocolbuffers/protobuf/tree/main/python>
 
 **License**:
 
@@ -353,7 +353,7 @@ support library is itself covered by the above license.
 
 ## jsonschema
 
-**Source**: [https://github.com/python-jsonschema/jsonschema](https://github.com/python-jsonschema/jsonschema)
+**Source**: <https://github.com/python-jsonschema/jsonschema>
 
 **License**:
 
@@ -381,7 +381,7 @@ THE SOFTWARE.
 
 ## Boto3
 
-**Source**: [https://github.com/boto/boto3](https://github.com/boto/boto3)
+**Source**: <https://github.com/boto/boto3>
 
 **Notice**:
 
@@ -574,7 +574,7 @@ Copyright 2013-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 
 ## PyZMQ
 
-**Source**: [https://github.com/zeromq/pyzmq](https://github.com/zeromq/pyzmq)
+**Source**: <https://github.com/zeromq/pyzmq>
 
 **Authors**:
 
@@ -731,12 +731,81 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## referencing
 
-**Source**: [https://github.com/python-jsonschema/referencing](https://github.com/python-jsonschema/referencing)
+**Source**: <https://github.com/python-jsonschema/referencing>
 
 **License**:
 
 ```text
 Copyright (c) 2022 Julian Berman
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+```
+
+## NumPy
+
+**Source**: <https://github.com/numpy/numpy>
+
+**License**:
+
+```text
+Copyright (c) 2005-2024, NumPy Developers.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+    * Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above
+       copyright notice, this list of conditions and the following
+       disclaimer in the documentation and/or other materials provided
+       with the distribution.
+
+    * Neither the name of the NumPy Developers nor the names of any
+       contributors may be used to endorse or promote products derived
+       from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+## wsproto
+
+**Source**: <https://github.com/python-hyper/wsproto>
+
+**License**:
+
+```text
+The MIT License (MIT)
+
+Copyright (c) 2017 Benno Rice and contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
