@@ -211,7 +211,4 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# config for example
-examples/config.toml
-
 # End of https://www.toptal.com/developers/gitignore/api/windows,python,venv
