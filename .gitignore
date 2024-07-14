@@ -259,4 +259,8 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# rye
+requirements.lock
+requirements-dev.lock
+
 # End of https://www.toptal.com/developers/gitignore/api/python,venv,windows,macos,linux
