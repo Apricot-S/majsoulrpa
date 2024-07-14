@@ -29,11 +29,11 @@ This is fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-r
 
 ![remote](./docs/remote.png)
 
-## how to setup
+## Install
 
-```text
-poetry install
-poetry shell
+```sh
+majsoulrpa$ pip install .
+majsoulrpa$ playwright install --with-deps chromium
 ```
 
 ## License
