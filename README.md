@@ -11,12 +11,6 @@ This is fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-r
 5. Supports browser viewport sizes other than 1920 x 1080
 6. Supports 3-player mahjong
 
-## Announcements
-
-- [2024/04/16] `mode` and `length` of `HomePresentation.create_room` can now be specified with non-literal variables. Please check the [source code](./src/majsoulrpa/presentation/home.py) for details.
-- [2024/04/16] `user_data_dir` of `RPA.__init__` can now be specified with `pathlib.Path`.
-- [2024/04/24] Added an optional argument `user_data_dir` to `launch_remote_browser` and `--user_data_dir` option to `majsoulrpa_remote_browser`.
-
 ## About The Program
 
 - This program is intended to enable the participation of bots in friendly matches and tournaments where bot participation is explicitly allowed.
