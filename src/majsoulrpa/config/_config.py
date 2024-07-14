@@ -74,7 +74,7 @@ def get_config(path: str | Path) -> dict[str, Any]:
     for i, c in enumerate(config_list):
         name = c["name"]
         print(f"{i}: {name}")  # noqa: T201
-    print("")  # noqa: T201
+    print()  # noqa: T201
 
     selection = int(input("Which configuration to use?: "))
     if selection < 0 or selection >= len(config_list):
