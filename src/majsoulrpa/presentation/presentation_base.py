@@ -56,7 +56,7 @@ class PresentationBase(metaclass=ABCMeta):
         """
         self._rpa = rpa
         self._creator: PresentationCreatorBase = creator
-        self._new_presentation: "PresentationBase | None" = None
+        self._new_presentation: PresentationBase | None = None
 
     def _set_new_presentation(
         self,
