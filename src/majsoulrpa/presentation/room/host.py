@@ -4,6 +4,7 @@ from logging import getLogger
 from typing import Self
 
 from majsoulrpa import RPA
+from majsoulrpa._impl.browser import BrowserBase
 from majsoulrpa._impl.template import Template
 from majsoulrpa.common import TimeoutType, timeout_to_deadline
 from majsoulrpa.presentation.exceptions import (
@@ -65,6 +66,20 @@ class RoomHostPresentation(RoomPresentationBase):
             players,
             num_ais,
         )
+
+    @staticmethod
+    def _wait(browser: BrowserBase, timeout: TimeoutType = 60.0) -> None:
+        templates = (
+            Template.open_file(
+                "template/room/start",
+                browser.zoom_ratio,
+            ),
+            Template.open_file(
+                "template/room/start_disabled",
+                browser.zoom_ratio,
+            ),
+        )
+        Template.wait_for_one_of(templates, browser, timeout)
 
     @classmethod
     def _create(
