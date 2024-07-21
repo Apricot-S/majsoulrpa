@@ -186,6 +186,11 @@ class DesktopBrowser(BrowserBase):
 
         self._context_manager = sync_playwright()
 
+        if isinstance(user_data_dir, str):
+            user_data_dir = Path(user_data_dir)
+            if not user_data_dir.is_absolute():
+                user_data_dir = Path.cwd() / user_data_dir
+        
         self._browser = None
         if user_data_dir:
             self._context = self._context_manager.start().chromium.launch_persistent_context(  # noqa: E501
