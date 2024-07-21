@@ -185,13 +185,12 @@ class DesktopBrowser(BrowserBase):
         mute_audio_off = None if headless else ["--mute-audio"]
 
         self._context_manager = sync_playwright()
-        
+
         self._browser = None
         if user_data_dir:
             if isinstance(user_data_dir, str):
                 user_data_dir = Path(user_data_dir)
-            if not user_data_dir.is_absolute():
-                user_data_dir = Path.cwd() / user_data_dir
+            user_data_dir = user_data_dir.resolve()
             self._context = self._context_manager.start().chromium.launch_persistent_context(  # noqa: E501
                 user_data_dir,
                 args=options,
