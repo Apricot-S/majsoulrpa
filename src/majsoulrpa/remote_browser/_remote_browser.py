@@ -231,6 +231,10 @@ def launch_remote_browser(
         mute_audio_off = None if headless else ["--mute-audio"]
 
         if user_data_dir:
+            if isinstance(user_data_dir, str):
+                user_data_dir = Path(user_data_dir)
+            user_data_dir = user_data_dir.resolve()
+
             with (
                 sync_playwright() as playwright,
                 playwright.chromium.launch_persistent_context(
