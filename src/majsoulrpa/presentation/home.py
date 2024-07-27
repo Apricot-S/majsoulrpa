@@ -316,7 +316,6 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.fetchInfo"  # TODO: Analyzing content
                     | ".lq.Lobby.fetchActivityFlipInfo"
                     | ".lq.Lobby.fetchCustomizedContestList"
-                    | ".lq.Lobby.fetchCustomizedContestExtendInfo"
                     | ".lq.Lobby.fetchCustomizedContestOnlineInfo"
                     | ".lq.Lobby.startCustomizedContest"
                     | ".lq.Lobby.stopCustomizedContest"
@@ -333,6 +332,7 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.leaveRoom"
                     | ".lq.Lobby.leaveCustomizedContest"
                     | ".lq.Lobby.leaveCustomizedContestChatRoom"
+                    | ".lq.Lobby.fetchManagerCustomizedContestList"
                     | ".lq.Lobby.fetchAccountActivityData"
                 ):
                     logger.info(message)
@@ -510,7 +510,7 @@ class HomePresentation(PresentationBase):
                 case (
                     ".lq.Lobby.heatbeat"
                     | ".lq.Lobby.fetchCustomizedContestList"
-                    | ".lq.Lobby.fetchCustomizedContestExtendInfo"
+                    | ".lq.Lobby.fetchManagerCustomizedContestList"
                 ):
                     logger.info(message)
                 case _:
