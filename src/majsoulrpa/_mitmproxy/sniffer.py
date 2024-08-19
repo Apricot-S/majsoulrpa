@@ -16,6 +16,7 @@ logger = getLogger(__name__)
 
 _message_pattern = re.compile(b"^(?:\x01|\x02..)\n.(.*?)\x12", flags=re.DOTALL)
 _response_pattern = re.compile(b"^\x03..\n\x00\x12", flags=re.DOTALL)
+_heartbeat_pattern = re.compile(b"<= heartbeat -", flags=re.DOTALL)
 
 
 class Sniffer:
@@ -68,6 +69,10 @@ class Sniffer:
         direction = "outbound" if message.from_client else "inbound"
 
         content = message.content
+
+        if _heartbeat_pattern.search(content) is not None:
+            # Ignore the heartbeats exchanged in the tournament room
+            return
 
         m = _message_pattern.search(content)
         if m is not None:
