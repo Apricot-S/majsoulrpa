@@ -1,6 +1,6 @@
 # Summon
-left = 1770
-top = 925
-width = 80
-height = 130
-threshold = 0.94
+left = 1760
+top = 915
+width = 102
+height = 56
+threshold = 0.95
