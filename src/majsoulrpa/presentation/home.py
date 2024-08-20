@@ -119,6 +119,10 @@ class HomePresentation(PresentationBase):
             "template/home/notification_close",
             browser.zoom_ratio,
         )
+        mail_close = Template.open_file(
+            "template/home/mail_close",
+            browser.zoom_ratio,
+        )
         event_close = Template.open_file(
             "template/home/event_close",
             browser.zoom_ratio,
@@ -142,6 +146,17 @@ class HomePresentation(PresentationBase):
                     y,
                     notification_close.img_width,
                     notification_close.img_height,
+                )
+                time.sleep(1.0)
+                continue
+
+            x, y, score = mail_close.best_template_match(ss)
+            if score >= mail_close.threshold:
+                browser.click_region(
+                    x,
+                    y,
+                    mail_close.img_width,
+                    mail_close.img_height,
                 )
                 time.sleep(1.0)
                 continue
