@@ -119,6 +119,10 @@ class HomePresentation(PresentationBase):
             "template/home/notification_close",
             browser.zoom_ratio,
         )
+        mail_close = Template.open_file(
+            "template/home/mail_close",
+            browser.zoom_ratio,
+        )
         event_close = Template.open_file(
             "template/home/event_close",
             browser.zoom_ratio,
@@ -142,6 +146,17 @@ class HomePresentation(PresentationBase):
                     y,
                     notification_close.img_width,
                     notification_close.img_height,
+                )
+                time.sleep(1.0)
+                continue
+
+            x, y, score = mail_close.best_template_match(ss)
+            if score >= mail_close.threshold:
+                browser.click_region(
+                    x,
+                    y,
+                    mail_close.img_width,
+                    mail_close.img_height,
                 )
                 time.sleep(1.0)
                 continue
@@ -316,7 +331,6 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.fetchInfo"  # TODO: Analyzing content
                     | ".lq.Lobby.fetchActivityFlipInfo"
                     | ".lq.Lobby.fetchCustomizedContestList"
-                    | ".lq.Lobby.fetchCustomizedContestExtendInfo"
                     | ".lq.Lobby.fetchCustomizedContestOnlineInfo"
                     | ".lq.Lobby.startCustomizedContest"
                     | ".lq.Lobby.stopCustomizedContest"
@@ -333,6 +347,7 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.leaveRoom"
                     | ".lq.Lobby.leaveCustomizedContest"
                     | ".lq.Lobby.leaveCustomizedContestChatRoom"
+                    | ".lq.Lobby.fetchManagerCustomizedContestList"
                     | ".lq.Lobby.fetchAccountActivityData"
                 ):
                     logger.info(message)
@@ -510,7 +525,7 @@ class HomePresentation(PresentationBase):
                 case (
                     ".lq.Lobby.heatbeat"
                     | ".lq.Lobby.fetchCustomizedContestList"
-                    | ".lq.Lobby.fetchCustomizedContestExtendInfo"
+                    | ".lq.Lobby.fetchManagerCustomizedContestList"
                 ):
                     logger.info(message)
                 case _:
