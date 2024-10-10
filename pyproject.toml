@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "imapclient>=3.0.1,<4",
-    "mitmproxy>=10.3.0,<11",
+    "mitmproxy>=11.0.0,<12",
     "opencv-python>=4.9.0.80,<5",
     "playwright>=1.40.0,<2",
     "protobuf>=5.26.1,<6",
