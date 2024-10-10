@@ -89,5 +89,13 @@ ignore-overlong-task-comments = true
 convention = "google"
 
 [tool.ruff.lint.extend-per-file-ignores]
-"./examples/*" = ["S101", "INP001", "T201", "TRY004"]
-"./tests/*" = ["S101", "SLF001"]
+"./examples/*" = [
+    "S101",   # assert
+    "INP001", # implicit-namespace-package
+    "T201",   # print
+    "TRY004", # type-check-without-type-error
+]
+"./tests/*" = [
+    "S101",  # assert
+    "SLF001" # private-member-access
+]
