@@ -23,7 +23,7 @@ This is fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-r
 
 ![remote](./docs/remote.png)
 
-## Install
+## Installation
 
 ```sh
 majsoulrpa$ pip install .

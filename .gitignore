@@ -263,4 +263,7 @@ $RECYCLE.BIN/
 requirements.lock
 requirements-dev.lock
 
+# uv
+uv.lock
+
 # End of https://www.toptal.com/developers/gitignore/api/python,venv,windows,macos,linux
