@@ -32,6 +32,4 @@ majsoulrpa$ playwright install --with-deps chromium
 
 ## License
 
-Copyright (c) Apricot S. All rights reserved.
-
 Licensed under the [MIT license](LICENSE).
