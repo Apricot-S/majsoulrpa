@@ -96,6 +96,12 @@ convention = "google"
     "TRY004", # type-check-without-type-error
 ]
 "./tests/*" = [
-    "S101",  # assert
-    "SLF001" # private-member-access
+    "S101",   # assert
+    "SLF001", # private-member-access
+]
+
+[tool.mypy]
+exclude = [
+    'liqi_pb2\.py$',
+    'liqi_pb2\.pyi$',
 ]
