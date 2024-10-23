@@ -335,6 +335,7 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.startCustomizedContest"
                     | ".lq.Lobby.stopCustomizedContest"
                     | ".lq.Lobby.fetchVoteActivity"
+                    | ".lq.Lobby.fetchQuestionnaireList"
                 ):
                     logger.info(message)
                     continue
