@@ -83,6 +83,7 @@ class MatchPresentation(PresentationBase):
         ".lq.Lobby.fetchActivityInterval",
         ".lq.NotifyActivityChange",
         ".lq.NotifyActivityTaskUpdate",
+        ".lq.NotifyAccountRandomTaskUpdate",
         ".lq.NotifyAnnouncementUpdate",
         ".lq.FastTest.authGame",
         ".lq.Lobby.oauth2Login",
@@ -120,6 +121,7 @@ class MatchPresentation(PresentationBase):
                 | ".lq.Lobby.fetchActivityInterval"
                 | ".lq.NotifyActivityChange"  # only during events?
                 | ".lq.NotifyActivityTaskUpdate"  # only during events?
+                | ".lq.NotifyAccountRandomTaskUpdate"
             ):
                 # Exchanged if the date (06:00:00 (UTC+0900)) is crossed
                 logger.info(message)
