@@ -337,6 +337,7 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.fetchVoteActivity"
                     | ".lq.Lobby.fetchQuestionnaireList"
                     | ".lq.NotifyAccountRandomTaskUpdate"
+                    | ".lq.NotifyIntervalUpdate"
                 ):
                     logger.info(message)
                     continue
@@ -463,6 +464,7 @@ class HomePresentation(PresentationBase):
                     | ".lq.Lobby.fetchActivityInterval"
                     | ".lq.Lobby.heatbeat"
                     | ".lq.NotifyAccountRandomTaskUpdate"
+                    | ".lq.NotifyIntervalUpdate"
                 ):
                     # Exchanged if the date (06:00:00 (UTC+0900)) is
                     # crossed
