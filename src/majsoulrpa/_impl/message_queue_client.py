@@ -1,15 +1,15 @@
 import datetime
 from abc import ABCMeta, abstractmethod
 from collections import deque
-from typing import Any, ClassVar, TypeAlias
+from typing import Any, ClassVar
 
 from google.protobuf.message_factory import GetMessageClass
 
 from majsoulrpa.common import TimeoutType
 
-from .protobuf_liqi import liqi_pb2
+from .protocol import liqi_pb2
 
-Message: TypeAlias = tuple[
+type Message = tuple[
     str,
     str,
     dict[str, Any],

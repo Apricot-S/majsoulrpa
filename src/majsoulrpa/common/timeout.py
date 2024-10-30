@@ -1,7 +1,6 @@
 import datetime
-from typing import TypeAlias
 
-TimeoutType: TypeAlias = int | float | datetime.timedelta
+type TimeoutType = int | float | datetime.timedelta
 
 
 def to_timedelta(seconds: TimeoutType) -> datetime.timedelta:
