@@ -1,7 +1,0 @@
-# Friendly Match - Create Room - East Only
-left = 692
-top = 365
-width = 216
-height = 81
-threshold = 0.95
-path = "./selected_option.png"
