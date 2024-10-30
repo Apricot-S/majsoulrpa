@@ -4,7 +4,7 @@ A Robotic Process Automation (RPA) framework for Mahjong Soul (雀魂)
 
 This is fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-rpa)** with following changes.
 
-1. Requires Python 3.11 or later
+1. Requires Python 3.12 or later
 2. Removed dependencies on Docker and Redis
 3. Supports moving browser position after launch
 4. Mouse can be used freely even while RPA is running
