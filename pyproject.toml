@@ -21,7 +21,7 @@ dependencies = [
     "mitmproxy>=11.0.0,<12",
     "opencv-python>=4.10.0.84,<5",
     "playwright>=1.48.0,<2",
-    "protobuf>=5.28.3,<6",
+    "protobuf>=5.28.2,<6",
     "jsonschema>=4.23.0,<5",
     "boto3>=1.35.52,<2",
     "pyzmq>=26.2.0,<27",
@@ -51,7 +51,7 @@ test = [
 ]
 typing = [
     "mypy>=1.13.0,<2",
-    "types-protobuf>=5.28.3.20241030,<6",
+    "types-protobuf>=5.28.0.20240924,<6",
     "types-jsonschema>=4.23.0.20240813,<5",
     "boto3-stubs[s3]>=1.35.51,<2",
 ]
