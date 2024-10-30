@@ -13,7 +13,7 @@ import zmq
 from playwright.sync_api import sync_playwright
 from zmq.utils.win32 import allow_interrupt
 
-from majsoulrpa.common import validate_user_port
+from majsoulrpa._impl.validation import validate_user_port
 
 logger = getLogger(__name__)
 

@@ -11,7 +11,7 @@ import wsproto.frame_protocol
 import zmq
 from mitmproxy import addonmanager, ctx, http
 
-from majsoulrpa.common import validate_user_port
+from majsoulrpa._impl.validation import validate_user_port
 
 logger = getLogger(__name__)
 
