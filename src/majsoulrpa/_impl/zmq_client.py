@@ -32,7 +32,7 @@ class ZMQClient(MessageQueueClientBase):
         self._socket.close()
         self._context.destroy()
 
-    def dequeue_message(self, timeout: TimeoutType) -> Message | None:  # noqa: C901
+    def dequeue_message(self, timeout: TimeoutType) -> Message | None:
         timeout = to_timedelta(timeout)
 
         if timeout.total_seconds() <= 0.0:
@@ -150,14 +150,13 @@ class ZMQClient(MessageQueueClientBase):
         else:
             jsonized_response = None
 
-        # If the message contains an account ID,
-        # extract the account ID.
-        if name in MessageQueueClientBase._ACCOUNT_ID_MESSAGES:  # noqa: SLF001
+        # If the message contains an account ID, extract the account ID.
+        if name in self._ACCOUNT_ID_MESSAGES:
             if jsonized_response is None:
                 msg = "Message without any response."
                 raise RuntimeError(msg)
             account_id = jsonized_response
-            keys = MessageQueueClientBase._ACCOUNT_ID_MESSAGES[name]  # noqa: SLF001
+            keys = self._ACCOUNT_ID_MESSAGES[name]
             for key in keys:
                 if key not in account_id:
                     msg = (

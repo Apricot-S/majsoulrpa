@@ -1,4 +1,5 @@
 # ruff: noqa: S101
+
 import base64
 import datetime
 import json
@@ -50,7 +51,7 @@ class Sniffer:
         self._socket.close()
         self._context.destroy()
 
-    def websocket_message(self, flow: http.HTTPFlow) -> None:  # noqa: C901
+    def websocket_message(self, flow: http.HTTPFlow) -> None:
         websocket_data = flow.websocket
         if websocket_data is None:
             msg = "`websocket_data is None`"
