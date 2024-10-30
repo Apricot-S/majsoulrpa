@@ -12,7 +12,7 @@ from zmq.utils.win32 import allow_interrupt
 from majsoulrpa.common import TimeoutType, to_timedelta, validate_user_port
 
 from .message_queue_client import Message, MessageQueueClientBase
-from .protobuf_liqi import liqi_pb2
+from .protocol import liqi_pb2
 
 
 class ZMQClient(MessageQueueClientBase):
