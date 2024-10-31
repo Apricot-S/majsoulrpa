@@ -5,12 +5,12 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
-from ._schema import _CONFIG_SCHEMA
+from ._schema import _CONFIG_FILE_SCHEMA
 
 
 @cache
 def _get_validator() -> Draft202012Validator:
-    return Draft202012Validator(_CONFIG_SCHEMA)
+    return Draft202012Validator(_CONFIG_FILE_SCHEMA)
 
 
 def get_config(path: str | Path) -> dict[str, Any]:
@@ -30,8 +30,7 @@ def get_config(path: str | Path) -> dict[str, Any]:
         IndexError: A specified number was outside the range of the list
             when selecting one from multiple configurations.
         ValueError: A non-numeric value is specified when selecting one
-            from multiple configurations, or a configuration name is
-            duplicated.
+            from multiple configurations.
         tomllib.TOMLDecodeError: A file was invalid TOML document.
         jsonschema.ValidationError: The configuration was not in
             the correct format.
@@ -43,21 +42,16 @@ def get_config(path: str | Path) -> dict[str, Any]:
         config = tomllib.load(fp)
     _get_validator().validate(config)
 
-    config_list = next(iter(config.values()))
-    if not isinstance(config_list, list):
-        return config
+    config_list = config.get("majsoulrpa")
+
+    if config_list is None:
+        return {}
 
     if len(config_list) == 1:
         return config_list[0]
 
-    name_list = [c["name"] for c in config_list]
-    duplicate_names = {n for n in name_list if name_list.count(n) > 1}
-    if duplicate_names:
-        msg = f"{', '.join(duplicate_names)}: Duplicate config names."
-        raise ValueError(msg)
-
     for i, c in enumerate(config_list):
-        name = c["name"]
+        name = c.get("name", "")
         print(f"{i}: {name}")  # noqa: T201
     print()  # noqa: T201
 
