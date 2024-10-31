@@ -8,6 +8,10 @@
     },
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.exclude": [
+        ".venv",
+        "src/majsoulrpa/_majsoul_internal/protocol"
+    ],
     "mypy-type-checker.importStrategy": "fromEnvironment",
     "ruff.enable": true,
     "ruff.lint.run": "onSave",
