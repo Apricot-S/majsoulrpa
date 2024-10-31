@@ -68,7 +68,7 @@ testpaths = ["tests"]
 [tool.ruff]
 target-version = "py312"
 src = ["src"]
-extend-exclude = ["src/majsoulrpa/_impl/protobuf_liqi"]
+extend-exclude = ["src/majsoulrpa/_majsoul_internal/protocol"]
 line-length = 79
 
 [tool.ruff.lint]

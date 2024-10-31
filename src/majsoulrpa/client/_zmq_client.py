@@ -9,7 +9,7 @@ import google.protobuf.json_format
 import zmq
 from zmq.utils.win32 import allow_interrupt
 
-from majsoulrpa._impl.protocol import liqi_pb2
+from majsoulrpa._majsoul_internal.protocol import liqi_pb2
 from majsoulrpa.common import TimeoutType, to_timedelta
 
 from ._message_queue_client import Message, MessageQueueClientBase

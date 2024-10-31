@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from google.protobuf.message_factory import GetMessageClass
 
-from majsoulrpa._impl.protocol import liqi_pb2
+from majsoulrpa._majsoul_internal.protocol import liqi_pb2
 from majsoulrpa.common import TimeoutType
 
 if TYPE_CHECKING:
