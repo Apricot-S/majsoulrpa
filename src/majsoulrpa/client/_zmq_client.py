@@ -105,8 +105,13 @@ class ZMQClient(MessageQueueClientBase):
             is_response: bool,
         ) -> dict[str, Any]:
             if is_response:
+                response = self._message_type_map[name][1]
+                if response is None:
+                    msg = "There is no response message."
+                    raise RuntimeError(msg)
+
                 try:
-                    parser = self._message_type_map[name][1]()
+                    parser = response()
                 except IndexError as ie:
                     now = datetime.datetime.now(datetime.UTC)
                     file_name = now.strftime(f"%Y-%m-%d-%H-%M-%S-{name}.bin")
