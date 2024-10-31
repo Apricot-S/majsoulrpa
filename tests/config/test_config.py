@@ -5,6 +5,41 @@ from pytest_mock import MockerFixture
 from majsoulrpa.config import get_config
 
 
+def test_get_config_not_exist(mocker: MockerFixture) -> None:
+    config_path = Path("./config.toml")
+    config_data = b"""
+    """
+
+    mocker.patch(
+        "pathlib.Path.open",
+        new_callable=mocker.mock_open,
+        read_data=config_data,
+    )
+
+    expected: dict = {}
+
+    actual = get_config(config_path)
+    assert actual == expected
+
+
+def test_get_config_empty(mocker: MockerFixture) -> None:
+    config_path = Path("./config.toml")
+    config_data = b"""
+    [[majsoulrpa]]
+    """
+
+    mocker.patch(
+        "pathlib.Path.open",
+        new_callable=mocker.mock_open,
+        read_data=config_data,
+    )
+
+    expected: dict = {}
+
+    actual = get_config(config_path)
+    assert actual == expected
+
+
 def test_get_config_single(mocker: MockerFixture) -> None:
     config_path = Path("./config.toml")
     config_data = b"""
