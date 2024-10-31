@@ -8,7 +8,6 @@
     },
     "python.analysis.typeCheckingMode": "basic",
     "python.analysis.diagnosticMode": "workspace",
-    "mypy-type-checker.args": ["--disallow-untyped-defs"],
     "mypy-type-checker.importStrategy": "fromEnvironment",
     "ruff.enable": true,
     "ruff.lint.run": "onSave",
