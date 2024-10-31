@@ -1,24 +1,23 @@
-{
-    "$schema": "http://json-schema.org/draft-07/schema#",
+_AUTHENTICATION_IMAP_SCHEMA = {
     "type": "object",
     "required": [
         "email_address",
         "imap_server",
         "password",
-        "mail_folder"
+        "mail_folder",
     ],
     "properties": {
         "email_address": {
-            "type": "string"
+            "type": "string",
         },
         "imap_server": {
-            "type": "string"
+            "type": "string",
         },
         "password": {
-            "type": "string"
+            "type": "string",
         },
         "mail_folder": {
-            "type": "string"
-        }
-    }
+            "type": "string",
+        },
+    },
 }

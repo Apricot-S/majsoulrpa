@@ -1,18 +1,17 @@
-{
-    "$schema": "http://json-schema.org/draft-07/schema#",
+_PORT_SCHEMA = {
     "type": "object",
     "properties": {
         "remote_port": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
         },
         "proxy_port": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 0,
         },
         "message_queue_port": {
             "type": "integer",
-            "minimum": 0
-        }
-    }
+            "minimum": 0,
+        },
+    },
 }

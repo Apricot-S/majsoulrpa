@@ -1,27 +1,26 @@
-{
-    "$schema": "http://json-schema.org/draft-07/schema#",
+_BROWSER_SCHEMA = {
     "type": "object",
     "properties": {
         "viewport_height": {
             "type": "integer",
-            "minimum": 1
+            "minimum": 1,
         },
         "initial_position": {
             "type": "object",
             "properties": {
                 "left": {
-                    "type": "integer"
+                    "type": "integer",
                 },
                 "top": {
-                    "type": "integer"
-                }
-            }
+                    "type": "integer",
+                },
+            },
         },
         "headless": {
-            "type": "boolean"
+            "type": "boolean",
         },
         "user_data_dir": {
-            "type": "string"
-        }
-    }
+            "type": "string",
+        },
+    },
 }
