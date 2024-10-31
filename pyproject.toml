@@ -25,7 +25,6 @@ dependencies = [
     "jsonschema>=4.23.0,<5",
     "boto3>=1.35.52,<2",
     "pyzmq>=26.2.0,<27",
-    "referencing>=0.35.1,<0.36",
     "numpy>=2.1.2,<3",
     "wsproto>=1.2.0,<2",
 ]
