@@ -69,7 +69,7 @@ class YostarLoginS3(YostarLoginBase):
 
         return emails
 
-    def _get_auth_code(self, *, start_time: datetime.datetime) -> str | None:  # noqa: C901
+    def _get_auth_code(self, *, start_time: datetime.datetime) -> str | None:
         emails = self._get_authentication_emails()
 
         target_date = None
