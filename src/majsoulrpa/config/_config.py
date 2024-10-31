@@ -1,31 +1,16 @@
-import json
 import tomllib
 from functools import cache
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
 
-from jsonschema import Draft7Validator
-from referencing import Registry, Resource
+from jsonschema import Draft202012Validator
 
-_SCHEMA_DIR = Path(__file__).parent
-
-
-def _retrieve(uri: str) -> Resource:
-    parsed_uri = urlparse(uri)
-    p = Path(parsed_uri.path).relative_to("/")
-    with (_SCHEMA_DIR / p).open() as fp:
-        schema = json.load(fp)
-    return Resource.from_contents(schema)
+from ._schema import _CONFIG_SCHEMA
 
 
 @cache
-def _get_validator() -> Draft7Validator:
-    with (_SCHEMA_DIR / "schema.json").open() as fp:
-        config_schema = json.load(fp)
-    resource = Resource.from_contents(config_schema)
-    registry: Registry = resource @ Registry(retrieve=_retrieve)  # type: ignore[call-arg]
-    return Draft7Validator(resource.contents, registry=registry)
+def _get_validator() -> Draft202012Validator:
+    return Draft202012Validator(_CONFIG_SCHEMA)
 
 
 def get_config(path: str | Path) -> dict[str, Any]:
