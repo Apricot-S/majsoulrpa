@@ -1,0 +1,33 @@
+[[majsoulrpa]]
+name = "Desktop Manual 1280 x 720" # Optional. Displayed when selecting the config.
+[majsoulrpa.authentication]
+email_address = "your_email_address_one@example.cfg"
+[majsoulrpa.browser]
+initial_position = { left = 200, top = 100 }
+viewport_height = 720
+
+[[majsoulrpa]]
+name = "Desktop headless IMAP 1920 x 1080"
+[majsoulrpa.authentication]
+email_address = "your_email_address_two@example.cfg"
+imap_server = "imap.server.cfg"
+password = "app_password"
+mail_folder = "INBOX"
+[majsoulrpa.browser]
+initial_position = { left = -2150, top = -360 }
+headless = true
+user_data_dir = "./user_data"                   # Optional.
+
+[[majsoulrpa]]
+name = "Remote S3 1920 x 1080"
+remote_host = "127.0.0.1"
+[majsoulrpa.authentication]
+method = "s3"
+email_address = "your_email_address_three@example.cfg"
+bucket_name = "your-example-bucket1"
+key_prefix = "verification-email"
+aws_profile = "foobar"                                 # Optional.
+[majsoulrpa.port]
+remote_port = 19222
+proxy_port = 8080
+message_queue_port = 37247
