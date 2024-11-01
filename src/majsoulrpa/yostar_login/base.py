@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 from logging import getLogger
 from typing import Any, Final, Self
 
-from majsoulrpa.common import TimeoutType
+from majsoulrpa.timeout import TimeoutType
 
 logger = getLogger(__name__)
 

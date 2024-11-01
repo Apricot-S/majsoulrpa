@@ -10,7 +10,7 @@ from typing import Any, Self
 
 from imapclient import IMAPClient  # type: ignore[import-untyped]
 
-from majsoulrpa.common import TimeoutType, to_timedelta
+from majsoulrpa.timeout import TimeoutType, to_timedelta
 
 from .base import _YOSTAR_EMAIL_ADDRESS, _YOSTAR_EMAIL_SUBJECT, YostarLoginBase
 

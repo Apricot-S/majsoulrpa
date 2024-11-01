@@ -96,12 +96,14 @@ convention = "google"
 
 [tool.ruff.lint.extend-per-file-ignores]
 "./examples/*" = [
+    "D",      # pydocstyle
     "S101",   # assert
     "INP001", # implicit-namespace-package
     "T201",   # print
     "TRY004", # type-check-without-type-error
 ]
 "./tests/*" = [
+    "D",      # pydocstyle
     "S101",   # assert
     "SLF001", # private-member-access
 ]

@@ -8,7 +8,7 @@ from typing import Any, Self
 
 import boto3
 
-from majsoulrpa.common import TimeoutType, to_timedelta
+from majsoulrpa.timeout import TimeoutType, to_timedelta
 
 from .base import _YOSTAR_EMAIL_ADDRESS, _YOSTAR_EMAIL_SUBJECT, YostarLoginBase
 

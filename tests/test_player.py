@@ -1,4 +1,4 @@
-from majsoulrpa.common import Player
+from majsoulrpa.player import Player
 
 
 def test_player() -> None:
