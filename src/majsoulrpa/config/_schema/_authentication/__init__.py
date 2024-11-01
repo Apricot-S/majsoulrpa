@@ -4,6 +4,7 @@ from ._s3 import _AUTHENTICATION_S3_SCHEMA
 _AUTHENTICATION_SCHEMA = {
     "oneOf": [
         {
+            "type": "object",
             "required": [
                 "email_address",
             ],
