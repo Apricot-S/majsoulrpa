@@ -12,10 +12,10 @@ _CONFIG_SCHEMA: Final = {
             "name": {
                 "type": "string",
             },
-            "authentication": _AUTHENTICATION_SCHEMA,
             "remote_host": {
                 "type": "string",
             },
+            "authentication": _AUTHENTICATION_SCHEMA,
             "port": _PORT_SCHEMA,
             "browser": _BROWSER_SCHEMA,
         },
