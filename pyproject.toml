@@ -74,8 +74,6 @@ line-length = 79
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    "D", # pydocstyle
-
     "C901",    # complex-structure
     "ANN002",  # missing-type-args
     "ANN003",  # missing-type-kwargs
