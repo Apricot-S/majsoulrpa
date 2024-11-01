@@ -1,6 +1,9 @@
 import io
+import tomllib
 from pathlib import Path
 
+import jsonschema
+import pytest
 from pytest_mock import MockerFixture
 
 from majsoulrpa.config import get_config
@@ -396,3 +399,70 @@ def test_get_config_multiple(mocker: MockerFixture) -> None:
 
     actual = get_config(config_path)
     assert actual == expected
+
+
+def test_get_config_file_not_found(mocker: MockerFixture) -> None:
+    config_path = Path("./config.toml")
+
+    mocker.patch("pathlib.Path.open", side_effect=FileNotFoundError)
+
+    with pytest.raises(FileNotFoundError):
+        get_config(config_path)
+
+
+@pytest.mark.parametrize("i", [-1, 2])
+def test_get_config_index_outside_range(mocker: MockerFixture, i: int) -> None:
+    config_path = Path("./config.toml")
+    config_data = b"""
+    [[majsoulrpa]]
+    remote_host = "127.0.0.1"
+
+    [[majsoulrpa]]
+    name = "Desktop headless IMAP 1920 x 1080"
+    """
+
+    mocker.patch(
+        "pathlib.Path.open",
+        new_callable=mocker.mock_open,
+        read_data=config_data,
+    )
+
+    mocker.patch("sys.stdin", io.StringIO(f"{i}\n"))
+    with pytest.raises(IndexError):
+        get_config(config_path)
+
+
+def test_get_config_invalid_toml(mocker: MockerFixture) -> None:
+    config_path = Path("./config.toml")
+    config_data = b"""
+    a[[majsoulrpa]]
+    remote_host = "127.0.0.1"
+    """
+
+    mocker.patch(
+        "pathlib.Path.open",
+        new_callable=mocker.mock_open,
+        read_data=config_data,
+    )
+
+    with pytest.raises(tomllib.TOMLDecodeError):
+        get_config(config_path)
+
+
+def test_get_config_invalid_config(mocker: MockerFixture) -> None:
+    config_path = Path("./config.toml")
+    config_data = b"""
+    [[majsoulrpa]]
+    [majsoulrpa.authentication]
+    email_address = "your_email_address@example.cfg"
+    imap_server = "imap.server.cfg"
+    """
+
+    mocker.patch(
+        "pathlib.Path.open",
+        new_callable=mocker.mock_open,
+        read_data=config_data,
+    )
+
+    with pytest.raises(jsonschema.ValidationError):
+        get_config(config_path)
