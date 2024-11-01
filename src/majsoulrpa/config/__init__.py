@@ -1,4 +1,4 @@
-from .config import get_config
+from ._get import get_config
 
 __all__ = [
     "get_config",
