@@ -1,4 +1,4 @@
-"""Provides functionality for login using a Yostar account."""
+"""Functionality for login using a Yostar account."""
 
 from .base import YostarLoginBase
 from .imap import YostarLoginIMAP

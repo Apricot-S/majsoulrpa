@@ -1,4 +1,4 @@
-"""Provides functionality for handling timeout duration."""
+"""Functionality for handling timeout duration."""
 
 import datetime
 

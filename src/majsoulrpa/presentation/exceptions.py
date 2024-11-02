@@ -1,4 +1,4 @@
-"""Provides exception classes that is thrown from presentation."""
+"""Errors used in presentation."""
 
 import datetime
 from pathlib import Path

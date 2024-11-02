@@ -1,4 +1,4 @@
-"""Provides presentation classes.
+"""Presentation classes.
 
 In this context, a *presentation* refers to a specific screen state of
 the game. Each presentation acts as both the View and Controller in the

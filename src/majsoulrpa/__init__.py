@@ -1,4 +1,4 @@
-"""Provides an RPA framework for Mahjong Soul."""
+"""An RPA framework for Mahjong Soul."""
 
 from logging import NullHandler, getLogger
 

@@ -1,4 +1,4 @@
-"""Provides functionality to retrieve configurations."""
+"""Functionality to retrieve configurations."""
 
 from ._get import get_config
 

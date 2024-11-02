@@ -1,1 +1,1 @@
-"""Provides a RPA client."""
+"""An RPA client."""
