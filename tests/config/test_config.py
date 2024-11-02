@@ -115,6 +115,7 @@ def test_get_config_authentication_imap(mocker: MockerFixture) -> None:
     config_data = b"""
     [[majsoulrpa]]
     [majsoulrpa.authentication]
+    method = "imap"
     email_address = "your_email_address_two@example.cfg"
     imap_server = "imap.server.cfg"
     password = "app_password"
@@ -129,6 +130,7 @@ def test_get_config_authentication_imap(mocker: MockerFixture) -> None:
 
     expected: dict = {
         "authentication": {
+            "method": "imap",
             "email_address": "your_email_address_two@example.cfg",
             "imap_server": "imap.server.cfg",
             "password": "app_password",
@@ -336,6 +338,7 @@ def test_get_config_multiple(mocker: MockerFixture) -> None:
     [[majsoulrpa]]
     name = "Desktop headless IMAP 1920 x 1080"
     [majsoulrpa.authentication]
+    method = "imap"
     email_address = "your_email_address_two@example.cfg"
     imap_server = "imap.server.cfg"
     password = "app_password"
@@ -382,6 +385,7 @@ def test_get_config_multiple(mocker: MockerFixture) -> None:
     expected = {
         "name": "Desktop headless IMAP 1920 x 1080",
         "authentication": {
+            "method": "imap",
             "email_address": "your_email_address_two@example.cfg",
             "imap_server": "imap.server.cfg",
             "password": "app_password",
@@ -454,8 +458,8 @@ def test_get_config_invalid_config(mocker: MockerFixture) -> None:
     config_data = b"""
     [[majsoulrpa]]
     [majsoulrpa.authentication]
+    method = "imap"
     email_address = "your_email_address@example.cfg"
-    imap_server = "imap.server.cfg"
     """
 
     mocker.patch(

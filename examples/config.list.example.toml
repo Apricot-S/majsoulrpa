@@ -9,6 +9,7 @@ viewport_height = 720
 [[majsoulrpa]]
 name = "Desktop headless IMAP 1920 x 1080"
 [majsoulrpa.authentication]
+method = "imap"
 email_address = "your_email_address_two@example.cfg"
 imap_server = "imap.server.cfg"
 password = "app_password"

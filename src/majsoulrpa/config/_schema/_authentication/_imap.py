@@ -1,12 +1,16 @@
 _AUTHENTICATION_IMAP_SCHEMA = {
     "type": "object",
     "required": [
+        "method",
         "email_address",
         "imap_server",
         "password",
         "mail_folder",
     ],
     "properties": {
+        "method": {
+            "const": "imap",
+        },
         "email_address": {
             "type": "string",
         },
