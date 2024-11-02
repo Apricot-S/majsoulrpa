@@ -14,7 +14,7 @@ class BaseError(Exception):
     """
 
     def __init__(self, message: str, screenshot: bytes | None) -> None:
-        """Creates an instance of `BaseError`.
+        """Initializes the instance.
 
         Args:
             message: A message describing the error.
@@ -43,6 +43,13 @@ class PresentationTimeoutError(BaseError):
     """
 
     def __init__(self, message: str, screenshot: bytes) -> None:
+        """Initializes the instance.
+
+        Args:
+            message: A message describing the error.
+            screenshot: A screenshot encoded in PNG format captured at
+                the point where the error occurred.
+        """
         super().__init__(message, screenshot)
 
 
@@ -53,6 +60,13 @@ class PresentationNotDetectedError(BaseError):
     """
 
     def __init__(self, message: str, screenshot: bytes) -> None:
+        """Initializes the instance.
+
+        Args:
+            message: A message describing the error.
+            screenshot: A screenshot encoded in PNG format captured at
+                the point where the error occurred.
+        """
         super().__init__(message, screenshot)
 
 
@@ -64,6 +78,13 @@ class InconsistentMessageError(BaseError):
     """
 
     def __init__(self, message: str, screenshot: bytes | None = None) -> None:
+        """Initializes the instance.
+
+        Args:
+            message: A message describing the error.
+            screenshot: A screenshot encoded in PNG format captured at
+                the point where the error occurred, if any.
+        """
         super().__init__(message, screenshot)
 
 
@@ -75,6 +96,13 @@ class InvalidOperationError(BaseError):
     """
 
     def __init__(self, message: str, screenshot: bytes) -> None:
+        """Initializes the instance.
+
+        Args:
+            message: A message describing the error.
+            screenshot: A screenshot encoded in PNG format captured at
+                the point where the error occurred.
+        """
         super().__init__(message, screenshot)
 
 
@@ -85,6 +113,13 @@ class UnexpectedStateError(BaseError):
     """
 
     def __init__(self, message: str, screenshot: bytes) -> None:
+        """Initializes the instance.
+
+        Args:
+            message: A message describing the error.
+            screenshot: A screenshot encoded in PNG format captured at
+                the point where the error occurred.
+        """
         super().__init__(message, screenshot)
 
 
@@ -95,6 +130,13 @@ class NotImplementedOperationError(BaseError):
     """
 
     def __init__(self, message: str, screenshot: bytes) -> None:
+        """Initializes the instance.
+
+        Args:
+            message: A message describing the error.
+            screenshot: A screenshot encoded in PNG format captured at
+                the point where the error occurred.
+        """
         super().__init__(message, screenshot)
 
 
@@ -112,7 +154,7 @@ class BrowserRefreshRequest(BaseError):  # noqa: N818
         browser: BrowserBase,
         screenshot: bytes | None = None,
     ) -> None:
-        """Creates an instance of `BrowserRefreshRequest`.
+        """Initializes the instance.
 
         Args:
             message: A message describing the error.
