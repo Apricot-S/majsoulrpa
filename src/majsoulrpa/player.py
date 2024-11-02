@@ -1,3 +1,6 @@
+"""Player information."""
+
+
 class Player:
     """Player."""
 
