@@ -48,7 +48,7 @@ class YostarLoginS3(YostarLoginBase):
             ValueError: If `method` is not `"s3"`.
         """
         if method != "s3":
-            msg = f"Method '{method}' not supported. Expected 's3'."
+            msg = f'Method "{method}" not supported. Expected "s3".'
             raise ValueError(msg)
 
         self._email_address = email_address
@@ -81,16 +81,37 @@ class YostarLoginS3(YostarLoginBase):
 
         Raises:
             KeyError: If the required items are not found in `config`.
-            TypeError: If `config["authentication"]` is not a dict.
+            TypeError: If `config` contains a invalid type value.
             ValueError: If `config["authentication"]["method"]` is not
                 `"s3"`.
         """
         authentication_config: dict[str, Any] = config["authentication"]
+        if not isinstance(authentication_config, dict):
+            msg = 'config["authentication"] must be a dict.'
+            raise TypeError(msg)
+
         method = authentication_config["method"]
         email_address = authentication_config["email_address"]
         bucket_name = authentication_config["bucket_name"]
         key_prefix = authentication_config["key_prefix"]
         aws_profile = authentication_config.get("aws_profile")
+
+        if not isinstance(method, str):
+            msg = 'config["authentication"]["method"] must be a str.'
+            raise TypeError(msg)
+        if not isinstance(email_address, str):
+            msg = 'config["authentication"]["email_address"] must be a str.'
+            raise TypeError(msg)
+        if not isinstance(bucket_name, str):
+            msg = 'config["authentication"]["bucket_name"] must be a str.'
+            raise TypeError(msg)
+        if not isinstance(key_prefix, str):
+            msg = 'config["authentication"]["key_prefix"] must be a str.'
+            raise TypeError(msg)
+        if aws_profile is not None and not isinstance(aws_profile, str):
+            msg = 'config["authentication"]["aws_profile"] must be a str.'
+            raise TypeError(msg)
+
         return cls(method, email_address, bucket_name, key_prefix, aws_profile)
 
     def get_email_address(self) -> str:

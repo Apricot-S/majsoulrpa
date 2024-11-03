@@ -46,7 +46,7 @@ class YostarLoginIMAP(YostarLoginBase):
             ValueError: If `method` is not `"imap"`.
         """
         if method != "imap":
-            msg = f"Method '{method}' not supported. Expected 'imap'."
+            msg = f'Method "{method}" not supported. Expected "imap".'
             raise ValueError(msg)
 
         self._email_address = email_address
@@ -73,16 +73,37 @@ class YostarLoginIMAP(YostarLoginBase):
 
         Raises:
             KeyError: If the required items are not found in `config`.
-            TypeError: If `config["authentication"]` is not a dict.
+            TypeError: If `config` contains a invalid type value.
             ValueError: If `config["authentication"]["method"]` is not
                 `"imap"`.
         """
         authentication_config = config["authentication"]
+        if not isinstance(authentication_config, dict):
+            msg = 'config["authentication"] must be a dict.'
+            raise TypeError(msg)
+
         method = authentication_config["method"]
         email_address = authentication_config["email_address"]
         imap_server = authentication_config["imap_server"]
         password = authentication_config["password"]
         mail_folder = authentication_config["mail_folder"]
+
+        if not isinstance(method, str):
+            msg = 'config["authentication"]["method"] must be a str.'
+            raise TypeError(msg)
+        if not isinstance(email_address, str):
+            msg = 'config["authentication"]["email_address"] must be a str.'
+            raise TypeError(msg)
+        if not isinstance(imap_server, str):
+            msg = 'config["authentication"]["imap_server"] must be a str.'
+            raise TypeError(msg)
+        if not isinstance(password, str):
+            msg = 'config["authentication"]["password"] must be a str.'
+            raise TypeError(msg)
+        if not isinstance(mail_folder, str):
+            msg = 'config["authentication"]["mail_folder"] must be a str.'
+            raise TypeError(msg)
+
         return cls(method, email_address, imap_server, password, mail_folder)
 
     def get_email_address(self) -> str:
