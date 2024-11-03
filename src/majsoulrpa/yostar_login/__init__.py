@@ -1,8 +1,8 @@
 """Functionality for login using a Yostar account."""
 
-from .base import YostarLoginBase
-from .imap import YostarLoginIMAP
-from .s3 import YostarLoginS3
+from ._base import YostarLoginBase
+from ._imap import YostarLoginIMAP
+from ._s3 import YostarLoginS3
 
 __all__ = [
     "YostarLoginBase",

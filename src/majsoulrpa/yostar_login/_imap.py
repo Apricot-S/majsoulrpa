@@ -12,7 +12,11 @@ from imapclient import IMAPClient  # type: ignore[import-untyped]
 
 from majsoulrpa.timeout import TimeoutType, to_timedelta
 
-from .base import _YOSTAR_EMAIL_ADDRESS, _YOSTAR_EMAIL_SUBJECT, YostarLoginBase
+from ._base import (
+    _YOSTAR_EMAIL_ADDRESS,
+    _YOSTAR_EMAIL_SUBJECT,
+    YostarLoginBase,
+)
 
 logger = getLogger(__name__)
 
