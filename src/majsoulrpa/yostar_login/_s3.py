@@ -45,11 +45,11 @@ class YostarLoginS3(YostarLoginBase):
                 Defaults to `None`.
 
         Raises:
-            NotImplementedError: If `method` is not `"s3"`.
+            ValueError: If `method` is not `"s3"`.
         """
         if method != "s3":
-            msg = f"{method}: Authentication method not implemented."
-            raise NotImplementedError(msg)
+            msg = f"Method '{method}' not supported. Expected 's3'."
+            raise ValueError(msg)
 
         self._email_address = email_address
         if aws_profile is None:
@@ -82,8 +82,8 @@ class YostarLoginS3(YostarLoginBase):
         Raises:
             KeyError: If the required items are not found in `config`.
             TypeError: If `config["authentication"]` is not a dict.
-            NotImplementedError: If `config["authentication"]["method"]`
-                is not `"s3"`.
+            ValueError: If `config["authentication"]["method"]` is not
+                `"s3"`.
         """
         authentication_config: dict[str, Any] = config["authentication"]
         method = authentication_config["method"]
