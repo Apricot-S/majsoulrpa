@@ -26,6 +26,7 @@ class YostarLoginIMAP(YostarLoginBase):
 
     def __init__(
         self,
+        method: str,
         email_address: str,
         imap_server: str,
         password: str,
@@ -34,11 +35,20 @@ class YostarLoginIMAP(YostarLoginBase):
         """Initializes the instance.
 
         Args:
+            method: The method to retrieve the verification code.
+                Must be `"imap"`.
             email_address: The email address used for login.
             imap_server: The address of the IMAP server.
             password: The password for the email account.
             mail_folder: The folder in the email account.
+
+        Raises:
+            ValueError: If `method` is not `"imap"`.
         """
+        if method != "imap":
+            msg = f"Method '{method}' not supported. Expected 'imap'."
+            raise ValueError(msg)
+
         self._email_address = email_address
         self._imap_server = imap_server
         self._password = password
@@ -49,6 +59,7 @@ class YostarLoginIMAP(YostarLoginBase):
         """Creates the instance using the provided configuration.
 
         The following items are required in `config`:
+        * config["authentication"]["method"] (str)
         * config["authentication"]["email_address"] (str)
         * config["authentication"]["imap_server"] (str)
         * config["authentication"]["password"] (str)
@@ -63,13 +74,16 @@ class YostarLoginIMAP(YostarLoginBase):
         Raises:
             KeyError: If the required items are not found in `config`.
             TypeError: If `config["authentication"]` is not a dict.
+            ValueError: If `config["authentication"]["method"]` is not
+                `"imap"`.
         """
         authentication_config = config["authentication"]
+        method = authentication_config["method"]
         email_address = authentication_config["email_address"]
         imap_server = authentication_config["imap_server"]
         password = authentication_config["password"]
         mail_folder = authentication_config["mail_folder"]
-        return cls(email_address, imap_server, password, mail_folder)
+        return cls(method, email_address, imap_server, password, mail_folder)
 
     def get_email_address(self) -> str:
         """Returns the email address used for login.
