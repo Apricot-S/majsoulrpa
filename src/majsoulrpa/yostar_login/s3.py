@@ -26,6 +26,23 @@ class YostarLoginS3(YostarLoginBase):
         key_prefix: str,
         aws_profile: str | None = None,
     ) -> None:
+        """Initializes the instance.
+
+        Args:
+            method: The method to retrieve the verification code.
+                Must be `"s3"`.
+            email_address: The email address used for login.
+            bucket_name: The name of the S3 bucket where emails are
+                stored.
+            key_prefix: The prefix to filter objects within the S3
+                bucket.
+            aws_profile: The AWS CLI profile to use for authentication.
+                If not given, then the default profile is used.
+                Defaults to `None`.
+
+        Raises:
+            NotImplementedError: If `method` is not `"s3"`.
+        """
         if method != "s3":
             msg = f"{method}: Authentication method not implemented."
             raise NotImplementedError(msg)
@@ -41,6 +58,29 @@ class YostarLoginS3(YostarLoginBase):
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> Self:
+        """Creates the instance using the provided configuration.
+
+        The following items are required in `config`:
+        * config["authentication"]["method"] (str)
+        * config["authentication"]["email_address"] (str)
+        * config["authentication"]["bucket_name"] (str)
+        * config["authentication"]["key_prefix"] (str)
+
+        The following items can be set as options:
+        * config["authentication"]["aws_profile"] (str)
+
+        Args:
+            config: A dict containing the configuration settings.
+
+        Returns:
+            An instance of `YostarLoginS3`.
+
+        Raises:
+            KeyError: If the required items are not found in `config`.
+            TypeError: If `config["authentication"]` is not a dict.
+            NotImplementedError: If `config["authentication"]["method"]`
+                is not `"s3"`.
+        """
         authentication_config: dict[str, Any] = config["authentication"]
         method = authentication_config["method"]
         email_address = authentication_config["email_address"]
@@ -50,6 +90,11 @@ class YostarLoginS3(YostarLoginBase):
         return cls(method, email_address, bucket_name, key_prefix, aws_profile)
 
     def get_email_address(self) -> str:
+        """Returns the email address used for login.
+
+        Returns:
+            The email address used for login.
+        """
         return self._email_address
 
     def _get_authentication_emails(self) -> dict[str, EmailMessage]:
@@ -155,6 +200,16 @@ class YostarLoginS3(YostarLoginBase):
         start_time: datetime.datetime,
         timeout: TimeoutType = 1800,
     ) -> str:
+        """Retrieves the verification code.
+
+        Args:
+            start_time: The time when the login process started.
+            timeout: The maximum duration, in seconds, to wait for the
+                verification code to be obtained. Defaults to `1800`.
+
+        Returns:
+            The obtained verification code.
+        """
         timeout = to_timedelta(timeout)
 
         if timeout > datetime.timedelta(seconds=1800):

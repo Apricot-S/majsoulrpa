@@ -27,6 +27,14 @@ class YostarLoginIMAP(YostarLoginBase):
         password: str,
         mail_folder: str,
     ) -> None:
+        """Initializes the instance.
+
+        Args:
+            email_address: The email address used for login.
+            imap_server: The address of the IMAP server.
+            password: The password for the email account.
+            mail_folder: The folder in the email account.
+        """
         self._email_address = email_address
         self._imap_server = imap_server
         self._password = password
@@ -34,6 +42,24 @@ class YostarLoginIMAP(YostarLoginBase):
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> Self:
+        """Creates the instance using the provided configuration.
+
+        The following items are required in `config`:
+        * config["authentication"]["email_address"] (str)
+        * config["authentication"]["imap_server"] (str)
+        * config["authentication"]["password"] (str)
+        * config["authentication"]["mail_folder"] (str)
+
+        Args:
+            config: A dict containing the configuration settings.
+
+        Returns:
+            An instance of `YostarLoginIMAP`.
+
+        Raises:
+            KeyError: If the required items are not found in `config`.
+            TypeError: If `config["authentication"]` is not a dict.
+        """
         authentication_config = config["authentication"]
         email_address = authentication_config["email_address"]
         imap_server = authentication_config["imap_server"]
@@ -42,6 +68,11 @@ class YostarLoginIMAP(YostarLoginBase):
         return cls(email_address, imap_server, password, mail_folder)
 
     def get_email_address(self) -> str:
+        """Returns the email address used for login.
+
+        Returns:
+            The email address used for login.
+        """
         return self._email_address
 
     def _get_auth_code(self, *, start_time: datetime.datetime) -> str | None:
@@ -134,6 +165,16 @@ class YostarLoginIMAP(YostarLoginBase):
         start_time: datetime.datetime,
         timeout: TimeoutType = 1800,
     ) -> str:
+        """Retrieves the verification code.
+
+        Args:
+            start_time: The time when the login process started.
+            timeout: The maximum duration, in seconds, to wait for the
+                verification code to be obtained. Defaults to `1800`.
+
+        Returns:
+            The obtained verification code.
+        """
         timeout = to_timedelta(timeout)
 
         if timeout > datetime.timedelta(seconds=1800):

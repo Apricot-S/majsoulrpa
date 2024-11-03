@@ -13,11 +13,11 @@ _YOSTAR_EMAIL_SUBJECT: Final[str] = "Eメールアドレスの確認"
 
 
 class YostarLoginBase(metaclass=ABCMeta):
-    """Provides common functionality for Yostar account logins."""
+    """Common functionality for Yostar account logins."""
 
     @abstractmethod
     def __init__(self) -> None:
-        """Creates an instance of `YostarLoginBase`.
+        """Initializes the instance.
 
         Subclasses must provide the necessary information as arguments.
         """
@@ -25,8 +25,7 @@ class YostarLoginBase(metaclass=ABCMeta):
     @classmethod
     @abstractmethod
     def from_config(cls, config: dict[str, Any]) -> Self:
-        """Creates an instance of `YostarLoginBase` using the provided
-        configuration.
+        """Creates the instance using the provided configuration.
 
         Subclasses can extract the necessary information from the
         `config` dictionary.
