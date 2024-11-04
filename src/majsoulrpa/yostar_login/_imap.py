@@ -216,6 +216,8 @@ class YostarLoginIMAP(YostarLoginBase):
         Raises:
             ValueError: If `timeout` is greater than 1800 seconds
                 (verification code expiration).
+            RuntimeError: If the verification code cannot be obtained
+                before the timeout period expires.
         """
         timeout = to_timedelta(timeout)
 
