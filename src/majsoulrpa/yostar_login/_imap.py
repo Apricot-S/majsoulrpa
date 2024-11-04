@@ -222,7 +222,7 @@ class YostarLoginIMAP(YostarLoginBase):
         if timeout > datetime.timedelta(seconds=1800):
             msg = (
                 "Timeout is longer than verification code expiration. "
-                "Set the timeout to 30 minutes or less."
+                "Set the timeout to 1800 seconds or less."
             )
             raise ValueError(msg)
 
