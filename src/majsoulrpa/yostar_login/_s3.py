@@ -237,6 +237,10 @@ class YostarLoginS3(YostarLoginBase):
 
         Returns:
             The obtained verification code.
+
+        Raises:
+            ValueError: If `timeout` is greater than 1800 seconds
+                (verification code expiration).
         """
         timeout = to_timedelta(timeout)
 
