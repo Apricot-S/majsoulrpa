@@ -139,7 +139,11 @@ class YostarLoginS3(YostarLoginBase):
 
         return emails
 
-    def _get_auth_code(self, *, start_time: datetime.datetime) -> str | None:
+    def _get_verification_code(
+        self,
+        *,
+        start_time: datetime.datetime,
+    ) -> str | None:
         emails = self._get_authentication_emails()
 
         target_date = None
@@ -219,7 +223,7 @@ class YostarLoginS3(YostarLoginBase):
 
         return self._extract_auth_code_from_content(target_content)
 
-    def get_auth_code(
+    def get_verification_code(
         self,
         *,
         start_time: datetime.datetime,
@@ -245,7 +249,7 @@ class YostarLoginS3(YostarLoginBase):
             raise ValueError(msg)
 
         while True:
-            auth_code = self._get_auth_code(start_time=start_time)
+            auth_code = self._get_verification_code(start_time=start_time)
             if auth_code is not None:
                 break
 

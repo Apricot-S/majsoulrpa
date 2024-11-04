@@ -114,7 +114,11 @@ class YostarLoginIMAP(YostarLoginBase):
         """
         return self._email_address
 
-    def _get_auth_code(self, *, start_time: datetime.datetime) -> str | None:
+    def _get_verification_code(
+        self,
+        *,
+        start_time: datetime.datetime,
+    ) -> str | None:
         context = ssl.create_default_context()
         with IMAPClient(self._imap_server, ssl_context=context) as server:
             server.login(self._email_address, self._password)
@@ -198,7 +202,7 @@ class YostarLoginIMAP(YostarLoginBase):
 
             return self._extract_auth_code_from_content(target_content)
 
-    def get_auth_code(
+    def get_verification_code(
         self,
         *,
         start_time: datetime.datetime,
@@ -224,7 +228,7 @@ class YostarLoginIMAP(YostarLoginBase):
             raise ValueError(msg)
 
         while True:
-            auth_code = self._get_auth_code(start_time=start_time)
+            auth_code = self._get_verification_code(start_time=start_time)
             if auth_code is not None:
                 break
 

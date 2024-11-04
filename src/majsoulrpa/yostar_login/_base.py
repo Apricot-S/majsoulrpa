@@ -62,7 +62,7 @@ class YostarLoginBase(metaclass=ABCMeta):
         return auth_code.group(1)
 
     @abstractmethod
-    def get_auth_code(
+    def get_verification_code(
         self,
         *,
         start_time: datetime.datetime,
