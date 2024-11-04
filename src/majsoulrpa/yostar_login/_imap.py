@@ -116,91 +116,86 @@ class YostarLoginIMAP(YostarLoginBase):
 
     def _get_verification_code(
         self,
-        *,
+        server: IMAPClient,
         start_time: datetime.datetime,
     ) -> str | None:
-        context = ssl.create_default_context()
-        with IMAPClient(self._imap_server, ssl_context=context) as server:
-            server.login(self._email_address, self._password)
-            logger.info("Login to the mail server was successful.")
+        now = datetime.datetime.now(tz=datetime.UTC)
+        today = now.date()
 
-            now = datetime.datetime.now(tz=datetime.UTC)
-            today = now.date()
+        server.select_folder(self._mail_folder)
+        messages_ids = server.search(
+            [
+                "TO",
+                self._email_address,
+                "FROM",
+                _YOSTAR_EMAIL_ADDRESS,
+                "SINCE",
+                today,
+            ],  # type: ignore[arg-type]
+        )
 
-            server.select_folder(self._mail_folder)
-            messages_ids = server.search(
-                [
-                    "TO",
-                    self._email_address,
-                    "FROM",
-                    _YOSTAR_EMAIL_ADDRESS,
-                    "SINCE",
-                    today,
-                ],  # type: ignore[arg-type]
+        response = server.fetch(messages_ids, ["RFC822"])
+        parser = BytesParser(policy=email.policy.default)
+
+        target_date = None
+        target_content = None
+
+        for uid, msg_data in response.items():
+            msg = parser.parsebytes(msg_data[b"RFC822"])  # type: ignore[arg-type]
+
+            if not isinstance(msg, EmailMessage):
+                continue
+
+            if msg.get("Subject") != _YOSTAR_EMAIL_SUBJECT:
+                # Ignore emails whose `Subject` is not
+                # `Eメールアドレスの確認` as they may be
+                # related to matters other than login.
+                continue
+
+            mail_date = msg.get("Date")
+            if mail_date is None:
+                continue
+            date = datetime.datetime.fromtimestamp(
+                mktime_tz(parsedate_tz(mail_date)),  # type: ignore[arg-type]
+                datetime.UTC,
             )
 
-            response = server.fetch(messages_ids, ["RFC822"])
-            parser = BytesParser(policy=email.policy.default)
-
-            target_date = None
-            target_content = None
-
-            for uid, msg_data in response.items():
-                msg = parser.parsebytes(msg_data[b"RFC822"])  # type: ignore[arg-type]
-
-                if not isinstance(msg, EmailMessage):
-                    continue
-
-                if msg.get("Subject") != _YOSTAR_EMAIL_SUBJECT:
-                    # Ignore emails whose `Subject` is not
-                    # `Eメールアドレスの確認` as they may be
-                    # related to matters other than login.
-                    continue
-
-                mail_date = msg.get("Date")
-                if mail_date is None:
-                    continue
-                date = datetime.datetime.fromtimestamp(
-                    mktime_tz(parsedate_tz(mail_date)),  # type: ignore[arg-type]
-                    datetime.UTC,
-                )
-
-                if date < (now - datetime.timedelta(minutes=30)):
-                    # The verification code is valid for 30 minutes,
-                    # so delete emails sent more than 30 minutes ago.
-                    server.delete_messages(uid)
-                    logger.info(
-                        "Deleted mail sent more than 30 minutes ago: uid %d",
-                        uid,
-                    )
-                    continue
-
-                if date < start_time:
-                    # Delete emails sent before starting login.
-                    server.delete_messages(uid)
-                    logger.info(
-                        "Deleted mail sent before starting login: uid %d",
-                        uid,
-                    )
-                    continue
-
-                if target_date is not None and date < target_date:
-                    # If another login email already exists,
-                    # delete the old one.
-                    server.delete_messages(uid)
-                    logger.info("Deleted mail the old one: uid %d", uid)
-                    continue
-
-                target_date = date
-                target_content = msg.get_content()
-
+            if date < (now - datetime.timedelta(minutes=30)):
+                # The verification code is valid for 30 minutes,
+                # so delete emails sent more than 30 minutes ago.
                 server.delete_messages(uid)
-                logger.info("Deleted used mail: uid %d", uid)
+                logger.info(
+                    "Deleted mail sent more than 30 minutes ago: uid %d",
+                    uid,
+                )
+                continue
 
-            if target_content is None:
-                return None
+            if date < start_time:
+                # Delete emails sent before starting login.
+                server.delete_messages(uid)
+                logger.info(
+                    "Deleted mail sent before starting login: uid %d",
+                    uid,
+                )
+                continue
 
-            return self._extract_auth_code_from_content(target_content)
+            if target_date is not None and date < target_date:
+                # If another login email already exists,
+                # delete the old one.
+                server.delete_messages(uid)
+                logger.info("Deleted mail the old one: uid %d", uid)
+                continue
+
+            target_date = date
+            target_content = msg.get_content()
+
+            server.delete_messages(uid)
+            logger.info("Deleted used mail: uid %d", uid)
+
+        if target_content is None:
+            return None
+
+        return self._extract_auth_code_from_content(target_content)
 
     def get_verification_code(
         self,
@@ -227,16 +222,24 @@ class YostarLoginIMAP(YostarLoginBase):
             )
             raise ValueError(msg)
 
-        while True:
-            auth_code = self._get_verification_code(start_time=start_time)
-            if auth_code is not None:
-                break
+        context = ssl.create_default_context()
+        with IMAPClient(self._imap_server, ssl_context=context) as server:
+            server.login(self._email_address, self._password)
+            logger.info("Login to the mail server was successful.")
 
-            now = datetime.datetime.now(tz=datetime.UTC)
-            if now > (start_time + timeout):
-                msg = "Verification code extraction timed out."
-                raise RuntimeError(msg)
+            while True:
+                verification_code = self._get_verification_code(
+                    server,
+                    start_time,
+                )
+                if verification_code is not None:
+                    break
 
-            time.sleep(1.0)
+                now = datetime.datetime.now(tz=datetime.UTC)
+                if now > (start_time + timeout):
+                    msg = "Verification code extraction timed out."
+                    raise RuntimeError(msg)
 
-        return auth_code
+                time.sleep(1.0)
+
+        return verification_code
