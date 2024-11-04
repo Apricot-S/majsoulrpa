@@ -59,6 +59,7 @@ class YostarLoginIMAP(YostarLoginBase):
         """Creates the instance using the provided configuration.
 
         The following items are required in `config`:
+
         * config["authentication"]["method"] (str)
         * config["authentication"]["email_address"] (str)
         * config["authentication"]["imap_server"] (str)

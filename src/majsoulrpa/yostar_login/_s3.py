@@ -65,12 +65,14 @@ class YostarLoginS3(YostarLoginBase):
         """Creates the instance using the provided configuration.
 
         The following items are required in `config`:
+
         * config["authentication"]["method"] (str)
         * config["authentication"]["email_address"] (str)
         * config["authentication"]["bucket_name"] (str)
         * config["authentication"]["key_prefix"] (str)
 
         The following items can be set as options:
+
         * config["authentication"]["aws_profile"] (str)
 
         Args:
