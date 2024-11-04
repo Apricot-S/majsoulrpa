@@ -141,7 +141,6 @@ class YostarLoginS3(YostarLoginBase):
 
     def _get_verification_code(
         self,
-        *,
         start_time: datetime.datetime,
     ) -> str | None:
         emails = self._get_authentication_emails()
@@ -249,8 +248,8 @@ class YostarLoginS3(YostarLoginBase):
             raise ValueError(msg)
 
         while True:
-            auth_code = self._get_verification_code(start_time=start_time)
-            if auth_code is not None:
+            verification_code = self._get_verification_code(start_time)
+            if verification_code is not None:
                 break
 
             now = datetime.datetime.now(tz=datetime.UTC)
@@ -260,4 +259,4 @@ class YostarLoginS3(YostarLoginBase):
 
             time.sleep(1.0)
 
-        return auth_code
+        return verification_code
