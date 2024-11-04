@@ -29,6 +29,7 @@ sys.path.insert(0, str(Path("..", "docs").resolve()))
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
+    "sphinx.ext.todo",
     "sphinx.ext.napoleon",
     "sphinx_rtd_theme",
 ]
@@ -36,9 +37,13 @@ extensions = [
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
-
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
+
+# -- Options for todo extension ----------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/extensions/todo.html#configuration
+
+todo_include_todos = True
