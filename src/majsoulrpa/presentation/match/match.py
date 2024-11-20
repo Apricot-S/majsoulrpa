@@ -1570,7 +1570,7 @@ class MatchPresentation(PresentationBase):
             top,
             width,
             height,
-            interval=1.0,
+            interval=0.5,
             timeout=25.0,
             edge_sigma=1.0,
         )
