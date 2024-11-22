@@ -7,13 +7,15 @@ from ._version import __version__
 getLogger(__name__).addHandler(NullHandler())
 
 __all__ = [
-    # submodules
+    "__version__",
+]
+
+# submodules
+__all__ += [
     "client",  # type: ignore[reportUnsupportedDunderAll]
     "config",  # type: ignore[reportUnsupportedDunderAll]
-    "presentation",  # type: ignore[reportUnsupportedDunderAll]
-    "yostar_login",  # type: ignore[reportUnsupportedDunderAll]
     "player",  # type: ignore[reportUnsupportedDunderAll]
+    "presentation",  # type: ignore[reportUnsupportedDunderAll]
     "timeout",  # type: ignore[reportUnsupportedDunderAll]
-    # Non-modules
-    "__version__",
+    "yostar_login",  # type: ignore[reportUnsupportedDunderAll]
 ]
