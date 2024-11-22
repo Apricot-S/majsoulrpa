@@ -45,7 +45,7 @@ dev = [
     { include-group = "docs" },
 ]
 lint = [
-    "ruff>=0.7.1,<0.8",
+    "ruff>=0.8.0,<0.9",
 ]
 test = [
     "pytest>=8.3.3,<9",
@@ -83,8 +83,6 @@ ignore = [
     "C901",    # complex-structure
     "ANN002",  # missing-type-args
     "ANN003",  # missing-type-kwargs
-    "ANN101",  # missing-type-self
-    "ANN102",  # missing-type-cls
     "TD002",   # missing-todo-author
     "TD003",   # missing-todo-link
     "PLR0911", # too-many-return-statements
