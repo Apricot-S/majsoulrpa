@@ -1,4 +1,3 @@
-import datetime
 import tomllib
 from collections.abc import Iterable
 from pathlib import Path
@@ -8,9 +7,6 @@ import cv2
 import numpy as np
 
 from majsoulrpa.client._browser import STD_HEIGHT, STD_WIDTH, BrowserBase
-from majsoulrpa.timeout import TimeoutType, timeout_to_deadline
-
-from .exceptions import PresentationTimeoutError
 
 MIN_ZOOM_RATIO: Final[float] = 2.0 / 3
 MAX_ZOOM_RATIO: Final[float] = 2.0
@@ -162,29 +158,20 @@ class Template:
         _, _, score = self.best_template_match(screenshot)
         return score >= self._threshold
 
-    def wait_until(
-        self,
-        browser: BrowserBase,
-        deadline: datetime.datetime,
-    ) -> None:
+    async def wait(self, browser: BrowserBase) -> None:
         while True:
-            if datetime.datetime.now(datetime.UTC) > deadline:
-                msg = f"Timeout in waiting {self._path}"
-                raise PresentationTimeoutError(msg, browser.get_screenshot())
-            if self.match(browser.get_screenshot()):
+            screenshot = await browser.get_screenshot()
+            if self.match(screenshot):
                 break
 
-    def wait_for(self, browser: BrowserBase, timeout: TimeoutType) -> None:
-        deadline = timeout_to_deadline(timeout)
-        self.wait_until(browser, deadline)
-
-    def click(
+    async def click(
         self,
         browser: BrowserBase,
         edge_sigma: float = _STD_EDGE_SIGMA,
     ) -> None:
-        x, y, _ = self.best_template_match(browser.get_screenshot())
-        browser.click_region(
+        screenshot = await browser.get_screenshot()
+        x, y, _ = self.best_template_match(screenshot)
+        await browser.click_region(
             x,
             y,
             self._templ.shape[1],
@@ -192,14 +179,15 @@ class Template:
             edge_sigma,
         )
 
-    def click_if_match(
+    async def click_if_match(
         self,
         browser: BrowserBase,
         edge_sigma: float = _STD_EDGE_SIGMA,
     ) -> bool:
-        x, y, score = self.best_template_match(browser.get_screenshot())
+        screenshot = await browser.get_screenshot()
+        x, y, score = self.best_template_match(screenshot)
         if score >= self._threshold:
-            browser.click_region(
+            await browser.click_region(
                 x,
                 y,
                 self._templ.shape[1],
@@ -209,36 +197,24 @@ class Template:
             return True
         return False
 
-    def wait_until_then_click(
+    async def wait_then_click(
         self,
         browser: BrowserBase,
-        deadline: datetime.datetime,
         edge_sigma: float = _STD_EDGE_SIGMA,
     ) -> None:
         while True:
-            if datetime.datetime.now(datetime.UTC) > deadline:
-                msg = f"Timeout in waiting {self._path}"
-                raise PresentationTimeoutError(msg, browser.get_screenshot())
-            x, y, score = self.best_template_match(browser.get_screenshot())
+            screenshot = await browser.get_screenshot()
+            x, y, score = self.best_template_match(screenshot)
             if score >= self._threshold:
                 break
 
-        browser.click_region(
+        await browser.click_region(
             x,
             y,
             self._templ.shape[1],
             self._templ.shape[0],
             edge_sigma,
         )
-
-    def wait_for_then_click(
-        self,
-        browser: BrowserBase,
-        timeout: TimeoutType,
-        edge_sigma: float = _STD_EDGE_SIGMA,
-    ) -> None:
-        deadline = timeout_to_deadline(timeout)
-        self.wait_until_then_click(browser, deadline, edge_sigma)
 
     @staticmethod
     def match_one_of(
@@ -251,41 +227,27 @@ class Template:
         return -1
 
     @staticmethod
-    def wait_until_one_of(
+    async def wait_one_of(
         templates: Iterable["Template"],
         browser: BrowserBase,
-        deadline: datetime.datetime,
-    ) -> None:
+    ) -> int:
         while True:
-            if datetime.datetime.now(datetime.UTC) > deadline:
-                msg = "Timeout"
-                raise PresentationTimeoutError(msg, browser.get_screenshot())
-
-            screenshot = browser.get_screenshot()
-            for template in templates:
+            screenshot = await browser.get_screenshot()
+            for i, template in enumerate(templates):
                 if template.match(screenshot):
-                    return
+                    return i
 
     @staticmethod
-    def wait_for_one_of(
-        templates: Iterable["Template"],
-        browser: BrowserBase,
-        timeout: TimeoutType,
-    ) -> None:
-        deadline = timeout_to_deadline(timeout)
-        Template.wait_until_one_of(templates, browser, deadline)
-
-    @staticmethod
-    def click_if_match_one_of(
+    async def click_if_match_one_of(
         templates: Iterable["Template"],
         browser: BrowserBase,
         edge_sigma: float = _STD_EDGE_SIGMA,
     ) -> int:
-        screenshot = browser.get_screenshot()
+        screenshot = await browser.get_screenshot()
         for i, template in enumerate(templates):
             x, y, score = template.best_template_match(screenshot)
             if score >= template.threshold:
-                browser.click_region(
+                await browser.click_region(
                     x,
                     y,
                     template.img_width,
@@ -296,41 +258,21 @@ class Template:
         return -1
 
     @staticmethod
-    def wait_until_one_of_then_click(
+    async def wait_then_click_one_of(
         templates: Iterable["Template"],
         browser: BrowserBase,
-        deadline: datetime.datetime,
         edge_sigma: float = _STD_EDGE_SIGMA,
-    ) -> None:
+    ) -> int:
         while True:
-            if datetime.datetime.now(datetime.UTC) > deadline:
-                msg = "Timeout"
-                raise PresentationTimeoutError(msg, browser.get_screenshot())
-
-            screenshot = browser.get_screenshot()
-            for template in templates:
+            screenshot = await browser.get_screenshot()
+            for i, template in enumerate(templates):
                 x, y, score = template.best_template_match(screenshot)
                 if score >= template.threshold:
-                    browser.click_region(
+                    await browser.click_region(
                         x,
                         y,
                         template.img_width,
                         template.img_height,
                         edge_sigma,
                     )
-                    return
-
-    @staticmethod
-    def wait_for_one_of_then_click(
-        templates: Iterable["Template"],
-        browser: BrowserBase,
-        timeout: TimeoutType,
-        edge_sigma: float = _STD_EDGE_SIGMA,
-    ) -> None:
-        deadline = timeout_to_deadline(timeout)
-        Template.wait_until_one_of_then_click(
-            templates,
-            browser,
-            deadline,
-            edge_sigma,
-        )
+                    return i

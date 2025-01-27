@@ -35,22 +35,11 @@ class BaseError(Exception):
                 fp.write(self._screenshot)
 
 
-class PresentationTimeoutError(BaseError):
-    """A timeout error.
+class StalePresentationError(BaseError):
+    """A presentation stale error.
 
-    Occurs when a presentation is not detected within the specified
-    timeout period.
+    Occurs when the presentation is no longer valid.
     """
-
-    def __init__(self, message: str, screenshot: bytes) -> None:
-        """Initializes the instance.
-
-        Args:
-            message: A message describing the error.
-            screenshot: A screenshot encoded in PNG format captured at
-                the point where the error occurred.
-        """
-        super().__init__(message, screenshot)
 
 
 class PresentationNotDetectedError(BaseError):
@@ -167,6 +156,6 @@ class BrowserRefreshRequest(BaseError):  # noqa: N818
         super().__init__(message, screenshot)
         self._browser = browser
 
-    def refresh_browser(self) -> None:
+    async def refresh_browser(self) -> None:
         """Refresh the browser."""
-        self._browser.refresh()
+        await self._browser.refresh()

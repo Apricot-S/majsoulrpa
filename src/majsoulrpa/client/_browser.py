@@ -1,19 +1,30 @@
+import asyncio
 import base64
+import json
 import random
-import time
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
 from fractions import Fraction
 from ipaddress import ip_address
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final
 
 import zmq
-from playwright.sync_api import sync_playwright
-from zmq.utils.win32 import allow_interrupt
+import zmq.asyncio
+from playwright.async_api import (
+    Browser,
+    BrowserContext,
+    Page,
+    Playwright,
+    ViewportSize,
+    async_playwright,
+)
 
 from ._validation import validate_user_port
+
+if TYPE_CHECKING:
+    from playwright.async_api._context_manager import PlaywrightContextManager
 
 logger = getLogger(__name__)
 
@@ -89,7 +100,7 @@ def _get_random_point_in_region(
         while True:
             p = random.normalvariate(mu, sigma)
             p = round(p)
-            if distance_origin < p and p < (distance_origin + length_region):
+            if distance_origin < p < (distance_origin + length_region):
                 break
         return p
 
@@ -100,29 +111,28 @@ def _get_random_point_in_region(
 
 
 class BrowserBase(metaclass=ABCMeta):
-    @property
     @abstractmethod
-    def zoom_ratio(self) -> float:
+    async def get_zoom_ratio(self) -> float:
         pass
 
     @abstractmethod
-    def refresh(self) -> None:
+    async def refresh(self) -> None:
         pass
 
     @abstractmethod
-    def write(self, text: str, delay: float | None = None) -> None:
+    async def write(self, text: str, delay: float | None = None) -> None:
         pass
 
     @abstractmethod
-    def press(self, keys: str | Iterable[str]) -> None:
+    async def press(self, keys: str | Iterable[str]) -> None:
         pass
 
     @abstractmethod
-    def press_hotkey(self, *args: str) -> None:
+    async def press_hotkey(self, *args: str) -> None:
         pass
 
     @abstractmethod
-    def move_to_region(
+    async def move_to_region(
         self,
         left: int,
         top: int,
@@ -133,11 +143,11 @@ class BrowserBase(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def scroll(self, clicks: int) -> None:
+    async def scroll(self, clicks: int) -> None:
         pass
 
     @abstractmethod
-    def click_region(
+    async def click_region(
         self,
         left: int,
         top: int,
@@ -148,11 +158,11 @@ class BrowserBase(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_screenshot(self) -> bytes:
+    async def get_screenshot(self) -> bytes:
         pass
 
     @abstractmethod
-    def close(self) -> None:
+    async def close(self) -> None:
         pass
 
 
@@ -171,69 +181,105 @@ class DesktopBrowser(BrowserBase):
         super().__init__()
         validate_user_port(proxy_port)
         validate_viewport_size(width, height)
-        self._viewport_size = {"width": width, "height": height}
+        self._viewport_size = ViewportSize(width=width, height=height)
         self._zoom_ratio = height / STD_HEIGHT
 
-        initial_position = f"--window-position={initial_left},{initial_top}"
-        proxy_server = f"--proxy-server=http://localhost:{proxy_port}"
+        self._proxy_port = proxy_port
+        self._initial_left = initial_left
+        self._initial_top = initial_top
+        self._headless = headless
+        self._user_data_dir = user_data_dir
+
+        self._context_manager: PlaywrightContextManager | None = None
+        self._playwright: Playwright | None = None
+        self._browser: Browser | None = None
+        self._context: BrowserContext | None = None
+        self._page: Page | None = None
+
+    async def launch(self) -> None:
+        self._context_manager = async_playwright()
+        self._playwright = await self._context_manager.start()
+
+        initial_position = (
+            f"--window-position={self._initial_left},{self._initial_top}"
+        )
+        proxy_server = f"--proxy-server=http://localhost:{self._proxy_port}"
         ignore_certifi_errors = "--ignore-certificate-errors"
         options = [
             initial_position,
             proxy_server,
             ignore_certifi_errors,
         ]
-        mute_audio_off = None if headless else ["--mute-audio"]
+        mute_audio_off = None if self._headless else ["--mute-audio"]
 
-        self._context_manager = sync_playwright()
-
-        self._browser = None
-        if user_data_dir:
-            if isinstance(user_data_dir, str):
-                user_data_dir = Path(user_data_dir)
-            user_data_dir = user_data_dir.resolve()
-            self._context = self._context_manager.start().chromium.launch_persistent_context(  # noqa: E501
-                user_data_dir,
-                args=options,
-                ignore_default_args=mute_audio_off,
-                headless=headless,
-                viewport=self._viewport_size,  # type: ignore[arg-type]
+        if self._user_data_dir is not None:
+            self._context = (
+                await self._playwright.chromium.launch_persistent_context(
+                    self._user_data_dir,
+                    args=options,
+                    ignore_default_args=mute_audio_off,
+                    headless=self._headless,
+                    viewport=self._viewport_size,
+                )
             )
             self._page = self._context.pages[0]
         else:
-            self._browser = self._context_manager.start().chromium.launch(
+            self._browser = await self._playwright.chromium.launch(
                 args=options,
                 ignore_default_args=mute_audio_off,
-                headless=headless,
+                headless=self._headless,
             )
-            self._context = self._browser.new_context(
-                viewport=self._viewport_size,  # type: ignore[arg-type]
+            self._context = await self._browser.new_context(
+                viewport=self._viewport_size,
             )
-            self._page = self._context.new_page()
+            self._page = await self._context.new_page()
 
-        self._page.goto(URL_MAJSOUL)
+        await self._page.goto(URL_MAJSOUL)
 
-    @property
-    def zoom_ratio(self) -> float:
+    def is_launched(self) -> bool:
+        if self._context_manager is None:
+            return False
+        if self._playwright is None:
+            return False
+        if self._context is None:
+            return False
+        return self._page is not None
+
+    def _assert_launched(self) -> None:
+        if not self.is_launched():
+            msg = "The browser has not been launched."
+            raise RuntimeError(msg)
+
+    async def get_zoom_ratio(self) -> float:
         return self._zoom_ratio
 
-    def refresh(self) -> None:
-        self._page.reload()
+    async def refresh(self) -> None:
+        self._assert_launched()
+        assert self._page is not None  # noqa: S101
+        await self._page.reload()
 
-    def write(self, text: str, delay: float | None = None) -> None:
-        self._page.keyboard.type(text, delay=delay)
+    async def write(self, text: str, delay: float | None = None) -> None:
+        self._assert_launched()
+        assert self._page is not None  # noqa: S101
+        await self._page.keyboard.type(text, delay=delay)
 
-    def press(self, keys: str | Iterable[str]) -> None:
+    async def press(self, keys: str | Iterable[str]) -> None:
+        self._assert_launched()
+        assert self._page is not None  # noqa: S101
+
         if isinstance(keys, str):
-            self._page.keyboard.press(keys)
+            await self._page.keyboard.press(keys)
         else:
             for k in keys:
-                self._page.keyboard.press(k)
+                await self._page.keyboard.press(k)
 
-    def press_hotkey(self, *args: str) -> None:
+    async def press_hotkey(self, *args: str) -> None:
+        self._assert_launched()
+        assert self._page is not None  # noqa: S101
         keys = "+".join(args)
-        self._page.keyboard.press(keys)
+        await self._page.keyboard.press(keys)
 
-    def move_to_region(
+    async def move_to_region(
         self,
         left: int,
         top: int,
@@ -241,6 +287,8 @@ class DesktopBrowser(BrowserBase):
         height: int,
         edge_sigma: float = 2.0,
     ) -> None:
+        self._assert_launched()
+        assert self._page is not None  # noqa: S101
         validate_region(
             left,
             top,
@@ -260,9 +308,12 @@ class DesktopBrowser(BrowserBase):
             height,
             edge_sigma=edge_sigma,
         )
-        self._page.mouse.move(x, y)
+        await self._page.mouse.move(x, y)
 
-    def scroll(self, clicks: int) -> None:
+    async def scroll(self, clicks: int) -> None:
+        self._assert_launched()
+        assert self._page is not None  # noqa: S101
+
         if clicks == 0:
             return
 
@@ -274,12 +325,12 @@ class DesktopBrowser(BrowserBase):
             delta = -58 * 2
             clicks = abs(clicks)
 
-        self._page.mouse.wheel(delta_x=0, delta_y=delta)
+        await self._page.mouse.wheel(delta_x=0, delta_y=delta)
         for _ in range(clicks - 1):
-            time.sleep(0.1)
-            self._page.mouse.wheel(delta_x=0, delta_y=delta)
+            await asyncio.sleep(0.1)
+            await self._page.mouse.wheel(delta_x=0, delta_y=delta)
 
-    def click_region(
+    async def click_region(
         self,
         left: int,
         top: int,
@@ -287,6 +338,8 @@ class DesktopBrowser(BrowserBase):
         height: int,
         edge_sigma: float = 2.0,
     ) -> None:
+        self._assert_launched()
+        assert self._page is not None  # noqa: S101
         validate_region(
             left,
             top,
@@ -306,17 +359,23 @@ class DesktopBrowser(BrowserBase):
             height,
             edge_sigma=edge_sigma,
         )
-        self._page.mouse.click(x, y)
+        await self._page.mouse.click(x, y)
 
-    def get_screenshot(self) -> bytes:
+    async def get_screenshot(self) -> bytes:
         """Return bytes in png format."""
-        return self._page.screenshot()
+        self._assert_launched()
+        assert self._page is not None  # noqa: S101
+        return await self._page.screenshot()
 
-    def close(self) -> None:
-        self._context.close()
+    async def close(self) -> None:
+        self._assert_launched()
+        assert self._context_manager is not None  # noqa: S101
+        assert self._context is not None  # noqa: S101
+
+        await self._context.close()
         if self._browser is not None:
-            self._browser.close()
-        self._context_manager.__exit__()
+            await self._browser.close()
+        await self._context_manager.__aexit__()
 
 
 class RemoteBrowser(BrowserBase):
@@ -329,27 +388,18 @@ class RemoteBrowser(BrowserBase):
         ip_address(remote_host)
         validate_user_port(remote_port)
 
-        self._context = zmq.Context()
+        self._context = zmq.asyncio.Context()  # type: ignore[attr-defined]
         self._socket = self._context.socket(zmq.REQ)
         self._socket.connect(f"tcp://{remote_host}:{remote_port}")
-        self._poller_in = zmq.Poller()
-        self._poller_in.register(self._socket, zmq.POLLIN)
-        self._poller_out = zmq.Poller()
-        self._poller_out.register(self._socket, zmq.POLLOUT)
 
-    def _communicate(self, request: object) -> dict[str, Any]:
-        with allow_interrupt(self.close):
-            if self._poller_out.poll(MAX_LATENCY):
-                self._socket.send_json(request)
-            else:
-                msg = "Failed to send a message to the remote browser."
-                raise TimeoutError(msg)
+    async def _communicate(self, request: object) -> dict[str, Any]:
+        jsonized_request = json.dumps(request, separators=(",", ":"))
+        encoded_request = jsonized_request.encode(encoding="utf-8")
+        await self._socket.send(encoded_request)
 
-            if self._poller_in.poll(MAX_LATENCY):
-                response = self._socket.recv_json()
-            else:
-                msg = "Failed to receive a message from the remote browser."
-                raise TimeoutError(msg)
+        encoded_response = await self._socket.recv()
+        jsonized_response = encoded_response.decode(encoding="utf-8")
+        response = json.loads(jsonized_response)
 
         if not isinstance(response, dict):
             msg = "An invalid message was received."
@@ -365,36 +415,35 @@ class RemoteBrowser(BrowserBase):
             msg = "Failed to send a message to the remote browser."
             raise RuntimeError(msg)
 
-    @property
-    def zoom_ratio(self) -> float:
+    async def get_zoom_ratio(self) -> float:
         request = {"type": "zoom_ratio"}
-        response = self._communicate(request)
+        response = await self._communicate(request)
         self._check_response(response)
         return response["data"]
 
-    def refresh(self) -> None:
+    async def refresh(self) -> None:
         request = {"type": "refresh"}
-        response = self._communicate(request)
+        response = await self._communicate(request)
         self._check_response(response)
 
-    def write(self, text: str, delay: float | None = None) -> None:
+    async def write(self, text: str, delay: float | None = None) -> None:
         request = {"type": "write", "text": text, "delay": delay}
-        response = self._communicate(request)
+        response = await self._communicate(request)
         self._check_response(response)
 
-    def press(self, keys: str | Iterable[str]) -> None:
+    async def press(self, keys: str | Iterable[str]) -> None:
         if not isinstance(keys, str):
             keys = list(keys)
         request = {"type": "press", "keys": keys}
-        response = self._communicate(request)
+        response = await self._communicate(request)
         self._check_response(response)
 
-    def press_hotkey(self, *args: str) -> None:
+    async def press_hotkey(self, *args: str) -> None:
         request = {"type": "press_hotkey", "args": list(args)}
-        response = self._communicate(request)
+        response = await self._communicate(request)
         self._check_response(response)
 
-    def move_to_region(
+    async def move_to_region(
         self,
         left: int,
         top: int,
@@ -402,7 +451,7 @@ class RemoteBrowser(BrowserBase):
         height: int,
         edge_sigma: float = 2.0,
     ) -> None:
-        viewport_size = self._get_viewport_size()
+        viewport_size = await self._get_viewport_size()
 
         validate_region(
             left,
@@ -425,21 +474,21 @@ class RemoteBrowser(BrowserBase):
         )
 
         request = {"type": "move", "x": x, "y": y}
-        response = self._communicate(request)
+        response = await self._communicate(request)
         self._check_response(response)
 
-    def scroll(self, clicks: int) -> None:
+    async def scroll(self, clicks: int) -> None:
         request = {"type": "scroll", "clicks": clicks}
-        response = self._communicate(request)
+        response = await self._communicate(request)
         self._check_response(response)
 
-    def _get_viewport_size(self) -> dict[str, int]:
+    async def _get_viewport_size(self) -> dict[str, int]:
         request = {"type": "_get_viewport_size"}
-        response = self._communicate(request)
+        response = await self._communicate(request)
         self._check_response(response)
         return response["data"]
 
-    def click_region(
+    async def click_region(
         self,
         left: int,
         top: int,
@@ -447,7 +496,7 @@ class RemoteBrowser(BrowserBase):
         height: int,
         edge_sigma: float = 2.0,
     ) -> None:
-        viewport_size = self._get_viewport_size()
+        viewport_size = await self._get_viewport_size()
 
         validate_region(
             left,
@@ -470,18 +519,16 @@ class RemoteBrowser(BrowserBase):
         )
 
         request = {"type": "click", "x": x, "y": y}
-        response = self._communicate(request)
+        response = await self._communicate(request)
         self._check_response(response)
 
-    def get_screenshot(self) -> bytes:
+    async def get_screenshot(self) -> bytes:
         request = {"type": "get_screenshot"}
-        response = self._communicate(request)
+        response = await self._communicate(request)
         self._check_response(response)
         data: str = response["data"]
         return base64.b64decode(data)
 
-    def close(self) -> None:
-        self._poller_out.unregister(self._socket)
-        self._poller_in.unregister(self._socket)
+    async def close(self) -> None:
         self._socket.close()
         self._context.destroy()
