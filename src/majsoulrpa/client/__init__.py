@@ -1,1 +1,1 @@
-"""An RPA client."""
+"""RPA clients."""
