@@ -3,7 +3,7 @@
 import datetime
 from pathlib import Path
 
-from majsoulrpa.client._browser import BrowserBase
+from majsoulrpa.client.browser import BrowserBase
 
 
 class BaseError(Exception):

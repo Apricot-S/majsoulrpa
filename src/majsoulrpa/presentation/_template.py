@@ -6,7 +6,7 @@ from typing import Final, Self
 import cv2
 import numpy as np
 
-from majsoulrpa.client._browser import STD_HEIGHT, STD_WIDTH, BrowserBase
+from majsoulrpa.client.browser import STD_HEIGHT, STD_WIDTH, BrowserBase
 
 MIN_ZOOM_RATIO: Final[float] = 2.0 / 3
 MAX_ZOOM_RATIO: Final[float] = 2.0
