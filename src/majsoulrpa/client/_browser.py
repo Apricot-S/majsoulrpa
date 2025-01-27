@@ -100,7 +100,7 @@ def _get_random_point_in_region(
         while True:
             p = random.normalvariate(mu, sigma)
             p = round(p)
-            if distance_origin < p and p < (distance_origin + length_region):
+            if distance_origin < p < (distance_origin + length_region):
                 break
         return p
 
