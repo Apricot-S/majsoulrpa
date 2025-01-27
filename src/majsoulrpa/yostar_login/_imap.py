@@ -136,7 +136,7 @@ class YostarLoginIMAP(YostarLoginBase):
         )
 
         response = server.fetch(messages_ids, ["RFC822"])
-        parser = BytesParser(policy=email.policy.default)
+        parser = BytesParser(policy=email.policy.default)  # type: ignore[arg-type]
 
         target_date = None
         target_content = None

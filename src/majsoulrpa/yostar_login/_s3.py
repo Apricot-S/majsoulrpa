@@ -128,7 +128,7 @@ class YostarLoginS3(YostarLoginBase):
         objects = self._s3_bucket.objects.filter(Prefix=self._key_prefix)
 
         emails: dict[str, EmailMessage] = {}
-        email_parser = BytesParser(policy=email.policy.default)
+        email_parser = BytesParser(policy=email.policy.default)  # type: ignore[arg-type]
 
         for summary in objects:
             key = summary.key
