@@ -7,18 +7,38 @@ from typing import Final
 
 logger = getLogger(__name__)
 
-URL_MAJSOUL: Final[str] = "https://game.mahjongsoul.com/"
+URL_MAJSOUL_JP: Final[str] = "https://game.mahjongsoul.com/"
+"""The URL for the Mahjong Soul JP server."""
 
 STD_WIDTH: Final[int] = 1920
+"""The standard viewport width."""
 STD_HEIGHT: Final[int] = 1080
+"""The standard viewport height."""
 MIN_WIDTH: Final[int] = STD_WIDTH * 2 // 3
+"""The minimum allowed viewport width."""
 MIN_HEIGHT: Final[int] = STD_HEIGHT * 2 // 3
+"""The minimum allowed viewport height."""
 MAX_WIDTH: Final[int] = STD_WIDTH * 2
+"""The maximum allowed viewport width."""
 MAX_HEIGHT: Final[int] = STD_HEIGHT * 2
+"""The maximum allowed viewport height."""
 ASPECT_RATIO: Final[Fraction] = Fraction(16, 9)
+"""The required aspect ratio for the viewport."""
 
 
 def validate_viewport_size(width: int, height: int) -> None:
+    """Validates if a given viewport size is supported.
+
+    Checks if the given viewport width and height are within the allowed
+    range and have the correct aspect ratio.
+
+    Args:
+        width: The viewport width.
+        height: The viewport height.
+
+    Raises:
+        ValueError: If the viewport size is not supported.
+    """
     if (
         width < MIN_WIDTH
         or width > MAX_WIDTH
@@ -42,6 +62,24 @@ def validate_region(
     viewport_width: int,
     viewport_height: int,
 ) -> None:
+    """Validates if a given region is within the bounds of a viewport.
+
+    Checks if the given region, defined by its top-left corner
+    (`left`, `top`) and dimensions (`width`, `height`), is within
+    the bounds of the viewport with dimensions (`viewport_width`,
+    `viewport_height`).
+
+    Args:
+        left: The x-coordinate of the region's top-left corner.
+        top: The y-coordinate of the region's top-left corner.
+        width: The width of the region.
+        height: The height of the region.
+        viewport_width: The viewport width.
+        viewport_height: The viewport height.
+
+    Raises:
+        ValueError: If the specified region is invalid.
+    """
     if (
         left < 0
         or top < 0
@@ -53,7 +91,7 @@ def validate_region(
         or height > (viewport_height - top)
     ):
         msg = (
-            "A click was requested into an invalid area."
+            "An invalid region was specified."
             f" {left=}, {top=}, {width=}, {height=}"
         )
         raise ValueError(msg)
@@ -66,9 +104,24 @@ def get_random_point_in_region(
     height: int,
     edge_sigma: float = 0.2,
 ) -> tuple[int, int]:
-    """Return random point in region.
+    """Gets a random point in a given region.
 
     This function does not validate parameters.
+
+    Args:
+        left: The x-coordinate of the region's top-left corner.
+        top: The y-coordinate of the region's top-left corner.
+        width: The width of the region.
+        height: The height of the region.
+        edge_sigma: Controls the spread of points of the region.
+            The smaller the `edge_sigma`, the larger the spread (sigma),
+            causing points to be more widely distributed. Conversely,
+            a larger `edge_sigma` results in a smaller spread (sigma),
+            concentrating points closer to the center.
+            Defaults to `0.2`.
+
+    Returns:
+        x, y-coordinates of a random point within the specified region.
     """
 
     def _get_point_impl(distance_origin: int, length_region: int) -> int:
@@ -88,6 +141,8 @@ def get_random_point_in_region(
 
 
 class BrowserBase(metaclass=ABCMeta):
+    """An abstract base class for browser interactions."""
+
     @abstractmethod
     async def get_zoom_ratio(self) -> float:
         pass
