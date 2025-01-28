@@ -19,7 +19,7 @@ from majsoulrpa.client._validation import validate_user_port
 from .base import (
     STD_HEIGHT,
     STD_WIDTH,
-    URL_MAJSOUL,
+    URL_MAJSOUL_JP,
     BrowserBase,
     get_random_point_in_region,
     validate_region,
@@ -125,7 +125,7 @@ class LocalBrowser(LocalBrowserBase):
             )
             self._page = await self._context.new_page()
 
-        await self._page.goto(URL_MAJSOUL)
+        await self._page.goto(URL_MAJSOUL_JP)
 
     @override
     def is_launched(self) -> bool:
