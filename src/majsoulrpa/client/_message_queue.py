@@ -68,10 +68,12 @@ class MessageQueue(MessageQueueBase):
         self._messages: Queue[Message] = Queue()
         self._put_back_messages: deque[Message] = deque()
 
+        self._wrapper = liqi_pb2.Wrapper()
         self._message_type_map: dict[
             str,
             tuple[type[ProtobufMessage], type[ProtobufMessage] | None],
         ] = {}
+
         for sdesc in liqi_pb2.DESCRIPTOR.services_by_name.values():
             for mdesc in sdesc.methods:
                 self._message_type_map["." + mdesc.full_name] = (
@@ -86,6 +88,10 @@ class MessageQueue(MessageQueueBase):
             )
 
         self._account_id: int | None = None
+
+    def _unwrap_message(self, message: bytes) -> tuple[str, bytes]:
+        self._wrapper.ParseFromString(message)
+        return (self._wrapper.name, self._wrapper.data)
 
     def _enqueue_message(self, message: dict[str, Any]) -> None:
         request_direction: str = message["request_direction"]
@@ -104,22 +110,17 @@ class MessageQueue(MessageQueueBase):
             datetime.UTC,
         )
 
-        def unwrap_message(message: bytes) -> tuple[str, bytes]:
-            wrapper = liqi_pb2.Wrapper()
-            wrapper.ParseFromString(message)
-            return (wrapper.name, wrapper.data)
-
         match request[0]:
             # A request message that does not require a response
             # is missing the two bytes of the message number.
             case 1:
-                name, request_data = unwrap_message(request[1:])
+                name, request_data = self._unwrap_message(request[1:])
             # A request message that has a corresponding
             # response message, there are 2 bytes to store
             # the message number, and the name must be extracted to
             # parse the response message.
             case 2:
-                name, request_data = unwrap_message(request[3:])
+                name, request_data = self._unwrap_message(request[3:])
             case _:
                 msg = f"{request[0]}: unknown request type."
                 raise RuntimeError(msg)
@@ -128,7 +129,7 @@ class MessageQueue(MessageQueueBase):
             if response[0] != 3:  # noqa: PLR2004
                 msg = f"{response[0]}: unknown response type."
                 raise RuntimeError(msg)
-            response_name, response_data = unwrap_message(response[3:])
+            response_name, response_data = self._unwrap_message(response[3:])
             if response_name != "":
                 msg = f"{response_name}: unknown response name."
                 raise RuntimeError(msg)
