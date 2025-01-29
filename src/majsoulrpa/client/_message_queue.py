@@ -54,11 +54,11 @@ class MessageQueueBase(metaclass=ABCMeta):
 
 
 class MessageQueue(MessageQueueBase):
-    # List of WebSocket messages that can obtain account id
     _ACCOUNT_ID_MESSAGES: ClassVar[dict[str, list[str]]] = {
         ".lq.Lobby.oauth2Login": ["account_id"],
         ".lq.Lobby.createRoom": ["room", "owner_id"],
     }
+    """List of WebSocket messages that can obtain the account id."""
 
     @override
     def __init__(self, host: str = "127.0.0.1", port: int = 37247) -> None:
