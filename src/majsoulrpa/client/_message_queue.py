@@ -93,6 +93,59 @@ class MessageQueue(MessageQueueBase):
         self._wrapper.ParseFromString(message)
         return (self._wrapper.name, self._wrapper.data)
 
+    def _jsonize(
+        self,
+        name: str,
+        data: bytes,
+        *,
+        is_response: bool,
+    ) -> dict[str, Any]:
+        if is_response:
+            response = self._message_type_map[name][1]
+            if response is None:
+                msg = "There is no response message."
+                raise RuntimeError(msg)
+
+            try:
+                parser = response()
+            except IndexError as ie:
+                now = datetime.datetime.now(datetime.UTC)
+                file_name = now.strftime(f"%Y-%m-%d-%H-%M-%S-{name}.bin")
+                with Path(file_name).open("wb") as fp:
+                    fp.write(data)
+                msg = (
+                    "A new API found:\n"
+                    f"  name: {name}\n"
+                    f"Raw data was saved to {file_name}.\n"
+                    "Please cooperate by providing data. "
+                    "Thank you for your cooperation."
+                )
+                raise RuntimeError(msg) from ie
+        else:
+            try:
+                parser = self._message_type_map[name][0]()
+            except KeyError as ke:
+                now = datetime.datetime.now(datetime.UTC)
+                file_name = now.strftime(f"%Y-%m-%d-%H-%M-%S-{name}.bin")
+                with Path(file_name).open("wb") as fp:
+                    fp.write(data)
+                msg = (
+                    "A new API found:\n"
+                    f"  name: {name}\n"
+                    f"Raw data was saved to {file_name}.\n"
+                    "Please cooperate by providing data. "
+                    "Thank you for your cooperation."
+                )
+                raise RuntimeError(msg) from ke
+
+        parser.ParseFromString(data)
+
+        return google.protobuf.json_format.MessageToDict(
+            parser,
+            always_print_fields_with_no_presence=True,
+            preserving_proto_field_name=True,
+        )
+
     def _enqueue_message(self, message: dict[str, Any]) -> None:
         request_direction: str = message["request_direction"]
         encoded_request: str = message["request"]
@@ -137,61 +190,13 @@ class MessageQueue(MessageQueueBase):
             response_data = b""
 
         # Convert Protocol Buffers messages to JSONizable object format
-        def jsonize(
-            name: str,
-            data: bytes,
-            *,
-            is_response: bool,
-        ) -> dict[str, Any]:
-            if is_response:
-                response = self._message_type_map[name][1]
-                if response is None:
-                    msg = "There is no response message."
-                    raise RuntimeError(msg)
-
-                try:
-                    parser = response()
-                except IndexError as ie:
-                    now = datetime.datetime.now(datetime.UTC)
-                    file_name = now.strftime(f"%Y-%m-%d-%H-%M-%S-{name}.bin")
-                    with Path(file_name).open("wb") as fp:
-                        fp.write(data)
-                    msg = (
-                        "A new API found:\n"
-                        f"  name: {name}\n"
-                        f"Raw data was saved to {file_name}.\n"
-                        "Please cooperate by providing data. "
-                        "Thank you for your cooperation."
-                    )
-                    raise RuntimeError(msg) from ie
-            else:
-                try:
-                    parser = self._message_type_map[name][0]()
-                except KeyError as ke:
-                    now = datetime.datetime.now(datetime.UTC)
-                    file_name = now.strftime(f"%Y-%m-%d-%H-%M-%S-{name}.bin")
-                    with Path(file_name).open("wb") as fp:
-                        fp.write(data)
-                    msg = (
-                        "A new API found:\n"
-                        f"  name: {name}\n"
-                        f"Raw data was saved to {file_name}.\n"
-                        "Please cooperate by providing data. "
-                        "Thank you for your cooperation."
-                    )
-                    raise RuntimeError(msg) from ke
-
-            parser.ParseFromString(data)
-
-            return google.protobuf.json_format.MessageToDict(
-                parser,
-                always_print_fields_with_no_presence=True,
-                preserving_proto_field_name=True,
-            )
-
-        jsonized_request = jsonize(name, request_data, is_response=False)
+        jsonized_request = self._jsonize(name, request_data, is_response=False)
         if response is not None:
-            jsonized_response = jsonize(name, response_data, is_response=True)
+            jsonized_response = self._jsonize(
+                name,
+                response_data,
+                is_response=True,
+            )
         else:
             jsonized_response = None
 
