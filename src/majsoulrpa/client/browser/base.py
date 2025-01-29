@@ -145,7 +145,12 @@ class BrowserBase(metaclass=ABCMeta):
 
     @abstractmethod
     async def get_zoom_ratio(self) -> float:
-        pass
+        """Gets the zoom ratio of the viewport size.
+
+        Returns:
+            The zoom ratio of the current viewport size relative to the
+                standard viewport size.
+        """
 
     @abstractmethod
     async def refresh(self) -> None:
@@ -187,12 +192,33 @@ class BrowserBase(metaclass=ABCMeta):
         height: int,
         edge_sigma: float = 2.0,
     ) -> None:
-        pass
+        """Clicks a random point in a given region.
+
+        Args:
+            left: The x-coordinate of the region's top-left corner.
+            top: The y-coordinate of the region's top-left corner.
+            width: The width of the region.
+            height: The height of the region.
+            edge_sigma: Controls the spread of points of the region.
+                The smaller the `edge_sigma`, the larger the spread
+                (sigma), causing points to be more widely distributed.
+                Conversely, a larger `edge_sigma` results in a smaller
+                spread (sigma), concentrating points closer to the
+                center. Defaults to 2.0.
+
+        Raises:
+            ValueError: If the specified region is invalid or
+                `edge_sigma` is not positive.
+        """
 
     @abstractmethod
     async def get_screenshot(self) -> bytes:
-        pass
+        """Captures a screenshot in PNG format.
+
+        Returns:
+            The screenshot as a PNG byte array.
+        """
 
     @abstractmethod
     async def close(self) -> None:
-        pass
+        """Closes the browser."""

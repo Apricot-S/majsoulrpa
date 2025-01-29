@@ -263,7 +263,6 @@ class LocalBrowser(LocalBrowserBase):
 
     @override
     async def get_screenshot(self) -> bytes:
-        """Return bytes in png format."""
         self._assert_launched()
         assert self._page is not None  # noqa: S101
         return await self._page.screenshot()
