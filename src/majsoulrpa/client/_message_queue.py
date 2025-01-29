@@ -2,10 +2,11 @@ import asyncio
 import base64
 import datetime
 import json
+from abc import ABCMeta, abstractmethod
 from asyncio.queues import Queue
 from collections import deque
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, override
 
 import google.protobuf.json_format
 import zmq.asyncio
@@ -25,13 +26,41 @@ type Message = tuple[
 ]
 
 
-class MessageQueue:
+class MessageQueueBase(metaclass=ABCMeta):
+    @abstractmethod
+    def __init__(self, host: str, port: int) -> None:
+        pass
+
+    @abstractmethod
+    async def run(self) -> None:
+        pass
+
+    @abstractmethod
+    async def get(self) -> Message:
+        pass
+
+    @abstractmethod
+    def get_nowait(self) -> Message | None:
+        pass
+
+    @abstractmethod
+    def put_back(self, message: Message) -> None:
+        pass
+
+    @property
+    @abstractmethod
+    def account_id(self) -> int | None:
+        pass
+
+
+class MessageQueue(MessageQueueBase):
     # List of WebSocket messages that can obtain account id
     _ACCOUNT_ID_MESSAGES: ClassVar[dict[str, list[str]]] = {
         ".lq.Lobby.oauth2Login": ["account_id"],
         ".lq.Lobby.createRoom": ["room", "owner_id"],
     }
 
+    @override
     def __init__(self, host: str = "127.0.0.1", port: int = 37247) -> None:
         self._host = host
         self._port = port
@@ -196,6 +225,7 @@ class MessageQueue:
             ),
         )
 
+    @override
     async def run(self) -> None:
         context = zmq.asyncio.Context()  # type: ignore[attr-defined]
         socket = context.socket(zmq.SUB)
@@ -213,11 +243,13 @@ class MessageQueue:
             message: dict[str, Any] = json.loads(message_str)
             self._enqueue_message(message)
 
+    @override
     async def get(self) -> Message:
         if len(self._put_back_messages) >= 1:
             return self._put_back_messages.popleft()
         return await self._messages.get()
 
+    @override
     def get_nowait(self) -> Message | None:
         if len(self._put_back_messages) >= 1:
             return self._put_back_messages.popleft()
@@ -225,9 +257,11 @@ class MessageQueue:
             return None
         return self._messages.get_nowait()
 
+    @override
     def put_back(self, message: Message) -> None:
         self._put_back_messages.append(message)
 
     @property
+    @override
     def account_id(self) -> int | None:
         return self._account_id
