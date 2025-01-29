@@ -5,6 +5,7 @@ import json
 from abc import ABCMeta, abstractmethod
 from asyncio.queues import Queue
 from collections import deque
+from ipaddress import ip_address
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, override
 
@@ -13,6 +14,7 @@ import zmq.asyncio
 from google.protobuf.message_factory import GetMessageClass
 
 from majsoulrpa._majsoul_internal.protocol import liqi_pb2
+from majsoulrpa.client._validation import validate_user_port
 
 if TYPE_CHECKING:
     from google.protobuf.message import Message as ProtobufMessage
@@ -62,6 +64,8 @@ class MessageQueue(MessageQueueBase):
 
     @override
     def __init__(self, host: str = "127.0.0.1", port: int = 37247) -> None:
+        ip_address(host)
+        validate_user_port(port)
         self._host = host
         self._port = port
 
