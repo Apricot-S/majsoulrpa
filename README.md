@@ -19,9 +19,9 @@ This is fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-r
 
 ## Implementation concept diagram
 
-### Desktop mode
+### Local mode
 
-![desktop](./docs/img/desktop.png)
+![local](./docs/img/local.png)
 
 ### Remote mode
 
