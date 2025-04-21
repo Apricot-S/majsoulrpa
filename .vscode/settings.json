@@ -14,7 +14,6 @@
     ],
     "mypy-type-checker.importStrategy": "fromEnvironment",
     "ruff.enable": true,
-    "ruff.lint.run": "onSave",
     "ruff.organizeImports": true,
     "[json]": {
         "editor.formatOnSave": true,
