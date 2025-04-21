@@ -19,13 +19,14 @@ def to_timedelta(seconds: TimeoutType) -> datetime.timedelta:
         A `datetime.timedelta` object that represents the same timeout
             duration as the input `seconds`.
     """
-    if isinstance(seconds, datetime.timedelta):
-        return seconds
-    if isinstance(seconds, int | float):
-        return datetime.timedelta(seconds=seconds)
-
-    msg = f"{seconds} is not `TimeoutType`."
-    raise TypeError(msg)
+    match seconds:
+        case datetime.timedelta():
+            return seconds
+        case int() | float():
+            return datetime.timedelta(seconds=seconds)
+        case _:
+            msg = f"{seconds} is not `TimeoutType`."
+            raise TypeError(msg)
 
 
 def timeout_to_deadline(timeout: TimeoutType) -> datetime.datetime:
