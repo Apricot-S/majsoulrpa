@@ -6,7 +6,7 @@ authors = [
     { name = "Apricot S." },
     { name = "Cryolite", email = "cryolite.indigo@gmail.com" },
 ]
-license = { text = "MIT License" }
+license = "MIT"
 readme = "README.md"
 requires-python = ">= 3.12"
 keywords = ["mahjong", "Mahjong Soul", "Majsoul", "automation", "RPA"]
