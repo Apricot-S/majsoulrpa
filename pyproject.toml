@@ -71,7 +71,9 @@ allow-direct-references = true
 [tool.hatch.build.targets.wheel]
 packages = ["src/majsoulrpa"]
 
-[tool.pytest.ini_options]
+[tool.pytest]
+minversion = "9.0"
+strict = true
 testpaths = ["tests"]
 
 [tool.ruff]
