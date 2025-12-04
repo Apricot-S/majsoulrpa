@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from majsoulrpa.presentation.template.config import Config
 
@@ -63,3 +64,52 @@ def test_from_file_normal_values(tmp_path: Path) -> None:
     assert cfg.region.height == 400
     assert cfg.margin.right == 20
     assert pytest.approx(cfg.settings.threshold, rel=1e-9) == 0.75
+
+
+@pytest.fixture
+def base_toml() -> str:
+    return """
+    [region]
+    left = 1
+    top = 1
+    width = 10
+    height = 10
+
+    [margin]
+    left = 1
+    right = 1
+    top = 1
+    bottom = 1
+
+    [settings]
+    threshold = 0.5
+    """
+
+
+@pytest.mark.parametrize(
+    ("replace_str", "bad_str"),
+    [
+        ("width = 10", "width = 0"),
+        ("width = 10", "width = -1"),
+        ("height = 10", "height = 0"),
+        ("height = 10", "height = -1"),
+        ("left = 1", "left = -1"),
+        ("right = 1", "right = -1"),
+        ("top = 1", "top = -1"),
+        ("bottom = 1", "bottom = -1"),
+        ("threshold = 0.5", "threshold = 0.0"),
+        ("threshold = 0.5", "threshold = 1.0"),
+    ],
+)
+def test_invalid_values(
+    tmp_path: Path,
+    base_toml: str,
+    replace_str: str,
+    bad_str: str,
+) -> None:
+    toml_content = base_toml.replace(replace_str, bad_str)
+    config_file = tmp_path / "invalid.toml"
+    write_toml(config_file, toml_content)
+
+    with pytest.raises(ValidationError):
+        Config.from_file(config_file)
