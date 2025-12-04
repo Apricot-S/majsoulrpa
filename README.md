@@ -2,7 +2,7 @@
 
 A Robotic Process Automation (RPA) framework for Mahjong Soul (雀魂)
 
-This project is a fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-rpa)**, but has been completely redesigned using the Proactor pattern.
+This project is a fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-rpa)**, but has been completely redesigned based on the Proactor pattern.
 
 ⚠️ **No compatibility is guaranteed** with the original implementation. While some internal ideas and major class names were borrowed, the architecture and codebase are entirely new.
 
