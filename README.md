@@ -9,7 +9,7 @@ Key differences
 
 - ✅ Requires **Python 3.12** or later
 - 🗑️ Removed dependencies on **Docker** and **Redis**
-- 🖥️ Supports moving browser position after launch
+- 🖥️ Supports moving browser window position after launch
 - 🖱️ Mouse can be used freely even while RPA is running
 - 📐 Supports browser viewport sizes other than **1920 × 1080**
 - 🀄 Supports **three-player mahjong**
