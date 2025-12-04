@@ -6,7 +6,7 @@ This project is a fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite
 
 ⚠️ **No compatibility is guaranteed** with the original implementation. While some internal ideas and major class names were borrowed, the architecture and codebase are entirely new.
 
-## Key differences
+Key differences
 
 - ✅ Requires **Python 3.12** or later
 - 🗑️ Removed dependencies on **Docker** and **Redis**
