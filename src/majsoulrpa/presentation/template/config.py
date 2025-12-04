@@ -1,3 +1,6 @@
+import tomllib
+from pathlib import Path
+
 from pydantic import BaseModel, Field
 
 
@@ -23,3 +26,9 @@ class Config(BaseModel):
     region: Region
     margin: Margin
     settings: Settings
+
+    @classmethod
+    def from_file(cls, path: Path) -> "Config":
+        with path.open("rb") as f:
+            data = tomllib.load(f)
+        return cls.model_validate(data)
