@@ -62,11 +62,10 @@ class RPAClient:
         self,
         config: Config,
         data: Any,
+        detection_timeout: float = 30.0,
         browser_client: browser.ClientBase | None = None,
         browser_driver: browser.DriverBase | None = None,
         presentations: frozenset[type[Presentation]] | None = None,
-        *,
-        detection_timeout: float = 60.0,
     ) -> None:
         client = browser_client or browser.Client(config.address, config.port)
         driver = browser_driver or browser.Driver(client)
