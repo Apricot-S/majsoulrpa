@@ -11,11 +11,14 @@ This is fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-r
 - Supports browser viewport sizes other than 1920 x 1080
 - Supports three-player mahjong
 
-## About The Program
+> [!NOTE]
+> This program is intended to enable the participation of bots in friendly matches and tournaments where bot participation is explicitly allowed.
 
-- This program is intended to enable the participation of bots in friendly matches and tournaments where bot participation is explicitly allowed.
-- This program does not support the functionality to enter bots into matches that are open to unspecified individuals, including, but not limited to, ranked matches and special rooms within tournament matches. Furthermore, there is no intention to introduce such functionality in the future.
-- Users of this program accept full responsibility for its use. The authors shall bear no liability whatsoever for any damages resulting from utilization this program, including, but not limited to, account suspension or legal repercussions.
+> [!IMPORTANT]
+> This program does not support the functionality to enter bots into matches that are open to unspecified individuals, including, but not limited to, ranked matches and special rooms within tournament matches. Furthermore, there is no intention to introduce such functionality in the future.
+
+> [!WARNING]
+> Users of this program accept full responsibility for its use. The authors shall bear no liability whatsoever for any damages resulting from utilization this program, including, but not limited to, account suspension or legal repercussions.
 
 ## Implementation concept diagram
 
