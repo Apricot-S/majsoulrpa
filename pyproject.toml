@@ -1,0 +1,118 @@
+[project]
+name = "majsoulrpa"
+version = "0.1.0"
+description = "A Robotic Process Automation (RPA) framework for Mahjong Soul (雀魂)"
+authors = [
+    { name = "Apricot-S" },
+    { name = "Cryolite", email = "cryolite.indigo@gmail.com" },
+]
+license = "MIT"
+license-files = ["LICENSE", "THIRD-PARTY-NOTICES.md"]
+readme = "README.md"
+requires-python = ">=3.12"
+keywords = ["mahjong", "Mahjong Soul", "Majsoul", "automation", "RPA"]
+classifiers = [
+    "Private :: Do Not Upload",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "mitmproxy>=12.2.1",
+    "numpy>=2.2.6",
+    "opencv-python>=4.12.0.88",
+    "playwright>=1.56.0",
+    "protobuf>=6.33.1",
+    "pydantic>=2.11.10",
+    "pyzmq>=27.1.0",
+    "tornado>=6.5.2; sys_platform == 'win32'",
+]
+
+[project.scripts]
+majsoulrpa-browser = "majsoulrpa.browser.server:main"
+
+[project.urls]
+Repository = "https://github.com/Apricot-S/majsoulrpa.git"
+
+[build-system]
+requires = ["uv_build>=0.9.13,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    { include-group = "lint" },
+    { include-group = "test" },
+    { include-group = "typing" },
+    { include-group = "docs" },
+]
+lint = [
+    "ruff>=0.14.6,<0.15",
+]
+test = [
+    "pytest>=9.0.1,<10",
+]
+typing = [
+    "mypy>=1.18.2,<2",
+    "types-protobuf>=6.32.1.20251105",
+]
+docs = [
+    "sphinx>=8.2.3",
+    "sphinx-rtd-theme>=3.0.2",
+]
+
+[tool.pytest]
+minversion = "9.0"
+strict = true
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+src = ["src"]
+extend-exclude = ["src/majsoulrpa/_majsoul_internal/protocol"]
+line-length = 79
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "D",
+    "C901",    # complex-structure
+    "ANN002",  # missing-type-args
+    "ANN003",  # missing-type-kwargs
+    "TD002",   # missing-todo-author
+    "TD003",   # missing-todo-link
+    "PLR0911", # too-many-return-statements
+    "PLR0912", # too-many-branches
+    "PLR0913", # too-many-arguments
+    "PLR0915", # too-many-statements
+]
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 72
+ignore-overlong-task-comments = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"./docs/**.py" = ["ALL"]
+
+[tool.ruff.lint.extend-per-file-ignores]
+"./examples/*" = [
+    "D",      # pydocstyle
+    "S101",   # assert
+    "INP001", # implicit-namespace-package
+    "T201",   # print
+    "TRY004", # type-check-without-type-error
+]
+"./tests/*" = [
+    "D",      # pydocstyle
+    "S101",   # assert
+    "SLF001", # private-member-access
+]
+
+[tool.mypy]
+exclude = [
+    'liqi_pb2\.py$',
+    'liqi_pb2\.pyi$',
+]
