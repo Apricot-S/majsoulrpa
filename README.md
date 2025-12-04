@@ -17,7 +17,7 @@ This is fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-r
 > This framework does not support the functionality to enter bots into matches that are open to unspecified individuals, including, but not limited to, ranked matches and special rooms within tournament matches. Furthermore, there is no intention to introduce such functionality in the future.
 
 > [!WARNING]
-> Users of this framework accept full responsibility for its use. The authors shall bear no liability whatsoever for any damages resulting from utilization this framework, including, but not limited to, account suspension or legal repercussions.
+> Users of this framework accept full responsibility for its use. The authors shall bear no liability whatsoever for any damages resulting from utilization of this framework, including, but not limited to, account suspension or legal repercussions.
 
 ## Implementation concept diagram
 
