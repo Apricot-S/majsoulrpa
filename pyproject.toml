@@ -112,9 +112,10 @@ convention = "google"
     "TRY004", # type-check-without-type-error
 ]
 "./tests/*" = [
-    "D",      # pydocstyle
-    "S101",   # assert
-    "SLF001", # private-member-access
+    "D",       # pydocstyle
+    "S101",    # assert
+    "SLF001",  # private-member-access
+    "PLR2004", # magic-value-comparison
 ]
 
 [tool.mypy]
