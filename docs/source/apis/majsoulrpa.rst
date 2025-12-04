@@ -7,26 +7,15 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   majsoulrpa.client
-   majsoulrpa.config
    majsoulrpa.presentation
-   majsoulrpa.yostar_login
 
 Submodules
 ----------
 
-majsoulrpa.player module
+majsoulrpa.exceptions module
 ------------------------
 
-.. automodule:: majsoulrpa.player
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-majsoulrpa.timeout module
--------------------------
-
-.. automodule:: majsoulrpa.timeout
+.. automodule:: majsoulrpa.exceptions
    :members:
    :undoc-members:
    :show-inheritance:

@@ -12,6 +12,14 @@ majsoulrpa.presentation.exceptions module
    :undoc-members:
    :show-inheritance:
 
+majsoulrpa.presentation.login module
+-----------------------------------------
+
+.. automodule:: majsoulrpa.presentation.login
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 
