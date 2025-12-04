@@ -5,3 +5,9 @@ __all__ = [
     "RPAClient",
     "__version__",
 ]
+
+# submodules
+__all__ += [
+    "exceptions",  # type: ignore[reportUnsupportedDunderAll]
+    "presentation",  # type: ignore[reportUnsupportedDunderAll]
+]
