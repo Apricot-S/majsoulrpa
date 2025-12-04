@@ -12,7 +12,7 @@ This is fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-r
 - Supports three-player mahjong
 
 > [!NOTE]
-> This framework is intended to enable the participation of bots in friendly matches and tournaments where bot participation is explicitly allowed.
+> This framework is intended to enable the participation of bots in friendly matches and tournaments where bot participation is agreed upon by all players involved.
 >
 > This framework does not support the functionality to enter bots into open matches (including, but not limited to, ranked matches and special rooms within tournament matches). Furthermore, there is no intention to introduce such functionality in the future.
 
