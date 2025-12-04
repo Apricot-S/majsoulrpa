@@ -29,6 +29,11 @@ dependencies = [
     "tornado>=6.5.2; sys_platform == 'win32'",
 ]
 
+[project.optional-dependencies]
+email-s3 = [
+    "boto3>=1.42.2",
+]
+
 [project.scripts]
 majsoulrpa-browser = "majsoulrpa.browser.server:main"
 
@@ -53,6 +58,7 @@ test = [
     "pytest>=9.0.1,<10",
 ]
 typing = [
+    "boto3-stubs[s3]>=1.42.2",
     "mypy>=1.18.2,<2",
     "types-protobuf>=6.32.1.20251105",
 ]
