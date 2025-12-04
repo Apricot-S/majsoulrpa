@@ -13,8 +13,7 @@ This is fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-r
 
 > [!NOTE]
 > This program is intended to enable the participation of bots in friendly matches and tournaments where bot participation is explicitly allowed.
-
-> [!IMPORTANT]
+>
 > This program does not support the functionality to enter bots into matches that are open to unspecified individuals, including, but not limited to, ranked matches and special rooms within tournament matches. Furthermore, there is no intention to introduce such functionality in the future.
 
 > [!WARNING]
