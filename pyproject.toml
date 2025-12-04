@@ -3,7 +3,7 @@ name = "majsoulrpa"
 version = "0.1.0"
 description = "A Robotic Process Automation (RPA) framework for Mahjong Soul (雀魂)"
 authors = [
-    { name = "Apricot-S" },
+    { name = "Apricot S." },
     { name = "Cryolite", email = "cryolite.indigo@gmail.com" },
 ]
 license = "MIT"
