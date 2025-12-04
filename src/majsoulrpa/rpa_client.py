@@ -27,12 +27,15 @@ class RPAClient:
             Callable[..., Awaitable[tuple[Presentation, Any]]],
         ] = {}
 
-    async def _detect(self, driver: browser.DriverBase) -> Presentation:
-        candidates = [LoginPresentation]
+    async def _detect(
+        self,
+        presentations: frozenset[type[Presentation]],
+        driver: browser.DriverBase,
+    ) -> Presentation:
         while True:
-            for cand in candidates:
-                if await cand._detect(driver):  # noqa: SLF001
-                    return cand(driver)
+            for p in presentations:
+                if await p._detect(driver):  # noqa: SLF001
+                    return p(driver)
             await asyncio.sleep(0.5)
 
     async def _dispatch(
@@ -61,16 +64,18 @@ class RPAClient:
         data: Any,
         browser_client: browser.ClientBase | None = None,
         browser_driver: browser.DriverBase | None = None,
+        presentations: frozenset[type[Presentation]] | None = None,
         *,
         detection_timeout: float = 60.0,
     ) -> None:
         client = browser_client or browser.Client(config.address, config.port)
         driver = browser_driver or browser.Driver(client)
+        ps = presentations or frozenset({LoginPresentation})
 
         async with client, driver:
             while True:
                 async with asyncio.timeout(detection_timeout):
-                    p = await self._detect(driver)
+                    p = await self._detect(ps, driver)
 
                 await self._dispatch(p, data)
 
