@@ -66,26 +66,6 @@ def test_from_file_normal_values(tmp_path: Path) -> None:
     assert pytest.approx(cfg.settings.threshold, rel=1e-9) == 0.75
 
 
-@pytest.fixture
-def base_toml() -> str:
-    return """
-    [region]
-    left = 1
-    top = 1
-    width = 10
-    height = 10
-
-    [margin]
-    left = 1
-    right = 1
-    top = 1
-    bottom = 1
-
-    [settings]
-    threshold = 0.5
-    """
-
-
 @pytest.mark.parametrize(
     ("replace_str", "bad_str"),
     [
@@ -103,10 +83,25 @@ def base_toml() -> str:
 )
 def test_invalid_values(
     tmp_path: Path,
-    base_toml: str,
     replace_str: str,
     bad_str: str,
 ) -> None:
+    base_toml = """
+    [region]
+    left = 1
+    top = 1
+    width = 10
+    height = 10
+
+    [margin]
+    left = 1
+    right = 1
+    top = 1
+    bottom = 1
+
+    [settings]
+    threshold = 0.5
+    """
     toml_content = base_toml.replace(replace_str, bad_str)
     config_file = tmp_path / "invalid.toml"
     write_toml(config_file, toml_content)
