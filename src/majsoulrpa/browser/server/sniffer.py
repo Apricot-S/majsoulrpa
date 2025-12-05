@@ -5,10 +5,11 @@ import time
 from pathlib import Path
 
 from majsoulrpa.browser.server.config import Config
+from majsoulrpa.netutils import UserPort
 
 
 def wait_for_sniffer(
-    port: int,
+    port: UserPort,
     timeout: float,
     connect_timeout: float,
     interval: float,

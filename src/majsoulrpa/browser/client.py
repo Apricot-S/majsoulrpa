@@ -24,8 +24,8 @@ class ClientBase(ABC):
 class Client(ClientBase):
     def __init__(self, address: str, port: int) -> None:
         ip_address = netutils.parse_ip_address(address)
-        netutils.validate_user_port(port)
-        endpoint = netutils.make_endpoint(ip_address, port)
+        user_port = netutils.validate_user_port(port)
+        endpoint = netutils.make_endpoint(ip_address, user_port)
 
         self._ctx = zmq.asyncio.Context()
         self._socket = self._ctx.socket(zmq.REQ)

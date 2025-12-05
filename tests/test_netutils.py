@@ -34,7 +34,8 @@ def test_parse_ip_address_invalid(raw_ip_address: str) -> None:
 
 @pytest.mark.parametrize("port", [1024, 49151, 19222])
 def test_validate_user_port_valid(port: int) -> None:
-    netutils.validate_user_port(port)
+    p = netutils.validate_user_port(port)
+    assert p == netutils.UserPort(port)
 
 
 @pytest.mark.parametrize("port", [1023, 49152, -19222])
@@ -46,13 +47,21 @@ def test_validate_user_port_invalid(port: int) -> None:
 @pytest.mark.parametrize(
     ("address", "port", "expected"),
     [
-        (IPv4Address("192.168.0.1"), 19222, "192.168.0.1:19222"),
-        (IPv6Address("2001:db8::1"), 19222, "[2001:db8::1]:19222"),
+        (
+            IPv4Address("192.168.0.1"),
+            netutils.UserPort(19222),
+            "192.168.0.1:19222",
+        ),
+        (
+            IPv6Address("2001:db8::1"),
+            netutils.UserPort(19222),
+            "[2001:db8::1]:19222",
+        ),
     ],
 )
 def test_make_endpoint(
     address: IPv4Address | IPv6Address,
-    port: int,
+    port: netutils.UserPort,
     expected: str,
 ) -> None:
     assert netutils.make_endpoint(address, port) == expected

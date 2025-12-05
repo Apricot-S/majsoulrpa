@@ -30,8 +30,8 @@ class Sniffer:
         port: int = ctx.options.port
 
         address = netutils.parse_ip_address(address_str)
-        netutils.validate_user_port(port)
-        endpoint = netutils.make_endpoint(address, port)
+        user_port = netutils.validate_user_port(port)
+        endpoint = netutils.make_endpoint(address, user_port)
 
         self._context = zmq.asyncio.Context()
         self._socket = self._context.socket(zmq.PUB)

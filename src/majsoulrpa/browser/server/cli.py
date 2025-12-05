@@ -36,9 +36,9 @@ class CommandLineArgs:
     def to_config(self) -> Config:
         return Config(
             netutils.parse_ip_address(self.client_address),
-            self.remote_port,
-            self.sniffer_port,
-            self.proxy_port,
+            netutils.validate_user_port(self.remote_port),
+            netutils.validate_user_port(self.sniffer_port),
+            netutils.validate_user_port(self.proxy_port),
         )
 
     def to_option(self) -> Option:
