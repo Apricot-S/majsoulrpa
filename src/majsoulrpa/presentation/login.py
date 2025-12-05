@@ -3,7 +3,7 @@ from typing import Self, override
 
 from majsoulrpa import browser
 from majsoulrpa.browser.driver import Key
-from majsoulrpa.presentation.base import Presentation, PresentationType
+from majsoulrpa.presentation.base import Presentation
 from majsoulrpa.presentation.delay import get_random_delay
 from majsoulrpa.presentation.region import Region
 
@@ -16,11 +16,6 @@ class LoginPresentation(Presentation):
     @override
     def __init__(self, driver: browser.DriverBase) -> None:
         super().__init__(driver)
-
-    @override
-    @staticmethod
-    def get_type() -> str:
-        return PresentationType.LOGIN
 
     @override
     @classmethod

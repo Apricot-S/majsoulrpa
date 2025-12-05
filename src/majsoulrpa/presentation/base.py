@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from enum import StrEnum, auto
 from typing import Self
 
 from majsoulrpa import browser
@@ -9,10 +8,6 @@ from majsoulrpa.presentation.region import (
     Region,
     get_random_point_in_region,
 )
-
-
-class PresentationType(StrEnum):
-    LOGIN = auto()
 
 
 class Presentation(ABC):
@@ -60,11 +55,6 @@ class Presentation(ABC):
         x, y = get_random_point_in_region(scaled, edge_sigma)
         d = get_random_delay(base_delay, delay_sigma)
         await self._driver.click_mouse(x, y, d)
-
-    @staticmethod
-    @abstractmethod
-    def get_type() -> str:
-        pass
 
     @classmethod
     @abstractmethod
