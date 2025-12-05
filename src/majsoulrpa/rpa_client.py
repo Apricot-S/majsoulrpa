@@ -36,9 +36,8 @@ class RPAClient:
         presentation: Presentation,
         data: Any,
     ) -> tuple[Presentation, Any]:
-        callback = self._callbacks[type(presentation)]
         await presentation._pre_dispatch()  # noqa: SLF001
-        return await callback(presentation, data)
+        return await self._callbacks[type(presentation)](presentation, data)
 
     def on[P: Presentation](
         self,
