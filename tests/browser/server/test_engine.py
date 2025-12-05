@@ -5,9 +5,9 @@ from playwright.async_api import ViewportSize
 
 from majsoulrpa.browser.server.engine import (
     Option,
-    create_browser_args,
-    create_ignored_default_args,
-    get_viewport_size,
+    _create_browser_args,
+    _create_ignored_default_args,
+    _get_viewport_size,
 )
 from majsoulrpa.exceptions import UserInputError
 
@@ -125,7 +125,7 @@ def test_create_browser_args_window_position(
 ) -> None:
     cfg = make_config()
     opt = make_option(window_left=window_left, window_top=window_top)
-    assert create_browser_args(cfg, opt) == expected
+    assert _create_browser_args(cfg, opt) == expected
 
 
 @pytest.mark.parametrize(
@@ -155,7 +155,7 @@ def test_create_browser_args_proxy_server(
 ) -> None:
     cfg = make_config(proxy_port=proxy_port)
     opt = make_option()
-    assert create_browser_args(cfg, opt) == expected
+    assert _create_browser_args(cfg, opt) == expected
 
 
 @pytest.mark.parametrize(
@@ -167,7 +167,7 @@ def test_create_ignored_default_args(
     expected: list[str],
 ) -> None:
     opt = make_option(headless=headless)
-    assert create_ignored_default_args(opt) == expected
+    assert _create_ignored_default_args(opt) == expected
 
 
 @pytest.mark.parametrize(
@@ -185,4 +185,4 @@ def test_get_viewport_size(
     expected: tuple[ViewportSize, float],
 ) -> None:
     opt = make_option(viewport_height=viewport_height)
-    assert get_viewport_size(opt) == expected
+    assert _get_viewport_size(opt) == expected

@@ -11,9 +11,9 @@ from majsoulrpa.browser import schemas
 from majsoulrpa.browser.server.config import Config
 from majsoulrpa.browser.server.engine import (
     Option,
-    create_browser_args,
-    create_ignored_default_args,
-    get_viewport_size,
+    _create_browser_args,
+    _create_ignored_default_args,
+    _get_viewport_size,
 )
 from majsoulrpa.browser.server.sniffer import run_sniffer
 from majsoulrpa.sniffer import ADDON_PATH
@@ -149,9 +149,9 @@ async def run_server_inner(
 
 
 async def run_server(config: Config, option: Option) -> None:
-    browser_args = create_browser_args(config, option)
-    ignored_default_args = create_ignored_default_args(option)
-    viewport, scale = get_viewport_size(option)
+    browser_args = _create_browser_args(config, option)
+    ignored_default_args = _create_ignored_default_args(option)
+    viewport, scale = _get_viewport_size(option)
 
     if option.user_data_dir is not None:
         async with (

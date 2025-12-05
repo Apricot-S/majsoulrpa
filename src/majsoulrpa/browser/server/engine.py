@@ -47,7 +47,7 @@ def validate_viewport_height(h: int) -> None:
         raise UserInputError(msg)
 
 
-def create_browser_args(config: Config, option: Option) -> list[str]:
+def _create_browser_args(config: Config, option: Option) -> list[str]:
     window_position = (
         f"--window-position={option.window_left},{option.window_top}"
     )
@@ -56,11 +56,11 @@ def create_browser_args(config: Config, option: Option) -> list[str]:
     return [window_position, proxy_server, ignore_certificate_errors]
 
 
-def create_ignored_default_args(option: Option) -> list[str]:
+def _create_ignored_default_args(option: Option) -> list[str]:
     return [] if option.headless else ["--mute-audio"]
 
 
-def get_viewport_size(option: Option) -> tuple[ViewportSize, float]:
+def _get_viewport_size(option: Option) -> tuple[ViewportSize, float]:
     height = option.viewport_height
     width = height * 16 // 9
     scale = height / DEFAULT_VIEWPORT_HEIGHT
