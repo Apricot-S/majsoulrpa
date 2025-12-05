@@ -7,7 +7,6 @@ from typing import Any
 
 from majsoulrpa import browser
 from majsoulrpa.presentation.base import Presentation
-from majsoulrpa.presentation.login import LoginPresentation
 
 type Callback[P: Presentation] = Callable[[P, Any], Awaitable[tuple[P, Any]]]
 
@@ -19,18 +18,15 @@ class RPAClient:
         port: int
 
     def __init__(self) -> None:
+        self._presentations: set[type[Presentation]] = set()
         self._handlers: dict[
             str,
             Callable[..., Awaitable[tuple[Presentation, Any]]],
         ] = {}
 
-    async def _detect(
-        self,
-        presentations: frozenset[type[Presentation]],
-        driver: browser.DriverBase,
-    ) -> Presentation:
+    async def _detect(self, driver: browser.DriverBase) -> Presentation:
         while True:
-            for candidate in presentations:
+            for candidate in self._presentations:
                 p = await candidate._detect(driver)  # noqa: SLF001
                 if p is not None:
                     return p
@@ -54,6 +50,7 @@ class RPAClient:
         presentation_cls: type[P],
     ) -> Callable[[Callback[P]], Callback[P]]:
         def decorator(callback: Callback[P]) -> Callback[P]:
+            self._presentations.add(presentation_cls)
             self._handlers[presentation_cls.get_type()] = callback
             return callback
 
@@ -66,16 +63,14 @@ class RPAClient:
         detection_timeout: float = 30.0,
         browser_client: browser.ClientBase | None = None,
         browser_driver: browser.DriverBase | None = None,
-        presentations: frozenset[type[Presentation]] | None = None,
     ) -> None:
         client = browser_client or browser.Client(config.address, config.port)
         driver = browser_driver or browser.Driver(client)
-        ps = presentations or frozenset({LoginPresentation})
 
         async with client, driver:
             while True:
                 async with asyncio.timeout(detection_timeout):
-                    p = await self._detect(ps, driver)
+                    p = await self._detect(driver)
 
                 await self._dispatch(p, data)
 
