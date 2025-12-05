@@ -63,7 +63,7 @@ class Presentation(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_type() -> PresentationType:
+    def get_type() -> str:
         pass
 
     @classmethod

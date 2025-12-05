@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from majsoulrpa import browser
-from majsoulrpa.presentation.base import Presentation, PresentationType
+from majsoulrpa.presentation.base import Presentation
 from majsoulrpa.presentation.login import LoginPresentation
 
 
@@ -23,7 +23,7 @@ class RPAClient:
 
     def __init__(self) -> None:
         self._handlers: dict[
-            PresentationType,
+            str,
             Callable[..., Awaitable[tuple[Presentation, Any]]],
         ] = {}
 

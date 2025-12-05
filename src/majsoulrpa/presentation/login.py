@@ -17,7 +17,7 @@ class LoginPresentation(Presentation):
         super().__init__(driver)
 
     @staticmethod
-    def get_type() -> PresentationType:
+    def get_type() -> str:
         return PresentationType.LOGIN
 
     @classmethod
