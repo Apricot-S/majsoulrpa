@@ -5,8 +5,7 @@ from pathlib import Path
 
 from majsoulrpa import netutils
 from majsoulrpa.browser.server.config import Config
-from majsoulrpa.browser.server.engine import Option
-from majsoulrpa.browser.server.server import run_processes
+from majsoulrpa.browser.server.engine import Option, run_processes
 from majsoulrpa.constants import (
     DEFAULT_CLIENT_ADDRESS,
     DEFAULT_PROXY_PORT,
