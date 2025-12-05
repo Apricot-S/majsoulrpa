@@ -35,6 +35,10 @@ class Region:
             raise ValueError(msg)
 
     def scale(self, factor: float) -> "Region":
+        if factor <= 0.0:
+            msg = f"scale factor must be positive, got {factor}"
+            raise ValueError(msg)
+
         return Region(
             self.left * factor,
             self.top * factor,

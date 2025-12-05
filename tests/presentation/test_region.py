@@ -74,3 +74,10 @@ def test_scale_non_origin(
     assert pytest.approx(scaled.top, rel=1e-9) == top
     assert pytest.approx(scaled.width, rel=1e-9) == width
     assert pytest.approx(scaled.height, rel=1e-9) == height
+
+
+@pytest.mark.parametrize("scale", [0.0, -1.0, -0.1])
+def test_scale_non_positive(scale: float) -> None:
+    base = Region(1.0, 2.0, 3.0, 4.0)
+    with pytest.raises(ValueError, match="scale"):
+        base.scale(scale)
