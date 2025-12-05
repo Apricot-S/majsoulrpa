@@ -30,11 +30,6 @@ class LoginPresentation(Presentation):
         # appears. If it is already visible, the click has no effect but
         # causes no issues, so we always perform the click for
         # simplicity.
-        await self._click_login_button()
-        await asyncio.sleep(0.5)
-
-    async def _click_login_button(self) -> None:
-        # Click the "Login" button.
         await self._click_region(LoginPresentation._LOGIN_BUTTON)
         await asyncio.sleep(0.5)
 
