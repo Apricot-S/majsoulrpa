@@ -9,13 +9,10 @@ from majsoulrpa import browser
 from majsoulrpa.presentation.base import Presentation
 from majsoulrpa.presentation.login import LoginPresentation
 
+type Callback[P: Presentation] = Callable[[P, Any], Awaitable[tuple[P, Any]]]
+
 
 class RPAClient:
-    type Callback[P: Presentation] = Callable[
-        [P, Any],
-        Awaitable[tuple[P, Any]],
-    ]
-
     @dataclass(frozen=True)
     class Config:
         address: str
@@ -56,9 +53,7 @@ class RPAClient:
         self,
         presentation_cls: type[P],
     ) -> Callable[[Callback[P]], Callback[P]]:
-        def decorator(
-            callback: RPAClient.Callback[P],
-        ) -> RPAClient.Callback[P]:
+        def decorator(callback: Callback[P]) -> Callback[P]:
             self._handlers[presentation_cls.get_type()] = callback
             return callback
 
