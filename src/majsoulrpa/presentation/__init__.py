@@ -6,3 +6,9 @@ MVC (Model-View-Controller) pattern. As the View, it is tasked with
 detecting and recognizing the screen state. As the Controller, it
 manages interactions with widgets on the screen.
 """
+
+# submodules
+__all__ = [
+    "exceptions",  # type: ignore[reportUnsupportedDunderAll]
+    "login",  # type: ignore[reportUnsupportedDunderAll]
+]
