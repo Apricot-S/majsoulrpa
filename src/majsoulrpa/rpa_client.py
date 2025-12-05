@@ -33,9 +33,10 @@ class RPAClient:
         driver: browser.DriverBase,
     ) -> Presentation:
         while True:
-            for p in presentations:
-                if await p._detect(driver):  # noqa: SLF001
-                    return p(driver)
+            for candidate in presentations:
+                p = await candidate._detect(driver)  # noqa: SLF001
+                if p is not None:
+                    return p
             await asyncio.sleep(0.5)
 
     async def _dispatch(

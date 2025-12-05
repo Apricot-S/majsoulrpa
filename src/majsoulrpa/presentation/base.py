@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import StrEnum, auto
+from typing import Self
 
 from majsoulrpa import browser
 from majsoulrpa.presentation.delay import get_random_delay
@@ -67,7 +68,7 @@ class Presentation(ABC):
 
     @classmethod
     @abstractmethod
-    async def _detect(cls, driver: browser.DriverBase) -> bool:
+    async def _detect(cls, driver: browser.DriverBase) -> Self | None:
         pass
 
     @abstractmethod

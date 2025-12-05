@@ -1,4 +1,5 @@
 import asyncio
+from typing import Self
 
 from majsoulrpa import browser
 from majsoulrpa.browser.driver import Key
@@ -20,12 +21,13 @@ class LoginPresentation(Presentation):
         return PresentationType.LOGIN
 
     @classmethod
-    async def _detect(cls, driver: browser.DriverBase) -> bool:
-        await asyncio.sleep(0.01)  # Dummy 正式な検出処理を入れたら不要
-        return True
+    async def _detect(cls, driver: browser.DriverBase) -> Self | None:
+        p = cls(driver)
+        await p._init_resolution()
+        # TODO: 正式な検出処理を入れる
+        return p
 
     async def _pre_dispatch(self) -> None:
-        await self._init_resolution()
         # Clicking the "Login" button ensures the email input field
         # appears. If it is already visible, the click has no effect but
         # causes no issues, so we always perform the click for
