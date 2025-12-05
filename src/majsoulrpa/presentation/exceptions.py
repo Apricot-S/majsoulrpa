@@ -2,6 +2,7 @@
 
 import datetime
 from pathlib import Path
+from typing import override
 
 
 class BaseError(Exception):
@@ -59,6 +60,7 @@ class InvalidOperationError(BaseError):
     current state of the presentation.
     """
 
+    @override
     def __init__(self, message: str, screenshot: bytes) -> None:
         """Initializes the instance.
 

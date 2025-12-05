@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import override
 
 import cv2
 
@@ -28,6 +29,7 @@ class FileImage(Image):
             raise ImageLoadError(msg)
         return image
 
+    @override
     def get_scaled(self, scale: float) -> cv2.typing.MatLike:
         if self._original is None:
             self._original = self._load()

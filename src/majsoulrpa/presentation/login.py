@@ -1,5 +1,5 @@
 import asyncio
-from typing import Self
+from typing import Self, override
 
 from majsoulrpa import browser
 from majsoulrpa.browser.driver import Key
@@ -13,13 +13,16 @@ class LoginPresentation(Presentation):
     _EMAIL_ADDRESS_FIELD = Region(365, 385, 200, 30)
     _SEND_CODE_BUTTON = Region(850, 500, 190, 70)
 
+    @override
     def __init__(self, driver: browser.DriverBase) -> None:
         super().__init__(driver)
 
+    @override
     @staticmethod
     def get_type() -> str:
         return PresentationType.LOGIN
 
+    @override
     @classmethod
     async def _detect(cls, driver: browser.DriverBase) -> Self | None:
         p = cls(driver)
@@ -27,6 +30,7 @@ class LoginPresentation(Presentation):
         # TODO: 正式な検出処理を入れる
         return p
 
+    @override
     async def _pre_dispatch(self) -> None:
         # Clicking the "Login" button ensures the email input field
         # appears. If it is already visible, the click has no effect but

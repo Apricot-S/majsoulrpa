@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Self
+from typing import Self, override
 
 import zmq.asyncio
 
@@ -34,12 +34,15 @@ class Client(ClientBase):
 
         self._socket.connect(f"tcp://{endpoint}")
 
+    @override
     async def __aenter__(self) -> Self:
         return self
 
+    @override
     async def __aexit__(self, exc_type, exc_value, traceback) -> None:  # noqa: ANN001
         self._close()
 
+    @override
     async def send(self, request: schemas.Request) -> schemas.Response:
         await self._socket.send_string(request.model_dump_json())
         res = await self._socket.recv_string()
