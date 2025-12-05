@@ -20,6 +20,20 @@ class Region:
     width: float
     height: float
 
+    def __post_init__(self) -> None:
+        if self.left < 0.0:
+            msg = f"`Region.left` must be non-negative, got {self.left}"
+            raise ValueError(msg)
+        if self.top < 0.0:
+            msg = f"`Region.top` must be non-negative, got {self.top}"
+            raise ValueError(msg)
+        if self.width <= 0.0:
+            msg = f"`Region.width` must be positive, got {self.width}"
+            raise ValueError(msg)
+        if self.height <= 0.0:
+            msg = f"`Region.height` must be positive, got {self.height}"
+            raise ValueError(msg)
+
     def scale(self, factor: float) -> "Region":
         return Region(
             self.left * factor,
