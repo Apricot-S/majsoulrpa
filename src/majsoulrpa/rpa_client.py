@@ -52,12 +52,17 @@ class RPAClient:
         await presentation._pre_dispatch()  # noqa: SLF001
         return await handler(presentation, data)
 
-    def on_login(
+    def on[P: Presentation](
         self,
-        callback: Callback[LoginPresentation],
-    ) -> Callback[LoginPresentation]:
-        self._handlers[LoginPresentation.get_type()] = callback
-        return callback
+        presentation_cls: type[P],
+    ) -> Callable[[Callback[P]], Callback[P]]:
+        def decorator(
+            callback: RPAClient.Callback[P],
+        ) -> RPAClient.Callback[P]:
+            self._handlers[presentation_cls.get_type()] = callback
+            return callback
+
+        return decorator
 
     async def run(
         self,

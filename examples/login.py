@@ -21,7 +21,7 @@ async def callback_login(
 
 async def main() -> None:
     rpa = RPAClient()
-    rpa.on_login(callback_login)
+    rpa.on(LoginPresentation)(callback_login)
 
     config = RPAClient.Config("127.0.0.1", 19222)
     await rpa.run(config, data=0, detection_timeout=30)
