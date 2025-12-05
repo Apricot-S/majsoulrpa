@@ -64,6 +64,10 @@ class RPAClient:
         browser_client: browser.ClientBase | None = None,
         browser_driver: browser.DriverBase | None = None,
     ) -> None:
+        if not self._presentations:
+            msg = "no callbacks registered: use `RPAClient.on()` to register a Presentation callback"  # noqa: E501
+            raise RuntimeError(msg)
+
         client = browser_client or browser.Client(config.address, config.port)
         driver = browser_driver or browser.Driver(client)
 
