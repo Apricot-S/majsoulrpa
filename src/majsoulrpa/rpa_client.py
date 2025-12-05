@@ -18,15 +18,14 @@ class RPAClient:
         port: int
 
     def __init__(self) -> None:
-        self._presentations: set[type[Presentation]] = set()
         self._callbacks: dict[
-            str,
+            type[Presentation],
             Callable[..., Awaitable[tuple[Presentation, Any]]],
         ] = {}
 
     async def _detect(self, driver: browser.DriverBase) -> Presentation:
         while True:
-            for candidate in self._presentations:
+            for candidate in self._callbacks:
                 p = await candidate._detect(driver)  # noqa: SLF001
                 if p is not None:
                     return p
@@ -37,21 +36,16 @@ class RPAClient:
         presentation: Presentation,
         data: Any,
     ) -> tuple[Presentation, Any]:
-        handler = self._callbacks.get(presentation.get_type())
-        if handler is None:
-            msg = f"no callback registered for {presentation.get_type()}"
-            raise RuntimeError(msg)
-
+        callback = self._callbacks[type(presentation)]
         await presentation._pre_dispatch()  # noqa: SLF001
-        return await handler(presentation, data)
+        return await callback(presentation, data)
 
     def on[P: Presentation](
         self,
         presentation_cls: type[P],
     ) -> Callable[[Callback[P]], Callback[P]]:
         def decorator(callback: Callback[P]) -> Callback[P]:
-            self._presentations.add(presentation_cls)
-            self._callbacks[presentation_cls.get_type()] = callback
+            self._callbacks[presentation_cls] = callback
             return callback
 
         return decorator
@@ -64,7 +58,7 @@ class RPAClient:
         browser_client: browser.ClientBase | None = None,
         browser_driver: browser.DriverBase | None = None,
     ) -> None:
-        if not self._presentations:
+        if not self._callbacks:
             msg = "no callbacks registered: use `RPAClient.on()` to register a Presentation callback"  # noqa: E501
             raise RuntimeError(msg)
 
