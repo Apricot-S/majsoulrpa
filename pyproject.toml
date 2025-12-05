@@ -35,7 +35,7 @@ email-s3 = [
 ]
 
 [project.scripts]
-majsoulrpa-browser = "majsoulrpa.browser.server:main"
+majsoulrpa-browser = "majsoulrpa.browser.server.cli:main"
 
 [project.urls]
 Repository = "https://github.com/Apricot-S/majsoulrpa.git"
