@@ -19,7 +19,7 @@ class RPAClient:
 
     def __init__(self) -> None:
         self._presentations: set[type[Presentation]] = set()
-        self._handlers: dict[
+        self._callbacks: dict[
             str,
             Callable[..., Awaitable[tuple[Presentation, Any]]],
         ] = {}
@@ -37,9 +37,9 @@ class RPAClient:
         presentation: Presentation,
         data: Any,
     ) -> tuple[Presentation, Any]:
-        handler = self._handlers.get(presentation.get_type())
+        handler = self._callbacks.get(presentation.get_type())
         if handler is None:
-            msg = f"no handler registered for {presentation.get_type()}"
+            msg = f"no callback registered for {presentation.get_type()}"
             raise RuntimeError(msg)
 
         await presentation._pre_dispatch()  # noqa: SLF001
@@ -51,7 +51,7 @@ class RPAClient:
     ) -> Callable[[Callback[P]], Callback[P]]:
         def decorator(callback: Callback[P]) -> Callback[P]:
             self._presentations.add(presentation_cls)
-            self._handlers[presentation_cls.get_type()] = callback
+            self._callbacks[presentation_cls.get_type()] = callback
             return callback
 
         return decorator
