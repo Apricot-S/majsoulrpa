@@ -25,3 +25,4 @@ def run_browser_server(
     finally:
         if sniffer_process.poll() is None:
             sniffer_process.terminate()
+        sniffer_process.wait()
