@@ -8,7 +8,7 @@ from typing import Any
 from majsoulrpa import browser, constants
 from majsoulrpa.presentation.base import Presentation
 
-type Callback[P: Presentation] = Callable[[P, Any], Awaitable[tuple[P, Any]]]
+type Callback[P: Presentation] = Callable[[P, Any], Awaitable[Any]]
 
 
 class RPAClient:
@@ -20,7 +20,7 @@ class RPAClient:
     def __init__(self) -> None:
         self._callbacks: dict[
             type[Presentation],
-            Callable[..., Awaitable[tuple[Presentation, Any]]],
+            Callable[..., Awaitable[Any]],
         ] = {}
 
     async def _detect(self, driver: browser.DriverBase) -> Presentation:
@@ -31,11 +31,7 @@ class RPAClient:
                     return p
             await asyncio.sleep(0.5)
 
-    async def _dispatch(
-        self,
-        presentation: Presentation,
-        data: Any,
-    ) -> tuple[Presentation, Any]:
+    async def _dispatch(self, presentation: Presentation, data: Any) -> Any:
         await presentation._pre_dispatch()  # noqa: SLF001
         return await self._callbacks[type(presentation)](presentation, data)
 
@@ -69,7 +65,7 @@ class RPAClient:
                 async with asyncio.timeout(detection_timeout):
                     p = await self._detect(driver)
 
-                await self._dispatch(p, data)
+                data = await self._dispatch(p, data)
 
                 if p._is_ended:  # noqa: SLF001
                     break

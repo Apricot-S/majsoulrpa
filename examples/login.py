@@ -10,16 +10,13 @@ rpa = RPAClient()
 
 
 @rpa.on(LoginPresentation)
-async def on_login(
-    p: LoginPresentation,
-    data: Any,
-) -> tuple[LoginPresentation, Any]:
+async def on_login(p: LoginPresentation, data: Any) -> Any:
     async with asyncio.timeout(30):
         await p.enter_email_address("majsoul-rpa-dev@example.com")
         await asyncio.sleep(2)
         await p.end(close_browser=True)
 
-    return p, data + 1
+    return data + 1
 
 
 async def main() -> None:
