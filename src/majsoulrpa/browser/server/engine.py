@@ -14,7 +14,7 @@ from majsoulrpa.exceptions import UserInputError
 
 MAJSOUL_URL = "https://game.mahjongsoul.com/"  # JP version
 
-PAGE_WAIT_TIMEOUT = 30000
+PAGE_WAIT_TIMEOUT = 30_000
 
 type BrowserEngineRunner = Callable[
     [Config, Option, core.ServerRunner],
