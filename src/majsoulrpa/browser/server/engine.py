@@ -1,15 +1,16 @@
 import asyncio
 import base64
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Never
+from typing import Any, Never
 
 from playwright.async_api import Page, ViewportSize, async_playwright
 
 from majsoulrpa.browser import schemas
 from majsoulrpa.browser.server import core
 from majsoulrpa.browser.server.config import Config
-from majsoulrpa.browser.server.sniffer import run_sniffer
+from majsoulrpa.browser.server.sniffer import SnifferRunner, run_sniffer
 from majsoulrpa.constants import DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.exceptions import UserInputError
 from majsoulrpa.sniffer import ADDON_PATH
@@ -17,6 +18,11 @@ from majsoulrpa.sniffer import ADDON_PATH
 MAJSOUL_URL = "https://game.mahjongsoul.com/"  # JP version
 
 PAGE_WAIT_TIMEOUT = 30000
+
+type BrowserRunner = Callable[
+    [Config, Option, core.ServerRunner],
+    Coroutine[Any, Any, None],
+]
 
 
 @dataclass(frozen=True)
@@ -243,11 +249,27 @@ async def run_browser_server(
             await server_runner(config, request_handler)
 
 
-def run_processes(config: Config, option: Option) -> None:
-    sniffer_process = run_sniffer(config, ADDON_PATH)
+def run_processes_impl(
+    config: Config,
+    option: Option,
+    server_runner: core.ServerRunner,
+    browser_runner: BrowserRunner,
+    sniffer_runner: SnifferRunner,
+) -> None:
+    sniffer_process = sniffer_runner(config)
 
     try:
-        asyncio.run(run_browser_server(config, option, core.run_server))
+        asyncio.run(browser_runner(config, option, server_runner))
     finally:
         if sniffer_process.poll() is None:
             sniffer_process.terminate()
+
+
+def run_processes(config: Config, option: Option) -> None:
+    run_processes_impl(
+        config,
+        option,
+        core.run_server,
+        run_browser_server,
+        lambda c: run_sniffer(c, ADDON_PATH),
+    )

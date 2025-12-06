@@ -2,10 +2,13 @@ import contextlib
 import socket
 import subprocess
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 from majsoulrpa.browser.server.config import Config
 from majsoulrpa.netutils import UserPort
+
+type SnifferRunner = Callable[[Config], subprocess.Popen]
 
 
 def wait_for_sniffer(
