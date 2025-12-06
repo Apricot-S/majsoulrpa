@@ -6,7 +6,7 @@ from pathlib import Path
 from majsoulrpa import netutils
 from majsoulrpa.browser.server.config import Config
 from majsoulrpa.browser.server.engine import Option
-from majsoulrpa.browser.server.runtime import run_processes
+from majsoulrpa.browser.server.runtime import run_browser_server
 from majsoulrpa.constants import (
     DEFAULT_CLIENT_ADDRESS,
     DEFAULT_PROXY_PORT,
@@ -105,7 +105,7 @@ def main() -> None:
         args = get_command_line_args()
         config = args.to_config()
         option = args.to_option()
-        run_processes(config, option)
+        run_browser_server(config, option)
     except UserInputError as e:
         print(e, file=sys.stderr)  # noqa: T201
         sys.exit(1)

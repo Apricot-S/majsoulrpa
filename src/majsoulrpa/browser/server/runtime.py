@@ -1,22 +1,16 @@
 import asyncio
 
-from majsoulrpa.browser.server import core
+from majsoulrpa.browser.server import core, engine, sniffer
 from majsoulrpa.browser.server.config import Config
-from majsoulrpa.browser.server.engine import (
-    BrowserEngineRunner,
-    Option,
-    run_browser_engine,
-)
-from majsoulrpa.browser.server.sniffer import SnifferRunner, run_sniffer
 from majsoulrpa.sniffer import ADDON_PATH
 
 
-def run_processes_impl(
+def run_browser_server_impl(
     config: Config,
-    option: Option,
+    option: engine.Option,
     server_runner: core.ServerRunner,
-    browser_engine_runner: BrowserEngineRunner,
-    sniffer_runner: SnifferRunner,
+    browser_engine_runner: engine.BrowserEngineRunner,
+    sniffer_runner: sniffer.SnifferRunner,
 ) -> None:
     sniffer_process = sniffer_runner(config)
 
@@ -27,11 +21,11 @@ def run_processes_impl(
             sniffer_process.terminate()
 
 
-def run_processes(config: Config, option: Option) -> None:
-    run_processes_impl(
+def run_browser_server(config: Config, option: engine.Option) -> None:
+    run_browser_server_impl(
         config,
         option,
         core.run_server,
-        run_browser_engine,
-        lambda c: run_sniffer(c, ADDON_PATH),
+        engine.run_browser_engine,
+        lambda c: sniffer.run_sniffer(c, ADDON_PATH),
     )
