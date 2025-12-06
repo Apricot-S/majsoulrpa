@@ -7,8 +7,8 @@ from typing import Never
 from playwright.async_api import Page, ViewportSize, async_playwright
 
 from majsoulrpa.browser import schemas
+from majsoulrpa.browser.server import core
 from majsoulrpa.browser.server.config import Config
-from majsoulrpa.browser.server.core import RequestHandler, start_server
 from majsoulrpa.browser.server.sniffer import run_sniffer
 from majsoulrpa.constants import DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.exceptions import UserInputError
@@ -154,7 +154,7 @@ def _request_handler_factory(
     page: Page,
     viewport: ViewportSize,
     scale: float,
-) -> RequestHandler:
+) -> core.RequestHandler:
     async def handle_request(req: schemas.Request) -> schemas.Response:
         match req:
             case schemas.ResolutionRequest():
@@ -188,7 +188,11 @@ async def _prepare_majsoul_page(page: Page) -> None:
     await page.wait_for_selector("#layaCanvas", timeout=PAGE_WAIT_TIMEOUT)
 
 
-async def run_server(config: Config, option: Option) -> None:
+async def run_browser_server(
+    config: Config,
+    option: Option,
+    server_runner: core.ServerRunner,
+) -> None:
     browser_args = _create_browser_args(config, option)
     ignored_default_args = _create_ignored_default_args(option)
     viewport, scale = _get_viewport_size(option)
@@ -212,7 +216,7 @@ async def run_server(config: Config, option: Option) -> None:
                     viewport,
                     scale,
                 )
-                await start_server(config, request_handler)
+                await server_runner(config, request_handler)
             else:
                 async with await context.new_page() as page:
                     await _prepare_majsoul_page(page)
@@ -221,7 +225,7 @@ async def run_server(config: Config, option: Option) -> None:
                         viewport,
                         scale,
                     )
-                    await start_server(config, request_handler)
+                    await server_runner(config, request_handler)
     else:
         # incognito mode
         async with (
@@ -236,14 +240,14 @@ async def run_server(config: Config, option: Option) -> None:
         ):
             await _prepare_majsoul_page(page)
             request_handler = _request_handler_factory(page, viewport, scale)
-            await start_server(config, request_handler)
+            await server_runner(config, request_handler)
 
 
 def run_processes(config: Config, option: Option) -> None:
     sniffer_process = run_sniffer(config, ADDON_PATH)
 
     try:
-        asyncio.run(run_server(config, option))
+        asyncio.run(run_browser_server(config, option, core.run_server))
     finally:
         if sniffer_process.poll() is None:
             sniffer_process.terminate()

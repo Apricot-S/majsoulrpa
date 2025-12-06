@@ -8,6 +8,7 @@ from majsoulrpa.browser.server.config import Config
 from majsoulrpa.netutils import make_endpoint
 
 type RequestHandler = Callable[[schemas.Request], Awaitable[schemas.Response]]
+type ServerRunner = Callable[[Config, RequestHandler], Awaitable[None]]
 
 
 async def _server_loop(
@@ -23,7 +24,7 @@ async def _server_loop(
             break
 
 
-async def start_server(
+async def run_server(
     config: Config,
     request_handler: RequestHandler,
 ) -> None:
