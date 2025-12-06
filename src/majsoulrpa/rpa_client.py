@@ -15,7 +15,7 @@ class RPAClient:
     @dataclass(frozen=True)
     class Config:
         address: str = constants.DEFAULT_CLIENT_ADDRESS
-        port: int = constants.DEFAULT_REMOTE_PORT
+        remote_port: int = constants.DEFAULT_REMOTE_PORT
 
     def __init__(self) -> None:
         self._callbacks: dict[
@@ -57,13 +57,15 @@ class RPAClient:
             msg = "no callbacks registered: use `RPAClient.on()` to register a Presentation callback"  # noqa: E501
             raise RuntimeError(msg)
 
-        client = browser_client or browser.Client(config.address, config.port)
-        driver = browser_driver or browser.Driver(client)
+        if browser_client is None:
+            browser_client = browser.Client(config.address, config.remote_port)
+        if browser_driver is None:
+            browser_driver = browser.Driver(browser_client)
 
-        async with client, driver:
+        async with browser_client, browser_driver:
             while True:
                 async with asyncio.timeout(detection_timeout):
-                    p = await self._detect(driver)
+                    p = await self._detect(browser_driver)
 
                 data = await self._dispatch(p, data)
 

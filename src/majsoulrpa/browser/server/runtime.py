@@ -12,11 +12,12 @@ def run_browser_server(
     browser_engine_runner: engine.BrowserEngineRunner | None = None,
     sniffer_runner: sniffer.SnifferRunner | None = None,
 ) -> None:
-    server_runner = server_runner or core.run_server
-    browser_engine_runner = browser_engine_runner or engine.run_browser_engine
-    sniffer_runner = sniffer_runner or (
-        lambda c: sniffer.run_sniffer(c, ADDON_PATH)
-    )
+    if server_runner is None:
+        server_runner = core.run_server
+    if browser_engine_runner is None:
+        browser_engine_runner = engine.run_browser_engine
+    if sniffer_runner is None:
+        sniffer_runner = lambda c: sniffer.run_sniffer(c, ADDON_PATH)  # noqa: E731
 
     sniffer_process = sniffer_runner(config)
 
