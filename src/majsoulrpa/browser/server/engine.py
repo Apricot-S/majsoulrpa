@@ -16,7 +16,6 @@ from majsoulrpa.sniffer import ADDON_PATH
 
 MAJSOUL_URL = "https://game.mahjongsoul.com/"  # JP version
 
-VIEWPORT_HEIGHT_CHOICES = (540, 720, 900, 1080, 1440)
 PAGE_WAIT_TIMEOUT = 30000
 
 

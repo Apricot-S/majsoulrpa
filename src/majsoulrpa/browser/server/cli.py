@@ -16,7 +16,6 @@ from majsoulrpa.constants import (
 from majsoulrpa.exceptions import UserInputError
 
 VIEWPORT_HEIGHT_CHOICES = (540, 720, 900, 1080, 1440)
-PAGE_WAIT_TIMEOUT = 30000
 
 
 @dataclass(frozen=True)
