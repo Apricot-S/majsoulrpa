@@ -23,7 +23,7 @@ async def on_login(
 
 
 async def main() -> None:
-    config = RPAClient.Config("127.0.0.1", 19222)
+    config = RPAClient.Config()
     await rpa.run(config, data=0, detection_timeout=30)
     print("Done!!!")
 

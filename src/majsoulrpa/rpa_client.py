@@ -5,7 +5,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
-from majsoulrpa import browser
+from majsoulrpa import browser, constants
 from majsoulrpa.presentation.base import Presentation
 
 type Callback[P: Presentation] = Callable[[P, Any], Awaitable[tuple[P, Any]]]
@@ -14,8 +14,8 @@ type Callback[P: Presentation] = Callable[[P, Any], Awaitable[tuple[P, Any]]]
 class RPAClient:
     @dataclass(frozen=True)
     class Config:
-        address: str
-        port: int
+        address: str = constants.DEFAULT_CLIENT_ADDRESS
+        port: int = constants.DEFAULT_REMOTE_PORT
 
     def __init__(self) -> None:
         self._callbacks: dict[
