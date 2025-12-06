@@ -18,20 +18,21 @@ def wait_for_sniffer(
     interval: float,
 ) -> None:
     address = ("localhost", port)
-    start = time.time()
+    start = time.monotonic()
 
-    while True:
+    while time.monotonic() - start < timeout:
         with (
             contextlib.suppress(TimeoutError, ConnectionRefusedError),
             socket.create_connection(address, connect_timeout),
         ):
             return
 
-        if time.time() - start > timeout:
-            msg = f"sniffer proxy localhost:{port} did not open within {timeout} seconds"  # noqa: E501
-            raise TimeoutError(msg)
-
         time.sleep(interval)
+
+    msg = (
+        f"sniffer proxy localhost:{port} did not open within {timeout} seconds"
+    )
+    raise TimeoutError(msg)
 
 
 def run_sniffer(config: Config, addon_path: Path) -> subprocess.Popen:
