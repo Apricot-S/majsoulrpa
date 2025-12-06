@@ -5,15 +5,6 @@ A Robotic Process Automation (RPA) framework for Mahjong Soul (雀魂)
 This project is a fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-rpa)**, but has been completely redesigned based on the proactor pattern.
 While some internal ideas and major class names were borrowed, the architecture and codebase are entirely new.
 
-Key differences
-
-- ✅ Requires **Python 3.12** or later
-- 🗑️ Removed dependencies on **Docker** and **Redis**
-- 🖥️ Supports moving browser window position after launch
-- 🖱️ Mouse can be used freely even while RPA is running
-- 📐 Supports browser viewport sizes other than **1920 × 1080**
-- 🀄 Supports **three-player mahjong**
-
 > [!NOTE]
 > This framework is intended to enable the participation of bots in friendly matches and tournaments where bot participation is agreed upon by all players involved.
 >
@@ -21,6 +12,15 @@ Key differences
 
 > [!WARNING]
 > Users of this framework accept full responsibility for its use. The authors shall bear no liability whatsoever for any damages resulting from utilization of this framework, including, but not limited to, account suspension or legal repercussions.
+
+## Key differences from the original project
+
+- ✅ Requires **Python 3.12** or later
+- 🗑️ Removed dependencies on **Docker** and **Redis**
+- 🖥️ Supports moving browser window position after launch
+- 🖱️ Mouse can be used freely even while RPA is running
+- 📐 Supports browser viewport sizes other than **1920 × 1080**
+- 🀄 Supports **three-player mahjong**
 
 ## Implementation concept diagram
 
