@@ -1,4 +1,3 @@
-import asyncio
 import base64
 from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
@@ -10,16 +9,14 @@ from playwright.async_api import Page, ViewportSize, async_playwright
 from majsoulrpa.browser import schemas
 from majsoulrpa.browser.server import core
 from majsoulrpa.browser.server.config import Config
-from majsoulrpa.browser.server.sniffer import SnifferRunner, run_sniffer
 from majsoulrpa.constants import DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.exceptions import UserInputError
-from majsoulrpa.sniffer import ADDON_PATH
 
 MAJSOUL_URL = "https://game.mahjongsoul.com/"  # JP version
 
 PAGE_WAIT_TIMEOUT = 30000
 
-type BrowserRunner = Callable[
+type BrowserEngineRunner = Callable[
     [Config, Option, core.ServerRunner],
     Coroutine[Any, Any, None],
 ]
@@ -194,7 +191,7 @@ async def _prepare_majsoul_page(page: Page) -> None:
     await page.wait_for_selector("#layaCanvas", timeout=PAGE_WAIT_TIMEOUT)
 
 
-async def run_browser_server(
+async def run_browser_engine(
     config: Config,
     option: Option,
     server_runner: core.ServerRunner,
@@ -247,29 +244,3 @@ async def run_browser_server(
             await _prepare_majsoul_page(page)
             request_handler = _request_handler_factory(page, viewport, scale)
             await server_runner(config, request_handler)
-
-
-def run_processes_impl(
-    config: Config,
-    option: Option,
-    server_runner: core.ServerRunner,
-    browser_runner: BrowserRunner,
-    sniffer_runner: SnifferRunner,
-) -> None:
-    sniffer_process = sniffer_runner(config)
-
-    try:
-        asyncio.run(browser_runner(config, option, server_runner))
-    finally:
-        if sniffer_process.poll() is None:
-            sniffer_process.terminate()
-
-
-def run_processes(config: Config, option: Option) -> None:
-    run_processes_impl(
-        config,
-        option,
-        core.run_server,
-        run_browser_server,
-        lambda c: run_sniffer(c, ADDON_PATH),
-    )
