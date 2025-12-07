@@ -1,0 +1,23 @@
+# Optional (all items below are also optional).
+[majsoulrpa]
+# IP address where the browser process is running for remote control.
+# Defaults to "127.0.0.1".
+browser_address = "127.0.0.1"
+
+# IP address the RPA client uses to connect to the browser for remote operations.
+# Defaults to "127.0.0.1".
+client_address = "127.0.0.1"
+
+# Optional (all items below are also optional).
+[majsoulrpa.port]
+# Port used for remote control of the browser.
+# Defaults to 19222.
+remote_port = 19222
+
+# Port for handling intercepted traffic between the game server and browser.
+# Defaults to 37247.
+sniffer_port = 37247
+
+# Browser proxy port used to intercept and route traffic between the game server and browser.
+# Defaults to 8080.
+proxy_port = 8080
