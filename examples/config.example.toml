@@ -45,3 +45,16 @@ headless = false
 
 # User data directory. If not specified, incognito mode is used.
 user-data-dir = "./user-data"
+
+[majsoulrpa.verification.s3]
+# Email address where verification emails are sent.
+email-address = "your-email@example.com"
+
+# Name of the S3 bucket storing verification emails.
+bucket-name = "your-bucket"
+
+# Key prefix under which verification email objects are stored in S3.
+key-prefix = "verification-email"
+
+# AWS CLI profile name used for connecting to S3. Optional.
+aws-profile = "default"
