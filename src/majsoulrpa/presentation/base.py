@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, abstractmethod
 from typing import Self
 
@@ -62,6 +63,16 @@ class Presentation(ABC):
         region = matcher.match(screen, self._scale)
         return region is not None
 
+    async def _wait_until_match(
+        self,
+        matcher: template.MatcherBase,
+        interval: float = 0.5,
+    ) -> None:
+        while True:
+            if await self._has_match(matcher):
+                return
+            await asyncio.sleep(interval)
+
     async def _click_if_match(
         self,
         matcher: template.MatcherBase,
@@ -78,6 +89,26 @@ class Presentation(ABC):
         d = get_random_delay(base_delay, delay_sigma)
         await self._driver.click_mouse(x, y, d)
         return True
+
+    async def _click_when_match(
+        self,
+        matcher: template.MatcherBase,
+        edge_sigma: float = DEFAULT_EDGE_SIGMA,
+        base_delay: float = 100,
+        delay_sigma: float = 0.1,
+        interval: float = 0.5,
+    ) -> None:
+        while True:
+            screen = await self.get_screenshot()
+            region = matcher.match(screen, self._scale)
+            if region is None:
+                await asyncio.sleep(interval)
+                continue
+
+            x, y = get_random_point_in_region(region, edge_sigma)
+            d = get_random_delay(base_delay, delay_sigma)
+            await self._driver.click_mouse(x, y, d)
+            return
 
     @classmethod
     @abstractmethod
