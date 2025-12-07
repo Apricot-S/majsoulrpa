@@ -22,6 +22,9 @@ class Presentation(ABC):
     async def get_screenshot(self) -> bytes:
         return await self._driver.get_screenshot()
 
+    async def reload(self) -> None:
+        await self._driver.reload()
+
     async def end_rpa(self, *, close_browser: bool) -> None:
         self._is_rpa_ended = True
         if close_browser:
