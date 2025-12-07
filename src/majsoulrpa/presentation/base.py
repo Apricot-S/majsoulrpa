@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Self
 
 from majsoulrpa import browser
+from majsoulrpa.presentation import template
 from majsoulrpa.presentation.delay import get_random_delay
 from majsoulrpa.presentation.region import (
     DEFAULT_EDGE_SIGMA,
@@ -55,6 +56,23 @@ class Presentation(ABC):
         x, y = get_random_point_in_region(scaled, edge_sigma)
         d = get_random_delay(base_delay, delay_sigma)
         await self._driver.click_mouse(x, y, d)
+
+    async def _click_if_match(
+        self,
+        matcher: template.MatcherBase,
+        edge_sigma: float = DEFAULT_EDGE_SIGMA,
+        base_delay: float = 100,
+        delay_sigma: float = 0.1,
+    ) -> bool:
+        screen = await self.get_screenshot()
+        region = matcher.match(screen, self._scale)
+        if region is None:
+            return False
+
+        x, y = get_random_point_in_region(region, edge_sigma)
+        d = get_random_delay(base_delay, delay_sigma)
+        await self._driver.click_mouse(x, y, d)
+        return True
 
     @classmethod
     @abstractmethod
