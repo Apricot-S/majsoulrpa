@@ -69,5 +69,5 @@ class RPAClient:
 
                 data = await self._dispatch(p, data)
 
-                if p._is_ended:  # noqa: SLF001
+                if p._is_rpa_ended:  # noqa: SLF001
                     break

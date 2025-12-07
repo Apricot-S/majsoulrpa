@@ -13,14 +13,14 @@ from majsoulrpa.presentation.region import (
 class Presentation(ABC):
     def __init__(self, driver: browser.DriverBase) -> None:
         self.__scale: float | None = None
-        self._is_ended = False
+        self._is_rpa_ended = False
         self._driver = driver
 
     async def get_screenshot(self) -> bytes:
         return await self._driver.get_screenshot()
 
-    async def end(self, *, close_browser: bool) -> None:
-        self._is_ended = True
+    async def end_rpa(self, *, close_browser: bool) -> None:
+        self._is_rpa_ended = True
         if close_browser:
             await self._driver.quit()
 
