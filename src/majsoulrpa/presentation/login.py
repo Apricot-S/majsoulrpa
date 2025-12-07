@@ -46,6 +46,7 @@ class LoginPresentation(Presentation):
         # TODO: クリックできなかったときの例外を追加する
         await asyncio.sleep(0.5)
 
+    @Presentation._require_active  # noqa: SLF001
     async def enter_email_address(self, email: str) -> None:
         # Click the "Enter email address" text box to focus it.
         await self._click_region(_EMAIL_ADDRESS_FIELD)
