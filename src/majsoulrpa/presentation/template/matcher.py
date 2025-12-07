@@ -4,12 +4,13 @@ from typing import override
 import cv2
 import numpy as np
 
+from majsoulrpa.presentation.region import Region
 from majsoulrpa.presentation.template import Config, ImageBase
 
 
 class MatcherBase(ABC):
     @abstractmethod
-    def match(self, screen: bytes, scale: float) -> tuple[int, int] | None:
+    def match(self, screen: bytes, scale: float) -> Region | None:
         pass
 
 
@@ -28,16 +29,16 @@ class Matcher(MatcherBase):
         self._config = config
 
     @override
-    def match(self, screen: bytes, scale: float) -> tuple[int, int] | None:
+    def match(self, screen: bytes, scale: float) -> Region | None:
         template = self._image.get_scaled(scale)
         screen_mat = _screenshot_to_mat(screen)
 
         region = self._config.region
         margin = self._config.margin
-        x0 = region.left - margin.left
-        y0 = region.top - margin.top
-        x1 = region.left + region.width + margin.right
-        y1 = region.top + region.height + margin.bottom
+        x0 = int(scale * (region.left - margin.left))
+        y0 = int(scale * (region.top - margin.top))
+        x1 = int(scale * (region.left + region.width + margin.right))
+        y1 = int(scale * (region.top + region.height + margin.bottom))
         roi = screen_mat[y0:y1, x0:x1]
 
         result1 = cv2.matchTemplate(roi, template, cv2.TM_CCOEFF_NORMED)
@@ -54,4 +55,10 @@ class Matcher(MatcherBase):
 
         if max_score < self._config.settings.threshold:
             return None
-        return (x0 + argmax_x, y0 + argmax_y)
+
+        left = x0 + argmax_x
+        top = y0 + argmax_y
+        width = scale * self._config.region.width
+        height = scale * self._config.region.height
+
+        return Region(left=left, top=top, width=width, height=height)

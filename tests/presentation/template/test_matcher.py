@@ -3,6 +3,7 @@ from typing import override
 import cv2
 import numpy as np
 
+from majsoulrpa.presentation.region import Region
 from majsoulrpa.presentation.template import Config, ImageBase, Matcher, config
 
 
@@ -12,7 +13,7 @@ class DummyImage(ImageBase):
 
     @override
     def get_scaled(self, scale: float) -> cv2.typing.MatLike:
-        return self._mat
+        return cv2.resize(self._mat, None, fx=scale, fy=scale)
 
 
 def ndarray_to_png_bytes(arr: np.ndarray) -> bytes:
@@ -23,7 +24,7 @@ def ndarray_to_png_bytes(arr: np.ndarray) -> bytes:
     return encoded.tobytes()
 
 
-def test_matcher_returns_correct_coordinates_roi_origin() -> None:
+def test_matcher_returns_correct_coordinates_not_scaled() -> None:
     screen_array = np.zeros((100, 100, 3), dtype=np.uint8)
     screen_array[50:100, 0:50] = 255
     screen_array[50:60, 0:10] = 0
@@ -33,48 +34,46 @@ def test_matcher_returns_correct_coordinates_roi_origin() -> None:
     template[0:10, 0:10] = 0
 
     cfg = Config(
-        region=config.Region(left=0, top=0, width=100, height=100),
+        region=config.Region(left=0, top=50, width=50, height=50),
         margin=config.Margin(left=0, right=0, top=0, bottom=0),
-        settings=config.Settings(threshold=0.999),
+        settings=config.Settings(threshold=0.99),
     )
 
     matcher = Matcher(DummyImage(template), cfg)
-    assert matcher.match(screen, scale=1.0) == (0, 50)
+    assert matcher.match(screen, scale=1.0) == Region(0, 50, 50, 50)
 
 
-def test_matcher_returns_correct_coordinates_roi_offset() -> None:
-    screen_array = np.zeros((512, 512, 3), dtype=np.uint8)
-    screen_array[255:512, 255:512] = 255
-    screen_array[255:265, 255:265] = 0
+def test_matcher_returns_correct_coordinates_scaled() -> None:
+    screen_array = np.zeros((200, 200, 3), dtype=np.uint8)
+    screen_array[100:200, 0:100] = 255
+    screen_array[100:120, 0:20] = 0
     screen = ndarray_to_png_bytes(screen_array)
 
-    template = np.ones((256, 256, 3), dtype=np.uint8) * 255
+    template = np.ones((50, 50, 3), dtype=np.uint8) * 255
     template[0:10, 0:10] = 0
 
     cfg = Config(
-        region=config.Region(left=200, top=100, width=312, height=412),
+        region=config.Region(left=0, top=50, width=50, height=50),
         margin=config.Margin(left=0, right=0, top=0, bottom=0),
-        settings=config.Settings(threshold=0.999),
+        settings=config.Settings(threshold=0.99),
     )
 
     matcher = Matcher(DummyImage(template), cfg)
-    assert matcher.match(screen, scale=1.0) == (255, 255)
+    assert matcher.match(screen, scale=2.0) == Region(0, 100, 100, 100)
 
 
-def test_matcher_returns_none_when_below_threshold() -> None:
-    screen_array = np.zeros((512, 512, 3), dtype=np.uint8)
-    screen_array[255:512, 0:255] = 255
-    screen_array[255:265, 0:10] = 128
-
+def test_matcher_returns_none_when_not_match() -> None:
+    screen_array = np.zeros((100, 100, 3), dtype=np.uint8)
+    screen_array[50:100, 0:50] = 255
     screen = ndarray_to_png_bytes(screen_array)
 
-    template = np.ones((256, 256, 3), dtype=np.uint8) * 255
+    template = np.ones((50, 50, 3), dtype=np.uint8) * 255
     template[0:10, 0:10] = 0
 
     cfg = Config(
-        region=config.Region(left=0, top=0, width=512, height=512),
+        region=config.Region(left=0, top=50, width=50, height=50),
         margin=config.Margin(left=0, right=0, top=0, bottom=0),
-        settings=config.Settings(threshold=0.999),
+        settings=config.Settings(threshold=0.99),
     )
 
     matcher = Matcher(DummyImage(template), cfg)
