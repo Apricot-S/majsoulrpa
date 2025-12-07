@@ -7,7 +7,7 @@ import cv2
 IMAGE_PATH = Path(__file__).parent
 
 
-class Image(ABC):
+class ImageBase(ABC):
     @abstractmethod
     def get_scaled(self, scale: float) -> cv2.typing.MatLike:
         pass
@@ -17,7 +17,7 @@ class ImageLoadError(Exception):
     """Raised when an image cannot be loaded from the given source."""
 
 
-class FileImage(Image):
+class FileImage(ImageBase):
     def __init__(self, path: Path) -> None:
         self._path = path
         self._original: cv2.typing.MatLike | None = None
