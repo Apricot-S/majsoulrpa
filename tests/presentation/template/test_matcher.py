@@ -49,9 +49,11 @@ def test_matcher_returns_correct_coordinates_scaled() -> None:
     screen_array[100:120, 0:20] = 0
     screen = ndarray_to_png_bytes(screen_array)
 
+    # Template image is defined in pre-scaled size
     template = np.ones((50, 50, 3), dtype=np.uint8) * 255
     template[0:10, 0:10] = 0
 
+    # Config also uses pre-scaled values
     cfg = Config(
         region=config.Region(left=0, top=50, width=50, height=50),
         margin=config.Margin(left=0, right=0, top=0, bottom=0),
