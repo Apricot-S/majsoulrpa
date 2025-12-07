@@ -74,11 +74,14 @@ def _create_ignored_default_args(option: Option) -> list[str]:
     return [] if option.headless else ["--mute-audio"]
 
 
-def _get_viewport_size(option: Option) -> tuple[ViewportSize, float]:
+def _get_viewport_size(option: Option) -> ViewportSize:
     height = option.viewport_height
     width = height * 16 // 9
-    scale = height / DEFAULT_VIEWPORT_HEIGHT
-    return ViewportSize(width=width, height=height), scale
+    return ViewportSize(width=width, height=height)
+
+
+def _get_scale(viewport: ViewportSize) -> float:
+    return viewport["height"] / DEFAULT_VIEWPORT_HEIGHT
 
 
 async def _handle_resolution(
@@ -156,8 +159,9 @@ async def _handle_unknown(_req: Never) -> schemas.ErrorResponse:
 def _request_handler_factory(
     page: Page,
     viewport: ViewportSize,
-    scale: float,
 ) -> core.RequestHandler:
+    scale = _get_scale(viewport)
+
     async def handle_request(req: schemas.Request) -> schemas.Response:
         match req:
             case schemas.ResolutionRequest():
@@ -198,7 +202,7 @@ async def run_browser_engine(
 ) -> None:
     browser_args = _create_browser_args(config, option)
     ignored_default_args = _create_ignored_default_args(option)
-    viewport, scale = _get_viewport_size(option)
+    viewport = _get_viewport_size(option)
 
     if option.user_data_dir is not None:
         async with (
@@ -214,20 +218,12 @@ async def run_browser_engine(
             if context.pages:
                 page = context.pages[0]
                 await _prepare_majsoul_page(page)
-                request_handler = _request_handler_factory(
-                    page,
-                    viewport,
-                    scale,
-                )
+                request_handler = _request_handler_factory(page, viewport)
                 await server_runner(config, request_handler)
             else:
                 async with await context.new_page() as page:
                     await _prepare_majsoul_page(page)
-                    request_handler = _request_handler_factory(
-                        page,
-                        viewport,
-                        scale,
-                    )
+                    request_handler = _request_handler_factory(page, viewport)
                     await server_runner(config, request_handler)
     else:
         # incognito mode
@@ -242,5 +238,5 @@ async def run_browser_engine(
             await context.new_page() as page,
         ):
             await _prepare_majsoul_page(page)
-            request_handler = _request_handler_factory(page, viewport, scale)
+            request_handler = _request_handler_factory(page, viewport)
             await server_runner(config, request_handler)
