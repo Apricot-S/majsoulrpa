@@ -13,14 +13,14 @@ from majsoulrpa.presentation.template import (
     Matcher,
 )
 
-_LOGIN_BUTTON_IMAGE = FileImage(IMAGE_PATH / "login/login_button_1.png")
-_LOGIN_BUTTON_CONFIG = Config.from_file(
+LOGIN_BUTTON_IMAGE = FileImage(IMAGE_PATH / "login/login_button_1.png")
+LOGIN_BUTTON_CONFIG = Config.from_file(
     IMAGE_PATH / "login/login_button_1.toml",
 )
-_LOGIN_BUTTON = Matcher(_LOGIN_BUTTON_IMAGE, _LOGIN_BUTTON_CONFIG)
+LOGIN_BUTTON = Matcher(LOGIN_BUTTON_IMAGE, LOGIN_BUTTON_CONFIG)
 
-_EMAIL_ADDRESS_FIELD = Region(365, 385, 200, 30)
-_SEND_CODE_BUTTON = Region(850, 500, 190, 70)
+EMAIL_ADDRESS_FIELD = Region(365, 385, 200, 30)
+SEND_CODE_BUTTON = Region(850, 500, 190, 70)
 
 
 class LoginPresentation(Presentation):
@@ -33,7 +33,7 @@ class LoginPresentation(Presentation):
     async def _detect(cls, driver: browser.DriverBase) -> Self | None:
         p = cls(driver)
         await p._init_resolution()
-        has_match = await p._has_match(_LOGIN_BUTTON)
+        has_match = await p._has_match(LOGIN_BUTTON)
         return p if has_match else None
 
     @override
@@ -42,14 +42,14 @@ class LoginPresentation(Presentation):
         # appears. If it is already visible, the click has no effect but
         # causes no issues, so we always perform the click for
         # simplicity.
-        await self._click_if_match(_LOGIN_BUTTON)
+        await self._click_if_match(LOGIN_BUTTON)
         # TODO: クリックできなかったときの例外を追加する
         await asyncio.sleep(0.5)
 
     @require_active
     async def enter_email_address(self, email: str) -> None:
         # Click the "Enter email address" text box to focus it.
-        await self._click_region(_EMAIL_ADDRESS_FIELD)
+        await self._click_region(EMAIL_ADDRESS_FIELD)
         await asyncio.sleep(0.5)
 
         delay = get_random_delay(100)
@@ -67,5 +67,5 @@ class LoginPresentation(Presentation):
         await asyncio.sleep(0.5)
 
         # Click the "Send Code" button.
-        await self._click_region(_SEND_CODE_BUTTON)
+        await self._click_region(SEND_CODE_BUTTON)
         await asyncio.sleep(0.1)
