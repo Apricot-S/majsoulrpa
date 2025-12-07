@@ -173,16 +173,16 @@ def test_create_ignored_default_args(
 @pytest.mark.parametrize(
     ("viewport_height", "expected"),
     [
-        (1080, (ViewportSize(width=1920, height=1080), 1.0)),
-        (540, (ViewportSize(width=960, height=540), 0.5)),
-        (720, (ViewportSize(width=1280, height=720), 2 / 3)),
-        (900, (ViewportSize(width=1600, height=900), 5 / 6)),
-        (1440, (ViewportSize(width=2560, height=1440), 4 / 3)),
+        (1080, ViewportSize(width=1920, height=1080)),
+        (540, ViewportSize(width=960, height=540)),
+        (720, ViewportSize(width=1280, height=720)),
+        (900, ViewportSize(width=1600, height=900)),
+        (1440, ViewportSize(width=2560, height=1440)),
     ],
 )
 def test_get_viewport_size(
     viewport_height: int,
-    expected: tuple[ViewportSize, float],
+    expected: ViewportSize,
 ) -> None:
     opt = make_option(viewport_height=viewport_height)
     assert _get_viewport_size(opt) == expected
