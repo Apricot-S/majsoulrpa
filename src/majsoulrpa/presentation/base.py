@@ -57,6 +57,11 @@ class Presentation(ABC):
         d = get_random_delay(base_delay, delay_sigma)
         await self._driver.click_mouse(x, y, d)
 
+    async def _has_match(self, matcher: template.MatcherBase) -> bool:
+        screen = await self.get_screenshot()
+        region = matcher.match(screen, self._scale)
+        return region is not None
+
     async def _click_if_match(
         self,
         matcher: template.MatcherBase,
