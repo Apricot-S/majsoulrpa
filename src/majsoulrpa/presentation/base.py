@@ -47,6 +47,17 @@ class Presentation(ABC):
         x, y = get_random_point_in_region(scaled, edge_sigma)
         await self._driver.move_mouse(x, y)
 
+    async def __click_scaled_region(
+        self,
+        scaled_region: Region,
+        edge_sigma: float = DEFAULT_EDGE_SIGMA,
+        base_delay: float = 100,
+        delay_sigma: float = 0.1,
+    ) -> None:
+        x, y = get_random_point_in_region(scaled_region, edge_sigma)
+        d = get_random_delay(base_delay, delay_sigma)
+        await self._driver.click_mouse(x, y, d)
+
     async def _click_region(
         self,
         region: Region,
@@ -55,9 +66,12 @@ class Presentation(ABC):
         delay_sigma: float = 0.1,
     ) -> None:
         scaled = region.scale(self._scale)
-        x, y = get_random_point_in_region(scaled, edge_sigma)
-        d = get_random_delay(base_delay, delay_sigma)
-        await self._driver.click_mouse(x, y, d)
+        await self.__click_scaled_region(
+            scaled,
+            edge_sigma,
+            base_delay,
+            delay_sigma,
+        )
 
     async def _has_match(self, matcher: template.MatcherBase) -> bool:
         screen = await self.get_screenshot()
@@ -107,9 +121,12 @@ class Presentation(ABC):
         if region is None:
             return False
 
-        x, y = get_random_point_in_region(region, edge_sigma)
-        d = get_random_delay(base_delay, delay_sigma)
-        await self._driver.click_mouse(x, y, d)
+        await self.__click_scaled_region(
+            region,
+            edge_sigma,
+            base_delay,
+            delay_sigma,
+        )
         return True
 
     async def _click_if_match_one_of(
@@ -123,9 +140,12 @@ class Presentation(ABC):
         for matcher in matchers:
             region = matcher.match(screen, self._scale)
             if region is not None:
-                x, y = get_random_point_in_region(region, edge_sigma)
-                d = get_random_delay(base_delay, delay_sigma)
-                await self._driver.click_mouse(x, y, d)
+                await self.__click_scaled_region(
+                    region,
+                    edge_sigma,
+                    base_delay,
+                    delay_sigma,
+                )
                 return True
         return False
 
@@ -144,9 +164,12 @@ class Presentation(ABC):
                 await asyncio.sleep(interval)
                 continue
 
-            x, y = get_random_point_in_region(region, edge_sigma)
-            d = get_random_delay(base_delay, delay_sigma)
-            await self._driver.click_mouse(x, y, d)
+            await self.__click_scaled_region(
+                region,
+                edge_sigma,
+                base_delay,
+                delay_sigma,
+            )
             return
 
     async def _click_when_match_one_of(
@@ -162,9 +185,12 @@ class Presentation(ABC):
             for matcher in matchers:
                 region = matcher.match(screen, self._scale)
                 if region is not None:
-                    x, y = get_random_point_in_region(region, edge_sigma)
-                    d = get_random_delay(base_delay, delay_sigma)
-                    await self._driver.click_mouse(x, y, d)
+                    await self.__click_scaled_region(
+                        region,
+                        edge_sigma,
+                        base_delay,
+                        delay_sigma,
+                    )
                     return
             await asyncio.sleep(interval)
 
