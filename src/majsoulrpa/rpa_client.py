@@ -63,9 +63,11 @@ class RPAClient:
             browser_driver = browser.Driver(browser_client)
 
         async with browser_client, browser_driver:
+            p: Presentation | None = None
             while True:
-                async with asyncio.timeout(detection_timeout):
-                    p = await self._detect(browser_driver)
+                if p is None or p._is_presentation_finished:  # noqa: SLF001
+                    async with asyncio.timeout(detection_timeout):
+                        p = await self._detect(browser_driver)
 
                 data = await self._dispatch(p, data)
 
