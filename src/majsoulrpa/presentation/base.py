@@ -16,6 +16,7 @@ from majsoulrpa.presentation.region import (
 class Presentation(ABC):
     def __init__(self, driver: browser.DriverBase) -> None:
         self.__scale: float | None = None
+        self._is_presentation_finished = False
         self._is_rpa_ended = False
         self._driver = driver
 
@@ -23,6 +24,7 @@ class Presentation(ABC):
         return await self._driver.get_screenshot()
 
     async def reload(self) -> None:
+        self._is_presentation_finished = True
         await self._driver.reload()
 
     async def end_rpa(self, *, close_browser: bool) -> None:
