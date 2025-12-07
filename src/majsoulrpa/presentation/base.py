@@ -44,19 +44,6 @@ class Presentation(ABC):
     def _is_presentation_finished(self) -> bool:
         return self.__is_presentation_finished
 
-    @staticmethod
-    def _require_active[R](
-        method: Callable[..., Awaitable[R]],
-    ) -> Callable[..., Awaitable[R]]:
-        async def wrapper(self: Presentation, *args, **kwargs) -> R:
-            if self._is_presentation_finished:
-                msg = f"{method.__name__} called after presentation finished."
-                ss = await self.get_screenshot()
-                raise InvalidOperationError(msg, ss)
-            return await method(self, *args, **kwargs)
-
-        return wrapper
-
     def _mark_finished(self) -> None:
         if self.__is_presentation_finished:
             msg = "presentation is already finished."
@@ -231,3 +218,16 @@ class Presentation(ABC):
     @abstractmethod
     async def _pre_dispatch(self) -> None:
         pass
+
+
+def require_active[R](
+    method: Callable[..., Awaitable[R]],
+) -> Callable[..., Awaitable[R]]:
+    async def wrapper(self: Presentation, *args, **kwargs) -> R:
+        if self._is_presentation_finished:
+            msg = f"{method.__name__} called after presentation finished."
+            ss = await self.get_screenshot()
+            raise InvalidOperationError(msg, ss)
+        return await method(self, *args, **kwargs)
+
+    return wrapper

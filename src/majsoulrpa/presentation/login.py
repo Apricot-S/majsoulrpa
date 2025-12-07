@@ -3,7 +3,7 @@ from typing import Self, override
 
 from majsoulrpa import browser
 from majsoulrpa.browser.driver import Key
-from majsoulrpa.presentation.base import Presentation
+from majsoulrpa.presentation.base import Presentation, require_active
 from majsoulrpa.presentation.delay import get_random_delay
 from majsoulrpa.presentation.region import Region
 from majsoulrpa.presentation.template import (
@@ -46,7 +46,7 @@ class LoginPresentation(Presentation):
         # TODO: クリックできなかったときの例外を追加する
         await asyncio.sleep(0.5)
 
-    @Presentation._require_active  # noqa: SLF001
+    @require_active
     async def enter_email_address(self, email: str) -> None:
         # Click the "Enter email address" text box to focus it.
         await self._click_region(_EMAIL_ADDRESS_FIELD)
