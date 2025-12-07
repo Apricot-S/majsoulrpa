@@ -17,7 +17,7 @@ def _screenshot_to_mat(screenshot_bytes: bytes) -> np.ndarray:
     img_array = np.frombuffer(screenshot_bytes, np.uint8)
     img_mat = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
     if img_mat is None:
-        msg = ""
+        msg = "failed to decode screenshot bytes into an image"
         raise RuntimeError(msg)
     return img_mat
 
