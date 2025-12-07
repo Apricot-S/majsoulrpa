@@ -16,7 +16,7 @@ from majsoulrpa.presentation.region import (
 class Presentation(ABC):
     def __init__(self, driver: browser.DriverBase) -> None:
         self.__scale: float | None = None
-        self._is_presentation_finished = False
+        self.__is_presentation_finished = False
         self._is_rpa_ended = False
         self._driver = driver
 
@@ -24,7 +24,7 @@ class Presentation(ABC):
         return await self._driver.get_screenshot()
 
     async def reload(self) -> None:
-        self._is_presentation_finished = True
+        self.__is_presentation_finished = True
         await self._driver.reload()
 
     async def end_rpa(self, *, close_browser: bool) -> None:
@@ -38,6 +38,16 @@ class Presentation(ABC):
             msg = "resolution scale has not been initialized."
             raise RuntimeError(msg)
         return self.__scale
+
+    @property
+    def _is_presentation_finished(self) -> bool:
+        return self.__is_presentation_finished
+
+    def _mark_finished(self) -> None:
+        if self.__is_presentation_finished:
+            msg = "presentation is already finished."
+            raise RuntimeError(msg)
+        self.__is_presentation_finished = True
 
     async def _init_resolution(self) -> None:
         resolution = await self._driver.get_resolution()
