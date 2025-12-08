@@ -3,9 +3,9 @@ from typing import Self, override
 
 from majsoulrpa import browser
 from majsoulrpa.browser.driver import Key
+from majsoulrpa.presentation import exceptions
 from majsoulrpa.presentation.base import Presentation, require_active
 from majsoulrpa.presentation.delay import get_random_delay
-from majsoulrpa.presentation.exceptions import PresentationNotDetectedError
 from majsoulrpa.presentation.region import Region
 from majsoulrpa.presentation.template import (
     IMAGE_PATH,
@@ -13,6 +13,8 @@ from majsoulrpa.presentation.template import (
     FileImage,
     Matcher,
 )
+
+MAX_EMAIL_ADDRESS_LENGTH = 50  # JP version
 
 LOGIN_BUTTON_IMAGE = FileImage(IMAGE_PATH / "login/login_button_1.png")
 LOGIN_BUTTON_CONFIG = Config.from_file(
@@ -42,11 +44,15 @@ class LoginPresentation(Presentation):
         if not await self._click_if_match(LOGIN_BUTTON):
             msg = '"Login" button could not be detected.'
             ss = await self.get_screenshot()
-            raise PresentationNotDetectedError(msg, ss)
+            raise exceptions.PresentationNotDetectedError(msg, ss)
         await asyncio.sleep(0.5)
 
     @require_active
-    async def enter_email_address(self, email: str) -> None:
+    async def enter_email_address(self, email_address: str) -> None:
+        if len(email_address) > MAX_EMAIL_ADDRESS_LENGTH:
+            msg = f"Keep an email address within {MAX_EMAIL_ADDRESS_LENGTH} characters."  # noqa: E501
+            raise exceptions.InvalidArgumentError(msg, None)
+
         # Click the "Enter email address" text box to focus it.
         await self._click_region(EMAIL_ADDRESS_FIELD)
         await asyncio.sleep(0.5)
@@ -62,7 +68,7 @@ class LoginPresentation(Presentation):
         await asyncio.sleep(0.5)
 
         # Enter an email address in the text box.
-        await self._driver.type_key(email, delay)
+        await self._driver.type_key(email_address, delay)
         await asyncio.sleep(0.5)
 
         # Click the "Send Code" button.
