@@ -4,9 +4,9 @@ from majsoulrpa.presentation.template import Config, FileImage, Matcher
 
 _PARENT = Path(__file__).parent
 
-_LOGIN_BUTTON_1_IMAGE = FileImage(_PARENT / "login_button_1.png")
-_LOGIN_BUTTON_1_CONFIG = Config.from_file(_PARENT / "login_button_1.toml")
-LOGIN_BUTTON_1 = Matcher(_LOGIN_BUTTON_1_IMAGE, _LOGIN_BUTTON_1_CONFIG)
+_LOGIN_1_IMAGE = FileImage(_PARENT / "login_button_1.png")
+_LOGIN_1_CONFIG = Config.from_file(_PARENT / "login_button_1.toml")
+LOGIN_1 = Matcher(_LOGIN_1_IMAGE, _LOGIN_1_CONFIG)
 
 _UNAVAILABLE_IMAGE = FileImage(_PARENT / "unavailable.png")
 _UNAVAILABLE_CONFIG = Config.from_file(_PARENT / "unavailable.toml")

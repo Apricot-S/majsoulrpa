@@ -12,7 +12,7 @@ from majsoulrpa.presentation.regions.login import (
 )
 from majsoulrpa.presentation.templates.login import (
     CONFIRM,
-    LOGIN_BUTTON_1,
+    LOGIN_1,
     UNAVAILABLE,
 )
 
@@ -31,7 +31,7 @@ class LoginPresentation(Presentation):
     async def _detect(cls, driver: browser.DriverBase) -> Self | None:
         p = cls(driver)
         await p._init_resolution()
-        has_match = await p._has_match(LOGIN_BUTTON_1)
+        has_match = await p._has_match(LOGIN_1)
         return p if has_match else None
 
     @override
@@ -40,7 +40,7 @@ class LoginPresentation(Presentation):
         # appears. If it is already visible, the click has no effect but
         # causes no issues, so we always perform the click for
         # simplicity.
-        if not await self._click_if_match(LOGIN_BUTTON_1):
+        if not await self._click_if_match(LOGIN_1):
             msg = '"Login" button could not be detected.'
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
