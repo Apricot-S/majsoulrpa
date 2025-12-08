@@ -53,6 +53,17 @@ class BaseError(Exception):
                 fp.write(self._screenshot)
 
 
+class PresentationTimeoutError(BaseError):
+    """A timeout error.
+
+    Occurs when a presentation is not detected within the specified
+    timeout period.
+    """
+
+    def __init__(self, message: str, screenshot: bytes) -> None:
+        super().__init__(message, screenshot)
+
+
 class InvalidOperationError(BaseError):
     """An invalid operation error.
 

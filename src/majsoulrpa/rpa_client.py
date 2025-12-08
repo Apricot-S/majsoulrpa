@@ -8,6 +8,7 @@ from typing import Any
 from majsoulrpa import browser, constants
 from majsoulrpa.netutils import parse_ip_address, validate_user_port
 from majsoulrpa.presentation.base import Presentation
+from majsoulrpa.presentation.exceptions import PresentationTimeoutError
 
 type Callback[P: Presentation] = Callable[[P, Any], Awaitable[Any]]
 
@@ -55,7 +56,7 @@ class RPAClient:
         browser_driver: browser.DriverBase | None = None,
     ) -> None:
         if not self._callbacks:
-            msg = "no callbacks registered: use `RPAClient.on()` to register a Presentation callback"  # noqa: E501
+            msg = "no callbacks registered: use `RPAClient.on()` to register a presentation callback"  # noqa: E501
             raise RuntimeError(msg)
 
         address = parse_ip_address(config.address)
@@ -70,8 +71,13 @@ class RPAClient:
             p: Presentation | None = None
             while True:
                 if p is None or p._is_presentation_finished:  # noqa: SLF001
-                    async with asyncio.timeout(detection_timeout):
-                        p = await self._detect(browser_driver)
+                    try:
+                        async with asyncio.timeout(detection_timeout):
+                            p = await self._detect(browser_driver)
+                    except TimeoutError as e:
+                        msg = "presentation detection timed out."
+                        ss = await browser_driver.get_screenshot()
+                        raise PresentationTimeoutError(msg, ss) from e
 
                 data = await self._dispatch(p, data)
 
