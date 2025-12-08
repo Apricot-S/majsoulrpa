@@ -11,9 +11,13 @@ rpa = RPAClient()
 
 @rpa.on(LoginPresentation)
 async def on_login(p: LoginPresentation, data: Any) -> Any:
-    async with asyncio.timeout(30):
-        await p.enter_email_address("majsoul-rpa-dev@example.com")
-        await asyncio.sleep(2)
+    email_address = input("Enter your email address: ")
+    async with asyncio.timeout(10):
+        await p.enter_email_address(email_address)
+
+    await asyncio.sleep(2)
+
+    async with asyncio.timeout(5):
         await p.end_rpa(close_browser=True)
 
     return data + 1
