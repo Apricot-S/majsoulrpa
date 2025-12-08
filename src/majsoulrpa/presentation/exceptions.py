@@ -6,10 +6,9 @@ from typing import override
 
 
 class BaseError(Exception):
-    """A basic error.
+    """Base exception for errors raised in `Presentation`.
 
-    A basic error occurring in `Presentation`. It can record a
-    screenshot where the error occurred.
+    Can record a screenshot at the point where the error occurred.
     """
 
     def __init__(self, message: str, screenshot: bytes | None) -> None:
