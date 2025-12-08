@@ -78,3 +78,13 @@ class InvalidOperationError(BaseError):
     @override
     def __init__(self, message: str, screenshot: bytes) -> None:
         super().__init__(message, screenshot)
+
+
+class InvalidArgumentError(BaseError):
+    """Error raised when an operation is called
+    with invalid arguments.
+    """
+
+    @override
+    def __init__(self, message: str, screenshot: bytes) -> None:
+        super().__init__(message, screenshot)
