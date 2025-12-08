@@ -65,10 +65,7 @@ class PresentationTimeoutError(BaseError):
 
 
 class PresentationNotDetectedError(BaseError):
-    """A presentation not detected error.
-
-    Raised when the expected presentation fails to be detected.
-    """
+    """Error raised when the expected presentation cannot be detected."""  # noqa: W505
 
     def __init__(self, message: str, screenshot: bytes) -> None:
         super().__init__(message, screenshot)
