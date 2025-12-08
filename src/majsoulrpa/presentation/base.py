@@ -54,6 +54,24 @@ class Presentation(ABC):
         resolution = await self._driver.get_resolution()
         self.__scale = resolution.scale
 
+    async def _press_key(
+        self,
+        key: str | Iterable[str],
+        base_delay: float = 100,
+        delay_sigma: float = 0.1,
+    ) -> None:
+        d = get_random_delay(base_delay, delay_sigma)
+        await self._driver.press_key(key, d)
+
+    async def _type_key(
+        self,
+        text: str,
+        base_delay: float = 100,
+        delay_sigma: float = 0.1,
+    ) -> None:
+        d = get_random_delay(base_delay, delay_sigma)
+        await self._driver.type_key(text, d)
+
     async def _move_to_region(
         self,
         region: Region,

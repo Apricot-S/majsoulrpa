@@ -79,18 +79,16 @@ class LoginPresentation(Presentation):
         await self._click_region(EMAIL_ADDRESS_FIELD)
         await asyncio.sleep(0.5)
 
-        delay = get_random_delay(100)
-
         # Select all existing text in the email address field.
-        await self._driver.press_key([Key.CONTROL_OR_META, "a"], delay)
+        await self._press_key([Key.CONTROL_OR_META, "a"])
         await asyncio.sleep(0.5)
 
         # Clear the selected text.
-        await self._driver.press_key(Key.BACKSPACE, delay)
+        await self._press_key(Key.BACKSPACE)
         await asyncio.sleep(0.5)
 
         # Enter an email address in the text box.
-        await self._driver.type_key(email_address, delay)
+        await self._type_key(email_address)
         await asyncio.sleep(0.5)
 
         # Click the "Send Code" button.
