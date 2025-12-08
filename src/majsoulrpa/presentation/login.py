@@ -26,10 +26,6 @@ SEND_CODE_BUTTON = Region(850, 500, 190, 70)
 
 class LoginPresentation(Presentation):
     @override
-    def __init__(self, driver: browser.DriverBase) -> None:
-        super().__init__(driver)
-
-    @override
     @classmethod
     async def _detect(cls, driver: browser.DriverBase) -> Self | None:
         p = cls(driver)
