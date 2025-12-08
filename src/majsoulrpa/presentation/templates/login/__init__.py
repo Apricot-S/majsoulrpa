@@ -15,3 +15,7 @@ UNAVAILABLE = Matcher(_UNAVAILABLE_IMAGE, _UNAVAILABLE_CONFIG)
 _CONFIRM_IMAGE = FileImage(_PARENT / "confirm.png")
 _CONFIRM_CONFIG = Config.from_file(_PARENT / "confirm.toml")
 CONFIRM = Matcher(_CONFIRM_IMAGE, _CONFIRM_CONFIG)
+
+_LOGIN_2_IMAGE = FileImage(_PARENT / "login_2.png")
+_LOGIN_2_CONFIG = Config.from_file(_PARENT / "login_2.toml")
+LOGIN_2 = Matcher(_LOGIN_2_IMAGE, _LOGIN_2_CONFIG)

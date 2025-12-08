@@ -15,6 +15,7 @@ from majsoulrpa.presentation.regions.login import (
 from majsoulrpa.presentation.templates.login import (
     CONFIRM,
     LOGIN_1,
+    LOGIN_2,
     UNAVAILABLE,
 )
 
@@ -128,3 +129,28 @@ class LoginPresentation(Presentation):
         # Enter the verification code in the text box.
         await self._type_key(verification_code)
         await asyncio.sleep(0.5)
+
+        # Click the enabled "Login" button.
+        if not await self._click_if_match(LOGIN_2):
+            msg = '"Login" button could not be detected.'
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationNotDetectedError(msg, ss)
+
+        # Check if the verification code is incorrect.
+        # If the verification code is incorrect,
+        # a dialog box will appear, so click "Confirm".
+        await asyncio.sleep(1.5)
+        if await self._click_if_match(CONFIRM):
+            # After clicking "Confirm", the email input field closes,
+            # so click the "Login" button to reopen it.
+            await asyncio.sleep(1.0)
+            if not await self._click_if_match(LOGIN_1):
+                msg = '"Login" button could not be detected.'
+                ss = await self.get_screenshot()
+                raise exceptions.PresentationNotDetectedError(msg, ss)
+            await asyncio.sleep(0.5)
+
+            msg = "Verification failed. Verification code may be incorrect."
+            raise exceptions.InvalidArgumentError(msg, None)
+
+        self._mark_finished()
