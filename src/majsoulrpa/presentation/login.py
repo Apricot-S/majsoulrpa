@@ -1,4 +1,5 @@
 import asyncio
+from datetime import UTC, datetime, timedelta
 from typing import Self, override
 
 from majsoulrpa import browser
@@ -28,6 +29,12 @@ SEND_CODE_BUTTON = Region(850, 500, 190, 70)
 
 class LoginPresentation(Presentation):
     @override
+    def __init__(self, driver: browser.DriverBase) -> None:
+        super().__init__(driver)
+        self._entered_email_address = False
+        self._last_request_time: datetime | None = None
+
+    @override
     @classmethod
     async def _detect(cls, driver: browser.DriverBase) -> Self | None:
         p = cls(driver)
@@ -53,6 +60,13 @@ class LoginPresentation(Presentation):
             msg = f"Keep an email address within {MAX_EMAIL_ADDRESS_LENGTH} characters."  # noqa: E501
             raise exceptions.InvalidArgumentError(msg, None)
 
+        if self._last_request_time is not None:
+            delta = datetime.now(UTC) - self._last_request_time
+            if delta <= timedelta(seconds=60):
+                msg = "Request is too frequent."
+                ss = await self.get_screenshot()
+                raise exceptions.InvalidOperationError(msg, ss)
+
         # Click the "Enter email address" text box to focus it.
         await self._click_region(EMAIL_ADDRESS_FIELD)
         await asyncio.sleep(0.5)
@@ -74,3 +88,6 @@ class LoginPresentation(Presentation):
         # Click the "Send Code" button.
         await self._click_region(SEND_CODE_BUTTON)
         await asyncio.sleep(0.1)
+
+        self._entered_email_address = True
+        self._last_request_time = datetime.now(UTC)
