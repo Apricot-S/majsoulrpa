@@ -1,4 +1,5 @@
 import asyncio
+import re
 from datetime import UTC, datetime, timedelta
 from typing import Self, override
 
@@ -17,6 +18,8 @@ from majsoulrpa.presentation.templates.login import (
 )
 
 MAX_EMAIL_ADDRESS_LENGTH = 50  # JP version
+REQUEST_INTERVAL = timedelta(seconds=60)
+VERIFICATION_CODE_PATTERN = re.compile(r"\d{6}")
 
 
 class LoginPresentation(Presentation):
@@ -54,7 +57,7 @@ class LoginPresentation(Presentation):
 
         if self._last_request_time is not None:
             delta = datetime.now(UTC) - self._last_request_time
-            if delta <= timedelta(seconds=60):
+            if delta <= REQUEST_INTERVAL:
                 msg = "Request is too frequent."
                 ss = await self.get_screenshot()
                 raise exceptions.InvalidOperationError(msg, ss)
@@ -98,4 +101,12 @@ class LoginPresentation(Presentation):
 
     @require_active
     async def enter_verification_code(self, verification_code: str) -> None:
-        pass
+        # Validate the format of verification code.
+        if VERIFICATION_CODE_PATTERN.fullmatch(verification_code) is None:
+            msg = "Verification code must be a 6-digit number."
+            raise exceptions.InvalidArgumentError(msg, None)
+
+        if not self._entered_email_address:
+            msg = "Email address has not been entered yet."
+            ss = await self.get_screenshot()
+            raise exceptions.InvalidOperationError(msg, ss)
