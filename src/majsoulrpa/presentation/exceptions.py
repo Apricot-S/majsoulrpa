@@ -56,8 +56,8 @@ class BaseError(Exception):
 class PresentationTimeoutError(BaseError):
     """A timeout error.
 
-    Raised when a presentation is not detected within the specified
-    timeout period.
+    Raised when a presentation is not detected within
+    the timeout period.
     """
 
     def __init__(self, message: str, screenshot: bytes) -> None:
