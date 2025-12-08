@@ -10,6 +10,7 @@ from majsoulrpa.presentation.base import Presentation, require_active
 from majsoulrpa.presentation.regions.login import (
     EMAIL_ADDRESS_FIELD,
     SEND_CODE,
+    VERIFICATION_CODE_FIELD,
 )
 from majsoulrpa.presentation.templates.login import (
     CONFIRM,
@@ -110,3 +111,20 @@ class LoginPresentation(Presentation):
             msg = "Email address has not been entered yet."
             ss = await self.get_screenshot()
             raise exceptions.InvalidOperationError(msg, ss)
+
+        # Click the "Enter the verification code sent to your email"
+        # text box to focus it.
+        await self._click_region(VERIFICATION_CODE_FIELD)
+        await asyncio.sleep(0.5)
+
+        # Select all existing text in the email address field.
+        await self._press_key([Key.CONTROL_OR_META, "a"])
+        await asyncio.sleep(0.5)
+
+        # Clear the selected text.
+        await self._press_key(Key.BACKSPACE)
+        await asyncio.sleep(0.5)
+
+        # Enter the verification code in the text box.
+        await self._type_key(verification_code)
+        await asyncio.sleep(0.5)
