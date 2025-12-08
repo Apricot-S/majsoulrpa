@@ -1,0 +1,17 @@
+from pathlib import Path
+
+from majsoulrpa.presentation.template import Config, FileImage, Matcher
+
+_PARENT = Path(__file__).parent
+
+_LOGIN_BUTTON_1_IMAGE = FileImage(_PARENT / "login_button_1.png")
+_LOGIN_BUTTON_1_CONFIG = Config.from_file(_PARENT / "login_button_1.toml")
+LOGIN_BUTTON_1 = Matcher(_LOGIN_BUTTON_1_IMAGE, _LOGIN_BUTTON_1_CONFIG)
+
+_UNAVAILABLE_IMAGE = FileImage(_PARENT / "unavailable.png")
+_UNAVAILABLE_CONFIG = Config.from_file(_PARENT / "unavailable.toml")
+UNAVAILABLE = Matcher(_UNAVAILABLE_IMAGE, _UNAVAILABLE_CONFIG)
+
+_CONFIRM_IMAGE = FileImage(_PARENT / "confirm.png")
+_CONFIRM_CONFIG = Config.from_file(_PARENT / "confirm.toml")
+CONFIRM = Matcher(_CONFIRM_IMAGE, _CONFIRM_CONFIG)

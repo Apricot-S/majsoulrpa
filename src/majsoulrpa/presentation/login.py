@@ -7,31 +7,16 @@ from majsoulrpa.browser.driver import Key
 from majsoulrpa.presentation import exceptions
 from majsoulrpa.presentation.base import Presentation, require_active
 from majsoulrpa.presentation.region import Region
-from majsoulrpa.presentation.template import (
-    IMAGE_PATH,
-    Config,
-    FileImage,
-    Matcher,
+from majsoulrpa.presentation.template.login import (
+    CONFIRM,
+    LOGIN_BUTTON_1,
+    UNAVAILABLE,
 )
 
 MAX_EMAIL_ADDRESS_LENGTH = 50  # JP version
 
-LOGIN_BUTTON_IMAGE_1 = FileImage(IMAGE_PATH / "login/login_button_1.png")
-LOGIN_BUTTON_CONFIG_1 = Config.from_file(
-    IMAGE_PATH / "login/login_button_1.toml",
-)
-LOGIN_BUTTON_1 = Matcher(LOGIN_BUTTON_IMAGE_1, LOGIN_BUTTON_CONFIG_1)
-
 EMAIL_ADDRESS_FIELD = Region(365, 385, 200, 30)
 SEND_CODE_BUTTON = Region(850, 500, 190, 70)
-
-UNAVAILABLE_IMAGE = FileImage(IMAGE_PATH / "login/unavailable.png")
-UNAVAILABLE_CONFIG = Config.from_file(IMAGE_PATH / "login/unavailable.toml")
-UNAVAILABLE = Matcher(UNAVAILABLE_IMAGE, UNAVAILABLE_CONFIG)
-
-CONFIRM_IMAGE = FileImage(IMAGE_PATH / "login/confirm.png")
-CONFIRM_CONFIG = Config.from_file(IMAGE_PATH / "login/confirm.toml")
-CONFIRM = Matcher(CONFIRM_IMAGE, CONFIRM_CONFIG)
 
 
 class LoginPresentation(Presentation):

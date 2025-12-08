@@ -4,8 +4,6 @@ from typing import override
 
 import cv2
 
-IMAGE_PATH = Path(__file__).parent
-
 
 class ImageBase(ABC):
     @abstractmethod
