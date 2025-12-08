@@ -64,6 +64,16 @@ class PresentationTimeoutError(BaseError):
         super().__init__(message, screenshot)
 
 
+class PresentationNotDetectedError(BaseError):
+    """A presentation not detected error.
+
+    Occurs when the expected presentation fails to be detected.
+    """
+
+    def __init__(self, message: str, screenshot: bytes) -> None:
+        super().__init__(message, screenshot)
+
+
 class InvalidOperationError(BaseError):
     """An invalid operation error.
 

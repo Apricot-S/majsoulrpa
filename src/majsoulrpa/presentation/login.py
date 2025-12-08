@@ -5,6 +5,7 @@ from majsoulrpa import browser
 from majsoulrpa.browser.driver import Key
 from majsoulrpa.presentation.base import Presentation, require_active
 from majsoulrpa.presentation.delay import get_random_delay
+from majsoulrpa.presentation.exceptions import PresentationNotDetectedError
 from majsoulrpa.presentation.region import Region
 from majsoulrpa.presentation.template import (
     IMAGE_PATH,
@@ -42,8 +43,10 @@ class LoginPresentation(Presentation):
         # appears. If it is already visible, the click has no effect but
         # causes no issues, so we always perform the click for
         # simplicity.
-        await self._click_if_match(LOGIN_BUTTON)
-        # TODO: クリックできなかったときの例外を追加する
+        if not await self._click_if_match(LOGIN_BUTTON):
+            msg = '"Login" button could not be detected.'
+            ss = await self.get_screenshot()
+            raise PresentationNotDetectedError(msg, ss)
         await asyncio.sleep(0.5)
 
     @require_active
