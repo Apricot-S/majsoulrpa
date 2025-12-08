@@ -7,7 +7,7 @@ from majsoulrpa.browser.driver import Key
 from majsoulrpa.presentation import exceptions
 from majsoulrpa.presentation.base import Presentation, require_active
 from majsoulrpa.presentation.region import Region
-from majsoulrpa.presentation.template.login import (
+from majsoulrpa.presentation.templates.login import (
     CONFIRM,
     LOGIN_BUTTON_1,
     UNAVAILABLE,
