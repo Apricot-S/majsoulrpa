@@ -8,7 +8,7 @@ from majsoulrpa.presentation import exceptions
 from majsoulrpa.presentation.base import Presentation, require_active
 from majsoulrpa.presentation.regions.login import (
     EMAIL_ADDRESS_FIELD,
-    SEND_CODE_BUTTON,
+    SEND_CODE,
 )
 from majsoulrpa.presentation.templates.login import (
     CONFIRM,
@@ -76,7 +76,7 @@ class LoginPresentation(Presentation):
         await asyncio.sleep(0.5)
 
         # Click the "Send Code" button.
-        await self._click_region(SEND_CODE_BUTTON)
+        await self._click_region(SEND_CODE)
         await asyncio.sleep(0.2)
 
         # Check if the email address is unavailable.
