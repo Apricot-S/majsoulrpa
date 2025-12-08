@@ -243,7 +243,7 @@ def require_active[R](
 ) -> Callable[..., Awaitable[R]]:
     async def wrapper(self: Presentation, *args, **kwargs) -> R:
         if self._is_presentation_finished:
-            msg = f"{method.__name__} called after presentation finished."
+            msg = f"`{method.__name__}` called after presentation finished."
             ss = await self.get_screenshot()
             raise InvalidOperationError(msg, ss)
         return await method(self, *args, **kwargs)
