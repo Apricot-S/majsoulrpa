@@ -19,7 +19,7 @@ async def on_login(p: LoginPresentation, data: Any) -> Any:
     async with asyncio.timeout(10):
         await p.enter_verification_code(verification_code)
 
-    await asyncio.sleep(2)
+    await asyncio.sleep(15)
 
     async with asyncio.timeout(5):
         await p.end_rpa(close_browser=True)
