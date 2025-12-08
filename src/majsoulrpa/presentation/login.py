@@ -95,3 +95,7 @@ class LoginPresentation(Presentation):
 
         self._entered_email_address = True
         self._last_request_time = datetime.now(UTC)
+
+    @require_active
+    async def enter_verification_code(self, verification_code: str) -> None:
+        pass

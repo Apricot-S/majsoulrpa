@@ -15,6 +15,10 @@ async def on_login(p: LoginPresentation, data: Any) -> Any:
     async with asyncio.timeout(10):
         await p.enter_email_address(email_address)
 
+    verification_code = input("Enter the verification code: ")
+    async with asyncio.timeout(10):
+        await p.enter_verification_code(verification_code)
+
     await asyncio.sleep(2)
 
     async with asyncio.timeout(5):
