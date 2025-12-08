@@ -57,6 +57,7 @@ class PresentationTimeoutError(BaseError):
     the timeout period.
     """
 
+    @override
     def __init__(self, message: str, screenshot: bytes) -> None:
         super().__init__(message, screenshot)
 
@@ -66,6 +67,7 @@ class PresentationNotDetectedError(BaseError):
     detected.
     """
 
+    @override
     def __init__(self, message: str, screenshot: bytes) -> None:
         super().__init__(message, screenshot)
 
