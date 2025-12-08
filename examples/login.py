@@ -26,7 +26,7 @@ async def on_login(p: LoginPresentation, data: Any) -> Any:
 async def main() -> None:
     config = RPAClient.Config()
     await rpa.run(config, data=0, detection_timeout=30)
-    print("Done!!!")
+    print("The RPA client has been terminated.")
 
 
 if __name__ == "__main__":
