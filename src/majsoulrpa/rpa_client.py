@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from majsoulrpa import browser, constants
+from majsoulrpa.netutils import parse_ip_address, validate_user_port
 from majsoulrpa.presentation.base import Presentation
 
 type Callback[P: Presentation] = Callable[[P, Any], Awaitable[Any]]
@@ -57,8 +58,11 @@ class RPAClient:
             msg = "no callbacks registered: use `RPAClient.on()` to register a Presentation callback"  # noqa: E501
             raise RuntimeError(msg)
 
+        address = parse_ip_address(config.address)
+        remote_port = validate_user_port(config.remote_port)
+
         if browser_client is None:
-            browser_client = browser.Client(config.address, config.remote_port)
+            browser_client = browser.Client(address, remote_port)
         if browser_driver is None:
             browser_driver = browser.Driver(browser_client)
 
