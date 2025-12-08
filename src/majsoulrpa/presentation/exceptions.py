@@ -83,11 +83,4 @@ class InvalidOperationError(BaseError):
 
     @override
     def __init__(self, message: str, screenshot: bytes) -> None:
-        """Initializes the instance.
-
-        Args:
-            message: A message describing the error.
-            screenshot: A screenshot encoded in PNG format captured at
-                the point where the error occurred.
-        """
         super().__init__(message, screenshot)
