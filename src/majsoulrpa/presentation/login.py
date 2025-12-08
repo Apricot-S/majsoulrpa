@@ -6,7 +6,6 @@ from majsoulrpa import browser
 from majsoulrpa.browser.driver import Key
 from majsoulrpa.presentation import exceptions
 from majsoulrpa.presentation.base import Presentation, require_active
-from majsoulrpa.presentation.delay import get_random_delay
 from majsoulrpa.presentation.region import Region
 from majsoulrpa.presentation.template import (
     IMAGE_PATH,
