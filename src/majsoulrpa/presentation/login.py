@@ -17,14 +17,22 @@ from majsoulrpa.presentation.template import (
 
 MAX_EMAIL_ADDRESS_LENGTH = 50  # JP version
 
-LOGIN_BUTTON_IMAGE = FileImage(IMAGE_PATH / "login/login_button_1.png")
-LOGIN_BUTTON_CONFIG = Config.from_file(
+LOGIN_BUTTON_IMAGE_1 = FileImage(IMAGE_PATH / "login/login_button_1.png")
+LOGIN_BUTTON_CONFIG_1 = Config.from_file(
     IMAGE_PATH / "login/login_button_1.toml",
 )
-LOGIN_BUTTON = Matcher(LOGIN_BUTTON_IMAGE, LOGIN_BUTTON_CONFIG)
+LOGIN_BUTTON_1 = Matcher(LOGIN_BUTTON_IMAGE_1, LOGIN_BUTTON_CONFIG_1)
 
 EMAIL_ADDRESS_FIELD = Region(365, 385, 200, 30)
 SEND_CODE_BUTTON = Region(850, 500, 190, 70)
+
+UNAVAILABLE_IMAGE = FileImage(IMAGE_PATH / "login/unavailable.png")
+UNAVAILABLE_CONFIG = Config.from_file(IMAGE_PATH / "login/unavailable.toml")
+UNAVAILABLE = Matcher(UNAVAILABLE_IMAGE, UNAVAILABLE_CONFIG)
+
+CONFIRM_IMAGE = FileImage(IMAGE_PATH / "login/confirm.png")
+CONFIRM_CONFIG = Config.from_file(IMAGE_PATH / "login/confirm.toml")
+CONFIRM = Matcher(CONFIRM_IMAGE, CONFIRM_CONFIG)
 
 
 class LoginPresentation(Presentation):
@@ -39,7 +47,7 @@ class LoginPresentation(Presentation):
     async def _detect(cls, driver: browser.DriverBase) -> Self | None:
         p = cls(driver)
         await p._init_resolution()
-        has_match = await p._has_match(LOGIN_BUTTON)
+        has_match = await p._has_match(LOGIN_BUTTON_1)
         return p if has_match else None
 
     @override
@@ -48,7 +56,7 @@ class LoginPresentation(Presentation):
         # appears. If it is already visible, the click has no effect but
         # causes no issues, so we always perform the click for
         # simplicity.
-        if not await self._click_if_match(LOGIN_BUTTON):
+        if not await self._click_if_match(LOGIN_BUTTON_1):
             msg = '"Login" button could not be detected.'
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
@@ -87,7 +95,21 @@ class LoginPresentation(Presentation):
 
         # Click the "Send Code" button.
         await self._click_region(SEND_CODE_BUTTON)
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.2)
+
+        # Check if the email address is unavailable.
+        if self._has_match(UNAVAILABLE):
+            msg = "This email address is unavailable."
+            ss = await self.get_screenshot()
+            raise exceptions.InvalidArgumentError(msg, ss)
+
+        # Wait for the "Confirm" button to appear, then click it.
+        await asyncio.sleep(1.5)
+        if not self._click_if_match(CONFIRM):
+            msg = '"Confirm" button could not be detected.'
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationNotDetectedError(msg, ss)
+        await asyncio.sleep(0.5)
 
         self._entered_email_address = True
         self._last_request_time = datetime.now(UTC)
