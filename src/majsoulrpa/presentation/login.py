@@ -6,7 +6,10 @@ from majsoulrpa import browser
 from majsoulrpa.browser.driver import Key
 from majsoulrpa.presentation import exceptions
 from majsoulrpa.presentation.base import Presentation, require_active
-from majsoulrpa.presentation.region import Region
+from majsoulrpa.presentation.regions.login import (
+    EMAIL_ADDRESS_FIELD,
+    SEND_CODE_BUTTON,
+)
 from majsoulrpa.presentation.templates.login import (
     CONFIRM,
     LOGIN_BUTTON_1,
@@ -14,9 +17,6 @@ from majsoulrpa.presentation.templates.login import (
 )
 
 MAX_EMAIL_ADDRESS_LENGTH = 50  # JP version
-
-EMAIL_ADDRESS_FIELD = Region(365, 385, 200, 30)
-SEND_CODE_BUTTON = Region(850, 500, 190, 70)
 
 
 class LoginPresentation(Presentation):

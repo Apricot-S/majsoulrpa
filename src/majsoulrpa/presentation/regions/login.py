@@ -1,0 +1,4 @@
+from majsoulrpa.presentation.region import Region
+
+EMAIL_ADDRESS_FIELD = Region(365, 385, 200, 30)
+SEND_CODE_BUTTON = Region(850, 500, 190, 70)
