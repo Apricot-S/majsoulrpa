@@ -56,7 +56,7 @@ class BaseError(Exception):
 class PresentationTimeoutError(BaseError):
     """A timeout error.
 
-    Occurs when a presentation is not detected within the specified
+    Raised when a presentation is not detected within the specified
     timeout period.
     """
 
@@ -67,7 +67,7 @@ class PresentationTimeoutError(BaseError):
 class PresentationNotDetectedError(BaseError):
     """A presentation not detected error.
 
-    Occurs when the expected presentation fails to be detected.
+    Raised when the expected presentation fails to be detected.
     """
 
     def __init__(self, message: str, screenshot: bytes) -> None:
@@ -77,7 +77,7 @@ class PresentationNotDetectedError(BaseError):
 class InvalidOperationError(BaseError):
     """An invalid operation error.
 
-    Occurs when an operation is attempted that is invalid given the
+    Raised when an operation is attempted that is invalid given the
     current state of the presentation.
     """
 
