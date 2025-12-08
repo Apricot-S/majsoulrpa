@@ -80,14 +80,14 @@ class LoginPresentation(Presentation):
         await asyncio.sleep(0.2)
 
         # Check if the email address is unavailable.
-        if self._has_match(UNAVAILABLE):
+        if await self._has_match(UNAVAILABLE):
             msg = "This email address is unavailable."
             ss = await self.get_screenshot()
             raise exceptions.InvalidArgumentError(msg, ss)
 
         # Wait for the "Confirm" button to appear, then click it.
-        await asyncio.sleep(1.5)
-        if not self._click_if_match(CONFIRM):
+        await asyncio.sleep(1.0)
+        if not await self._click_if_match(CONFIRM):
             msg = '"Confirm" button could not be detected.'
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
