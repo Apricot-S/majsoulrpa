@@ -72,10 +72,8 @@ class PresentationNotDetectedError(BaseError):
 
 
 class InvalidOperationError(BaseError):
-    """An invalid operation error.
-
-    Raised when an operation is attempted that is invalid given the
-    current state of the presentation.
+    """Error raised when an operation is attempted
+    that is invalid for the current state of the presentation.
     """
 
     @override
