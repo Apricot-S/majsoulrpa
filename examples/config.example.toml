@@ -1,5 +1,5 @@
 # Optional (all items below are also optional).
-[majsoulrpa]
+[majsoulrpa.endpoint]
 # IP address where the browser process is running for remote control.
 # Defaults to "127.0.0.1".
 browser-address = "127.0.0.1"
@@ -8,7 +8,6 @@ browser-address = "127.0.0.1"
 # Defaults to "127.0.0.1".
 client-address = "127.0.0.1"
 
-[majsoulrpa.port]
 # Port used for remote control of the browser.
 # Defaults to 19222.
 remote-port = 19222
