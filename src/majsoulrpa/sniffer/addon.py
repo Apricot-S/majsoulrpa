@@ -1,10 +1,17 @@
 """Addon for mitmproxy."""
 
+import re
+
 import zmq.asyncio
 from mitmproxy import addonmanager, ctx, http
 
 from majsoulrpa import netutils
 from majsoulrpa.constants import DEFAULT_CLIENT_ADDRESS, DEFAULT_SNIFFER_PORT
+
+NOTIFICATION_PATTERN = re.compile(b"^\x01..\n.(.*?)\x12", flags=re.DOTALL)
+REQUEST_PATTERN = re.compile(b"^\x02..\n.(.*?)\x12", flags=re.DOTALL)
+RESPONSE_PATTERN = re.compile(b"^\x03..\n\x00\x12", flags=re.DOTALL)
+HEARTBEAT_PATTERN = re.compile(b"<= heartbeat -", flags=re.DOTALL)
 
 
 class Sniffer:
@@ -46,7 +53,10 @@ class Sniffer:
         self._context.destroy()
 
     def websocket_message(self, flow: http.HTTPFlow) -> None:
-        pass
+        websocket_data = flow.websocket
+        if websocket_data is None:
+            msg = "`websocket_data is None`"
+            raise RuntimeError(msg)
 
 
 addons = [Sniffer()]
