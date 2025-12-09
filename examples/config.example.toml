@@ -4,7 +4,7 @@
 # Defaults to "127.0.0.1".
 browser-address = "127.0.0.1"
 
-# IP address the RPA client uses to connect to the browser for remote operations.
+# IP address where the RPA client is running.
 # Defaults to "127.0.0.1".
 client-address = "127.0.0.1"
 
