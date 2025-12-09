@@ -637,7 +637,7 @@ SOFTWARE.
 
 ## wsproto
 
-**Source**: <https://github.com/python-hyper/wsproto/>
+**Source**: <https://github.com/python-hyper/wsproto>
 
 **License**:
 
