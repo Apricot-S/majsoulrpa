@@ -1,4 +1,5 @@
-# Optional (all items below are also optional).
+# All items below are optional.
+
 [majsoulrpa.endpoint]
 # IP address where the browser process is running for remote control.
 # Defaults to "127.0.0.1".
