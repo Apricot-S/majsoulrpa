@@ -3,7 +3,8 @@
 # ruff: noqa: S101
 
 import re
-from enum import IntEnum
+from enum import Enum, StrEnum
+from typing import TypedDict
 
 import wsproto.frame_protocol
 import zmq.asyncio
@@ -21,15 +22,74 @@ RESPONSE_PATTERN = re.compile(b"^\x03..\n\x00\x12", flags=re.DOTALL)
 HEARTBEAT_PATTERN = re.compile(b"<= heartbeat -", flags=re.DOTALL)
 
 
-class MessageType(IntEnum):
-    NOTIFICATION = 1
-    REQUEST = 2
-    RESPONSE = 3
+class MessageType(Enum):
+    NOTIFICATION = 0x01
+    REQUEST = 0x02
+    RESPONSE = 0x03
+
+
+class Direction(StrEnum):
+    INBOUND = "inbound"
+    OUTBOUND = "outbound"
+
+
+class PendingRequest(TypedDict):
+    direction: Direction
+    name: str
+    request: bytes
+
+
+def detect_message_type(content: bytes) -> MessageType:
+    if not content:
+        msg = "empty message"
+        raise ValueError(msg)
+
+    first_byte = content[0]
+    match first_byte:
+        case MessageType.NOTIFICATION.value:
+            return MessageType.NOTIFICATION
+        case MessageType.REQUEST.value:
+            return MessageType.REQUEST
+        case MessageType.RESPONSE.value:
+            return MessageType.RESPONSE
+        case _:
+            msg = f"unknown message type: {first_byte:#x}"
+            raise ValueError(msg)
+
+
+def parse_message(content: bytes) -> tuple[MessageType, str | None]:
+    message_type = detect_message_type(content)
+    match message_type:
+        case MessageType.NOTIFICATION:
+            m = NOTIFICATION_PATTERN.match(content)
+            if not m:
+                msg = "invalid notification format"
+                raise ValueError(msg)
+            return message_type, m.group(1).decode("utf-8")
+        case MessageType.REQUEST:
+            m = REQUEST_PATTERN.match(content)
+            if not m:
+                msg = "Invalid request format"
+                raise ValueError(msg)
+            return message_type, m.group(1).decode("utf-8")
+        case MessageType.RESPONSE:
+            m = RESPONSE_PATTERN.match(content)
+            if not m:
+                msg = "Invalid response format"
+                raise ValueError(msg)
+            return message_type, None
+        case _:
+            msg = f"unsupported message type: {message_type}"
+            raise ValueError(msg)
+
+
+def get_message_number(content: bytes) -> int:
+    return int.from_bytes(content[1:2], byteorder="little")
 
 
 class Sniffer:
     def __init__(self) -> None:
-        pass
+        self._message_queue: dict[int, PendingRequest] = {}
 
     def load(self, loader: Loader) -> None:
         loader.add_option(
@@ -66,20 +126,77 @@ class Sniffer:
         self._context.destroy()
 
     def websocket_message(self, flow: HTTPFlow) -> None:
-        message = self._get_last_message(flow)
+        message = Sniffer._get_last_message(flow)
 
         if message.type != wsproto.frame_protocol.Opcode.BINARY:
             msg = f"{message.type}: An unsupported WebSocket message type."
             raise RuntimeError(msg)
 
-        direction = "outbound" if message.from_client else "inbound"
+        if message.from_client:
+            direction = Direction.OUTBOUND
+        else:
+            direction = Direction.INBOUND
+
         content = message.content
 
         if HEARTBEAT_PATTERN.search(content) is not None:
             # Ignore the heartbeats exchanged in the tournament room
             return
 
-    def _get_last_message(self, flow: HTTPFlow) -> WebSocketMessage:
+        message_type, name = parse_message(content)
+
+        match message_type:
+            case MessageType.NOTIFICATION:
+                # Process a request message that do not require
+                # a response.
+                request_direction = direction
+
+                match request_direction:
+                    case Direction.OUTBOUND:
+                        direction = Direction.INBOUND
+                    case Direction.INBOUND:
+                        direction = Direction.OUTBOUND
+
+                request = content
+                response = None
+            case MessageType.REQUEST:
+                # Process a request message that expect a response
+                # message. Queue the message until a corresponding
+                # response message is found.
+                assert name is not None
+
+                number = get_message_number(content)
+                if number in self._message_queue:
+                    # TODO: リクエストメッセージに対する応答がないまま
+                    # 同じリクエストメッセージが来たときの
+                    # ログの対応をする
+                    pass
+
+                self._message_queue[number] = PendingRequest(
+                    direction=direction,
+                    name=name,
+                    request=content,
+                )
+
+                return
+            case MessageType.RESPONSE:
+                # Response message.
+                # Find the corresponding request message from the queue.
+                number = get_message_number(content)
+                if number not in self._message_queue:
+                    # TODO: レスポンスメッセージに対応する
+                    # リクエストメッセージがないときの
+                    # ログの対応をする
+                    pass
+
+                entry = self._message_queue.pop(number)
+                request_direction = entry["direction"]
+                name = entry["name"]
+                request = entry["request"]
+                response = content
+
+    @staticmethod
+    def _get_last_message(flow: HTTPFlow) -> WebSocketMessage:
         websocket_data = flow.websocket
         assert websocket_data is not None
         assert websocket_data.messages
