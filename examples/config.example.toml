@@ -35,7 +35,7 @@ window-left = 100
 window-top = 100
 
 # Height of the browser viewport in pixels.
-# Must be one of 720, 900, 1080, or 1440.
+# Must be one of 720, 1080, or 1440.
 # Defaults to 1080.
 viewport-height = 720
 
