@@ -258,6 +258,11 @@ def require_active[R](
     method: Callable[..., Awaitable[R]],
 ) -> Callable[..., Awaitable[R]]:
     async def wrapper(self: Presentation, *args, **kwargs) -> R:
+        if self._is_browser_closed:
+            msg = (
+                f"`{method.__name__}` called after browser was already closed."
+            )
+            raise InvalidOperationError(msg, None)
         if self._is_presentation_finished:
             msg = f"`{method.__name__}` called after presentation finished."
             ss = await self.get_screenshot()
