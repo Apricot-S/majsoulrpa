@@ -24,7 +24,7 @@ While some internal ideas and major class names were borrowed, the architecture 
 
 ## Implementation concept diagram
 
-TODO
+![implementation-concept-diagram](docs/implementation-concept-diagram.png)
 
 ## Installation
 
