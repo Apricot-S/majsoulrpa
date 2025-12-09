@@ -16,7 +16,7 @@ from majsoulrpa.constants import (
 )
 from majsoulrpa.exceptions import UserInputError
 
-VIEWPORT_HEIGHT_CHOICES = (540, 720, 900, 1080, 1440)
+VIEWPORT_HEIGHT_CHOICES = (720, 900, 1080, 1440)
 
 
 @dataclass(frozen=True)
