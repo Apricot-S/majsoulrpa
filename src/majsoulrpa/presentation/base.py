@@ -263,10 +263,12 @@ def require_active[R](
                 f"`{method.__name__}` called after browser was already closed."
             )
             raise InvalidOperationError(msg, None)
+
         if self._is_presentation_finished:
             msg = f"`{method.__name__}` called after presentation finished."
             ss = await self.get_screenshot()
             raise InvalidOperationError(msg, ss)
+
         return await method(self, *args, **kwargs)
 
     return wrapper
