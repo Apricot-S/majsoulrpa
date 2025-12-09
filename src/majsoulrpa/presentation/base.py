@@ -18,19 +18,27 @@ class Presentation(ABC):
     def __init__(self, driver: browser.DriverBase) -> None:
         self.__scale: float | None = None
         self.__is_presentation_finished = False
-        self._is_rpa_ended = False
+        self.__is_rpa_ended = False
+        self.__is_browser_closed = False
         self._driver = driver
 
     async def get_screenshot(self) -> bytes:
+        if self.__is_browser_closed:
+            msg = "`get_screenshot` called after browser was already closed."
+            raise InvalidOperationError(msg, None)
         return await self._driver.get_screenshot()
 
     async def reload(self) -> None:
+        if self.__is_browser_closed:
+            msg = "`reload` called after browser was already closed."
+            raise InvalidOperationError(msg, None)
         self.__is_presentation_finished = True
         await self._driver.reload()
 
     async def end_rpa(self, *, close_browser: bool) -> None:
-        self._is_rpa_ended = True
-        if close_browser:
+        self.__is_rpa_ended = True
+        if (not self.__is_browser_closed) and close_browser:
+            self.__is_browser_closed = True
             await self._driver.quit()
 
     @property
@@ -43,6 +51,14 @@ class Presentation(ABC):
     @property
     def _is_presentation_finished(self) -> bool:
         return self.__is_presentation_finished
+
+    @property
+    def _is_rpa_ended(self) -> bool:
+        return self.__is_rpa_ended
+
+    @property
+    def _is_browser_closed(self) -> bool:
+        return self.__is_browser_closed
 
     def _mark_finished(self) -> None:
         if self.__is_presentation_finished:
