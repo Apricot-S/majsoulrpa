@@ -54,7 +54,7 @@ class RPAClient:
         detection_timeout: float = 30.0,
         browser_client: browser.ClientBase | None = None,
         browser_driver: browser.DriverBase | None = None,
-    ) -> None:
+    ) -> Any:
         if not self._callbacks:
             msg = "no callbacks registered: use `RPAClient.on()` to register a presentation callback"  # noqa: E501
             raise RuntimeError(msg)
@@ -82,4 +82,4 @@ class RPAClient:
                 data = await self._dispatch(p, data)
 
                 if p._is_rpa_ended:  # noqa: SLF001
-                    break
+                    return data
