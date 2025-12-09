@@ -33,6 +33,14 @@ majsoulrpa$ pip install .
 majsoulrpa$ playwright install --with-deps chromium
 ```
 
+## Usage
+
+See [examples/](examples/) for usage examples.
+
+> [!IMPORTANT]
+> The email address you use must be linked to your Yostar ID.
+> See [discussion #287](https://github.com/Apricot-S/majsoulrpa/discussions/287) for more details.
+
 ## License
 
 Licensed under the [MIT license](LICENSE).
