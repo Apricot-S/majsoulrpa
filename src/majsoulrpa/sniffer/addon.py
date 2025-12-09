@@ -1,9 +1,16 @@
 """Addon for mitmproxy."""
 
-import re
+# ruff: noqa: S101
 
+import re
+from enum import IntEnum
+
+import wsproto.frame_protocol
 import zmq.asyncio
-from mitmproxy import addonmanager, ctx, http
+from mitmproxy import ctx
+from mitmproxy.addonmanager import Loader
+from mitmproxy.http import HTTPFlow
+from mitmproxy.websocket import WebSocketMessage
 
 from majsoulrpa import netutils
 from majsoulrpa.constants import DEFAULT_CLIENT_ADDRESS, DEFAULT_SNIFFER_PORT
@@ -14,11 +21,17 @@ RESPONSE_PATTERN = re.compile(b"^\x03..\n\x00\x12", flags=re.DOTALL)
 HEARTBEAT_PATTERN = re.compile(b"<= heartbeat -", flags=re.DOTALL)
 
 
+class MessageType(IntEnum):
+    NOTIFICATION = 1
+    REQUEST = 2
+    RESPONSE = 3
+
+
 class Sniffer:
     def __init__(self) -> None:
         pass
 
-    def load(self, loader: addonmanager.Loader) -> None:
+    def load(self, loader: Loader) -> None:
         loader.add_option(
             name="address",
             typespec=str,
@@ -52,11 +65,25 @@ class Sniffer:
         self._socket.close()
         self._context.destroy()
 
-    def websocket_message(self, flow: http.HTTPFlow) -> None:
-        websocket_data = flow.websocket
-        if websocket_data is None:
-            msg = "`websocket_data is None`"
+    def websocket_message(self, flow: HTTPFlow) -> None:
+        message = self._get_last_message(flow)
+
+        if message.type != wsproto.frame_protocol.Opcode.BINARY:
+            msg = f"{message.type}: An unsupported WebSocket message type."
             raise RuntimeError(msg)
+
+        direction = "outbound" if message.from_client else "inbound"
+        content = message.content
+
+        if HEARTBEAT_PATTERN.search(content) is not None:
+            # Ignore the heartbeats exchanged in the tournament room
+            return
+
+    def _get_last_message(self, flow: HTTPFlow) -> WebSocketMessage:
+        websocket_data = flow.websocket
+        assert websocket_data is not None
+        assert websocket_data.messages
+        return websocket_data.messages[-1]
 
 
 addons = [Sniffer()]
