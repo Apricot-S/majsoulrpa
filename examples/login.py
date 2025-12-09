@@ -4,6 +4,7 @@ import asyncio
 from typing import Any
 
 from majsoulrpa import RPAClient
+from majsoulrpa.presentation.home import HomePresentation
 from majsoulrpa.presentation.login import LoginPresentation
 
 rpa = RPAClient()
@@ -19,7 +20,12 @@ async def on_login(p: LoginPresentation, data: Any) -> Any:
     async with asyncio.timeout(10):
         await p.enter_verification_code(verification_code)
 
-    await asyncio.sleep(15)
+    return data + 1
+
+
+@rpa.on(HomePresentation)
+async def on_home(p: HomePresentation, data: Any) -> Any:
+    await asyncio.sleep(5)
 
     async with asyncio.timeout(5):
         await p.end_rpa(close_browser=True)
@@ -29,7 +35,11 @@ async def on_login(p: LoginPresentation, data: Any) -> Any:
 
 async def main() -> None:
     config = RPAClient.Config()
-    await rpa.run(config, data=0, detection_timeout=30)
+    data = 0
+
+    await rpa.run(config, data, detection_timeout=30)
+
+    print(f"{data=}")
     print("The RPA client has been terminated.")
 
 
