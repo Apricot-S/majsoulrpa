@@ -16,7 +16,7 @@ type Callback[P: Presentation] = Callable[[P, Any], Awaitable[Any]]
 class RPAClient:
     @dataclass(frozen=True)
     class Config:
-        address: str = constants.DEFAULT_CLIENT_ADDRESS
+        browser_address: str = constants.DEFAULT_BROWSER_ADDRESS
         remote_port: int = constants.DEFAULT_REMOTE_PORT
 
     def __init__(self) -> None:
@@ -59,7 +59,7 @@ class RPAClient:
             msg = "no callbacks registered: use `RPAClient.on()` to register a presentation callback"  # noqa: E501
             raise RuntimeError(msg)
 
-        address = parse_ip_address(config.address)
+        address = parse_ip_address(config.browser_address)
         remote_port = validate_user_port(config.remote_port)
 
         if browser_client is None:
