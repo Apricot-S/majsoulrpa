@@ -23,14 +23,16 @@ class Presentation(ABC):
         self._driver = driver
 
     async def get_screenshot(self) -> bytes:
-        if self.__is_browser_closed:
-            msg = "`get_screenshot` called after browser was already closed."
+        if self._is_rpa_ended:
+            msg = (
+                "`get_screenshot` called after RPA session has already ended."
+            )
             raise InvalidOperationError(msg, None)
         return await self._driver.get_screenshot()
 
     async def reload(self) -> None:
-        if self.__is_browser_closed:
-            msg = "`reload` called after browser was already closed."
+        if self._is_rpa_ended:
+            msg = "`reload` called after RPA session has already ended."
             raise InvalidOperationError(msg, None)
         self.__is_presentation_finished = True
         await self._driver.reload()
@@ -55,10 +57,6 @@ class Presentation(ABC):
     @property
     def _is_rpa_ended(self) -> bool:
         return self.__is_rpa_ended
-
-    @property
-    def _is_browser_closed(self) -> bool:
-        return self.__is_browser_closed
 
     def _mark_finished(self) -> None:
         if self.__is_presentation_finished:
@@ -258,10 +256,8 @@ def require_active[R](
     method: Callable[..., Awaitable[R]],
 ) -> Callable[..., Awaitable[R]]:
     async def wrapper(self: Presentation, *args, **kwargs) -> R:
-        if self._is_browser_closed:
-            msg = (
-                f"`{method.__name__}` called after browser was already closed."
-            )
+        if self._is_rpa_ended:
+            msg = f"`{method.__name__}` called after RPA session has already ended."  # noqa: E501
             raise InvalidOperationError(msg, None)
 
         if self._is_presentation_finished:
