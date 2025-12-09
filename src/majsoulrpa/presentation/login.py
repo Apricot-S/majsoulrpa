@@ -110,8 +110,7 @@ class LoginPresentation(Presentation):
 
         if not self._entered_email_address:
             msg = "Email address has not been entered yet."
-            ss = await self.get_screenshot()
-            raise exceptions.InvalidOperationError(msg, ss)
+            raise exceptions.InvalidOperationError(msg, None)
 
         # Click the "Enter the verification code sent to your email"
         # text box to focus it.
