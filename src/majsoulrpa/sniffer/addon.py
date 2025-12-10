@@ -2,7 +2,9 @@
 
 # ruff: noqa: S101
 
+import datetime
 import re
+from base64 import b64encode
 from enum import Enum, StrEnum
 from typing import Annotated, Literal, TypedDict
 
@@ -215,6 +217,30 @@ class Sniffer:
                 name = entry["name"]
                 request = entry["request"]
                 response = content
+
+        # Check that the directions of the request and response are
+        # consistent.
+        if request_direction == direction:
+            msg = (
+                f"Both request and response WebSocket messages are {direction}"
+            )
+            raise RuntimeError(msg)
+
+        # Encode to JSON format so that it can be enqueueed
+        # to message queue.
+        encoded_request = b64encode(request).decode(encoding="utf-8")
+        if response is not None:
+            encoded_response = b64encode(response).decode(encoding="utf-8")
+        else:
+            encoded_response = None
+
+        now = datetime.datetime.now(tz=datetime.UTC)
+        data = {
+            "request_direction": request_direction,
+            "request": encoded_request,
+            "response": encoded_response,
+            "timestamp": now.timestamp(),
+        }
 
     @staticmethod
     def _get_last_message(flow: HTTPFlow) -> WebSocketMessage:
