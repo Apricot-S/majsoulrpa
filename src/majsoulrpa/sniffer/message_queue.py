@@ -1,9 +1,11 @@
+import base64
 from abc import ABC, abstractmethod
 from asyncio.queues import Queue
 from collections import deque
 from ipaddress import IPv4Address, IPv6Address
 from typing import Self, override
 
+import zmq.asyncio
 from google.protobuf.descriptor import FileDescriptor
 from google.protobuf.message import Message as ProtobufMessage
 from google.protobuf.message_factory import GetMessageClass
@@ -83,17 +85,27 @@ class MessageQueue(MessageQueueBase):
         self._wrapper = liqi_pb2.Wrapper()
         self._account_id: int | None = None
 
+        self._ctx: zmq.asyncio.Context | None = None
+        self._socket: zmq.asyncio.Socket | None = None
+
     @override
     async def __aenter__(self) -> Self:
         return self
 
     @override
     async def __aexit__(self, exc_type, exc_value, traceback) -> None:  # noqa: ANN001
-        raise NotImplementedError
+        self._close()
 
     @override
     async def run(self) -> None:
-        raise NotImplementedError
+        self._ctx = zmq.asyncio.Context()
+        self._socket = self._ctx.socket(zmq.SUB)
+        self._socket.connect(f"tcp://{self._endpoint}")
+
+        while True:
+            message_str = await self._socket.recv_string()
+            message = Message.model_validate_json(message_str)
+            self._enqueue_message(message)
 
     @override
     async def get(self) -> Message:
@@ -118,6 +130,25 @@ class MessageQueue(MessageQueueBase):
     def account_id(self) -> int | None:
         return self._account_id
 
+    def _close(self) -> None:
+        if self._socket is not None:
+            self._socket.close()
+        if self._ctx is not None:
+            self._ctx.destroy()
+
     def _unwrap_message(self, message: bytes) -> tuple[str, bytes]:
         self._wrapper.ParseFromString(message)
         return (self._wrapper.name, self._wrapper.data)
+
+    def _enqueue_message(self, message: Message) -> None:
+        request_direction = message.request_direction
+        encoded_request = message.request
+        encoded_response = message.response
+        timestamp = message.timestamp
+
+        request = base64.b64decode(encoded_request)
+        response = (
+            base64.b64decode(encoded_response)
+            if encoded_response is not None
+            else None
+        )
