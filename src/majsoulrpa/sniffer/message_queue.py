@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from asyncio.queues import Queue
 from collections import deque
 from ipaddress import IPv4Address, IPv6Address
-from typing import Self, override
+from typing import Any, Self, override
 
 import zmq.asyncio
 from google.protobuf.descriptor import FileDescriptor
@@ -151,9 +151,13 @@ class MessageQueue(MessageQueueBase):
         )
 
         name, request_data = self._parse_request(request)
-        response_data = (
-            self._parse_response(response) if response is not None else b""
-        )
+        jsonized_request = self._jsonize_request(name, request_data)
+
+        if response is not None:
+            response_data = self._parse_response(response)
+            jsonized_response = self._jsonize_response(name, response_data)
+        else:
+            jsonized_response = None
 
     def _unwrap_message(self, message: bytes) -> tuple[str, bytes]:
         self._wrapper.ParseFromString(message)
@@ -175,7 +179,7 @@ class MessageQueue(MessageQueueBase):
                 msg = f"{request[0]}: unknown request type."
                 raise RuntimeError(msg)
 
-    def _parse_response(self, response: bytes) -> tuple[str, bytes]:
+    def _parse_response(self, response: bytes) -> bytes:
         if response[0] != MessageType.RESPONSE.value:
             msg = f"{response[0]}: unknown response type."
             raise RuntimeError(msg)
@@ -185,4 +189,10 @@ class MessageQueue(MessageQueueBase):
             msg = f"{name}: unknown response name."
             raise RuntimeError(msg)
 
-        return name, data
+        return data
+
+    def _jsonize_request(self, name: str, data: bytes) -> dict[str, Any]:
+        raise NotImplementedError
+
+    def _jsonize_response(self, name: str, data: bytes) -> dict[str, Any]:
+        raise NotImplementedError
