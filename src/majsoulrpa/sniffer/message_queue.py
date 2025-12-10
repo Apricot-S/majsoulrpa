@@ -108,7 +108,7 @@ class MessageQueue(MessageQueueBase):
     async def run(self) -> None:
         self._ctx = zmq.asyncio.Context()
         self._socket = self._ctx.socket(zmq.SUB)
-        self._socket.setsockopt(zmq.SUBSCRIBE, "")
+        self._socket.setsockopt(zmq.SUBSCRIBE, b"")
         self._socket.connect(f"tcp://{self._endpoint}")
 
         while True:
