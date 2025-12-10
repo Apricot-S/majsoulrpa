@@ -12,8 +12,8 @@ from google.protobuf.message import Message as ProtobufMessage
 from google.protobuf.message_factory import GetMessageClass
 
 from majsoulrpa._majsoul_internal.protocol import liqi_pb2
+from majsoulrpa.exceptions import UnknownAPIError
 from majsoulrpa.netutils import UserPort, make_endpoint
-from majsoulrpa.sniffer.exceptions import UnknownAPIError
 from majsoulrpa.sniffer.message import Message, MessageType, RawMessage
 
 

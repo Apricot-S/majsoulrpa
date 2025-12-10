@@ -8,8 +8,3 @@ __all__ = [
     "MessageQueue",
     "MessageQueueBase",
 ]
-
-# submodules
-__all__ += [
-    "exceptions",  # type: ignore[reportUnsupportedDunderAll]
-]
