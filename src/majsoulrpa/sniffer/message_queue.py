@@ -194,7 +194,17 @@ class MessageQueue(MessageQueueBase):
         return data
 
     def _jsonize_request(self, name: str, data: bytes) -> dict[str, Any]:
-        raise NotImplementedError
+        try:
+            parser = MESSAGE_TYPE_MAP[name][0]()
+        except KeyError as e:
+            raise UnknownAPIError(name, data) from e
+
+        parser.ParseFromString(data)
+        return MessageToDict(
+            parser,
+            always_print_fields_with_no_presence=True,
+            preserving_proto_field_name=True,
+        )
 
     def _jsonize_response(self, name: str, data: bytes) -> dict[str, Any]:
         response = MESSAGE_TYPE_MAP[name][1]
