@@ -12,6 +12,7 @@ from google.protobuf.message_factory import GetMessageClass
 
 from majsoulrpa._majsoul_internal.protocol import liqi_pb2
 from majsoulrpa.netutils import UserPort, make_endpoint
+from majsoulrpa.sniffer.exceptions import UnknownAPIError
 from majsoulrpa.sniffer.message import Message, MessageType
 
 
@@ -195,4 +196,14 @@ class MessageQueue(MessageQueueBase):
         raise NotImplementedError
 
     def _jsonize_response(self, name: str, data: bytes) -> dict[str, Any]:
+        response = MESSAGE_TYPE_MAP[name][1]
+        if response is None:
+            msg = f"message type `{name}` does not define a response."
+            raise RuntimeError(msg)
+
+        try:
+            parser = response()
+        except IndexError as e:
+            raise UnknownAPIError(name, data) from e
+
         raise NotImplementedError
