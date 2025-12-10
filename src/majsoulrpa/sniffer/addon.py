@@ -5,8 +5,9 @@
 import datetime
 import re
 from base64 import b64encode
+from dataclasses import dataclass
 from enum import Enum, StrEnum
-from typing import Annotated, Literal, TypedDict
+from typing import Annotated, Literal
 
 import wsproto.frame_protocol
 import zmq
@@ -59,10 +60,19 @@ class Direction(StrEnum):
     OUTBOUND = "outbound"
 
 
-class PendingRequest(TypedDict):
+@dataclass(frozen=True)
+class PendingRequest:
     direction: Direction
     name: str
     request: bytes
+
+
+@dataclass(frozen=True)
+class SniffedMessage:
+    request_direction: Direction
+    name: str
+    request: bytes
+    response: bytes | None
 
 
 def detect_message_type(content: bytes) -> MessageType:
@@ -157,15 +167,12 @@ class Sniffer:
     def websocket_message(self, flow: HTTPFlow) -> None:
         message = Sniffer._get_last_message(flow)
 
+        # Validate supported message type
         if message.type != wsproto.frame_protocol.Opcode.BINARY:
             msg = f"{message.type}: An unsupported WebSocket message type."
             raise RuntimeError(msg)
 
-        if message.from_client:
-            direction = Direction.OUTBOUND
-        else:
-            direction = Direction.INBOUND
-
+        direction = Sniffer._direction_from_ws_message(message)
         content = message.content
 
         if HEARTBEAT_PATTERN.search(content) is not None:
@@ -173,79 +180,21 @@ class Sniffer:
             return
 
         header = parse_message_header(content)
+
         match header:
             case NotificationHeader():
-                # Process a request message that do not require
-                # a response.
-                request_direction = direction
-
-                match request_direction:
-                    case Direction.OUTBOUND:
-                        direction = Direction.INBOUND
-                    case Direction.INBOUND:
-                        direction = Direction.OUTBOUND
-
-                name = header.api_name
-                request = content
-                response = None
+                sniffed = self._handle_notification(header, direction, content)
             case RequestHeader():
-                # Process a request message that expect a response
-                # message. Queue the message until a corresponding
-                # response message is found.
-                if header.sequence_number in self._pending_requests:
-                    # TODO: リクエストメッセージに対する応答がないまま
-                    # 同じリクエストメッセージが来たときの
-                    # ログの対応をする
-                    pass
-
-                self._pending_requests[header.sequence_number] = (
-                    PendingRequest(
-                        direction=direction,
-                        name=header.api_name,
-                        request=content,
-                    )
-                )
-
+                # Request expects a response; queue it and return early.
+                self._handle_request(header, direction, content)
                 return
             case ResponseHeader():
-                # Response message.
-                # Find the corresponding request message from the queue.
-                if header.sequence_number not in self._pending_requests:
-                    # TODO: レスポンスメッセージに対応する
-                    # リクエストメッセージがないときの
-                    # ログの対応をする
-                    pass
+                sniffed = self._handle_response(header, direction, content)
+            case _:
+                msg = f"unsupported message type: {type(header)}"
+                raise ValueError(msg)
 
-                p = self._pending_requests.pop(header.sequence_number)
-                request_direction = p["direction"]
-                name = p["name"]
-                request = p["request"]
-                response = content
-
-        # Check that the directions of the request and response are
-        # consistent.
-        if request_direction == direction:
-            msg = (
-                f"Both request and response WebSocket messages are {direction}"
-            )
-            raise RuntimeError(msg)
-
-        # Encode to JSON format so that it can be enqueueed
-        # to message queue.
-        encoded_request = b64encode(request).decode(encoding="utf-8")
-        if response is not None:
-            encoded_response = b64encode(response).decode(encoding="utf-8")
-        else:
-            encoded_response = None
-
-        data = Message(
-            request_direction=request_direction.value,
-            name=name,
-            request=encoded_request,
-            response=encoded_response,
-            timestamp=datetime.datetime.now(tz=datetime.UTC),
-        )
-        self._socket.send_string(data.model_dump_json())
+        self._send_sniffed_message(sniffed)
 
     @staticmethod
     def _get_last_message(flow: HTTPFlow) -> WebSocketMessage:
@@ -253,6 +202,88 @@ class Sniffer:
         assert websocket_data is not None
         assert websocket_data.messages
         return websocket_data.messages[-1]
+
+    @staticmethod
+    def _direction_from_ws_message(message: WebSocketMessage) -> Direction:
+        return Direction.OUTBOUND if message.from_client else Direction.INBOUND
+
+    def _handle_notification(
+        self,
+        header: NotificationHeader,
+        direction: Direction,
+        content: bytes,
+    ) -> SniffedMessage:
+        return SniffedMessage(
+            request_direction=direction,
+            name=header.api_name,
+            request=content,
+            response=None,
+        )
+
+    def _handle_request(
+        self,
+        header: RequestHeader,
+        direction: Direction,
+        content: bytes,
+    ) -> None:
+        if header.sequence_number in self._pending_requests:
+            # TODO: リクエストメッセージに対する応答がないまま
+            # 同じリクエストメッセージが来たときのログの対応をする
+            pass
+
+        self._pending_requests[header.sequence_number] = PendingRequest(
+            direction=direction,
+            name=header.api_name,
+            request=content,
+        )
+
+    def _handle_response(
+        self,
+        header: ResponseHeader,
+        direction: Direction,
+        content: bytes,
+    ) -> SniffedMessage:
+        if header.sequence_number not in self._pending_requests:
+            # TODO: レスポンスメッセージに対応するリクエストメッセージが
+            # ないときのログの対応をする
+            pass
+
+        p = self._pending_requests.pop(header.sequence_number)
+        request_direction = p.direction
+        name = p.name
+        request = p.request
+        response = content
+
+        # Validate direction consistency for response messages.
+        if request_direction == direction:
+            msg = (
+                f"Both request and response WebSocket messages are {direction}"
+            )
+            raise RuntimeError(msg)
+
+        return SniffedMessage(
+            request_direction=request_direction,
+            name=name,
+            request=request,
+            response=response,
+        )
+
+    def _send_sniffed_message(self, sniffed: SniffedMessage) -> None:
+        encoded_request = b64encode(sniffed.request).decode(encoding="utf-8")
+        encoded_response = (
+            b64encode(sniffed.response).decode(encoding="utf-8")
+            if sniffed.response is not None
+            else None
+        )
+
+        data = Message(
+            request_direction=sniffed.request_direction.value,
+            name=sniffed.name,
+            request=encoded_request,
+            response=encoded_response,
+            timestamp=datetime.datetime.now(tz=datetime.UTC),
+        )
+        self._socket.send_string(data.model_dump_json())
 
 
 addons = [Sniffer()]
