@@ -27,13 +27,13 @@ def _build_message_type_map(
 
     for sdesc in descriptor.services_by_name.values():
         for mdesc in sdesc.methods:
-            MESSAGE_TYPE_MAP["." + mdesc.full_name] = (
+            mapping["." + mdesc.full_name] = (
                 GetMessageClass(mdesc.input_type),
                 GetMessageClass(mdesc.output_type),
             )
 
     for tdesc in descriptor.message_types_by_name.values():
-        MESSAGE_TYPE_MAP["." + tdesc.full_name] = (
+        mapping["." + tdesc.full_name] = (
             GetMessageClass(tdesc),
             None,
         )
