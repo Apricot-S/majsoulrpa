@@ -12,7 +12,7 @@ from google.protobuf.message_factory import GetMessageClass
 
 from majsoulrpa._majsoul_internal.protocol import liqi_pb2
 from majsoulrpa.netutils import UserPort, make_endpoint
-from majsoulrpa.sniffer.message import Message
+from majsoulrpa.sniffer.message import Message, MessageType
 
 
 def _build_message_type_map(
@@ -100,6 +100,7 @@ class MessageQueue(MessageQueueBase):
     async def run(self) -> None:
         self._ctx = zmq.asyncio.Context()
         self._socket = self._ctx.socket(zmq.SUB)
+        self._socket.setsockopt(zmq.SUBSCRIBE, "")
         self._socket.connect(f"tcp://{self._endpoint}")
 
         while True:
@@ -136,10 +137,6 @@ class MessageQueue(MessageQueueBase):
         if self._ctx is not None:
             self._ctx.destroy()
 
-    def _unwrap_message(self, message: bytes) -> tuple[str, bytes]:
-        self._wrapper.ParseFromString(message)
-        return (self._wrapper.name, self._wrapper.data)
-
     def _enqueue_message(self, message: Message) -> None:
         request_direction = message.request_direction
         encoded_request = message.request
@@ -152,3 +149,40 @@ class MessageQueue(MessageQueueBase):
             if encoded_response is not None
             else None
         )
+
+        name, request_data = self._parse_request(request)
+        response_data = (
+            self._parse_response(response) if response is not None else b""
+        )
+
+    def _unwrap_message(self, message: bytes) -> tuple[str, bytes]:
+        self._wrapper.ParseFromString(message)
+        return (self._wrapper.name, self._wrapper.data)
+
+    def _parse_request(self, request: bytes) -> tuple[str, bytes]:
+        match request[0]:
+            case MessageType.NOTIFICATION.value:
+                # A request message that does not require a response
+                # is missing the two bytes of the message number.
+                return self._unwrap_message(request[1:])
+            case MessageType.REQUEST.value:
+                # A request message that has a corresponding
+                # response message, there are 2 bytes to store
+                # the message number, and the name must be extracted to
+                # parse the response message.
+                return self._unwrap_message(request[3:])
+            case _:
+                msg = f"{request[0]}: unknown request type."
+                raise RuntimeError(msg)
+
+    def _parse_response(self, response: bytes) -> tuple[str, bytes]:
+        if response[0] != MessageType.RESPONSE.value:
+            msg = f"{response[0]}: unknown response type."
+            raise RuntimeError(msg)
+
+        name, data = self._unwrap_message(response[3:])
+        if name != "":
+            msg = f"{name}: unknown response name."
+            raise RuntimeError(msg)
+
+        return name, data

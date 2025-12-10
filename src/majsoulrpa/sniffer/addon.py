@@ -6,7 +6,7 @@ import datetime
 import re
 from base64 import b64encode
 from dataclasses import dataclass
-from enum import Enum, StrEnum
+from enum import StrEnum
 from logging import getLogger
 from typing import Annotated, Literal
 
@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 
 from majsoulrpa import netutils
 from majsoulrpa.constants import DEFAULT_CLIENT_ADDRESS, DEFAULT_SNIFFER_PORT
-from majsoulrpa.sniffer.message import Message
+from majsoulrpa.sniffer.message import Message, MessageType
 
 logger = getLogger(__name__)
 
@@ -28,12 +28,6 @@ NOTIFICATION_PATTERN = re.compile(b"^\x01\n.(.*?)\x12", flags=re.DOTALL)
 REQUEST_PATTERN = re.compile(b"^\x02..\n.(.*?)\x12", flags=re.DOTALL)
 RESPONSE_PATTERN = re.compile(b"^\x03..\n\x00\x12", flags=re.DOTALL)
 HEARTBEAT_PATTERN = re.compile(b"<= heartbeat -", flags=re.DOTALL)
-
-
-class MessageType(Enum):
-    NOTIFICATION = 0x01
-    REQUEST = 0x02
-    RESPONSE = 0x03
 
 
 class NotificationHeader(BaseModel):
