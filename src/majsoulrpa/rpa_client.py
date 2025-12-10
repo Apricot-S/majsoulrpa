@@ -63,13 +63,16 @@ class RPAClient:
 
         address = parse_ip_address(config.browser_address)
         remote_port = validate_user_port(config.remote_port)
+        sniffer_port = validate_user_port(config.sniffer_port)
 
         if browser_client is None:
             browser_client = browser.Client(address, remote_port)
         if browser_driver is None:
             browser_driver = browser.Driver(browser_client)
+        if message_queue is None:
+            message_queue = sniffer.MessageQueue(address, sniffer_port)
 
-        async with browser_client, browser_driver:
+        async with browser_client, browser_driver, message_queue:
             p: Presentation | None = None
             while True:
                 if p is None or p._is_presentation_finished:  # noqa: SLF001
