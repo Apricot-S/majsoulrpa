@@ -7,6 +7,7 @@ from typing import Any, Self, override
 
 import zmq.asyncio
 from google.protobuf.descriptor import FileDescriptor
+from google.protobuf.json_format import MessageToDict
 from google.protobuf.message import Message as ProtobufMessage
 from google.protobuf.message_factory import GetMessageClass
 
@@ -40,7 +41,7 @@ def _build_message_type_map(
     return mapping
 
 
-MESSAGE_TYPE_MAP: dict = _build_message_type_map(liqi_pb2.DESCRIPTOR)
+MESSAGE_TYPE_MAP = _build_message_type_map(liqi_pb2.DESCRIPTOR)
 
 
 class MessageQueueBase(ABC):
@@ -206,4 +207,9 @@ class MessageQueue(MessageQueueBase):
         except IndexError as e:
             raise UnknownAPIError(name, data) from e
 
-        raise NotImplementedError
+        parser.ParseFromString(data)
+        return MessageToDict(
+            parser,
+            always_print_fields_with_no_presence=True,
+            preserving_proto_field_name=True,
+        )
