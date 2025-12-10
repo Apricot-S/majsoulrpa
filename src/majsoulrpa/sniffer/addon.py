@@ -4,7 +4,7 @@
 
 import re
 from enum import Enum, StrEnum
-from typing import TypedDict
+from typing import Annotated, Literal, TypedDict
 
 import wsproto.frame_protocol
 import zmq.asyncio
@@ -12,6 +12,7 @@ from mitmproxy import ctx
 from mitmproxy.addonmanager import Loader
 from mitmproxy.http import HTTPFlow
 from mitmproxy.websocket import WebSocketMessage
+from pydantic import BaseModel, Field
 
 from majsoulrpa import netutils
 from majsoulrpa.constants import DEFAULT_CLIENT_ADDRESS, DEFAULT_SNIFFER_PORT
@@ -26,6 +27,28 @@ class MessageType(Enum):
     NOTIFICATION = 0x01
     REQUEST = 0x02
     RESPONSE = 0x03
+
+
+class NotificationHeader(BaseModel):
+    message_type: Literal[MessageType.NOTIFICATION] = MessageType.NOTIFICATION
+    api_name: str
+
+
+class RequestHeader(BaseModel):
+    message_type: Literal[MessageType.REQUEST] = MessageType.REQUEST
+    sequence_number: int
+    api_name: str
+
+
+class ResponseHeader(BaseModel):
+    message_type: Literal[MessageType.RESPONSE] = MessageType.RESPONSE
+    sequence_number: int
+
+
+type MessageHeader = Annotated[
+    NotificationHeader | RequestHeader | ResponseHeader,
+    Field(discriminator="message_type"),
+]
 
 
 class Direction(StrEnum):
@@ -57,7 +80,11 @@ def detect_message_type(content: bytes) -> MessageType:
             raise ValueError(msg)
 
 
-def parse_message(content: bytes) -> tuple[MessageType, str | None]:
+def get_message_number(content: bytes) -> int:
+    return int.from_bytes(content[1:2], byteorder="little")
+
+
+def parse_message_header(content: bytes) -> MessageHeader:
     message_type = detect_message_type(content)
     match message_type:
         case MessageType.NOTIFICATION:
@@ -65,26 +92,25 @@ def parse_message(content: bytes) -> tuple[MessageType, str | None]:
             if not m:
                 msg = "invalid notification format"
                 raise ValueError(msg)
-            return message_type, m.group(1).decode("utf-8")
+            return NotificationHeader(api_name=m.group(1).decode("utf-8"))
         case MessageType.REQUEST:
             m = REQUEST_PATTERN.match(content)
             if not m:
                 msg = "Invalid request format"
                 raise ValueError(msg)
-            return message_type, m.group(1).decode("utf-8")
+            return RequestHeader(
+                sequence_number=get_message_number(content),
+                api_name=m.group(1).decode("utf-8"),
+            )
         case MessageType.RESPONSE:
             m = RESPONSE_PATTERN.match(content)
             if not m:
                 msg = "Invalid response format"
                 raise ValueError(msg)
-            return message_type, None
+            return ResponseHeader(sequence_number=get_message_number(content))
         case _:
             msg = f"unsupported message type: {message_type}"
             raise ValueError(msg)
-
-
-def get_message_number(content: bytes) -> int:
-    return int.from_bytes(content[1:2], byteorder="little")
 
 
 class Sniffer:
@@ -143,10 +169,9 @@ class Sniffer:
             # Ignore the heartbeats exchanged in the tournament room
             return
 
-        message_type, name = parse_message(content)
-
-        match message_type:
-            case MessageType.NOTIFICATION:
+        header = parse_message_header(content)
+        match header:
+            case NotificationHeader():
                 # Process a request message that do not require
                 # a response.
                 request_direction = direction
@@ -159,37 +184,33 @@ class Sniffer:
 
                 request = content
                 response = None
-            case MessageType.REQUEST:
+            case RequestHeader():
                 # Process a request message that expect a response
                 # message. Queue the message until a corresponding
                 # response message is found.
-                assert name is not None
-
-                number = get_message_number(content)
-                if number in self._message_queue:
+                if header.sequence_number in self._message_queue:
                     # TODO: リクエストメッセージに対する応答がないまま
                     # 同じリクエストメッセージが来たときの
                     # ログの対応をする
                     pass
 
-                self._message_queue[number] = PendingRequest(
+                self._message_queue[header.sequence_number] = PendingRequest(
                     direction=direction,
-                    name=name,
+                    name=header.api_name,
                     request=content,
                 )
 
                 return
-            case MessageType.RESPONSE:
+            case ResponseHeader():
                 # Response message.
                 # Find the corresponding request message from the queue.
-                number = get_message_number(content)
-                if number not in self._message_queue:
+                if header.sequence_number not in self._message_queue:
                     # TODO: レスポンスメッセージに対応する
                     # リクエストメッセージがないときの
                     # ログの対応をする
                     pass
 
-                entry = self._message_queue.pop(number)
+                entry = self._message_queue.pop(header.sequence_number)
                 request_direction = entry["direction"]
                 name = entry["name"]
                 request = entry["request"]
