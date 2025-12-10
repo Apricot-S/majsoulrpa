@@ -16,7 +16,7 @@ from mitmproxy.websocket import WebSocketMessage
 from majsoulrpa import netutils
 from majsoulrpa.constants import DEFAULT_CLIENT_ADDRESS, DEFAULT_SNIFFER_PORT
 
-NOTIFICATION_PATTERN = re.compile(b"^\x01..\n.(.*?)\x12", flags=re.DOTALL)
+NOTIFICATION_PATTERN = re.compile(b"^\x01\n.(.*?)\x12", flags=re.DOTALL)
 REQUEST_PATTERN = re.compile(b"^\x02..\n.(.*?)\x12", flags=re.DOTALL)
 RESPONSE_PATTERN = re.compile(b"^\x03..\n\x00\x12", flags=re.DOTALL)
 HEARTBEAT_PATTERN = re.compile(b"<= heartbeat -", flags=re.DOTALL)
