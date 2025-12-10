@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from asyncio.queues import Queue
 from collections import deque
 from ipaddress import IPv4Address, IPv6Address
 from typing import Self, override
@@ -77,12 +78,14 @@ class MessageQueue(MessageQueueBase):
         port: UserPort,
     ) -> None:
         self._endpoint = make_endpoint(address, port)
+        self._messages: Queue[Message] = Queue()
         self._put_back_messages: deque[Message] = deque()
+        self._wrapper = liqi_pb2.Wrapper()
         self._account_id: int | None = None
 
     @override
     async def __aenter__(self) -> Self:
-        raise NotImplementedError
+        return self
 
     @override
     async def __aexit__(self, exc_type, exc_value, traceback) -> None:  # noqa: ANN001
@@ -94,17 +97,27 @@ class MessageQueue(MessageQueueBase):
 
     @override
     async def get(self) -> Message:
-        raise NotImplementedError
+        if len(self._put_back_messages) >= 1:
+            return self._put_back_messages.popleft()
+        return await self._messages.get()
 
     @override
     def get_nowait(self) -> Message | None:
-        raise NotImplementedError
+        if len(self._put_back_messages) >= 1:
+            return self._put_back_messages.popleft()
+        if self._messages.empty():
+            return None
+        return self._messages.get_nowait()
 
     @override
     def put_back(self, message: Message) -> None:
-        raise NotImplementedError
+        self._put_back_messages.append(message)
 
     @property
     @override
     def account_id(self) -> int | None:
         return self._account_id
+
+    def _unwrap_message(self, message: bytes) -> tuple[str, bytes]:
+        self._wrapper.ParseFromString(message)
+        return (self._wrapper.name, self._wrapper.data)
