@@ -184,6 +184,7 @@ class Sniffer:
                     case Direction.INBOUND:
                         direction = Direction.OUTBOUND
 
+                name = header.api_name
                 request = content
                 response = None
             case RequestHeader():
@@ -237,6 +238,7 @@ class Sniffer:
         now = datetime.datetime.now(tz=datetime.UTC)
         data = {
             "request_direction": request_direction,
+            "name": name,
             "request": encoded_request,
             "response": encoded_response,
             "timestamp": now.timestamp(),
