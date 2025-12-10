@@ -1,9 +1,42 @@
 from abc import ABC, abstractmethod
+from collections import deque
 from ipaddress import IPv4Address, IPv6Address
 from typing import Self, override
 
+from google.protobuf.descriptor import FileDescriptor
+from google.protobuf.message import Message as ProtobufMessage
+from google.protobuf.message_factory import GetMessageClass
+
+from majsoulrpa._majsoul_internal.protocol import liqi_pb2
 from majsoulrpa.netutils import UserPort, make_endpoint
 from majsoulrpa.sniffer.message import Message
+
+
+def _build_message_type_map(
+    descriptor: FileDescriptor,
+) -> dict[str, tuple[type[ProtobufMessage], type[ProtobufMessage] | None]]:
+    mapping: dict[
+        str,
+        tuple[type[ProtobufMessage], type[ProtobufMessage] | None],
+    ] = {}
+
+    for sdesc in descriptor.services_by_name.values():
+        for mdesc in sdesc.methods:
+            MESSAGE_TYPE_MAP["." + mdesc.full_name] = (
+                GetMessageClass(mdesc.input_type),
+                GetMessageClass(mdesc.output_type),
+            )
+
+    for tdesc in descriptor.message_types_by_name.values():
+        MESSAGE_TYPE_MAP["." + tdesc.full_name] = (
+            GetMessageClass(tdesc),
+            None,
+        )
+
+    return mapping
+
+
+MESSAGE_TYPE_MAP: dict = _build_message_type_map(liqi_pb2.DESCRIPTOR)
 
 
 class MessageQueueBase(ABC):
@@ -44,6 +77,7 @@ class MessageQueue(MessageQueueBase):
         port: UserPort,
     ) -> None:
         self._endpoint = make_endpoint(address, port)
+        self._put_back_messages: deque[Message] = deque()
         self._account_id: int | None = None
 
     @override
