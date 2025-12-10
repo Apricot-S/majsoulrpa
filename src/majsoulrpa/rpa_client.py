@@ -5,7 +5,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
-from majsoulrpa import browser, constants
+from majsoulrpa import browser, constants, sniffer
 from majsoulrpa.netutils import parse_ip_address, validate_user_port
 from majsoulrpa.presentation.base import Presentation
 from majsoulrpa.presentation.exceptions import PresentationTimeoutError
@@ -18,6 +18,7 @@ class RPAClient:
     class Config:
         browser_address: str = constants.DEFAULT_BROWSER_ADDRESS
         remote_port: int = constants.DEFAULT_REMOTE_PORT
+        sniffer_port: int = constants.DEFAULT_SNIFFER_PORT
 
     def __init__(self) -> None:
         self._callbacks: dict[
@@ -54,6 +55,7 @@ class RPAClient:
         detection_timeout: float = 30.0,
         browser_client: browser.ClientBase | None = None,
         browser_driver: browser.DriverBase | None = None,
+        message_queue: sniffer.MessageQueueBase | None = None,
     ) -> Any:
         if not self._callbacks:
             msg = "no callbacks registered: use `RPAClient.on()` to register a presentation callback"  # noqa: E501
