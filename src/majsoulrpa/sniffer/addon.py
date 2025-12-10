@@ -7,6 +7,7 @@ import re
 from base64 import b64encode
 from dataclasses import dataclass
 from enum import Enum, StrEnum
+from logging import getLogger
 from typing import Annotated, Literal
 
 import wsproto.frame_protocol
@@ -20,6 +21,8 @@ from pydantic import BaseModel, Field
 from majsoulrpa import netutils
 from majsoulrpa.constants import DEFAULT_CLIENT_ADDRESS, DEFAULT_SNIFFER_PORT
 from majsoulrpa.sniffer.message import Message
+
+logger = getLogger(__name__)
 
 NOTIFICATION_PATTERN = re.compile(b"^\x01\n.(.*?)\x12", flags=re.DOTALL)
 REQUEST_PATTERN = re.compile(b"^\x02..\n.(.*?)\x12", flags=re.DOTALL)
@@ -64,7 +67,7 @@ class Direction(StrEnum):
 class PendingRequest:
     direction: Direction
     name: str
-    request: bytes
+    content: bytes
 
 
 @dataclass(frozen=True)
@@ -109,7 +112,7 @@ def parse_message_header(content: bytes) -> MessageHeader:
         case MessageType.REQUEST:
             m = REQUEST_PATTERN.match(content)
             if not m:
-                msg = "Invalid request format"
+                msg = "invalid request format"
                 raise ValueError(msg)
             return RequestHeader(
                 sequence_number=get_message_number(content),
@@ -118,7 +121,7 @@ def parse_message_header(content: bytes) -> MessageHeader:
         case MessageType.RESPONSE:
             m = RESPONSE_PATTERN.match(content)
             if not m:
-                msg = "Invalid response format"
+                msg = "invalid response format"
                 raise ValueError(msg)
             return ResponseHeader(sequence_number=get_message_number(content))
         case _:
@@ -227,14 +230,19 @@ class Sniffer:
         content: bytes,
     ) -> None:
         if header.sequence_number in self._pending_requests:
-            # TODO: リクエストメッセージに対する応答がないまま
-            # 同じリクエストメッセージが来たときのログの対応をする
-            pass
+            prev_request = self._pending_requests[header.sequence_number]
+            msg = (
+                "There is not any response message"
+                " for the following WebSocket request message:\n"
+                f"direction: {prev_request.direction}\n"
+                f"content: {prev_request.content!r}"
+            )
+            logger.warning(msg)
 
         self._pending_requests[header.sequence_number] = PendingRequest(
             direction=direction,
             name=header.api_name,
-            request=content,
+            content=content,
         )
 
     def _handle_response(
@@ -244,14 +252,18 @@ class Sniffer:
         content: bytes,
     ) -> SniffedMessage:
         if header.sequence_number not in self._pending_requests:
-            # TODO: レスポンスメッセージに対応するリクエストメッセージが
-            # ないときのログの対応をする
-            pass
+            msg = (
+                "An WebSocket response message"
+                " that does not match to any request message:\n"
+                f"direction: {direction}\n"
+                f"content: {content!r}"
+            )
+            logger.warning(msg)
 
         p = self._pending_requests.pop(header.sequence_number)
         request_direction = p.direction
         name = p.name
-        request = p.request
+        request = p.content
         response = content
 
         # Validate direction consistency for response messages.
