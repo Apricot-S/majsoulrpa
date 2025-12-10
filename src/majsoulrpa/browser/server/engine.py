@@ -29,6 +29,7 @@ class Option:
     window_top: int
     viewport_height: int
     headless: bool
+    url: str = MAJSOUL_URL
 
     def __post_init__(self) -> None:
         if self.user_data_dir is not None:
@@ -190,8 +191,8 @@ def _request_handler_factory(
     return handle_request
 
 
-async def _prepare_majsoul_page(page: Page) -> None:
-    await page.goto(MAJSOUL_URL)
+async def _prepare_majsoul_page(page: Page, url: str) -> None:
+    await page.goto(url)
     await page.wait_for_selector("#layaCanvas", timeout=PAGE_WAIT_TIMEOUT)
 
 
@@ -217,12 +218,12 @@ async def run_browser_engine(
         ):
             if context.pages:
                 page = context.pages[0]
-                await _prepare_majsoul_page(page)
+                await _prepare_majsoul_page(page, option.url)
                 request_handler = _request_handler_factory(page, viewport)
                 await server_runner(config, request_handler)
             else:
                 async with await context.new_page() as page:
-                    await _prepare_majsoul_page(page)
+                    await _prepare_majsoul_page(page, option.url)
                     request_handler = _request_handler_factory(page, viewport)
                     await server_runner(config, request_handler)
     else:
@@ -237,6 +238,6 @@ async def run_browser_engine(
             await browser.new_context(viewport=viewport) as context,
             await context.new_page() as page,
         ):
-            await _prepare_majsoul_page(page)
+            await _prepare_majsoul_page(page, option.url)
             request_handler = _request_handler_factory(page, viewport)
             await server_runner(config, request_handler)
