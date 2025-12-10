@@ -15,6 +15,10 @@ class UnknownAPIError(Exception):
         self._data = data
 
     @property
+    def name(self) -> str:
+        return self._name
+
+    @property
     def data(self) -> bytes:
         return self._data
 
