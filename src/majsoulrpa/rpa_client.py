@@ -26,10 +26,14 @@ class RPAClient:
             Callable[..., Awaitable[Any]],
         ] = {}
 
-    async def _detect(self, driver: browser.DriverBase) -> Presentation:
+    async def _detect(
+        self,
+        driver: browser.DriverBase,
+        message_queue: sniffer.MessageQueueBase,
+    ) -> Presentation:
         while True:
             for candidate in self._callbacks:
-                p = await candidate._detect(driver)  # noqa: SLF001
+                p = await candidate._detect(driver, message_queue)  # noqa: SLF001
                 if p is not None:
                     return p
             await asyncio.sleep(0.5)
@@ -85,7 +89,10 @@ class RPAClient:
                 if p is None or p._is_presentation_finished:  # noqa: SLF001
                     try:
                         async with asyncio.timeout(detection_timeout):
-                            p = await self._detect(browser_driver)
+                            p = await self._detect(
+                                browser_driver,
+                                message_queue,
+                            )
                     except TimeoutError as e:
                         msg = "presentation detection timed out."
                         ss = await browser_driver.get_screenshot()

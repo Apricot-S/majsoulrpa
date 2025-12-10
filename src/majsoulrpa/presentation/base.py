@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Iterable
 from typing import Self
 
-from majsoulrpa import browser
+from majsoulrpa import browser, sniffer
 from majsoulrpa.presentation import template
 from majsoulrpa.presentation.delay import get_random_delay
 from majsoulrpa.presentation.exceptions import InvalidOperationError
@@ -15,12 +15,17 @@ from majsoulrpa.presentation.region import (
 
 
 class Presentation(ABC):
-    def __init__(self, driver: browser.DriverBase) -> None:
+    def __init__(
+        self,
+        driver: browser.DriverBase,
+        message_queue: sniffer.MessageQueueBase,
+    ) -> None:
         self.__scale: float | None = None
         self.__is_presentation_finished = False
         self.__is_rpa_ended = False
         self.__is_browser_closed = False
         self._driver = driver
+        self._message_queue = message_queue
 
     async def get_screenshot(self) -> bytes:
         if self._is_rpa_ended:
@@ -244,7 +249,11 @@ class Presentation(ABC):
 
     @classmethod
     @abstractmethod
-    async def _detect(cls, driver: browser.DriverBase) -> Self | None:
+    async def _detect(
+        cls,
+        driver: browser.DriverBase,
+        message_queue: sniffer.MessageQueueBase,
+    ) -> Self | None:
         pass
 
     @abstractmethod

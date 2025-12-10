@@ -1,20 +1,28 @@
 import asyncio
 from typing import Self, override
 
-from majsoulrpa import browser
+from majsoulrpa import browser, sniffer
 from majsoulrpa.presentation.base import Presentation
 from majsoulrpa.presentation.templates.home import SUMMON
 
 
 class HomePresentation(Presentation):
     @override
-    def __init__(self, driver: browser.DriverBase) -> None:
-        super().__init__(driver)
+    def __init__(
+        self,
+        driver: browser.DriverBase,
+        message_queue: sniffer.MessageQueueBase,
+    ) -> None:
+        super().__init__(driver, message_queue)
 
     @override
     @classmethod
-    async def _detect(cls, driver: browser.DriverBase) -> Self | None:
-        p = cls(driver)
+    async def _detect(
+        cls,
+        driver: browser.DriverBase,
+        message_queue: sniffer.MessageQueueBase,
+    ) -> Self | None:
+        p = cls(driver, message_queue)
         await p._init_resolution()
         has_match = await p._has_match(SUMMON)
         return p if has_match else None

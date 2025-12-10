@@ -3,7 +3,7 @@ import re
 from datetime import UTC, datetime, timedelta
 from typing import Self, override
 
-from majsoulrpa import browser
+from majsoulrpa import browser, sniffer
 from majsoulrpa.browser.driver import Key
 from majsoulrpa.presentation import exceptions
 from majsoulrpa.presentation.base import Presentation, require_active
@@ -26,15 +26,23 @@ VERIFICATION_CODE_PATTERN = re.compile(r"\d{6}")
 
 class LoginPresentation(Presentation):
     @override
-    def __init__(self, driver: browser.DriverBase) -> None:
-        super().__init__(driver)
+    def __init__(
+        self,
+        driver: browser.DriverBase,
+        message_queue: sniffer.MessageQueueBase,
+    ) -> None:
+        super().__init__(driver, message_queue)
         self._entered_email_address = False
         self._last_request_time: datetime | None = None
 
     @override
     @classmethod
-    async def _detect(cls, driver: browser.DriverBase) -> Self | None:
-        p = cls(driver)
+    async def _detect(
+        cls,
+        driver: browser.DriverBase,
+        message_queue: sniffer.MessageQueueBase,
+    ) -> Self | None:
+        p = cls(driver, message_queue)
         await p._init_resolution()
         has_match = await p._has_match(LOGIN_1)
         return p if has_match else None
