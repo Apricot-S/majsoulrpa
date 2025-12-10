@@ -14,7 +14,7 @@ from google.protobuf.message_factory import GetMessageClass
 from majsoulrpa._majsoul_internal.protocol import liqi_pb2
 from majsoulrpa.netutils import UserPort, make_endpoint
 from majsoulrpa.sniffer.exceptions import UnknownAPIError
-from majsoulrpa.sniffer.message import Message, MessageType
+from majsoulrpa.sniffer.message import Message, MessageType, RawMessage
 
 
 def _build_message_type_map(
@@ -42,6 +42,12 @@ def _build_message_type_map(
 
 
 MESSAGE_TYPE_MAP = _build_message_type_map(liqi_pb2.DESCRIPTOR)
+
+ACCOUNT_ID_MESSAGES = {
+    ".lq.Lobby.oauth2Login": ["account_id"],
+    ".lq.Lobby.createRoom": ["room", "owner_id"],
+}
+"""List of WebSocket messages that can obtain the account id."""
 
 
 class MessageQueueBase(ABC):
@@ -107,7 +113,7 @@ class MessageQueue(MessageQueueBase):
 
         while True:
             message_str = await self._socket.recv_string()
-            message = Message.model_validate_json(message_str)
+            message = RawMessage.model_validate_json(message_str)
             self._enqueue_message(message)
 
     @override
@@ -136,10 +142,13 @@ class MessageQueue(MessageQueueBase):
     def _close(self) -> None:
         if self._socket is not None:
             self._socket.close()
+            self._socket = None
+
         if self._ctx is not None:
             self._ctx.destroy()
+            self._ctx = None
 
-    def _enqueue_message(self, message: Message) -> None:
+    def _enqueue_message(self, message: RawMessage) -> None:
         request_direction = message.request_direction
         encoded_request = message.request
         encoded_response = message.response
@@ -160,6 +169,18 @@ class MessageQueue(MessageQueueBase):
             jsonized_response = self._jsonize_response(name, response_data)
         else:
             jsonized_response = None
+
+        self._extract_account_id(name, jsonized_response)
+
+        self._messages.put_nowait(
+            Message(
+                request_direction=request_direction,
+                name=name,
+                request=jsonized_request,
+                response=jsonized_response,
+                timestamp=timestamp,
+            ),
+        )
 
     def _unwrap_message(self, message: bytes) -> tuple[str, bytes]:
         self._wrapper.ParseFromString(message)
@@ -223,3 +244,33 @@ class MessageQueue(MessageQueueBase):
             always_print_fields_with_no_presence=True,
             preserving_proto_field_name=True,
         )
+
+    def _extract_account_id(
+        self,
+        name: str,
+        response: dict[str, Any] | None,
+    ) -> None:
+        keys = ACCOUNT_ID_MESSAGES.get(name)
+        if keys is None:
+            return
+
+        if response is None:
+            msg = "message without any response"
+            raise RuntimeError(msg)
+
+        current = response
+        for key in keys:
+            if key not in current:
+                msg = (
+                    f"{name}: {key}: could not find account id field:\n"
+                    f"{response}"
+                )
+                raise RuntimeError(msg)
+            current = current[key]
+        account_id = current
+
+        if self._account_id is None:
+            self._account_id = account_id  # type: ignore[assignment]
+        elif account_id != self._account_id:
+            msg = "inconsistent account IDs"
+            raise RuntimeError(msg)

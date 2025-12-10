@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 
 from majsoulrpa import netutils
 from majsoulrpa.constants import DEFAULT_CLIENT_ADDRESS, DEFAULT_SNIFFER_PORT
-from majsoulrpa.sniffer.message import Message, MessageType
+from majsoulrpa.sniffer.message import MessageType, RawMessage
 
 logger = getLogger(__name__)
 
@@ -289,7 +289,7 @@ class Sniffer:
             else None
         )
 
-        data = Message(
+        data = RawMessage(
             request_direction=sniffed.request_direction.value,
             name=sniffed.name,
             request=encoded_request,

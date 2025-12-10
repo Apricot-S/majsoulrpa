@@ -2,7 +2,7 @@ import datetime
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, JsonValue
 
 
 class MessageType(Enum):
@@ -11,9 +11,17 @@ class MessageType(Enum):
     RESPONSE = 0x03
 
 
-class Message(BaseModel):
+class RawMessage(BaseModel):
     request_direction: Literal["inbound", "outbound"]
     name: str
     request: str
     response: str | None
+    timestamp: datetime.datetime
+
+
+class Message(BaseModel):
+    request_direction: Literal["inbound", "outbound"]
+    name: str
+    request: dict[str, JsonValue]
+    response: dict[str, JsonValue] | None
     timestamp: datetime.datetime
