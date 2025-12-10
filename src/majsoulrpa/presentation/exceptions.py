@@ -20,11 +20,9 @@ class BaseError(Exception):
                 the point where the error occurred, if any.
         """
         now = datetime.datetime.now(datetime.UTC)
-        ss_name = now.strftime(f"%Y-%m-%d-%H-%M-%S-{self.__class__.__name__}")
-
-        super().__init__(message, ss_name)
+        self._timestamp = now.strftime("%Y-%m-%d-%H-%M-%S")
         self._screenshot = screenshot
-        self._ss_name = ss_name
+        super().__init__(message, self._timestamp)
 
     @property
     def screenshot(self) -> bytes | None:
@@ -46,10 +44,13 @@ class BaseError(Exception):
             If no screenshot is available, nothing is saved.
             This method does not create the directory automatically.
         """
-        if self._screenshot is not None:
-            file_path = directory / Path(self._ss_name).with_suffix(".png")
-            with file_path.open("wb") as fp:
-                fp.write(self._screenshot)
+        if self._screenshot is None:
+            return
+
+        file_name = f"{self._timestamp}-{self.__class__.__name__}.png"
+        file_path = directory / Path(file_name)
+        with file_path.open("wb") as fp:
+            fp.write(self._screenshot)
 
 
 class PresentationTimeoutError(BaseError):
