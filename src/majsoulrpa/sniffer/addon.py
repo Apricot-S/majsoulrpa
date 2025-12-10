@@ -9,7 +9,7 @@ from enum import Enum, StrEnum
 from typing import Annotated, Literal, TypedDict
 
 import wsproto.frame_protocol
-import zmq.asyncio
+import zmq
 from mitmproxy import ctx
 from mitmproxy.addonmanager import Loader
 from mitmproxy.http import HTTPFlow
@@ -142,7 +142,7 @@ class Sniffer:
         user_port = netutils.validate_user_port(port)
         endpoint = netutils.make_endpoint(address, user_port)
 
-        self._context = zmq.asyncio.Context()
+        self._context = zmq.Context()
         self._socket = self._context.socket(zmq.PUB)
 
         if address.version == 6:  # noqa: PLR2004
@@ -245,6 +245,7 @@ class Sniffer:
             response=encoded_response,
             timestamp=datetime.datetime.now(tz=datetime.UTC),
         )
+        self._socket.send_string(data.model_dump_json())
 
     @staticmethod
     def _get_last_message(flow: HTTPFlow) -> WebSocketMessage:
