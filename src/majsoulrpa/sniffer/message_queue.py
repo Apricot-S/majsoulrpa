@@ -1,19 +1,9 @@
-import datetime
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from ipaddress import IPv4Address, IPv6Address
-from typing import Any, Literal, Self, override
+from typing import Self, override
 
 from majsoulrpa.netutils import UserPort, make_endpoint
-
-
-@dataclass(frozen=True)
-class Message:
-    request_direction: Literal["inbound", "outbound"]
-    name: str
-    request: dict[str, Any]
-    response: dict[str, Any] | None
-    timestamp: datetime.datetime
+from majsoulrpa.sniffer.message import Message
 
 
 class MessageQueueBase(ABC):
