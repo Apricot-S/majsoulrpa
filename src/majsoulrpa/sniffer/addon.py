@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 
 from majsoulrpa import netutils
 from majsoulrpa.constants import DEFAULT_CLIENT_ADDRESS, DEFAULT_SNIFFER_PORT
+from majsoulrpa.sniffer.message import Message
 
 NOTIFICATION_PATTERN = re.compile(b"^\x01\n.(.*?)\x12", flags=re.DOTALL)
 REQUEST_PATTERN = re.compile(b"^\x02..\n.(.*?)\x12", flags=re.DOTALL)
@@ -117,7 +118,7 @@ def parse_message_header(content: bytes) -> MessageHeader:
 
 class Sniffer:
     def __init__(self) -> None:
-        self._message_queue: dict[int, PendingRequest] = {}
+        self._pending_requests: dict[int, PendingRequest] = {}
 
     def load(self, loader: Loader) -> None:
         loader.add_option(
@@ -191,32 +192,34 @@ class Sniffer:
                 # Process a request message that expect a response
                 # message. Queue the message until a corresponding
                 # response message is found.
-                if header.sequence_number in self._message_queue:
+                if header.sequence_number in self._pending_requests:
                     # TODO: リクエストメッセージに対する応答がないまま
                     # 同じリクエストメッセージが来たときの
                     # ログの対応をする
                     pass
 
-                self._message_queue[header.sequence_number] = PendingRequest(
-                    direction=direction,
-                    name=header.api_name,
-                    request=content,
+                self._pending_requests[header.sequence_number] = (
+                    PendingRequest(
+                        direction=direction,
+                        name=header.api_name,
+                        request=content,
+                    )
                 )
 
                 return
             case ResponseHeader():
                 # Response message.
                 # Find the corresponding request message from the queue.
-                if header.sequence_number not in self._message_queue:
+                if header.sequence_number not in self._pending_requests:
                     # TODO: レスポンスメッセージに対応する
                     # リクエストメッセージがないときの
                     # ログの対応をする
                     pass
 
-                entry = self._message_queue.pop(header.sequence_number)
-                request_direction = entry["direction"]
-                name = entry["name"]
-                request = entry["request"]
+                p = self._pending_requests.pop(header.sequence_number)
+                request_direction = p["direction"]
+                name = p["name"]
+                request = p["request"]
                 response = content
 
         # Check that the directions of the request and response are
@@ -235,14 +238,13 @@ class Sniffer:
         else:
             encoded_response = None
 
-        now = datetime.datetime.now(tz=datetime.UTC)
-        data = {
-            "request_direction": request_direction,
-            "name": name,
-            "request": encoded_request,
-            "response": encoded_response,
-            "timestamp": now.timestamp(),
-        }
+        data = Message(
+            request_direction=request_direction.value,
+            name=name,
+            request=encoded_request,
+            response=encoded_response,
+            timestamp=datetime.datetime.now(tz=datetime.UTC),
+        )
 
     @staticmethod
     def _get_last_message(flow: HTTPFlow) -> WebSocketMessage:
