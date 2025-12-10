@@ -72,7 +72,14 @@ class RPAClient:
         if message_queue is None:
             message_queue = sniffer.MessageQueue(address, sniffer_port)
 
-        async with browser_client, browser_driver, message_queue:
+        async with (
+            browser_client,
+            browser_driver,
+            message_queue,
+            asyncio.TaskGroup() as tg,
+        ):
+            tg.create_task(message_queue.run())
+
             p: Presentation | None = None
             while True:
                 if p is None or p._is_presentation_finished:  # noqa: SLF001
