@@ -184,6 +184,7 @@ class Sniffer:
 
         header = parse_message_header(content)
 
+        sniffed: SniffedMessage | None = None
         match header:
             case NotificationHeader():
                 sniffed = self._handle_notification(header, direction, content)
@@ -197,6 +198,10 @@ class Sniffer:
                 msg = f"unsupported message type: {type(header)}"
                 raise ValueError(msg)
 
+        # _handle_response can return None (unmatched response).
+        if sniffed is None:
+            # Nothing to send, skip.
+            return
         self._send_sniffed_message(sniffed)
 
     @staticmethod
@@ -250,7 +255,7 @@ class Sniffer:
         header: ResponseHeader,
         direction: Direction,
         content: bytes,
-    ) -> SniffedMessage:
+    ) -> SniffedMessage | None:
         if header.sequence_number not in self._pending_requests:
             msg = (
                 "An WebSocket response message"
@@ -259,6 +264,8 @@ class Sniffer:
                 f"content: {content!r}"
             )
             logger.warning(msg)
+            # No pending request; skip unmatched response.
+            return None
 
         p = self._pending_requests.pop(header.sequence_number)
         request_direction = p.direction
