@@ -196,6 +196,18 @@ async def _prepare_majsoul_page(page: Page, url: str) -> None:
     await page.wait_for_selector("#layaCanvas", timeout=PAGE_WAIT_TIMEOUT)
 
 
+async def _get_user_agent() -> str:
+    async with (
+        async_playwright() as p,
+        await p.chromium.launch(headless=True) as browser,
+        await browser.new_context() as context,
+        await context.new_page() as page,
+    ):
+        await page.goto("https://www.google.com/")
+        user_agent = await page.evaluate("navigator.userAgent")
+        return user_agent.replace("HeadlessChrome", "Chrome")
+
+
 async def run_browser_engine(
     config: Config,
     option: Option,
@@ -204,6 +216,12 @@ async def run_browser_engine(
     browser_args = _create_browser_args(config, option)
     ignored_default_args = _create_ignored_default_args(option)
     viewport = _get_viewport_size(option)
+
+    # If the user agent contains the string `HeadlessChrome`,
+    # the browser will be rejected by Mahjong Soul's login process.
+    # Therefore, when running in headless mode,
+    # the user agent is spoofed.
+    user_agent = await _get_user_agent() if option.headless else None
 
     if option.user_data_dir is not None:
         async with (
@@ -214,6 +232,7 @@ async def run_browser_engine(
                 ignore_default_args=ignored_default_args,
                 headless=option.headless,
                 viewport=viewport,
+                user_agent=user_agent,
             ) as context,
         ):
             if context.pages:
@@ -235,7 +254,10 @@ async def run_browser_engine(
                 ignore_default_args=ignored_default_args,
                 headless=option.headless,
             ) as browser,
-            await browser.new_context(viewport=viewport) as context,
+            await browser.new_context(
+                viewport=viewport,
+                user_agent=user_agent,
+            ) as context,
             await context.new_page() as page,
         ):
             await _prepare_majsoul_page(page, option.url)
