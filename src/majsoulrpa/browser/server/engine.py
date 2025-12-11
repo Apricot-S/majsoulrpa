@@ -13,6 +13,7 @@ from majsoulrpa.constants import DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.exceptions import UserInputError
 
 MAJSOUL_URL = "https://game.mahjongsoul.com/"  # JP version
+MAJSOUL_LOG_URL = "https://game.mahjongsoul.com/?paipu="  # JP version
 
 PAGE_WAIT_TIMEOUT = 30_000
 
