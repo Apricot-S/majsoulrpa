@@ -1,14 +1,14 @@
 import asyncio
 from typing import ClassVar, Self, override
 
+import majsoulrpa.presentation.templates.home as home_templates
 from majsoulrpa import browser, sniffer
 from majsoulrpa.presentation.base import Presentation
-from majsoulrpa.presentation.templates.home import SUMMON
 
 
 class HomePresentation(Presentation):
     _templates: ClassVar = {
-        "summon": SUMMON,
+        "summon": home_templates.SUMMON,
     }
 
     @override

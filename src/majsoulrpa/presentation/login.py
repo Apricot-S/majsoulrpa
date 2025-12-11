@@ -3,6 +3,7 @@ import re
 from datetime import UTC, datetime, timedelta
 from typing import ClassVar, Self, override
 
+import majsoulrpa.presentation.templates.login as login_templates
 from majsoulrpa import browser, sniffer
 from majsoulrpa.browser.driver import Key
 from majsoulrpa.presentation import exceptions
@@ -12,12 +13,6 @@ from majsoulrpa.presentation.regions.login import (
     SEND_CODE,
     VERIFICATION_CODE_FIELD,
 )
-from majsoulrpa.presentation.templates.login import (
-    CONFIRM,
-    LOGIN_1,
-    LOGIN_2,
-    UNAVAILABLE,
-)
 
 MAX_EMAIL_ADDRESS_LENGTH = 50  # JP version
 REQUEST_INTERVAL = timedelta(seconds=60)
@@ -26,10 +21,10 @@ VERIFICATION_CODE_PATTERN = re.compile(r"\d{6}")
 
 class LoginPresentation(Presentation):
     _templates: ClassVar = {
-        "confirm": CONFIRM,
-        "login_1": LOGIN_1,
-        "login_2": LOGIN_2,
-        "unavailable": UNAVAILABLE,
+        "confirm": login_templates.CONFIRM,
+        "login_1": login_templates.LOGIN_1,
+        "login_2": login_templates.LOGIN_2,
+        "unavailable": login_templates.UNAVAILABLE,
     }
 
     @override
