@@ -10,6 +10,7 @@ class HomePresentation(Presentation):
     _templates: ClassVar = {
         "summon": home_templates.SUMMON,
     }
+    _regions: ClassVar = {}
 
     @override
     def __init__(

@@ -16,11 +16,13 @@ from majsoulrpa.presentation.region import (
 
 class Presentation(ABC):
     _templates: ClassVar[dict[str, template.MatcherBase]] = {}
+    _regions: ClassVar[dict[str, Region]] = {}
 
     @classmethod
     def __init_subclass__(cls, *args, **kwargs) -> None:
         super().__init_subclass__(*args, **kwargs)
         cls._templates = dict(cls._templates)
+        cls._regions = dict(cls._regions)
 
     def __init__(
         self,

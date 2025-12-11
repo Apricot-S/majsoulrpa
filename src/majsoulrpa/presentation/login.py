@@ -3,16 +3,12 @@ import re
 from datetime import UTC, datetime, timedelta
 from typing import ClassVar, Self, override
 
+import majsoulrpa.presentation.regions.login as login_regions
 import majsoulrpa.presentation.templates.login as login_templates
 from majsoulrpa import browser, sniffer
 from majsoulrpa.browser.driver import Key
 from majsoulrpa.presentation import exceptions
 from majsoulrpa.presentation.base import Presentation, require_active
-from majsoulrpa.presentation.regions.login import (
-    EMAIL_ADDRESS_FIELD,
-    SEND_CODE,
-    VERIFICATION_CODE_FIELD,
-)
 
 MAX_EMAIL_ADDRESS_LENGTH = 50  # JP version
 REQUEST_INTERVAL = timedelta(seconds=60)
@@ -25,6 +21,11 @@ class LoginPresentation(Presentation):
         "login_1": login_templates.LOGIN_1,
         "login_2": login_templates.LOGIN_2,
         "unavailable": login_templates.UNAVAILABLE,
+    }
+    _regions: ClassVar = {
+        "email_address_field": login_regions.EMAIL_ADDRESS_FIELD,
+        "send_code": login_regions.SEND_CODE,
+        "verification_code_field": login_regions.VERIFICATION_CODE_FIELD,
     }
 
     @override
@@ -75,7 +76,7 @@ class LoginPresentation(Presentation):
                 raise exceptions.InvalidOperationError(msg, ss)
 
         # Click the "Enter email address" text box to focus it.
-        await self._click_region(EMAIL_ADDRESS_FIELD)
+        await self._click_region(self._regions["email_address_field"])
         await asyncio.sleep(0.5)
 
         # Select all existing text in the email address field.
@@ -91,7 +92,7 @@ class LoginPresentation(Presentation):
         await asyncio.sleep(0.5)
 
         # Click the "Send Code" button.
-        await self._click_region(SEND_CODE)
+        await self._click_region(self._regions["send_code"])
         await asyncio.sleep(0.2)
 
         # Check if the email address is unavailable.
@@ -124,7 +125,7 @@ class LoginPresentation(Presentation):
 
         # Click the "Enter the verification code sent to your email"
         # text box to focus it.
-        await self._click_region(VERIFICATION_CODE_FIELD)
+        await self._click_region(self._regions["verification_code_field"])
         await asyncio.sleep(0.5)
 
         # Select all existing text in the email address field.
