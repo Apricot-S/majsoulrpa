@@ -82,7 +82,7 @@ class RPAClient:
             message_queue,
             asyncio.TaskGroup() as tg,
         ):
-            tg.create_task(message_queue.run())
+            message_queue_task = tg.create_task(message_queue.run())
 
             p: Presentation | None = None
             while True:
@@ -101,4 +101,5 @@ class RPAClient:
                 data = await self._dispatch(p, data)
 
                 if p._is_rpa_ended:  # noqa: SLF001
+                    message_queue_task.cancel()
                     return data
