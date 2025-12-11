@@ -3,6 +3,7 @@ from typing import override
 
 import cv2
 import numpy as np
+from cv2.typing import MatLike
 
 from majsoulrpa.presentation.region import Region
 from majsoulrpa.presentation.template import Config, ImageBase
@@ -14,8 +15,12 @@ class MatcherBase(ABC):
         pass
 
 
-def _screenshot_to_mat(screenshot_bytes: bytes) -> np.ndarray:
-    img_array = np.frombuffer(screenshot_bytes, np.uint8)
+def _resize_image(original: MatLike, scale: float) -> MatLike:
+    return cv2.resize(original, None, fx=scale, fy=scale)
+
+
+def _screenshot_to_mat(screenshot: bytes) -> MatLike:
+    img_array = np.frombuffer(screenshot, np.uint8)
     img_mat = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
     if img_mat is None:
         msg = "failed to decode screenshot bytes into an image"
@@ -24,13 +29,13 @@ def _screenshot_to_mat(screenshot_bytes: bytes) -> np.ndarray:
 
 
 class Matcher(MatcherBase):
-    def __init__(self, image: ImageBase, config: Config) -> None:
+    def __init__(self, image: ImageBase[MatLike], config: Config) -> None:
         self._image = image
         self._config = config
 
     @override
     def match(self, screen: bytes, scale: float) -> Region | None:
-        template = self._image.get_scaled(scale)
+        template = _resize_image(self._image.get_image(), scale)
         screen_mat = _screenshot_to_mat(screen)
 
         region = self._config.region

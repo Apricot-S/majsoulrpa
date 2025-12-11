@@ -3,11 +3,12 @@ from pathlib import Path
 from typing import override
 
 import cv2
+from cv2.typing import MatLike
 
 
-class ImageBase(ABC):
+class ImageBase[T](ABC):
     @abstractmethod
-    def get_scaled(self, scale: float) -> cv2.typing.MatLike:
+    def get_image(self) -> T:
         pass
 
 
@@ -15,12 +16,12 @@ class ImageLoadError(Exception):
     """Raised when an image cannot be loaded from the given source."""
 
 
-class FileImage(ImageBase):
+class FileImage(ImageBase[MatLike]):
     def __init__(self, path: Path) -> None:
         self._path = path
-        self._original: cv2.typing.MatLike | None = None
+        self._image: MatLike | None = None
 
-    def _load(self) -> cv2.typing.MatLike:
+    def _load(self) -> MatLike:
         image = cv2.imread(str(self._path), cv2.IMREAD_COLOR)
         if image is None:
             msg = f"failed to load image: {self._path}"
@@ -28,7 +29,7 @@ class FileImage(ImageBase):
         return image
 
     @override
-    def get_scaled(self, scale: float) -> cv2.typing.MatLike:
-        if self._original is None:
-            self._original = self._load()
-        return cv2.resize(self._original, None, fx=scale, fy=scale)
+    def get_image(self) -> MatLike:
+        if self._image is None:
+            self._image = self._load()
+        return self._image

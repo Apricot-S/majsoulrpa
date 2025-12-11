@@ -2,21 +2,22 @@ from typing import override
 
 import cv2
 import numpy as np
+from cv2.typing import MatLike
 
 from majsoulrpa.presentation.region import Region
 from majsoulrpa.presentation.template import Config, ImageBase, Matcher, config
 
 
 class DummyImage(ImageBase):
-    def __init__(self, mat: np.ndarray) -> None:
+    def __init__(self, mat: MatLike) -> None:
         self._mat = mat
 
     @override
-    def get_scaled(self, scale: float) -> cv2.typing.MatLike:
-        return cv2.resize(self._mat, None, fx=scale, fy=scale)
+    def get_image(self) -> MatLike:
+        return self._mat
 
 
-def ndarray_to_png_bytes(arr: np.ndarray) -> bytes:
+def ndarray_to_png_bytes(arr: MatLike) -> bytes:
     success, encoded = cv2.imencode(".png", arr)
     if not success:
         msg = "PNG encoding failed"
