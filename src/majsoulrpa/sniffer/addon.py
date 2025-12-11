@@ -197,6 +197,7 @@ class Sniffer:
             # Nothing to send, skip.
             return
         self._send_sniffed_message(sniffed)
+        self.on_sniffed_message(sniffed)
 
     @staticmethod
     def _get_last_message(flow: HTTPFlow) -> WebSocketMessage:
@@ -297,6 +298,9 @@ class Sniffer:
             timestamp=datetime.datetime.now(tz=datetime.UTC),
         )
         self._socket.send_string(data.model_dump_json())
+
+    def on_sniffed_message(self, sniffed: SniffedMessage) -> None:
+        pass
 
 
 addons = [Sniffer()]
