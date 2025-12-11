@@ -196,7 +196,7 @@ async def _prepare_majsoul_page(page: Page, url: str) -> None:
     await page.wait_for_selector("#layaCanvas", timeout=PAGE_WAIT_TIMEOUT)
 
 
-async def _get_user_agent() -> str:
+async def _get_spoofed_user_agent() -> str:
     async with (
         async_playwright() as p,
         await p.chromium.launch(headless=True) as browser,
@@ -221,7 +221,7 @@ async def run_browser_engine(
     # the browser will be rejected by Mahjong Soul's login process.
     # Therefore, when running in headless mode,
     # the user agent is spoofed.
-    user_agent = await _get_user_agent() if option.headless else None
+    user_agent = await _get_spoofed_user_agent() if option.headless else None
 
     if option.user_data_dir is not None:
         async with (
