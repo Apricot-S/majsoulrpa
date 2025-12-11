@@ -1,7 +1,7 @@
 import asyncio
 import re
 from datetime import UTC, datetime, timedelta
-from typing import Self, override
+from typing import ClassVar, Self, override
 
 from majsoulrpa import browser, sniffer
 from majsoulrpa.browser.driver import Key
@@ -25,6 +25,13 @@ VERIFICATION_CODE_PATTERN = re.compile(r"\d{6}")
 
 
 class LoginPresentation(Presentation):
+    _templates: ClassVar = {
+        "confirm": CONFIRM,
+        "login_1": LOGIN_1,
+        "login_2": LOGIN_2,
+        "unavailable": UNAVAILABLE,
+    }
+
     @override
     def __init__(
         self,
@@ -44,7 +51,7 @@ class LoginPresentation(Presentation):
     ) -> Self | None:
         p = cls(driver, message_queue)
         await p._init_resolution()
-        has_match = await p._has_match(LOGIN_1)
+        has_match = await p._has_match(cls._templates["login_1"])
         return p if has_match else None
 
     @override
@@ -53,7 +60,7 @@ class LoginPresentation(Presentation):
         # appears. If it is already visible, the click has no effect but
         # causes no issues, so we always perform the click for
         # simplicity.
-        if not await self._click_if_match(LOGIN_1):
+        if not await self._click_if_match(self._templates["login_1"]):
             msg = '"Login" button could not be detected.'
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
@@ -93,14 +100,14 @@ class LoginPresentation(Presentation):
         await asyncio.sleep(0.2)
 
         # Check if the email address is unavailable.
-        if await self._has_match(UNAVAILABLE):
+        if await self._has_match(self._templates["unavailable"]):
             msg = "This email address is unavailable."
             ss = await self.get_screenshot()
             raise exceptions.InvalidArgumentError(msg, ss)
 
         # Wait for the "Confirm" button to appear, then click it.
         await asyncio.sleep(1.0)
-        if not await self._click_if_match(CONFIRM):
+        if not await self._click_if_match(self._templates["confirm"]):
             msg = '"Confirm" button could not be detected.'
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
@@ -138,7 +145,7 @@ class LoginPresentation(Presentation):
         await asyncio.sleep(0.5)
 
         # Click the enabled "Login" button.
-        if not await self._click_if_match(LOGIN_2):
+        if not await self._click_if_match(self._templates["login_2"]):
             msg = '"Login" button could not be detected.'
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
@@ -147,11 +154,11 @@ class LoginPresentation(Presentation):
         # If the verification code is incorrect,
         # a dialog box will appear, so click "Confirm".
         await asyncio.sleep(1.5)
-        if await self._click_if_match(CONFIRM):
+        if await self._click_if_match(self._templates["confirm"]):
             # After clicking "Confirm", the email input field closes,
             # so click the "Login" button to reopen it.
             await asyncio.sleep(1.0)
-            if not await self._click_if_match(LOGIN_1):
+            if not await self._click_if_match(self._templates["login_1"]):
                 msg = '"Login" button could not be detected.'
                 ss = await self.get_screenshot()
                 raise exceptions.PresentationNotDetectedError(msg, ss)

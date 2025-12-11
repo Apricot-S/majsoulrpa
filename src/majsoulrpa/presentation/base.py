@@ -1,7 +1,7 @@
 import asyncio
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Iterable
-from typing import Self
+from typing import ClassVar, Self
 
 from majsoulrpa import browser, sniffer
 from majsoulrpa.presentation import template
@@ -15,6 +15,13 @@ from majsoulrpa.presentation.region import (
 
 
 class Presentation(ABC):
+    _templates: ClassVar[dict[str, template.MatcherBase]] = {}
+
+    @classmethod
+    def __init_subclass__(cls, *args, **kwargs) -> None:
+        super().__init_subclass__(*args, **kwargs)
+        cls._templates = dict(cls._templates)
+
     def __init__(
         self,
         driver: browser.DriverBase,

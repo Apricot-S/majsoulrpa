@@ -1,5 +1,5 @@
 import asyncio
-from typing import Self, override
+from typing import ClassVar, Self, override
 
 from majsoulrpa import browser, sniffer
 from majsoulrpa.presentation.base import Presentation
@@ -7,6 +7,10 @@ from majsoulrpa.presentation.templates.home import SUMMON
 
 
 class HomePresentation(Presentation):
+    _templates: ClassVar = {
+        "summon": SUMMON,
+    }
+
     @override
     def __init__(
         self,
@@ -24,7 +28,7 @@ class HomePresentation(Presentation):
     ) -> Self | None:
         p = cls(driver, message_queue)
         await p._init_resolution()
-        has_match = await p._has_match(SUMMON)
+        has_match = await p._has_match(cls._templates["summon"])
         return p if has_match else None
 
     @override
