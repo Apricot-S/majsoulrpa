@@ -88,6 +88,7 @@ class MessageQueue(MessageQueueBase):
         port: UserPort,
     ) -> None:
         self._endpoint = make_endpoint(address, port)
+        self._is_ipv6 = address.version == 6  # noqa: PLR2004
         self._messages: Queue[Message] = Queue()
         self._put_back_messages: deque[Message] = deque()
         self._wrapper = liqi_pb2.Wrapper()
@@ -109,6 +110,10 @@ class MessageQueue(MessageQueueBase):
         self._ctx = zmq.asyncio.Context()
         self._socket = self._ctx.socket(zmq.SUB)
         self._socket.setsockopt(zmq.SUBSCRIBE, b"")
+
+        if self._is_ipv6:
+            self._socket.setsockopt(zmq.IPV6, 1)
+
         self._socket.connect(f"tcp://{self._endpoint}")
 
         while True:
