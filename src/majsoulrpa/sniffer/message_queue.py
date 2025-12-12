@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from asyncio.queues import Queue
 from collections import deque
 from ipaddress import IPv4Address, IPv6Address
+from logging import getLogger
 from typing import Any, Self, override
 
 import zmq.asyncio
@@ -15,6 +16,8 @@ from majsoulrpa._majsoul_internal.protocol import liqi_pb2
 from majsoulrpa.exceptions import UnknownAPIError
 from majsoulrpa.netutils import UserPort, make_endpoint
 from majsoulrpa.sniffer.message import Message, MessageType, RawMessage
+
+logger = getLogger(__name__)
 
 
 def _build_message_type_map(
@@ -177,15 +180,15 @@ class MessageQueue(MessageQueueBase):
 
         self._extract_account_id(name, jsonized_response)
 
-        self._messages.put_nowait(
-            Message(
-                request_direction=request_direction,
-                name=name,
-                request=jsonized_request,
-                response=jsonized_response,
-                timestamp=timestamp,
-            ),
+        parsed = Message(
+            request_direction=request_direction,
+            name=name,
+            request=jsonized_request,
+            response=jsonized_response,
+            timestamp=timestamp,
         )
+        self._messages.put_nowait(parsed)
+        logger.debug("WebSocket message: %s", parsed.model_dump_json())
 
     def _unwrap_message(self, message: bytes) -> tuple[str, bytes]:
         self._wrapper.ParseFromString(message)
