@@ -34,16 +34,30 @@ class RPAClient:
         driver: browser.DriverBase,
         message_queue: sniffer.MessageQueueBase,
     ) -> Presentation:
+        logger.debug("Detecting presentation candidates...")
         while True:
             for candidate in self._callbacks:
                 p = await candidate._detect(driver, message_queue)  # noqa: SLF001
                 if p is not None:
+                    logger.info("Detected presentation `%s`", type(p).__name__)
                     return p
             await asyncio.sleep(0.5)
 
     async def _dispatch(self, presentation: Presentation, data: Any) -> Any:
         await presentation._pre_dispatch()  # noqa: SLF001
-        return await self._callbacks[type(presentation)](presentation, data)
+        callback = self._callbacks[type(presentation)](presentation, data)
+
+        logger.debug(
+            "Dispatching callback for `%s`",
+            type(presentation).__name__,
+        )
+        ret = await callback
+
+        logger.debug(
+            "Callback for `%s` completed",
+            type(presentation).__name__,
+        )
+        return ret
 
     def on[P: Presentation](
         self,
