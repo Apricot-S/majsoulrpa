@@ -83,3 +83,7 @@ class InvalidArgumentError(BaseError):
     """Error raised when an operation is called
     with invalid arguments.
     """
+
+
+class UnexpectedStateError(BaseError):
+    """Error raised when the presentation enters an unexpected state."""

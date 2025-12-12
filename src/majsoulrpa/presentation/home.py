@@ -3,6 +3,7 @@ from typing import ClassVar, Self, override
 
 import majsoulrpa.presentation.templates.home as home_templates
 from majsoulrpa import browser, sniffer
+from majsoulrpa.presentation import exceptions
 from majsoulrpa.presentation.base import Presentation
 
 
@@ -34,5 +35,19 @@ class HomePresentation(Presentation):
 
     @override
     async def _pre_dispatch(self) -> None:
-        # TODO: イベント画面・告知を消す処理、通信を読み取る処理を実装する
+        await self._close_notifications()
+        await self._drain_message_queue()
+
+        if self._message_queue.account_id is None:
+            msg = "Account ID not found after home screen transition."
+            raise exceptions.UnexpectedStateError(msg, None)
+
         await asyncio.sleep(0.5)
+
+    async def _drain_message_queue(self) -> None:
+        while self._message_queue.get_nowait() is not None:
+            pass
+
+    async def _close_notifications(self) -> None:
+        # TODO: 告知の閉じるボタンをクリックする処理を追加する
+        pass
