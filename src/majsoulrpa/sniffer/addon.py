@@ -231,13 +231,13 @@ class Sniffer:
     ) -> None:
         if header.sequence_number in self._pending_requests:
             prev_request = self._pending_requests[header.sequence_number]
-            msg = (
+            logger.warning(
                 "There is not any response message"
-                " for the following WebSocket request message:\n"
-                f"direction: {prev_request.direction}\n"
-                f"content: {prev_request.content!r}"
+                " for the following WebSocket request message:"
+                " (direction=%s, content=%r)",
+                prev_request.direction,
+                prev_request.content,
             )
-            logger.warning(msg)
 
         self._pending_requests[header.sequence_number] = PendingRequest(
             direction=direction,
@@ -252,13 +252,13 @@ class Sniffer:
         content: bytes,
     ) -> SniffedMessage | None:
         if header.sequence_number not in self._pending_requests:
-            msg = (
+            logger.warning(
                 "An WebSocket response message"
-                " that does not match to any request message:\n"
-                f"direction: {direction}\n"
-                f"content: {content!r}"
+                " that does not match to any request message:"
+                " (direction=%s, content=%r)",
+                direction,
+                content,
             )
-            logger.warning(msg)
             # No pending request; skip unmatched response.
             return None
 
