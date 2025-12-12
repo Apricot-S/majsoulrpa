@@ -3,12 +3,15 @@
 import asyncio
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from logging import getLogger
 from typing import Any
 
 from majsoulrpa import browser, constants, sniffer
 from majsoulrpa.netutils import parse_ip_address, validate_user_port
 from majsoulrpa.presentation.base import Presentation
 from majsoulrpa.presentation.exceptions import PresentationTimeoutError
+
+logger = getLogger(__name__)
 
 type Callback[P: Presentation] = Callable[[P, Any], Awaitable[Any]]
 
@@ -82,6 +85,8 @@ class RPAClient:
             message_queue,
             asyncio.TaskGroup() as tg,
         ):
+            logger.info("RPA session started.")
+
             message_queue_task = tg.create_task(message_queue.run())
 
             p: Presentation | None = None
@@ -102,4 +107,5 @@ class RPAClient:
 
                 if p._is_rpa_ended:  # noqa: SLF001
                     message_queue_task.cancel()
+                    logger.info("RPA session ended successfully.")
                     return data
