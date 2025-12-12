@@ -47,7 +47,7 @@ async def on_home(p: FetchLogPresentation, data: Any) -> Any:
 
 async def main() -> None:
     config = RPAClient.Config()
-    await rpa.run(config, None, detection_timeout=30)
+    await rpa.run(config, None, detection_timeout=60)
 
 
 if __name__ == "__main__":
