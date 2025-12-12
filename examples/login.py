@@ -15,6 +15,7 @@ def setup_async_logging() -> QueueListener:
     )
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
+    stream_handler.addFilter(logging.Filter("majsoulrpa"))
 
     log_queue: Queue[Any] = Queue()
     queue_handler = QueueHandler(log_queue)
