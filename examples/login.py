@@ -61,11 +61,8 @@ async def main() -> None:
 
     config = RPAClient.Config()
     data_in = [0]
-
     data_out = await rpa.run(config, data_in, detection_timeout=30)
-
     print(f"{data_out=}")
-    print("The RPA client has been terminated.")
 
     listener.stop()
 
