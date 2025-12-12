@@ -16,7 +16,7 @@ def main() -> None:
 
     args = CommandLineArgs(headless=True)
     config = args.to_config()
-    option = dataclasses.replace(args.to_option(), viewport_height=360)
+    option = dataclasses.replace(args.to_option(), viewport_height=720)
     run_browser_server(config, option, sniffer_runner=archiver_runner)
 
 
