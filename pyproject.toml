@@ -107,6 +107,7 @@ convention = "google"
 [tool.ruff.lint.extend-per-file-ignores]
 "./examples/*" = [
     "D",      # pydocstyle
+    "ANN401", # any-type
     "S101",   # assert
     "INP001", # implicit-namespace-package
     "T201",   # print

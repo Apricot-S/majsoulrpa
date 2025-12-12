@@ -1,5 +1,3 @@
-# ruff: noqa: ANN401
-
 import asyncio
 from typing import Any
 

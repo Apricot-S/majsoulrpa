@@ -1,5 +1,3 @@
-# ruff: noqa: ANN401
-
 import asyncio
 import logging
 from logging.handlers import QueueHandler, QueueListener
