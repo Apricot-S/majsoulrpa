@@ -144,6 +144,14 @@ async def _handle_screenshot(page: Page) -> schemas.ScreenshotResponse:
     return schemas.ScreenshotResponse(image=image_b64)
 
 
+async def _handle_log(
+    page: Page,
+    req: schemas.LogRequest,
+) -> schemas.LogResponse:
+    await page.goto(f"{MAJSOUL_LOG_URL}{req.log_id}")
+    return schemas.LogResponse()
+
+
 async def _handle_reload(page: Page) -> schemas.ReloadResponse:
     await page.reload()
     await page.wait_for_selector("#layaCanvas", timeout=PAGE_WAIT_TIMEOUT)
@@ -181,6 +189,8 @@ def _request_handler_factory(
                 res = await _handle_type_key(page, req)
             case schemas.ScreenshotRequest():
                 res = await _handle_screenshot(page)
+            case schemas.LogRequest():
+                res = await _handle_log(page, req)
             case schemas.ReloadRequest():
                 res = await _handle_reload(page)
             case schemas.QuitRequest():

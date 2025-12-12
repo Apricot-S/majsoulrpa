@@ -56,6 +56,10 @@ class DriverBase(ABC):
         pass
 
     @abstractmethod
+    async def goto_log(self, log_id: str) -> None:
+        pass
+
+    @abstractmethod
     async def reload(self) -> None:
         pass
 
@@ -120,6 +124,11 @@ class Driver(DriverBase):
         res = await self._client.send(req)
         res = expect_response(res, schemas.ScreenshotResponse)
         return base64.b64decode(res.image)
+
+    @override
+    async def goto_log(self, log_id: str) -> None:
+        req = schemas.LogRequest(log_id=log_id)
+        await self._client.send(req)
 
     @override
     async def reload(self) -> None:

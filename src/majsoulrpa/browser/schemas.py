@@ -11,6 +11,7 @@ class Action(StrEnum):
     PRESS_KEY = auto()
     TYPE_KEY = auto()
     SCREENSHOT = auto()
+    LOG = auto()
     RELOAD = auto()
     QUIT = auto()
 
@@ -51,6 +52,11 @@ class ScreenshotRequest(BaseModel):
     action: Literal[Action.SCREENSHOT] = Action.SCREENSHOT
 
 
+class LogRequest(BaseModel):
+    action: Literal[Action.LOG] = Action.LOG
+    log_id: str
+
+
 class ReloadRequest(BaseModel):
     action: Literal[Action.RELOAD] = Action.RELOAD
 
@@ -66,6 +72,7 @@ type Request = Annotated[
     | PressKeyRequest
     | TypeKeyRequest
     | ScreenshotRequest
+    | LogRequest
     | ReloadRequest
     | QuitRequest,
     Field(discriminator="action"),
@@ -114,6 +121,10 @@ class ScreenshotResponse(BaseModel):
     image: str
 
 
+class LogResponse(BaseModel):
+    action: Literal[Action.LOG] = Action.LOG
+
+
 class ReloadResponse(BaseModel):
     action: Literal[Action.RELOAD] = Action.RELOAD
 
@@ -134,6 +145,7 @@ type Response = Annotated[
     | PressKeyResponse
     | TypeKeyResponse
     | ScreenshotResponse
+    | LogResponse
     | ReloadResponse
     | QuitResponse
     | ErrorResponse,
