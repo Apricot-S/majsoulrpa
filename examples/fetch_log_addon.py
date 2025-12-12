@@ -5,18 +5,18 @@ from majsoulrpa._majsoul_internal.protocol import liqi_pb2
 from majsoulrpa.sniffer.addon import SniffedMessage, Sniffer
 
 
-def get_log_id(message: bytes) -> str:
+def get_log_id(response: bytes) -> str:
     wrapper = liqi_pb2.Wrapper()
-    wrapper.ParseFromString(message[3:])
+    wrapper.ParseFromString(response[3:])
 
     if wrapper.name != "":
         msg = f"an unexpected API name: {wrapper.name}"
         raise RuntimeError(msg)
 
-    parser = liqi_pb2.ResGameRecord()
-    parser.ParseFromString(wrapper.data)
+    res_game_record = liqi_pb2.ResGameRecord()
+    res_game_record.ParseFromString(wrapper.data)
 
-    return parser.head.uuid
+    return res_game_record.head.uuid
 
 
 class LogArchiver(Sniffer):
