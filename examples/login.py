@@ -20,7 +20,7 @@ async def on_login(p: LoginPresentation, data: Any) -> Any:
     async with asyncio.timeout(30):
         await p.enter_verification_code(verification_code)
 
-    return [data, 1]
+    return [*data, 1]
 
 
 @rpa.on(HomePresentation)
@@ -30,12 +30,12 @@ async def on_home(p: HomePresentation, data: Any) -> Any:
     async with asyncio.timeout(5):
         await p.end_rpa(close_browser=True)
 
-    return {*data, 2}
+    return [*data, 2]
 
 
 async def main() -> None:
     config = RPAClient.Config()
-    data_in = 0
+    data_in = [0]
 
     data_out = await rpa.run(config, data_in, detection_timeout=30)
 
