@@ -38,7 +38,7 @@ async def on_login(p: LoginPresentation, data: Any) -> Any:
 @rpa.on(FetchLogPresentation)
 async def on_home(p: FetchLogPresentation, data: Any) -> Any:
     log_id = input("Enter the log id: ")
-    async with asyncio.timeout(120):
+    async with asyncio.timeout(60):
         await p.fetch_log(log_id)
 
     async with asyncio.timeout(5):
