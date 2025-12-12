@@ -29,12 +29,13 @@ class Presentation(ABC):
         driver: browser.DriverBase,
         message_queue: sniffer.MessageQueueBase,
     ) -> None:
+        self._driver = driver
+        self._message_queue = message_queue
+
         self.__scale: float | None = None
         self.__is_presentation_finished = False
         self.__is_rpa_ended = False
         self.__is_browser_closed = False
-        self._driver = driver
-        self._message_queue = message_queue
 
     async def get_screenshot(self) -> bytes:
         if self._is_rpa_ended:
