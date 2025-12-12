@@ -279,6 +279,10 @@ class MessageQueue(MessageQueueBase):
 
         if self._account_id is None:
             self._account_id = account_id  # type: ignore[assignment]
+            logger.info(
+                "Account ID extracted from WebSocket message: %d",
+                self._account_id,
+            )
         elif account_id != self._account_id:
             msg = "inconsistent account IDs"
             raise RuntimeError(msg)
