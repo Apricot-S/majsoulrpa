@@ -13,7 +13,7 @@ from majsoulrpa.constants import DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.exceptions import UserInputError
 
 MAJSOUL_URL = "https://game.mahjongsoul.com/"  # JP version
-MAJSOUL_LOG_URL = "https://game.mahjongsoul.com/?paipu="  # JP version
+LOG_QUERY_PARAM = "?paipu="
 
 PAGE_WAIT_TIMEOUT = 30_000
 
@@ -146,9 +146,10 @@ async def _handle_screenshot(page: Page) -> schemas.ScreenshotResponse:
 
 async def _handle_log(
     page: Page,
+    url: str,
     req: schemas.LogRequest,
 ) -> schemas.LogResponse:
-    await page.goto(f"{MAJSOUL_LOG_URL}{req.log_id}")
+    await page.goto(f"{url}{LOG_QUERY_PARAM}{req.log_id}")
     return schemas.LogResponse()
 
 
@@ -169,6 +170,7 @@ async def _handle_unknown(_req: Never) -> schemas.ErrorResponse:
 def _request_handler_factory(
     page: Page,
     viewport: ViewportSize,
+    url: str,
 ) -> core.RequestHandler:
     scale = _get_scale(viewport)
 
@@ -190,7 +192,7 @@ def _request_handler_factory(
             case schemas.ScreenshotRequest():
                 res = await _handle_screenshot(page)
             case schemas.LogRequest():
-                res = await _handle_log(page, req)
+                res = await _handle_log(page, url, req)
             case schemas.ReloadRequest():
                 res = await _handle_reload(page)
             case schemas.QuitRequest():
@@ -249,12 +251,20 @@ async def run_browser_engine(
             if context.pages:
                 page = context.pages[0]
                 await _prepare_majsoul_page(page, option.url)
-                request_handler = _request_handler_factory(page, viewport)
+                request_handler = _request_handler_factory(
+                    page,
+                    viewport,
+                    option.url,
+                )
                 await server_runner(config, request_handler)
             else:
                 async with await context.new_page() as page:
                     await _prepare_majsoul_page(page, option.url)
-                    request_handler = _request_handler_factory(page, viewport)
+                    request_handler = _request_handler_factory(
+                        page,
+                        viewport,
+                        option.url,
+                    )
                     await server_runner(config, request_handler)
     else:
         # incognito mode
@@ -272,5 +282,9 @@ async def run_browser_engine(
             await context.new_page() as page,
         ):
             await _prepare_majsoul_page(page, option.url)
-            request_handler = _request_handler_factory(page, viewport)
+            request_handler = _request_handler_factory(
+                page,
+                viewport,
+                option.url,
+            )
             await server_runner(config, request_handler)
