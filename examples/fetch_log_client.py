@@ -4,8 +4,20 @@ import asyncio
 from typing import Any
 
 from majsoulrpa import RPAClient
+from majsoulrpa.presentation.base import require_active
 from majsoulrpa.presentation.home import HomePresentation
 from majsoulrpa.presentation.login import LoginPresentation
+
+
+class FetchLogPresentation(HomePresentation):
+    @require_active
+    async def fetch_log(self, log_id: str) -> None:
+        await self._driver.goto_log(log_id)
+        while True:
+            message = await self._message_queue.get()
+            if message.name == ".lq.Lobby.fetchGameRecord":
+                return
+
 
 rpa = RPAClient()
 
@@ -20,26 +32,24 @@ async def on_login(p: LoginPresentation, data: Any) -> Any:
     async with asyncio.timeout(30):
         await p.enter_verification_code(verification_code)
 
-    return [*data, 1]
+    return data
 
 
-@rpa.on(HomePresentation)
-async def on_home(p: HomePresentation, data: Any) -> Any:
-    await asyncio.sleep(5)
+@rpa.on(FetchLogPresentation)
+async def on_home(p: FetchLogPresentation, data: Any) -> Any:
+    log_id = input("Enter the log id: ")
+    async with asyncio.timeout(60):
+        await p.fetch_log(log_id)
 
     async with asyncio.timeout(5):
         await p.end_rpa(close_browser=True)
 
-    return [*data, 2]
+    return data
 
 
 async def main() -> None:
     config = RPAClient.Config()
-    data_in = [0]
-
-    data_out = await rpa.run(config, data_in, detection_timeout=30)
-
-    print(f"{data_out=}")
+    await rpa.run(config, None, detection_timeout=30)
     print("The RPA client has been terminated.")
 
 
