@@ -99,10 +99,9 @@ class RPAClient:
             message_queue,
             asyncio.TaskGroup() as tg,
         ):
-            logger.info("RPA session started.")
-
             message_queue_task = tg.create_task(message_queue.run())
 
+            logger.info("RPA session started.")
             p: Presentation | None = None
             while True:
                 if p is None or p._is_presentation_finished:  # noqa: SLF001
@@ -120,6 +119,6 @@ class RPAClient:
                 data = await self._dispatch(p, data)
 
                 if p._is_rpa_ended:  # noqa: SLF001
-                    message_queue_task.cancel()
                     logger.info("RPA session ended successfully.")
+                    message_queue_task.cancel()
                     return data
