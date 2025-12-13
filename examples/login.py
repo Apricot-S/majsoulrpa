@@ -10,12 +10,21 @@ from majsoulrpa.presentation.login import LoginPresentation
 
 
 def setup_async_logging() -> QueueListener:
-    formatter = logging.Formatter(
-        "%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d - %(message)s",  # noqa: E501
-    )
     stream_handler = logging.StreamHandler()
+
+    fmt = "%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d - %(message)s"  # noqa: E501
+    formatter = logging.Formatter(fmt)
     stream_handler.setFormatter(formatter)
+
+    class ExcludeFilter:
+        def __init__(self, message: str = "") -> None:
+            self.message = message
+
+        def filter(self, record: logging.LogRecord) -> bool:
+            return not record.getMessage().startswith(self.message)
+
     stream_handler.addFilter(logging.Filter("majsoulrpa"))
+    stream_handler.addFilter(ExcludeFilter("WebSocket message"))
 
     log_queue: Queue[Any] = Queue()
     queue_handler = QueueHandler(log_queue)
