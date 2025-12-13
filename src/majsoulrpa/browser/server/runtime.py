@@ -1,4 +1,5 @@
 import asyncio
+import warnings
 
 from majsoulrpa.browser.server import core, engine, sniffer
 from majsoulrpa.browser.server.config import Config
@@ -12,6 +13,20 @@ def run_browser_server(
     browser_engine_runner: engine.BrowserEngineRunner | None = None,
     sniffer_runner: sniffer.SnifferRunner | None = None,
 ) -> None:
+    # On Windows, the `ProactorEventLoop` does not implement
+    # the add_reader family of methods.
+    # When using `zmq.asyncio`, Tornado automatically registers
+    # a selector thread to provide add_reader support. This behavior
+    # always triggers a `RuntimeWarning`, even though it is harmless.
+    # Since Tornado is functioning correctly and the warning only causes
+    # confusion, we suppress it here to keep the output clean.
+    warnings.filterwarnings(
+        "ignore",
+        message="Proactor event loop does not implement add_reader",
+        category=RuntimeWarning,
+        module="zmq",
+    )
+
     if server_runner is None:
         server_runner = core.run_server
     if browser_engine_runner is None:
