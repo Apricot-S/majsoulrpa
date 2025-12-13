@@ -73,7 +73,7 @@ class RPAClient:
         self,
         config: Config,
         data: Any,
-        detection_timeout: float = 30.0,
+        detection_timeout: float = 60.0,
         browser_client: browser.ClientBase | None = None,
         browser_driver: browser.DriverBase | None = None,
         message_queue: sniffer.MessageQueueBase | None = None,
