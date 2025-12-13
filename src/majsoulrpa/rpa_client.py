@@ -1,6 +1,7 @@
 # ruff: noqa: ANN401
 
 import asyncio
+import warnings
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from logging import getLogger
@@ -85,6 +86,22 @@ class RPAClient:
         address = parse_ip_address(config.browser_address)
         remote_port = validate_user_port(config.remote_port)
         sniffer_port = validate_user_port(config.sniffer_port)
+
+        # On Windows, the `ProactorEventLoop` does not implement
+        # the add_reader family of methods.
+        # When using `zmq.asyncio`, Tornado automatically registers
+        # a selector thread to provide add_reader support.
+        # This behavior always triggers a `RuntimeWarning`,
+        # even though it is harmless.
+        # Since Tornado is functioning correctly and the warning only
+        # causes confusion, we suppress it here to keep the output
+        # clean.
+        warnings.filterwarnings(
+            "ignore",
+            message="Proactor event loop does not implement add_reader",
+            category=RuntimeWarning,
+            module="zmq",
+        )
 
         if browser_client is None:
             browser_client = browser.Client(address, remote_port)

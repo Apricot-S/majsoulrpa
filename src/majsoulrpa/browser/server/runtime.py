@@ -16,8 +16,9 @@ def run_browser_server(
     # On Windows, the `ProactorEventLoop` does not implement
     # the add_reader family of methods.
     # When using `zmq.asyncio`, Tornado automatically registers
-    # a selector thread to provide add_reader support. This behavior
-    # always triggers a `RuntimeWarning`, even though it is harmless.
+    # a selector thread to provide add_reader support.
+    # This behavior always triggers a `RuntimeWarning`,
+    # even though it is harmless.
     # Since Tornado is functioning correctly and the warning only causes
     # confusion, we suppress it here to keep the output clean.
     warnings.filterwarnings(
