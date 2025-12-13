@@ -76,14 +76,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    # On Windows, the `ProactorEventLoop` does not implement
-    # the add_reader family of methods required by PyZMQ.
-    # Therefore, you need to explicitly select `SelectorEventLoop`.
-    # Alternatively, you can add Tornado as a dependency, which provides
-    # a workaround by registering an additional selector thread.
-    #
-    # On macOS and Linux, the default event loop is already
-    # `SelectorEventLoop`, so this specification is not required.
-    # If you still include it as shown below, behavior remains unchanged
-    # and defaults are preserved.
-    asyncio.run(main(), loop_factory=asyncio.SelectorEventLoop)
+    asyncio.run(main())
