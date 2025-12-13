@@ -110,6 +110,8 @@ class MessageQueue(MessageQueueBase):
 
     @override
     async def run(self) -> None:
+        logger.debug("Starting message queue run for %s", self._endpoint)
+
         self._ctx = zmq.asyncio.Context()
         self._socket = self._ctx.socket(zmq.SUB)
         self._socket.setsockopt(zmq.SUBSCRIBE, b"")
@@ -118,6 +120,7 @@ class MessageQueue(MessageQueueBase):
             self._socket.setsockopt(zmq.IPV6, 1)
 
         self._socket.connect(f"tcp://{self._endpoint}")
+        logger.info("Connected to sniffer endpoint %s", self._endpoint)
 
         while True:
             message_str = await self._socket.recv_string()
@@ -150,10 +153,12 @@ class MessageQueue(MessageQueueBase):
     def _close(self) -> None:
         if self._socket is not None:
             self._socket.close()
+            logger.debug("Closing socket for %s", self._endpoint)
             self._socket = None
 
         if self._ctx is not None:
             self._ctx.destroy()
+            logger.info("Socket and context destroyed for %s", self._endpoint)
             self._ctx = None
 
     def _enqueue_message(self, message: RawMessage) -> None:
