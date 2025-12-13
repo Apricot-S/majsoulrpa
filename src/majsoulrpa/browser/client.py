@@ -57,7 +57,11 @@ class Client(ClientBase):
         await self._socket.send_string(req)
 
         res = await self._socket.recv_string()
-        logger.debug("Received response (%d bytes) for %s", len(res), req)
+        logger.debug(
+            "Received response (%d bytes) for %s",
+            len(res.encode(encoding="utf-8")),
+            req,
+        )
         return schemas.RESPONSE_ADAPTER.validate_json(res)
 
     def _close(self) -> None:
