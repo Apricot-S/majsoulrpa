@@ -8,7 +8,7 @@
 
 project = "MajsoulRPA"
 copyright = [
-    "2023-2024, Apricot S.",
+    "2023, Apricot S.",
     "2024, Cryolite",
 ]
 author = "Apricot S., Cryolite"
