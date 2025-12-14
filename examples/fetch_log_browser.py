@@ -1,4 +1,3 @@
-import dataclasses
 from pathlib import Path
 from subprocess import Popen
 
@@ -14,9 +13,9 @@ def main() -> None:
     def archiver_runner(config: Config) -> Popen:
         return run_sniffer(config, ADDON_PATH)
 
-    args = CommandLineArgs(headless=True)
+    args = CommandLineArgs(viewport_height=720, headless=True)
     config = args.to_config()
-    option = dataclasses.replace(args.to_option(), viewport_height=720)
+    option = args.to_option()
     run_browser_server(config, option, sniffer_runner=archiver_runner)
 
 
