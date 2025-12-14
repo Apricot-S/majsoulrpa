@@ -1,8 +1,8 @@
 from pathlib import Path
 from subprocess import Popen
 
+from majsoulrpa.browser.server import Config
 from majsoulrpa.browser.server.cli import CommandLineArgs
-from majsoulrpa.browser.server.config import Config
 from majsoulrpa.browser.server.runtime import run_browser_server
 from majsoulrpa.browser.server.sniffer import run_sniffer
 
