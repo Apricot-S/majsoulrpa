@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from majsoulrpa import netutils
-from majsoulrpa.browser.server.config import Config
+from majsoulrpa.browser.server import Config
 from majsoulrpa.browser.server.engine import Option
 from majsoulrpa.browser.server.runtime import run_browser_server
 from majsoulrpa.constants import (

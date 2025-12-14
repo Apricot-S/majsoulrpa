@@ -2,10 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from majsoulrpa.browser.server.cli import (
-    CommandLineArgs,
-    get_command_line_args,
-)
+from majsoulrpa.cli import CommandLineArgs, get_command_line_args
 
 
 @pytest.mark.parametrize(
