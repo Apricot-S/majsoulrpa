@@ -6,7 +6,8 @@ import numpy as np
 from cv2.typing import MatLike
 
 from majsoulrpa.presentation.region import Region
-from majsoulrpa.presentation.template import Config, ImageBase
+from majsoulrpa.presentation.template.config import Config
+from majsoulrpa.presentation.template.image import ImageBase
 
 
 class MatcherBase(ABC):
