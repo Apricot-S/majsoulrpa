@@ -9,3 +9,6 @@ class Endpoint(BaseModel):
 
     browser_address: str = Field(constants.DEFAULT_BROWSER_ADDRESS)
     client_address: str = Field(constants.DEFAULT_CLIENT_ADDRESS)
+    remote_port: int = Field(constants.DEFAULT_REMOTE_PORT)
+    sniffer_port: int = Field(constants.DEFAULT_SNIFFER_PORT)
+    proxy_port: int = Field(constants.DEFAULT_PROXY_PORT)
