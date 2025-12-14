@@ -121,6 +121,7 @@ convention = "google"
 ]
 
 [tool.mypy]
+plugins = ["pydantic.mypy"]
 exclude = [
     'liqi_pb2\.py$',
     'liqi_pb2\.pyi$',
