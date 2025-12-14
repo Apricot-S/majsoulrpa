@@ -46,7 +46,7 @@ headless = false
 # User data directory. If not specified, incognito mode is used.
 user-data-dir = "./user-data"
 
-[majsoulrpa.verification.s3]
+[majsoulrpa.yostar-login.s3]
 # Email address where verification emails are sent.
 email-address = "your-email@example.com"
 
