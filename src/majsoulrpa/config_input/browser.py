@@ -7,7 +7,11 @@ from majsoulrpa.config_input._common import _to_kebab
 
 
 class Browser(BaseModel):
-    model_config = ConfigDict(extra="forbid", alias_generator=_to_kebab)
+    model_config = ConfigDict(
+        extra="forbid",
+        alias_generator=_to_kebab,
+        serialize_by_alias=True,
+    )
 
     window_left: int = Field(0)
     window_top: int = Field(0)
