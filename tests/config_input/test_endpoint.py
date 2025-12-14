@@ -15,7 +15,7 @@ from majsoulrpa.config_input.endpoint import Endpoint
         ("proxy_port", constants.DEFAULT_PROXY_PORT),
     ],
 )
-def test_defaults(field: str, expected: str | int) -> None:
+def test_defaults(field: str, expected: object) -> None:
     endpoint = Endpoint.model_validate({})
     assert getattr(endpoint, field) == expected
 
