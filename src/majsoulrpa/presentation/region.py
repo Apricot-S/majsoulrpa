@@ -73,8 +73,8 @@ def _sample_normal_in_interval(
         A random value inside the interval.
     """
     end = origin + length
-    mu = end / 2.0
-    sigma = (mu - origin) / edge_sigma
+    mu = origin + length / 2.0
+    sigma = (length / 2.0) / edge_sigma
     while True:
         p = random.normalvariate(mu, sigma)
         if origin < p < end:
