@@ -3,10 +3,11 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from majsoulrpa import netutils
+from majsoulrpa import config_input, netutils
 from majsoulrpa.browser.server import Config
 from majsoulrpa.browser.server.engine import Option
 from majsoulrpa.browser.server.runtime import run_browser_server
+from majsoulrpa.config_input import ConfigInput
 from majsoulrpa.constants import (
     DEFAULT_CLIENT_ADDRESS,
     DEFAULT_PROXY_PORT,
@@ -50,7 +51,7 @@ class CommandLineArgs:
         )
 
 
-def get_command_line_args() -> CommandLineArgs:
+def get_command_line_args() -> ConfigInput:
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -87,24 +88,28 @@ def get_command_line_args() -> CommandLineArgs:
 
     args = parser.parse_args()
 
-    return CommandLineArgs(
-        client_address=args.client_address,
-        remote_port=args.remote_port,
-        sniffer_port=args.sniffer_port,
-        proxy_port=args.proxy_port,
-        window_left=args.window_left,
-        window_top=args.window_top,
-        viewport_height=args.viewport_height,
-        headless=args.headless,
-        user_data_dir=args.user_data_dir,
+    return ConfigInput(
+        endpoint=config_input.Endpoint(
+            client_address=args.client_address,
+            remote_port=args.remote_port,
+            sniffer_port=args.sniffer_port,
+            proxy_port=args.proxy_port,
+        ),
+        browser=config_input.Browser(
+            window_left=args.window_left,
+            window_top=args.window_top,
+            viewport_height=args.viewport_height,
+            headless=args.headless,
+            user_data_dir=args.user_data_dir,
+        ),
     )
 
 
 def main() -> None:
     try:
-        args = get_command_line_args()
-        config = args.to_config()
-        option = args.to_option()
+        config_input = get_command_line_args()
+        config = config_input.build_browser_config()
+        option = config_input.build_browser_option()
         run_browser_server(config, option)
     except UserInputError as e:
         print(e, file=sys.stderr)  # noqa: T201

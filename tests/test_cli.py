@@ -2,59 +2,60 @@ from pathlib import Path
 
 import pytest
 
-from majsoulrpa.cli import CommandLineArgs, get_command_line_args
+from majsoulrpa.cli import get_command_line_args
+from majsoulrpa.config_input import Browser, ConfigInput, Endpoint
 
 
 @pytest.mark.parametrize(
     ("argv", "expected"),
     [
-        (["majsoulrpa-browser"], CommandLineArgs()),
+        (["majsoulrpa-browser"], ConfigInput()),
         (
             ["majsoulrpa-browser", "--client-address", "no-check"],
-            CommandLineArgs(client_address="no-check"),
+            ConfigInput(endpoint=Endpoint(client_address="no-check")),
         ),
         (
             ["majsoulrpa-browser", "--remote-port", "-100"],
-            CommandLineArgs(remote_port=-100),
+            ConfigInput(endpoint=Endpoint(remote_port=-100)),
         ),
         (
             ["majsoulrpa-browser", "--sniffer-port", "-100"],
-            CommandLineArgs(sniffer_port=-100),
+            ConfigInput(endpoint=Endpoint(sniffer_port=-100)),
         ),
         (
             ["majsoulrpa-browser", "--proxy-port", "-200"],
-            CommandLineArgs(proxy_port=-200),
+            ConfigInput(endpoint=Endpoint(proxy_port=-200)),
         ),
         (
             ["majsoulrpa-browser", "--window-left", "-1500"],
-            CommandLineArgs(window_left=-1500),
+            ConfigInput(browser=Browser(window_left=-1500)),
         ),
         (
             ["majsoulrpa-browser", "--window-top", "50"],
-            CommandLineArgs(window_top=50),
+            ConfigInput(browser=Browser(window_top=50)),
         ),
         (
             ["majsoulrpa-browser", "--viewport-height", "720"],
-            CommandLineArgs(viewport_height=720),
+            ConfigInput(browser=Browser(viewport_height=720)),
         ),
         (
             ["majsoulrpa-browser", "--headless"],
-            CommandLineArgs(headless=True),
+            ConfigInput(browser=Browser(headless=True)),
         ),
         (
             ["majsoulrpa-browser", "--user-data-dir", "./profile"],
-            CommandLineArgs(user_data_dir=Path("./profile")),
+            ConfigInput(browser=Browser(user_data_dir=Path("./profile"))),
         ),
         (
             ["majsoulrpa-browser", "--user-data-dir", "??no-check"],
-            CommandLineArgs(user_data_dir=Path("??no-check")),
+            ConfigInput(browser=Browser(user_data_dir=Path("??no-check"))),
         ),
     ],
 )
 def test_get_command_line_args_set_args(
     monkeypatch: pytest.MonkeyPatch,
     argv: list[str],
-    expected: CommandLineArgs,
+    expected: ConfigInput,
 ) -> None:
     with monkeypatch.context() as m:
         m.setattr("sys.argv", argv)
