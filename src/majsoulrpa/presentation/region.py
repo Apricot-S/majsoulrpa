@@ -57,7 +57,7 @@ def _sample_normal_in_interval(
     The distribution is centered at the midpoint of the interval, and
     the standard deviation is computed as (length / 2) / edge_sigma.
     Reject sampling ensures the result lies strictly
-    within (origin, origin+length).
+    within (origin, origin + length).
 
     Note:
         This function does not validate parameters.
