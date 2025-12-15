@@ -4,7 +4,7 @@ from logging.handlers import QueueHandler, QueueListener
 from queue import Queue
 from typing import Any
 
-from majsoulrpa import RPAClient
+from majsoulrpa import ConfigInput, RPAClient
 from majsoulrpa.presentation.home import HomePresentation
 from majsoulrpa.presentation.login import LoginPresentation
 
@@ -67,7 +67,7 @@ async def main() -> None:
     listener = setup_async_logging()
     listener.start()
 
-    config = RPAClient.Config()
+    config = ConfigInput().build_client_config()
     data_in = [0]
     data_out = await rpa.run(config, data_in, detection_timeout=60)
     print(f"{data_out=}")

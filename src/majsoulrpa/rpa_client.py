@@ -8,9 +8,9 @@ from ipaddress import IPv4Address, IPv6Address
 from logging import getLogger
 from typing import Any
 
-from majsoulrpa import browser, constants, sniffer
+from majsoulrpa import browser, sniffer
 from majsoulrpa.exceptions import UserInputError
-from majsoulrpa.netutils import UserPort, parse_ip_address, validate_user_port
+from majsoulrpa.netutils import UserPort
 from majsoulrpa.presentation.base import Presentation
 from majsoulrpa.presentation.exceptions import PresentationTimeoutError
 
@@ -33,12 +33,6 @@ class Config:
 
 
 class RPAClient:
-    @dataclass(frozen=True)
-    class Config:
-        browser_address: str = constants.DEFAULT_BROWSER_ADDRESS
-        remote_port: int = constants.DEFAULT_REMOTE_PORT
-        sniffer_port: int = constants.DEFAULT_SNIFFER_PORT
-
     def __init__(self) -> None:
         self._callbacks: dict[
             type[Presentation],
@@ -98,10 +92,6 @@ class RPAClient:
             msg = "no callbacks registered: use `RPAClient.on()` to register a presentation callback"  # noqa: E501
             raise RuntimeError(msg)
 
-        address = parse_ip_address(config.browser_address)
-        remote_port = validate_user_port(config.remote_port)
-        sniffer_port = validate_user_port(config.sniffer_port)
-
         # On Windows, the `ProactorEventLoop` does not implement
         # the add_reader family of methods.
         # When using `zmq.asyncio`, Tornado automatically registers
@@ -119,11 +109,17 @@ class RPAClient:
         )
 
         if browser_client is None:
-            browser_client = browser.Client(address, remote_port)
+            browser_client = browser.Client(
+                config.browser_address,
+                config.remote_port,
+            )
         if browser_driver is None:
             browser_driver = browser.Driver(browser_client)
         if message_queue is None:
-            message_queue = sniffer.MessageQueue(address, sniffer_port)
+            message_queue = sniffer.MessageQueue(
+                config.browser_address,
+                config.sniffer_port,
+            )
 
         async with (
             browser_client,

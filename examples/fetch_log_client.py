@@ -1,7 +1,7 @@
 import asyncio
 from typing import Any
 
-from majsoulrpa import RPAClient
+from majsoulrpa import ConfigInput, RPAClient
 from majsoulrpa.presentation.base import require_active
 from majsoulrpa.presentation.home import HomePresentation
 from majsoulrpa.presentation.login import LoginPresentation
@@ -46,7 +46,7 @@ async def on_home(p: FetchLogPresentation, data: Any) -> Any:
 
 
 async def main() -> None:
-    config = RPAClient.Config()
+    config = ConfigInput().build_client_config()
     await rpa.run(config, None, detection_timeout=60)
 
 
