@@ -6,5 +6,5 @@ __all__ = [
 
 # submodules
 __all__ += [
-    "email_provider",  # type: ignore[reportUnsupportedDunderAll]
+    "email_repository",  # type: ignore[reportUnsupportedDunderAll]
 ]
