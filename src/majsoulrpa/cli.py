@@ -17,7 +17,7 @@ from majsoulrpa.exceptions import UserInputError
 VIEWPORT_HEIGHT_CHOICES = (720, 1080, 1440)
 
 
-def get_command_line_args() -> ConfigInput:
+def build_config_input_from_cli() -> ConfigInput:
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -73,7 +73,7 @@ def get_command_line_args() -> ConfigInput:
 
 def main() -> None:
     try:
-        config_input = get_command_line_args()
+        config_input = build_config_input_from_cli()
         config = config_input.build_browser_config()
         option = config_input.build_browser_option()
         run_browser_server(config, option)

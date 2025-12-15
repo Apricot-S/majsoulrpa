@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from majsoulrpa.cli import get_command_line_args
+from majsoulrpa.cli import build_config_input_from_cli
 from majsoulrpa.config_input import Browser, ConfigInput, Endpoint
 
 
@@ -52,14 +52,14 @@ from majsoulrpa.config_input import Browser, ConfigInput, Endpoint
         ),
     ],
 )
-def test_get_command_line_args_set_args(
+def test_build_config_input_from_cli_set_args(
     monkeypatch: pytest.MonkeyPatch,
     argv: list[str],
     expected: ConfigInput,
 ) -> None:
     with monkeypatch.context() as m:
         m.setattr("sys.argv", argv)
-        actual = get_command_line_args()
+        actual = build_config_input_from_cli()
 
     assert actual == expected
 
@@ -76,7 +76,7 @@ def test_get_command_line_args_set_args(
         ["majsoulrpa-browser", "--viewport-height", "720.0"],
     ],
 )
-def test_get_command_line_args_invalid_args(
+def test_build_config_input_from_cli_invalid_args(
     monkeypatch: pytest.MonkeyPatch,
     argv: list[str],
 ) -> None:
@@ -84,4 +84,4 @@ def test_get_command_line_args_invalid_args(
         m.setattr("sys.argv", argv)
 
         with pytest.raises(SystemExit):
-            get_command_line_args()
+            build_config_input_from_cli()
