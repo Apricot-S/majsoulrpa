@@ -1,11 +1,8 @@
 import argparse
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 
-from majsoulrpa import config_input, netutils
-from majsoulrpa.browser.server import Config
-from majsoulrpa.browser.server.engine import Option
+from majsoulrpa import config_input
 from majsoulrpa.browser.server.runtime import run_browser_server
 from majsoulrpa.config_input import ConfigInput
 from majsoulrpa.constants import (
@@ -18,37 +15,6 @@ from majsoulrpa.constants import (
 from majsoulrpa.exceptions import UserInputError
 
 VIEWPORT_HEIGHT_CHOICES = (720, 1080, 1440)
-
-
-@dataclass(frozen=True)
-class CommandLineArgs:
-    client_address: str = DEFAULT_CLIENT_ADDRESS
-    remote_port: int = DEFAULT_REMOTE_PORT
-    sniffer_port: int = DEFAULT_SNIFFER_PORT
-    proxy_port: int = DEFAULT_PROXY_PORT
-
-    window_left: int = 0
-    window_top: int = 0
-    viewport_height: int = DEFAULT_VIEWPORT_HEIGHT
-    headless: bool = False
-    user_data_dir: Path | None = None
-
-    def to_config(self) -> Config:
-        return Config(
-            netutils.parse_ip_address(self.client_address),
-            netutils.validate_user_port(self.remote_port),
-            netutils.validate_user_port(self.sniffer_port),
-            netutils.validate_user_port(self.proxy_port),
-        )
-
-    def to_option(self) -> Option:
-        return Option(
-            user_data_dir=self.user_data_dir,
-            window_left=self.window_left,
-            window_top=self.window_top,
-            viewport_height=self.viewport_height,
-            headless=self.headless,
-        )
 
 
 def get_command_line_args() -> ConfigInput:
