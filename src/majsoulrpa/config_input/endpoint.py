@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 from majsoulrpa import constants
 from majsoulrpa.config_input._common import _to_kebab
@@ -11,8 +11,8 @@ class Endpoint(BaseModel):
         serialize_by_alias=True,
     )
 
-    browser_address: str = Field(constants.DEFAULT_BROWSER_ADDRESS)
-    client_address: str = Field(constants.DEFAULT_CLIENT_ADDRESS)
-    remote_port: int = Field(constants.DEFAULT_REMOTE_PORT)
-    sniffer_port: int = Field(constants.DEFAULT_SNIFFER_PORT)
-    proxy_port: int = Field(constants.DEFAULT_PROXY_PORT)
+    browser_address: str = constants.DEFAULT_BROWSER_ADDRESS
+    client_address: str = constants.DEFAULT_CLIENT_ADDRESS
+    remote_port: int = constants.DEFAULT_REMOTE_PORT
+    sniffer_port: int = constants.DEFAULT_SNIFFER_PORT
+    proxy_port: int = constants.DEFAULT_PROXY_PORT

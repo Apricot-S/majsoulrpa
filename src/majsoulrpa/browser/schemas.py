@@ -25,27 +25,27 @@ class ResolutionRequest(BaseModel):
 
 class MoveMouseRequest(BaseModel):
     action: Literal[Action.MOVE_MOUSE] = Action.MOVE_MOUSE
-    x: float = Field(..., ge=0.0)
-    y: float = Field(..., ge=0.0)
+    x: Annotated[float, Field(..., ge=0.0)]
+    y: Annotated[float, Field(..., ge=0.0)]
 
 
 class ClickMouseRequest(BaseModel):
     action: Literal[Action.CLICK_MOUSE] = Action.CLICK_MOUSE
-    x: float = Field(..., ge=0.0)
-    y: float = Field(..., ge=0.0)
-    delay: float = Field(..., ge=0.0)
+    x: Annotated[float, Field(..., ge=0.0)]
+    y: Annotated[float, Field(..., ge=0.0)]
+    delay: Annotated[float, Field(..., ge=0.0)]
 
 
 class PressKeyRequest(BaseModel):
     action: Literal[Action.PRESS_KEY] = Action.PRESS_KEY
     key: str
-    delay: float = Field(..., ge=0.0)
+    delay: Annotated[float, Field(..., ge=0.0)]
 
 
 class TypeKeyRequest(BaseModel):
     action: Literal[Action.TYPE_KEY] = Action.TYPE_KEY
     text: str
-    delay: float = Field(..., ge=0.0)
+    delay: Annotated[float, Field(..., ge=0.0)]
 
 
 class ScreenshotRequest(BaseModel):
@@ -86,34 +86,34 @@ REQUEST_ADAPTER: TypeAdapter[Request] = TypeAdapter(Request)
 
 class ResolutionResponse(BaseModel):
     action: Literal[Action.RESOLUTION] = Action.RESOLUTION
-    width: int = Field(..., gt=0)
-    height: int = Field(..., gt=0)
-    scale: float = Field(..., gt=0.0)
+    width: Annotated[int, Field(..., gt=0)]
+    height: Annotated[int, Field(..., gt=0)]
+    scale: Annotated[float, Field(..., gt=0.0)]
 
 
 class MoveMouseResponse(BaseModel):
     action: Literal[Action.MOVE_MOUSE] = Action.MOVE_MOUSE
-    x: float = Field(..., ge=0.0)
-    y: float = Field(..., ge=0.0)
+    x: Annotated[float, Field(..., ge=0.0)]
+    y: Annotated[float, Field(..., ge=0.0)]
 
 
 class ClickMouseResponse(BaseModel):
     action: Literal[Action.CLICK_MOUSE] = Action.CLICK_MOUSE
-    x: float = Field(..., ge=0.0)
-    y: float = Field(..., ge=0.0)
-    delay: float = Field(..., ge=0.0)
+    x: Annotated[float, Field(..., ge=0.0)]
+    y: Annotated[float, Field(..., ge=0.0)]
+    delay: Annotated[float, Field(..., ge=0.0)]
 
 
 class PressKeyResponse(BaseModel):
     action: Literal[Action.PRESS_KEY] = Action.PRESS_KEY
     key: str
-    delay: float = Field(..., ge=0.0)
+    delay: Annotated[float, Field(..., ge=0.0)]
 
 
 class TypeKeyResponse(BaseModel):
     action: Literal[Action.TYPE_KEY] = Action.TYPE_KEY
     text: str
-    delay: float = Field(..., ge=0.0)
+    delay: Annotated[float, Field(..., ge=0.0)]
 
 
 class ScreenshotResponse(BaseModel):
