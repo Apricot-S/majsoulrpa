@@ -6,6 +6,7 @@ from majsoulrpa.browser.server.engine import Option as BrowserOption
 from majsoulrpa.config_input._common import _to_kebab
 from majsoulrpa.config_input.browser import Browser
 from majsoulrpa.config_input.endpoint import Endpoint
+from majsoulrpa.rpa_client import Config as ClientConfig
 
 
 class ConfigInput(BaseModel):
@@ -17,6 +18,13 @@ class ConfigInput(BaseModel):
 
     endpoint: Endpoint = Field(default_factory=Endpoint)
     browser: Browser = Field(default_factory=Browser)
+
+    def build_client_config(self) -> ClientConfig:
+        return ClientConfig(
+            netutils.parse_ip_address(self.endpoint.browser_address),
+            netutils.validate_user_port(self.endpoint.remote_port),
+            netutils.validate_user_port(self.endpoint.sniffer_port),
+        )
 
     def build_browser_config(self) -> BrowserConfig:
         return BrowserConfig(
