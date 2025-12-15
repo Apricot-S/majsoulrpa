@@ -63,9 +63,14 @@ def test_user_data_dir_from_dict(
     assert browser.user_data_dir == expected
 
 
-def test_snake_case_key_error() -> None:
-    with pytest.raises(ValidationError):
-        Browser.model_validate({"window_left": 0})
+def test_allow_snake_case_key() -> None:
+    browser = Browser.model_validate({"window_left": 1000})
+    assert browser.window_left == 1000
+
+
+def test_allow_arg() -> None:
+    browser = Browser(window_top=100)
+    assert browser.window_top == 100
 
 
 def test_window_left_type_error() -> None:

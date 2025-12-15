@@ -10,6 +10,7 @@ class Browser(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
         alias_generator=_to_kebab,
+        validate_by_name=True,
         serialize_by_alias=True,
     )
 

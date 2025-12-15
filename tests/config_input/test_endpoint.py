@@ -50,9 +50,14 @@ def test_proxy_port_from_dict(proxy_port: int) -> None:
     assert endpoint.proxy_port == proxy_port
 
 
-def test_snake_case_key_error() -> None:
-    with pytest.raises(ValidationError):
-        Endpoint.model_validate({"browser_address": "127.0.0.2"})
+def test_allow_snake_case_key() -> None:
+    endpoint = Endpoint.model_validate({"browser_address": "127.0.0.2"})
+    assert endpoint.browser_address == "127.0.0.2"
+
+
+def test_allow_arg() -> None:
+    endpoint = Endpoint(client_address="127.0.0.2")
+    assert endpoint.client_address == "127.0.0.2"
 
 
 def test_remote_port_type_error() -> None:
