@@ -1,0 +1,2 @@
+class CodeExtractor:
+    pass

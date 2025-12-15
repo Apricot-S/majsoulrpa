@@ -1,5 +1,5 @@
 from abc import ABC
 
 
-class ProviderBase(ABC):
+class EmailProviderBase(ABC):
     pass
