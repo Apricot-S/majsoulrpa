@@ -4,17 +4,32 @@ import asyncio
 import warnings
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from ipaddress import IPv4Address, IPv6Address
 from logging import getLogger
 from typing import Any
 
 from majsoulrpa import browser, constants, sniffer
-from majsoulrpa.netutils import parse_ip_address, validate_user_port
+from majsoulrpa.exceptions import UserInputError
+from majsoulrpa.netutils import UserPort, parse_ip_address, validate_user_port
 from majsoulrpa.presentation.base import Presentation
 from majsoulrpa.presentation.exceptions import PresentationTimeoutError
 
 logger = getLogger(__name__)
 
 type Callback[P: Presentation] = Callable[[P, Any], Awaitable[Any]]
+
+
+@dataclass(frozen=True)
+class Config:
+    browser_address: IPv4Address | IPv6Address
+    remote_port: UserPort
+    sniffer_port: UserPort
+
+    def __post_init__(self) -> None:
+        ports = [self.remote_port, self.sniffer_port]
+        if len(set(ports)) != len(ports):
+            msg = "port number conflict"
+            raise UserInputError(msg)
 
 
 class RPAClient:
