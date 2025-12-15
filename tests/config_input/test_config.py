@@ -1,6 +1,8 @@
 from copy import deepcopy
 
-from majsoulrpa import constants
+from majsoulrpa import constants, netutils
+from majsoulrpa.browser.server import Config as BrowserConfig
+from majsoulrpa.browser.server.engine import Option as BrowserOption
 from majsoulrpa.config_input.browser import Browser
 from majsoulrpa.config_input.config import ConfigInput
 from majsoulrpa.config_input.endpoint import Endpoint
@@ -77,3 +79,24 @@ def test_ignore_extra() -> None:
     actual = ConfigInput().model_validate(input_dict).model_dump()
 
     assert actual == expected
+
+
+def test_build_browser_config() -> None:
+    expected = BrowserConfig(
+        netutils.parse_ip_address(constants.DEFAULT_CLIENT_ADDRESS),
+        netutils.validate_user_port(constants.DEFAULT_REMOTE_PORT),
+        netutils.validate_user_port(constants.DEFAULT_SNIFFER_PORT),
+        netutils.validate_user_port(constants.DEFAULT_PROXY_PORT),
+    )
+    assert ConfigInput().build_browser_config() == expected
+
+
+def test_build_browser_option() -> None:
+    expected = BrowserOption(
+        None,
+        0,
+        0,
+        constants.DEFAULT_VIEWPORT_HEIGHT,
+        headless=False,
+    )
+    assert ConfigInput().build_browser_option() == expected
