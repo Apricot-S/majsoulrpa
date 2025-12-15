@@ -16,7 +16,7 @@ from majsoulrpa.config_input.endpoint import Endpoint
     ],
 )
 def test_defaults(field: str, expected: object) -> None:
-    endpoint = Endpoint.model_validate({})
+    endpoint = Endpoint()
     assert getattr(endpoint, field) == expected
 
 

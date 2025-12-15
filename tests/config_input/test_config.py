@@ -19,5 +19,5 @@ def test_defaults_to_dict() -> None:
             "user-data-dir": None,
         },
     }
-    actual = ConfigInput.model_validate({}).model_dump()
+    actual = ConfigInput().model_dump()
     assert actual == expected

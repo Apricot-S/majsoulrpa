@@ -18,7 +18,7 @@ from majsoulrpa.config_input.browser import Browser
     ],
 )
 def test_defaults(field: str, expected: object) -> None:
-    browser = Browser.model_validate({})
+    browser = Browser()
     assert getattr(browser, field) == expected
 
 
