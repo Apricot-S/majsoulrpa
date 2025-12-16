@@ -129,3 +129,17 @@ def test_old_mail_returns_obsolete(monkeypatch: pytest.MonkeyPatch) -> None:
     classifier = EmailClassifier()
     result = classifier.classify(mail)
     assert result == ClassificationResult.OBSOLETE
+
+
+def test_mail_within_expiration_returns_valid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixed_now = datetime.datetime(2025, 12, 16, 14, 0, tzinfo=datetime.UTC)
+    datetime_mock = MagicMock(wraps=datetime.datetime)
+    datetime_mock.now.return_value = fixed_now
+    monkeypatch.setattr(datetime, "datetime", datetime_mock)
+
+    mail = make_mail(date="Tue, 16 Dec 2025 13:30:00 +0000")
+    classifier = EmailClassifier()
+    result = classifier.classify(mail)
+    assert result == ClassificationResult.VALID

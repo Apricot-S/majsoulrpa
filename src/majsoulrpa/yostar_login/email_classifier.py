@@ -51,4 +51,8 @@ class EmailClassifier(EmailClassifierBase):
         except ValueError:
             return ClassificationResult.UNRELATED
 
-        return ClassificationResult.OBSOLETE
+        now = datetime.datetime.now(tz=datetime.UTC)
+        if date < (now - self._expiration):
+            return ClassificationResult.OBSOLETE
+
+        return ClassificationResult.VALID
