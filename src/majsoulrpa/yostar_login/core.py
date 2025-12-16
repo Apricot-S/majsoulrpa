@@ -45,8 +45,8 @@ class YostarLogin:
         cleanup: bool = False,
     ) -> str | None:
         valid_candidates, deletion_targets = await self._collect_candidates(
-            sent_at,
             to,
+            sent_at,
         )
 
         if valid_candidates:
@@ -65,8 +65,8 @@ class YostarLogin:
 
     async def _collect_candidates(
         self,
-        sent_at: datetime,
         to: str,
+        sent_at: datetime,
     ) -> tuple[dict[str, EmailMessage], dict[str, EmailMessage]]:
         valid_candidates: dict[str, EmailMessage] = {}
         deletion_targets: dict[str, EmailMessage] = {}
