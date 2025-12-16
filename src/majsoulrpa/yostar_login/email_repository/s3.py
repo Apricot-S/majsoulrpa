@@ -20,7 +20,7 @@ class S3EmailRepository(EmailRepositoryBase):
 
     @override
     def __aiter__(self) -> Self:
-        raise NotImplementedError
+        return self
 
     @override
     async def __anext__(self) -> tuple[str, EmailMessage]:
@@ -28,4 +28,4 @@ class S3EmailRepository(EmailRepositoryBase):
 
     @override
     async def delete_message(self, key: str) -> None:
-        raise NotImplementedError
+        self._s3_bucket.delete_objects(Delete={"Objects": [{"Key": key}]})
