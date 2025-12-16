@@ -51,6 +51,7 @@ dev = [
     { include-group = "test" },
     { include-group = "typing" },
     { include-group = "docs" },
+    { include-group = "email-s3" },
 ]
 lint = [
     "ruff>=0.14.6,<0.15",
@@ -66,6 +67,9 @@ typing = [
 docs = [
     "sphinx>=8.2.3",
     "sphinx-rtd-theme>=3.0.2",
+]
+email-s3 = [
+    "majsoulrpa[email-s3]",
 ]
 
 [tool.pytest]
