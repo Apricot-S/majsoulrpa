@@ -1,3 +1,4 @@
+import datetime
 from abc import ABC, abstractmethod
 from email.message import EmailMessage
 from email.utils import parsedate_to_datetime
@@ -6,6 +7,7 @@ from typing import override
 
 YOSTAR_EMAIL_ADDRESS = "info@passport.yostar.co.jp"  # JP version
 YOSTAR_EMAIL_SUBJECT = "Eメールアドレスの確認"  # JP version
+DEFAULT_EXPIRATION_MINUTES = datetime.timedelta(minutes=30)
 
 
 class ClassificationResult(Enum):
@@ -16,7 +18,7 @@ class ClassificationResult(Enum):
 
 class EmailClassifierBase(ABC):
     @abstractmethod
-    def classify(self, mail: EmailMessage) -> ClassificationResult:
+    def classify(self, mail: EmailMessage, to: str) -> ClassificationResult:
         pass
 
 
@@ -25,12 +27,18 @@ class EmailClassifier(EmailClassifierBase):
         self,
         sender: str = YOSTAR_EMAIL_ADDRESS,
         subject: str = YOSTAR_EMAIL_SUBJECT,
+        expiration_minutes: datetime.timedelta = DEFAULT_EXPIRATION_MINUTES,
     ) -> None:
         self._sender = sender
         self._subject = subject
+        self._expiration_minutes = expiration_minutes
 
     @override
-    def classify(self, mail: EmailMessage) -> ClassificationResult:
+    def classify(self, mail: EmailMessage, to: str) -> ClassificationResult:
+        recipient = mail.get("To")
+        if recipient is None or recipient != to:
+            return ClassificationResult.UNRELATED
+
         sender = mail.get("From")
         if sender is None or sender != self._sender:
             return ClassificationResult.UNRELATED
