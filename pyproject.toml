@@ -61,7 +61,6 @@ test = [
 ]
 typing = [
     "mypy>=1.18.2,<2",
-    "types-aioboto3[s3]>=15.5.0",
     "types-protobuf>=6.32.1.20251105",
 ]
 docs = [
@@ -70,6 +69,7 @@ docs = [
 ]
 email-s3 = [
     "majsoulrpa[email-s3]",
+    "types-aioboto3[s3]>=15.5.0",
 ]
 
 [tool.pytest]
