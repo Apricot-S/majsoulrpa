@@ -13,9 +13,8 @@ class S3EmailRepository(EmailRepositoryBase):
         key_prefix: str,
         aws_profile: str | None,
     ) -> None:
-        session = aioboto3.Session(profile_name=aws_profile)
-        s3_client = session.resource("s3")
-        self._s3_bucket = s3_client.Bucket(bucket_name)
+        self._session = aioboto3.Session(profile_name=aws_profile)
+        self._bucket_name = bucket_name
         self._key_prefix = key_prefix
 
     @override
@@ -28,4 +27,5 @@ class S3EmailRepository(EmailRepositoryBase):
 
     @override
     async def delete_message(self, key: str) -> None:
-        self._s3_bucket.delete_objects(Delete={"Objects": [{"Key": key}]})
+        async with self._session.client("s3") as s3_client:
+            await s3_client.delete_object(Bucket=self._bucket_name, Key=key)
