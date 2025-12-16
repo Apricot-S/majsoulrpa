@@ -62,7 +62,7 @@ async def main() -> None:
 
     config_input = ConfigInput.model_validate(config_dict["majsoulrpa"])
     client_config = config_input.build_client_config()
-    yostar_login_config = [0]  # TODO: 正式な取得処理に変える
+    yostar_login_config = config_input.build_yostar_login_config()
 
     await rpa.run(client_config, yostar_login_config)
 

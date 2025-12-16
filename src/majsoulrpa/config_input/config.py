@@ -6,7 +6,9 @@ from majsoulrpa.browser.server.engine import Option as BrowserOption
 from majsoulrpa.config_input._common import _to_kebab
 from majsoulrpa.config_input.browser import Browser
 from majsoulrpa.config_input.endpoint import Endpoint
+from majsoulrpa.config_input.yostar_login import YostarLogin
 from majsoulrpa.rpa_client import Config as ClientConfig
+from majsoulrpa.yostar_login import Config as YostarLoginConfig
 
 
 class ConfigInput(BaseModel):
@@ -18,6 +20,7 @@ class ConfigInput(BaseModel):
 
     endpoint: Endpoint = Field(default_factory=Endpoint)
     browser: Browser = Field(default_factory=Browser)
+    yostar_login: YostarLogin = Field(default_factory=YostarLogin)
 
     def build_client_config(self) -> ClientConfig:
         return ClientConfig(
@@ -42,3 +45,6 @@ class ConfigInput(BaseModel):
             self.browser.viewport_height,
             self.browser.headless,
         )
+
+    def build_yostar_login_config(self) -> YostarLoginConfig:
+        raise NotImplementedError
