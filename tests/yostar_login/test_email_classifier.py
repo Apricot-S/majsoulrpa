@@ -14,8 +14,9 @@ _YOSTAR_EMAIL_SUBJECT = "Eメールアドレスの確認"
 
 
 def make_mail(
-    sender: str | None,
-    subject: str | None,
+    *,
+    sender: str | None = _YOSTAR_EMAIL_ADDRESS,
+    subject: str | None = _YOSTAR_EMAIL_SUBJECT,
     date: str | None = None,
 ) -> EmailMessage:
     msg = EmailMessage()
@@ -27,31 +28,37 @@ def make_mail(
 
 
 def test_unrelated_from_mail_returns_unrelated() -> None:
-    mail = make_mail("someone@example.com", _YOSTAR_EMAIL_SUBJECT)
+    mail = make_mail(sender="someone@example.com")
     classifier = EmailClassifier()
     assert classifier.classify(mail) == ClassificationResult.UNRELATED
 
 
 def test_unrelated_subject_mail_returns_unrelated() -> None:
-    mail = make_mail(_YOSTAR_EMAIL_ADDRESS, "Hello World")
+    mail = make_mail(subject="Hello World")
     classifier = EmailClassifier()
     assert classifier.classify(mail) == ClassificationResult.UNRELATED
 
 
 def test_mail_without_from_returns_unrelated() -> None:
-    mail = make_mail(None, _YOSTAR_EMAIL_SUBJECT)
+    mail = make_mail(sender=None)
     classifier = EmailClassifier()
     assert classifier.classify(mail) == ClassificationResult.UNRELATED
 
 
 def test_mail_without_subject_returns_unrelated() -> None:
-    mail = make_mail(_YOSTAR_EMAIL_ADDRESS, None)
+    mail = make_mail(subject=None)
     classifier = EmailClassifier()
     assert classifier.classify(mail) == ClassificationResult.UNRELATED
 
 
 def test_mail_without_date_returns_unrelated() -> None:
-    mail = make_mail(_YOSTAR_EMAIL_ADDRESS, _YOSTAR_EMAIL_SUBJECT, None)
+    mail = make_mail(date=None)
+    classifier = EmailClassifier()
+    assert classifier.classify(mail) == ClassificationResult.UNRELATED
+
+
+def test_mail_with_invalid_date_returns_unrelated() -> None:
+    mail = make_mail(date="not-a-date")
     classifier = EmailClassifier()
     assert classifier.classify(mail) == ClassificationResult.UNRELATED
 
@@ -63,10 +70,6 @@ def test_old_mail_returns_obsolete(monkeypatch: pytest.MonkeyPatch) -> None:
     datetime_mock.now.return_value = fixed_now
     monkeypatch.setattr(datetime, "datetime", datetime_mock)
 
-    mail = make_mail(
-        _YOSTAR_EMAIL_ADDRESS,
-        _YOSTAR_EMAIL_SUBJECT,
-        "Tue, 16 Dec 2025 13:29:59 +0000",
-    )
+    mail = make_mail(date="Tue, 16 Dec 2025 13:29:59 +0000")
     classifier = EmailClassifier()
     assert classifier.classify(mail) == ClassificationResult.OBSOLETE

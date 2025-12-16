@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from email.message import EmailMessage
+from email.utils import parsedate_to_datetime
 from enum import Enum, auto
 from typing import override
 
@@ -38,8 +39,12 @@ class EmailClassifier(EmailClassifierBase):
         if subject is None or subject != self._subject:
             return ClassificationResult.UNRELATED
 
-        date = mail.get("Date")
-        if date is None:
+        raw_date = mail.get("Date")
+        if raw_date is None:
+            return ClassificationResult.UNRELATED
+        try:
+            date = parsedate_to_datetime(raw_date)
+        except ValueError:
             return ClassificationResult.UNRELATED
 
         return ClassificationResult.OBSOLETE
