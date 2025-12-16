@@ -18,7 +18,7 @@ class ClassificationResult(Enum):
 
 class EmailClassifierBase(ABC):
     @abstractmethod
-    def classify(self, mail: EmailMessage, to: str) -> ClassificationResult:
+    def classify(self, mail: EmailMessage) -> ClassificationResult:
         pass
 
 
@@ -34,11 +34,7 @@ class EmailClassifier(EmailClassifierBase):
         self._expiration = expiration
 
     @override
-    def classify(self, mail: EmailMessage, to: str) -> ClassificationResult:
-        recipient = mail.get("To")
-        if recipient is None or recipient != to:
-            return ClassificationResult.UNRELATED
-
+    def classify(self, mail: EmailMessage) -> ClassificationResult:
         sender = mail.get("From")
         if sender is None or sender != self._sender:
             return ClassificationResult.UNRELATED
