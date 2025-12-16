@@ -1,5 +1,8 @@
+import email.policy
+from collections.abc import AsyncIterator
 from email.message import EmailMessage
-from typing import Self, override
+from email.parser import BytesParser
+from typing import override
 
 import aioboto3
 
@@ -18,12 +21,24 @@ class S3EmailRepository(EmailRepositoryBase):
         self._key_prefix = key_prefix
 
     @override
-    def __aiter__(self) -> Self:
-        return self
+    async def iter_messages(self) -> AsyncIterator[tuple[str, EmailMessage]]:
+        parser = BytesParser(policy=email.policy.SMTP)
 
-    @override
-    async def __anext__(self) -> tuple[str, EmailMessage]:
-        raise NotImplementedError
+        async with self._session.client("s3") as s3_client:
+            resp = await s3_client.list_objects_v2(
+                Bucket=self._bucket_name,
+                Prefix=self._key_prefix,
+            )
+
+            for obj in resp.get("Contents", []):
+                key = obj["Key"]  # pyright: ignore[reportTypedDictNotRequiredAccess]
+                resp_obj = await s3_client.get_object(
+                    Bucket=self._bucket_name,
+                    Key=key,
+                )
+                body = await resp_obj["Body"].read()
+                message = parser.parsebytes(body)
+                yield key, message
 
     @override
     async def delete_message(self, key: str) -> None:

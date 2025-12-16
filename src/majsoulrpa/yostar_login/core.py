@@ -71,7 +71,7 @@ class YostarLogin:
         valid_candidates: dict[str, EmailMessage] = {}
         deletion_targets: dict[str, EmailMessage] = {}
 
-        async for key, message in self._repository:
+        async for key, message in self._repository.iter_messages():
             recipient = message.get("To")
             if recipient is None or recipient != to:
                 continue
