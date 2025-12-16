@@ -7,7 +7,7 @@ from typing import override
 
 YOSTAR_EMAIL_ADDRESS = "info@passport.yostar.co.jp"  # JP version
 YOSTAR_EMAIL_SUBJECT = "Eメールアドレスの確認"  # JP version
-DEFAULT_EXPIRATION_MINUTES = datetime.timedelta(minutes=30)
+DEFAULT_EXPIRATION = datetime.timedelta(minutes=30)
 
 
 class ClassificationResult(Enum):
@@ -27,11 +27,11 @@ class EmailClassifier(EmailClassifierBase):
         self,
         sender: str = YOSTAR_EMAIL_ADDRESS,
         subject: str = YOSTAR_EMAIL_SUBJECT,
-        expiration_minutes: datetime.timedelta = DEFAULT_EXPIRATION_MINUTES,
+        expiration: datetime.timedelta = DEFAULT_EXPIRATION,
     ) -> None:
         self._sender = sender
         self._subject = subject
-        self._expiration_minutes = expiration_minutes
+        self._expiration = expiration
 
     @override
     def classify(self, mail: EmailMessage, to: str) -> ClassificationResult:
