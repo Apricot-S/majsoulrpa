@@ -38,7 +38,7 @@ class EmailClassifier(EmailClassifierBase):
         if subject is None or subject != self._subject:
             return ClassificationResult.UNRELATED
 
-        date = mail["Date"]
+        date = mail.get("Date")
         if date is None:
             return ClassificationResult.UNRELATED
 
