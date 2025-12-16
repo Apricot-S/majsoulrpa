@@ -13,7 +13,7 @@ between HTML tags (e.g., `<span style=3D"">123456</span>`).
 
 class CodeExtractorBase(ABC):
     @abstractmethod
-    def extract_code(self, email_message: EmailMessage) -> str | None:
+    def extract_code(self, mail: EmailMessage) -> str | None:
         pass
 
 
@@ -28,8 +28,8 @@ class CodeExtractor(CodeExtractorBase):
             self._pattern = pattern
 
     @override
-    def extract_code(self, email_message: EmailMessage) -> str | None:
-        body_part = email_message.get_body()
+    def extract_code(self, mail: EmailMessage) -> str | None:
+        body_part = mail.get_body()
         if body_part is None:
             return None
 
