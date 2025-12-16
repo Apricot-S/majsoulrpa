@@ -1,7 +1,7 @@
 from email.message import EmailMessage
 from typing import Self, override
 
-import boto3
+import aioboto3
 
 from majsoulrpa.yostar_login.email_repository.base import EmailRepositoryBase
 
@@ -13,7 +13,7 @@ class S3EmailRepository(EmailRepositoryBase):
         key_prefix: str,
         aws_profile: str | None,
     ) -> None:
-        session = boto3.Session(profile_name=aws_profile)
+        session = aioboto3.Session(profile_name=aws_profile)
         s3_client = session.resource("s3")
         self._s3_bucket = s3_client.Bucket(bucket_name)
         self._key_prefix = key_prefix
