@@ -46,10 +46,11 @@ headless = false
 # User data directory. If not specified, incognito mode is used.
 user-data-dir = "./user-data"
 
-[majsoulrpa.yostar-login.s3]
+[majsoulrpa.yostar-login]
 # Email address where verification emails are sent.
 email-address = "your-email@example.com"
 
+[majsoulrpa.yostar-login.s3]
 # Name of the S3 bucket storing verification emails.
 bucket-name = "your-bucket"
 
