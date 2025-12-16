@@ -7,18 +7,14 @@ from typing import override
 import aioboto3
 
 from majsoulrpa.yostar_login.email_repository.base import EmailRepositoryBase
+from majsoulrpa.yostar_login.email_repository.config import S3Config
 
 
 class S3EmailRepository(EmailRepositoryBase):
-    def __init__(
-        self,
-        bucket_name: str,
-        key_prefix: str,
-        aws_profile: str | None,
-    ) -> None:
-        self._session = aioboto3.Session(profile_name=aws_profile)
-        self._bucket_name = bucket_name
-        self._key_prefix = key_prefix
+    def __init__(self, config: S3Config) -> None:
+        self._session = aioboto3.Session(profile_name=config.aws_profile)
+        self._bucket_name = config.bucket_name
+        self._key_prefix = config.key_prefix
 
     @override
     async def iter_messages(self) -> AsyncIterator[tuple[str, EmailMessage]]:
