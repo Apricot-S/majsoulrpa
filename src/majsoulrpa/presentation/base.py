@@ -13,8 +13,10 @@ from majsoulrpa.presentation.region import (
     get_random_point_in_region,
 )
 
-DEFAULT_CLICK_BASE_DELAY = 120  # millisecond
+DEFAULT_CLICK_BASE_DELAY = 120  # milliseconds
 DEFAULT_CLICK_DELAY_SIGMA = 0.2
+
+DEFAULT_WAIT_INTERVAL = 0.5  # seconds
 
 
 class Presentation(ABC):
@@ -158,7 +160,7 @@ class Presentation(ABC):
     async def _wait_until_match(
         self,
         matcher: template.MatcherBase,
-        interval: float = 0.5,
+        interval: float = DEFAULT_WAIT_INTERVAL,
     ) -> None:
         while True:
             if await self._has_match(matcher):
@@ -168,7 +170,7 @@ class Presentation(ABC):
     async def _wait_until_match_one_of(
         self,
         matchers: Iterable[template.MatcherBase],
-        interval: float = 0.5,
+        interval: float = DEFAULT_WAIT_INTERVAL,
     ) -> None:
         while True:
             if await self._has_match_one_of(matchers):
@@ -221,7 +223,7 @@ class Presentation(ABC):
         edge_sigma: float = DEFAULT_EDGE_SIGMA,
         base_delay: float = DEFAULT_CLICK_BASE_DELAY,
         delay_sigma: float = DEFAULT_CLICK_DELAY_SIGMA,
-        interval: float = 0.5,
+        interval: float = DEFAULT_WAIT_INTERVAL,
     ) -> None:
         while True:
             screen = await self.get_screenshot()
@@ -244,7 +246,7 @@ class Presentation(ABC):
         edge_sigma: float = DEFAULT_EDGE_SIGMA,
         base_delay: float = DEFAULT_CLICK_BASE_DELAY,
         delay_sigma: float = DEFAULT_CLICK_DELAY_SIGMA,
-        interval: float = 0.5,
+        interval: float = DEFAULT_WAIT_INTERVAL,
     ) -> None:
         while True:
             screen = await self.get_screenshot()
