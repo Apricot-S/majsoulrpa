@@ -48,6 +48,7 @@ class YostarLogin:
         retry_interval: float = 5.0,
         cleanup: bool = False,
     ) -> str | None:
+        sent_at = sent_at.astimezone(UTC)
         deadline = sent_at + self._classifier.expiration
 
         code: str | None = None
