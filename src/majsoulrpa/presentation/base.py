@@ -13,6 +13,8 @@ from majsoulrpa.presentation.region import (
     get_random_point_in_region,
 )
 
+DEFAULT_CLICK_DELAY_SIGMA = 0.1
+
 
 class Presentation(ABC):
     _templates: ClassVar[dict[str, template.MatcherBase]] = {}
@@ -115,7 +117,7 @@ class Presentation(ABC):
         scaled_region: Region,
         edge_sigma: float = DEFAULT_EDGE_SIGMA,
         base_delay: float = 100,
-        delay_sigma: float = 0.1,
+        delay_sigma: float = DEFAULT_CLICK_DELAY_SIGMA,
     ) -> None:
         x, y = get_random_point_in_region(scaled_region, edge_sigma)
         d = get_random_delay(base_delay, delay_sigma)
@@ -126,7 +128,7 @@ class Presentation(ABC):
         region: Region,
         edge_sigma: float = DEFAULT_EDGE_SIGMA,
         base_delay: float = 100,
-        delay_sigma: float = 0.1,
+        delay_sigma: float = DEFAULT_CLICK_DELAY_SIGMA,
     ) -> None:
         scaled = region.scale(self._scale)
         await self.__click_scaled_region(
@@ -177,7 +179,7 @@ class Presentation(ABC):
         matcher: template.MatcherBase,
         edge_sigma: float = DEFAULT_EDGE_SIGMA,
         base_delay: float = 100,
-        delay_sigma: float = 0.1,
+        delay_sigma: float = DEFAULT_CLICK_DELAY_SIGMA,
     ) -> bool:
         screen = await self.get_screenshot()
         region = matcher.match(screen, self._scale)
@@ -197,7 +199,7 @@ class Presentation(ABC):
         matchers: Iterable[template.MatcherBase],
         edge_sigma: float = DEFAULT_EDGE_SIGMA,
         base_delay: float = 100,
-        delay_sigma: float = 0.1,
+        delay_sigma: float = DEFAULT_CLICK_DELAY_SIGMA,
     ) -> bool:
         screen = await self.get_screenshot()
         for matcher in matchers:
@@ -217,7 +219,7 @@ class Presentation(ABC):
         matcher: template.MatcherBase,
         edge_sigma: float = DEFAULT_EDGE_SIGMA,
         base_delay: float = 100,
-        delay_sigma: float = 0.1,
+        delay_sigma: float = DEFAULT_CLICK_DELAY_SIGMA,
         interval: float = 0.5,
     ) -> None:
         while True:
@@ -240,7 +242,7 @@ class Presentation(ABC):
         matchers: Iterable[template.MatcherBase],
         edge_sigma: float = DEFAULT_EDGE_SIGMA,
         base_delay: float = 100,
-        delay_sigma: float = 0.1,
+        delay_sigma: float = DEFAULT_CLICK_DELAY_SIGMA,
         interval: float = 0.5,
     ) -> None:
         while True:
