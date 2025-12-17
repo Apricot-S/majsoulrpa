@@ -13,6 +13,7 @@ from majsoulrpa.presentation.region import (
     get_random_point_in_region,
 )
 
+DEFAULT_CLICK_BASE_DELAY = 100  # millisecond
 DEFAULT_CLICK_DELAY_SIGMA = 0.1
 
 
@@ -116,7 +117,7 @@ class Presentation(ABC):
         self,
         scaled_region: Region,
         edge_sigma: float = DEFAULT_EDGE_SIGMA,
-        base_delay: float = 100,
+        base_delay: float = DEFAULT_CLICK_BASE_DELAY,
         delay_sigma: float = DEFAULT_CLICK_DELAY_SIGMA,
     ) -> None:
         x, y = get_random_point_in_region(scaled_region, edge_sigma)
@@ -127,7 +128,7 @@ class Presentation(ABC):
         self,
         region: Region,
         edge_sigma: float = DEFAULT_EDGE_SIGMA,
-        base_delay: float = 100,
+        base_delay: float = DEFAULT_CLICK_BASE_DELAY,
         delay_sigma: float = DEFAULT_CLICK_DELAY_SIGMA,
     ) -> None:
         scaled = region.scale(self._scale)
@@ -178,7 +179,7 @@ class Presentation(ABC):
         self,
         matcher: template.MatcherBase,
         edge_sigma: float = DEFAULT_EDGE_SIGMA,
-        base_delay: float = 100,
+        base_delay: float = DEFAULT_CLICK_BASE_DELAY,
         delay_sigma: float = DEFAULT_CLICK_DELAY_SIGMA,
     ) -> bool:
         screen = await self.get_screenshot()
@@ -198,7 +199,7 @@ class Presentation(ABC):
         self,
         matchers: Iterable[template.MatcherBase],
         edge_sigma: float = DEFAULT_EDGE_SIGMA,
-        base_delay: float = 100,
+        base_delay: float = DEFAULT_CLICK_BASE_DELAY,
         delay_sigma: float = DEFAULT_CLICK_DELAY_SIGMA,
     ) -> bool:
         screen = await self.get_screenshot()
@@ -218,7 +219,7 @@ class Presentation(ABC):
         self,
         matcher: template.MatcherBase,
         edge_sigma: float = DEFAULT_EDGE_SIGMA,
-        base_delay: float = 100,
+        base_delay: float = DEFAULT_CLICK_BASE_DELAY,
         delay_sigma: float = DEFAULT_CLICK_DELAY_SIGMA,
         interval: float = 0.5,
     ) -> None:
@@ -241,7 +242,7 @@ class Presentation(ABC):
         self,
         matchers: Iterable[template.MatcherBase],
         edge_sigma: float = DEFAULT_EDGE_SIGMA,
-        base_delay: float = 100,
+        base_delay: float = DEFAULT_CLICK_BASE_DELAY,
         delay_sigma: float = DEFAULT_CLICK_DELAY_SIGMA,
         interval: float = 0.5,
     ) -> None:
