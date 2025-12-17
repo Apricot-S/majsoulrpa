@@ -6,7 +6,11 @@ from majsoulrpa.browser.server.engine import Option as BrowserOption
 from majsoulrpa.config_input.browser import Browser
 from majsoulrpa.config_input.config import ConfigInput
 from majsoulrpa.config_input.endpoint import Endpoint
+from majsoulrpa.config_input.yostar_login import YostarLogin
+from majsoulrpa.config_input.yostar_login.s3 import S3
 from majsoulrpa.rpa_client import Config as ClientConfig
+from majsoulrpa.yostar_login import Config as YostarLoginConfig
+from majsoulrpa.yostar_login.config import S3Config
 
 
 def test_defaults_to_dict() -> None:
@@ -25,6 +29,10 @@ def test_defaults_to_dict() -> None:
             "headless": False,
             "user-data-dir": None,
         },
+        "yostar-login": {
+            "email-address": None,
+            "s3": None,
+        },
     }
     assert ConfigInput().model_dump() == expected
 
@@ -33,6 +41,7 @@ def test_from_init() -> None:
     actual = ConfigInput(
         endpoint=Endpoint(proxy_port=8081),
         browser=Browser(headless=True),
+        yostar_login=YostarLogin(email_address="majsoulrpa@example.com"),
     )
 
     expected = ConfigInput.model_validate(
@@ -50,6 +59,10 @@ def test_from_init() -> None:
                 "viewport-height": constants.DEFAULT_VIEWPORT_HEIGHT,
                 "headless": True,
                 "user-data-dir": None,
+            },
+            "yostar-login": {
+                "email-address": "majsoulrpa@example.com",
+                "s3": None,
             },
         },
     )
@@ -72,6 +85,10 @@ def test_ignore_extra() -> None:
             "viewport-height": constants.DEFAULT_VIEWPORT_HEIGHT,
             "headless": False,
             "user-data-dir": None,
+        },
+        "yostar-login": {
+            "email-address": None,
+            "s3": None,
         },
     }
 
@@ -145,4 +162,32 @@ def test_build_browser_option_custom() -> None:
     ).build_browser_option()
 
     expected = BrowserOption(None, 0, 0, 720, headless=False)
+    assert actual == expected
+
+
+def test_build_yostar_login_config_none() -> None:
+    actual = ConfigInput(
+        yostar_login=YostarLogin(email_address=None, s3=None),
+    ).build_yostar_login_config()
+
+    expected = YostarLoginConfig(email_address=None, s3=None)
+    assert actual == expected
+
+
+def test_build_yostar_login_config_custom() -> None:
+    actual = ConfigInput(
+        yostar_login=YostarLogin(
+            email_address="majsoulrpa@example.com",
+            s3=S3(bucket_name="my-bucket", key_prefix="logs/"),
+        ),
+    ).build_yostar_login_config()
+
+    expected = YostarLoginConfig(
+        email_address="majsoulrpa@example.com",
+        s3=S3Config(
+            bucket_name="my-bucket",
+            key_prefix="logs/",
+            aws_profile=None,
+        ),
+    )
     assert actual == expected

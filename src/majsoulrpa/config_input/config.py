@@ -6,7 +6,10 @@ from majsoulrpa.browser.server.engine import Option as BrowserOption
 from majsoulrpa.config_input._common import _to_kebab
 from majsoulrpa.config_input.browser import Browser
 from majsoulrpa.config_input.endpoint import Endpoint
+from majsoulrpa.config_input.yostar_login import YostarLogin
 from majsoulrpa.rpa_client import Config as ClientConfig
+from majsoulrpa.yostar_login import Config as YostarLoginConfig
+from majsoulrpa.yostar_login.config import S3Config
 
 
 class ConfigInput(BaseModel):
@@ -18,6 +21,7 @@ class ConfigInput(BaseModel):
 
     endpoint: Endpoint = Field(default_factory=Endpoint)
     browser: Browser = Field(default_factory=Browser)
+    yostar_login: YostarLogin = Field(default_factory=YostarLogin)
 
     def build_client_config(self) -> ClientConfig:
         return ClientConfig(
@@ -42,3 +46,15 @@ class ConfigInput(BaseModel):
             self.browser.viewport_height,
             self.browser.headless,
         )
+
+    def build_yostar_login_config(self) -> YostarLoginConfig:
+        if self.yostar_login.s3 is None:
+            s3 = None
+        else:
+            s3 = S3Config(
+                self.yostar_login.s3.bucket_name,
+                self.yostar_login.s3.key_prefix,
+                self.yostar_login.s3.aws_profile,
+            )
+
+        return YostarLoginConfig(self.yostar_login.email_address, s3)

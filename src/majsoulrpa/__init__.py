@@ -16,4 +16,5 @@ __all__ = [
 __all__ += [
     "exceptions",  # type: ignore[reportUnsupportedDunderAll]
     "presentation",  # type: ignore[reportUnsupportedDunderAll]
+    "yostar_login",  # type: ignore[reportUnsupportedDunderAll]
 ]
