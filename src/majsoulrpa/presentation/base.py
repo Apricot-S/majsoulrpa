@@ -98,8 +98,8 @@ class Presentation(ABC):
     async def _type_key(
         self,
         text: str,
-        base_delay: float = 100,
-        delay_sigma: float = 0.1,
+        base_delay: float = 150,
+        delay_sigma: float = 0.2,
     ) -> None:
         d = get_random_delay(base_delay, delay_sigma)
         await self._driver.type_key(text, d)
