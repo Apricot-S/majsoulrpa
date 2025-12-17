@@ -4,6 +4,7 @@ from datetime import datetime
 from email.message import EmailMessage
 from email.utils import parsedate_to_datetime
 from itertools import chain
+from logging import getLogger
 from typing import assert_never
 
 from majsoulrpa.yostar_login.code_extractor import (
@@ -16,6 +17,8 @@ from majsoulrpa.yostar_login.email_classifier import (
     EmailClassifierBase,
 )
 from majsoulrpa.yostar_login.email_repository import EmailRepositoryBase
+
+logger = getLogger(__name__)
 
 
 class YostarLogin:
@@ -61,6 +64,11 @@ class YostarLogin:
             self._background_tasks.add(task)
             task.add_done_callback(self._background_tasks.discard)
 
+        if code is None:
+            logger.warning("Failed to fetch verification code.")
+            return None
+
+        logger.debug("Fetched verification code: %s", code)
         return code
 
     async def _collect_candidates(
