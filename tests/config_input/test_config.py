@@ -118,7 +118,7 @@ def test_ignore_extra() -> None:
 
     input_dict = deepcopy(expected)
     input_dict["extra"] = {"extra1": 1}
-    actual = ConfigInput().model_validate(input_dict).model_dump()
+    actual = ConfigInput.model_validate(input_dict).model_dump()
 
     assert actual == expected
 
