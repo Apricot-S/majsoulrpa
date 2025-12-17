@@ -150,7 +150,7 @@ async def _handle_log(
     req: schemas.LogRequest,
 ) -> schemas.LogResponse:
     await page.goto(f"{url}{LOG_QUERY_PARAM}{req.log_id}")
-    return schemas.LogResponse()
+    return schemas.LogResponse(log_id=req.log_id)
 
 
 async def _handle_reload(page: Page) -> schemas.ReloadResponse:

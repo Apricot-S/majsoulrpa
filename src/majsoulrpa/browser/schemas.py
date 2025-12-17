@@ -123,6 +123,7 @@ class ScreenshotResponse(BaseModel):
 
 class LogResponse(BaseModel):
     action: Literal[Action.LOG] = Action.LOG
+    log_id: str
 
 
 class ReloadResponse(BaseModel):
