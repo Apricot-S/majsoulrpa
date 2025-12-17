@@ -62,8 +62,8 @@ class YostarLogin:
                 code = self._extractor.extract_code(latest_message)
 
             if cleanup and (valid_candidates or deletion_targets):
-                coro = self._cleanup(chain(valid_candidates, deletion_targets))
-                task = asyncio.create_task(coro)
+                targets = chain(valid_candidates, deletion_targets)
+                task = asyncio.create_task(self._cleanup(targets))
                 self._background_tasks.add(task)
                 task.add_done_callback(self._background_tasks.discard)
 
