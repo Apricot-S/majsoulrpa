@@ -1,6 +1,6 @@
 import asyncio
 from collections.abc import Iterable
-from datetime import datetime
+from datetime import UTC, datetime
 from email.message import EmailMessage
 from email.utils import parsedate_to_datetime
 from itertools import chain
@@ -45,31 +45,40 @@ class YostarLogin:
         to: str,
         sent_at: datetime,
         *,
+        retry_interval: float = 5.0,
         cleanup: bool = False,
     ) -> str | None:
-        valid_candidates, deletion_targets = await self._collect_candidates(
-            to,
-            sent_at,
-        )
+        deadline = sent_at + self._classifier.expiration
 
-        if valid_candidates:
-            _, latest_message = self._select_latest(valid_candidates)
-            code = self._extractor.extract_code(latest_message)
-        else:
-            code = None
+        code: str | None = None
+        while datetime.now(UTC) < deadline:
+            (
+                valid_candidates,
+                deletion_targets,
+            ) = await self._collect_candidates(to, sent_at)
 
-        if cleanup:
-            coro = self._cleanup(chain(valid_candidates, deletion_targets))
-            task = asyncio.create_task(coro)
-            self._background_tasks.add(task)
-            task.add_done_callback(self._background_tasks.discard)
+            if valid_candidates:
+                _, latest_message = self._select_latest(valid_candidates)
+                code = self._extractor.extract_code(latest_message)
 
-        if code is None:
-            logger.warning("Failed to fetch verification code.")
-            return None
+            if cleanup and (valid_candidates or deletion_targets):
+                coro = self._cleanup(chain(valid_candidates, deletion_targets))
+                task = asyncio.create_task(coro)
+                self._background_tasks.add(task)
+                task.add_done_callback(self._background_tasks.discard)
 
-        logger.debug("Fetched verification code: %s", code)
-        return code
+            if code is not None:
+                logger.debug("Fetched verification code: %s", code)
+                return code
+
+            logger.debug(
+                "No verification code yet, retrying in %.1f sec",
+                retry_interval,
+            )
+            await asyncio.sleep(retry_interval)
+
+        logger.warning("Failed to fetch verification code within expiration.")
+        return None
 
     async def _collect_candidates(
         self,
