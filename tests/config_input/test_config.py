@@ -13,6 +13,30 @@ from majsoulrpa.yostar_login import Config as YostarLoginConfig
 from majsoulrpa.yostar_login.config import S3Config
 
 
+def test_empty_dict() -> None:
+    expected: dict = {
+        "endpoint": {
+            "browser-address": constants.DEFAULT_BROWSER_ADDRESS,
+            "client-address": constants.DEFAULT_CLIENT_ADDRESS,
+            "remote-port": constants.DEFAULT_REMOTE_PORT,
+            "sniffer-port": constants.DEFAULT_SNIFFER_PORT,
+            "proxy-port": constants.DEFAULT_PROXY_PORT,
+        },
+        "browser": {
+            "window-left": 0,
+            "window-top": 0,
+            "viewport-height": constants.DEFAULT_VIEWPORT_HEIGHT,
+            "headless": False,
+            "user-data-dir": None,
+        },
+        "yostar-login": {
+            "email-address": None,
+            "s3": None,
+        },
+    }
+    assert ConfigInput.model_validate({}).model_dump() == expected
+
+
 def test_defaults_to_dict() -> None:
     expected: dict = {
         "endpoint": {
