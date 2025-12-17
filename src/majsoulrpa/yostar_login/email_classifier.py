@@ -17,6 +17,11 @@ class ClassificationResult(Enum):
 
 
 class EmailClassifierBase(ABC):
+    @property
+    @abstractmethod
+    def expiration(self) -> datetime.timedelta:
+        pass
+
     @abstractmethod
     def classify(self, mail: EmailMessage) -> ClassificationResult:
         pass
@@ -32,6 +37,11 @@ class EmailClassifier(EmailClassifierBase):
         self._sender = sender
         self._subject = subject
         self._expiration = expiration
+
+    @property
+    @override
+    def expiration(self) -> datetime.timedelta:
+        return self._expiration
 
     @override
     def classify(self, mail: EmailMessage) -> ClassificationResult:
