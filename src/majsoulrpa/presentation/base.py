@@ -13,8 +13,8 @@ from majsoulrpa.presentation.region import (
     get_random_point_in_region,
 )
 
-DEFAULT_CLICK_BASE_DELAY = 100  # millisecond
-DEFAULT_CLICK_DELAY_SIGMA = 0.1
+DEFAULT_CLICK_BASE_DELAY = 120  # millisecond
+DEFAULT_CLICK_DELAY_SIGMA = 0.2
 
 
 class Presentation(ABC):
