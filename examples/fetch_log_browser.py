@@ -9,10 +9,11 @@ from majsoulrpa.config_input import Browser, ConfigInput
 ADDON_PATH = Path(__file__).parent / "fetch_log_addon.py"
 
 
-def main() -> None:
-    def archiver_runner(config: Config) -> Popen:
-        return run_sniffer(config, ADDON_PATH)
+def archiver_runner(config: Config) -> Popen:
+    return run_sniffer(config, ADDON_PATH)
 
+
+def main() -> None:
     cfg_in = ConfigInput(browser=Browser(viewport_height=720, headless=True))
     config = cfg_in.build_browser_config()
     option = cfg_in.build_browser_option()
