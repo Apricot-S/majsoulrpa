@@ -111,4 +111,9 @@ class YostarLogin:
 
     async def _cleanup(self, deletion_targets: Iterable[str]) -> None:
         for key in deletion_targets:
-            await self._repository.delete_message(key)
+            logger.debug("Attempting to delete message with key: %s", key)
+            try:
+                await self._repository.delete_message(key)
+                logger.info("Successfully deleted message with key: %s", key)
+            except Exception:
+                logger.exception("Failed to delete message with key: %s", key)
