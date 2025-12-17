@@ -9,19 +9,20 @@ from majsoulrpa.presentation.home import HomePresentation
 from majsoulrpa.presentation.login import LoginPresentation
 
 
+class ExcludeFilter:
+    def __init__(self, message: str = "") -> None:
+        self.message = message
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return not record.getMessage().startswith(self.message)
+
+
 def setup_async_logging() -> QueueListener:
     stream_handler = logging.StreamHandler()
 
     fmt = "%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d - %(message)s"  # noqa: E501
     formatter = logging.Formatter(fmt)
     stream_handler.setFormatter(formatter)
-
-    class ExcludeFilter:
-        def __init__(self, message: str = "") -> None:
-            self.message = message
-
-        def filter(self, record: logging.LogRecord) -> bool:
-            return not record.getMessage().startswith(self.message)
 
     stream_handler.addFilter(logging.Filter("majsoulrpa"))
     stream_handler.addFilter(ExcludeFilter("WebSocket message"))
