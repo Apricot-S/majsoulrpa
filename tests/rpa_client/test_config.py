@@ -4,7 +4,7 @@ import pytest
 
 from majsoulrpa.exceptions import UserInputError
 from majsoulrpa.netutils import validate_user_port
-from majsoulrpa.rpa_client import Config
+from majsoulrpa.rpa_client.config import Config
 
 
 def make_config(

@@ -4,9 +4,10 @@ from logging.handlers import QueueHandler, QueueListener
 from queue import Queue
 from typing import Any
 
-from majsoulrpa import ConfigInput, RPAClient
+from majsoulrpa import ConfigInput
 from majsoulrpa.presentation.home import HomePresentation
 from majsoulrpa.presentation.login import LoginPresentation
+from majsoulrpa.rpa_client import RPAClient
 
 
 class ExcludeFilter:

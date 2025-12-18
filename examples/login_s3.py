@@ -4,9 +4,10 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
-from majsoulrpa import ConfigInput, RPAClient, yostar_login
+from majsoulrpa import ConfigInput, yostar_login
 from majsoulrpa.presentation.home import HomePresentation
 from majsoulrpa.presentation.login import LoginPresentation
+from majsoulrpa.rpa_client import RPAClient
 from majsoulrpa.yostar_login import YostarLogin
 from majsoulrpa.yostar_login.email_repository.s3 import S3EmailRepository
 
