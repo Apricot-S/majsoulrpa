@@ -153,12 +153,15 @@ class MessageQueue(MessageQueueBase):
     def _close(self) -> None:
         if self._socket is not None:
             self._socket.close()
-            logger.debug("Closing socket for %s", self._endpoint)
+            logger.debug("Closed socket for %s", self._endpoint)
             self._socket = None
 
         if self._ctx is not None:
             self._ctx.destroy()
-            logger.info("Socket and context destroyed for %s", self._endpoint)
+            logger.info(
+                "Closed socket and destroyed context for %s",
+                self._endpoint,
+            )
             self._ctx = None
 
     def _enqueue_message(self, message: RawMessage) -> None:

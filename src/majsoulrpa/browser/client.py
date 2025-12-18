@@ -62,7 +62,10 @@ class Client(ClientBase):
 
     def _close(self) -> None:
         self._socket.close(linger=0)
-        logger.debug("Closing socket for %s", self._endpoint)
+        logger.debug("Closed socket for %s", self._endpoint)
 
         self._ctx.destroy()
-        logger.info("Socket and context destroyed for %s", self._endpoint)
+        logger.info(
+            "Closed socket and destroyed context for %s",
+            self._endpoint,
+        )
