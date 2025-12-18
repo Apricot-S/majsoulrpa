@@ -2,7 +2,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from majsoulrpa import netutils
 from majsoulrpa.browser.server import Config as BrowserConfig
-from majsoulrpa.browser.server.engine import Option as BrowserOption
+from majsoulrpa.browser.server.engine_option import Option as BrowserOption
 from majsoulrpa.config_input._common import _to_kebab
 from majsoulrpa.config_input.browser import Browser
 from majsoulrpa.config_input.endpoint import Endpoint

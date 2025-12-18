@@ -2,7 +2,7 @@ from copy import deepcopy
 
 from majsoulrpa import constants, netutils
 from majsoulrpa.browser.server import Config as BrowserConfig
-from majsoulrpa.browser.server.engine import Option as BrowserOption
+from majsoulrpa.browser.server.engine_option import Option as BrowserOption
 from majsoulrpa.config_input.browser import Browser
 from majsoulrpa.config_input.config import ConfigInput
 from majsoulrpa.config_input.endpoint import Endpoint
