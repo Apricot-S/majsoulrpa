@@ -28,10 +28,42 @@ While some internal ideas and major class names were borrowed, the architecture 
 
 ## Installation
 
+### Remote browser host (the machine that will run the browser)
+
 ```sh
-majsoulrpa$ pip install .
-majsoulrpa$ playwright install --with-deps chromium
+majsoulrpa$ pip install .[browser]
+# Install Chromium browser binaries on the browser host
+majsoulrpa$ playwright install chromium --with-deps
 ```
+
+### RPA client host (the machine running the RPA client which performs automation)
+
+```sh
+majsoulrpa$ pip install .[client]
+```
+
+### Combined setup (browser and client on the same host)
+
+```sh
+majsoulrpa$ pip install .[browser,client]
+```
+
+### Optional: fetch verification emails from AWS S3
+
+```sh
+majsoulrpa$ pip install .[email-s3]
+```
+
+Make AWS credentials available using one of the following methods:
+
+- Save them in `~/.aws/credentials`
+- Set them via environment variables:
+
+    ```sh
+    export AWS_ACCESS_KEY_ID=...
+    export AWS_SECRET_ACCESS_KEY=...
+    export AWS_REGION=...
+    ```
 
 ## Usage
 
