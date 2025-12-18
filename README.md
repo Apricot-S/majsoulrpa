@@ -67,7 +67,60 @@ Make AWS credentials available using one of the following methods:
 
 ## Usage
 
-See [examples/](examples/) for usage examples.
+### 🌐 Remote browser
+
+You can launch the remote browser directly from the command line:
+
+```sh
+majsoulrpa-browser
+```
+
+It can also be invoked from Python code:
+
+```python
+from majsoulrpa.browser.server.runtime import run_browser_server
+
+config = ...
+option = ...
+run_browser_server(config, option)
+```
+
+See [examples/](examples/) for detailed configurations and scenarios.
+
+### 🤖 RPA client
+
+The RPA client is used from Python code. A typical flow looks like this:
+
+```python
+import asyncio
+from typing import Any
+from majsoulrpa.presentation.home import HomePresentation
+from majsoulrpa.presentation.login import LoginPresentation
+from majsoulrpa.rpa_client import RPAClient
+
+rpa = RPAClient()
+
+@rpa.on(LoginPresentation)
+async def on_login(p: LoginPresentation, data: Any) -> Any:
+    ...
+    return ...
+
+@rpa.on(HomePresentation)
+async def on_home(p: HomePresentation, data: Any) -> Any:
+    ...
+    return ...
+
+config = ...
+data = ...  # You can set any value here; it will be carried through the client
+asyncio.run(rpa.run(config, data))
+```
+
+- Register callbacks with `@rpa.on(Presentation)`
+- Only the registered Presentations are subject to detection; unregistered ones are ignored
+- `data` can hold arbitrary values and is passed along within the client
+- Call `rpa.run(...)` to start execution
+
+See [examples/](examples/) for complete implementations.
 
 > [!IMPORTANT]
 > The email address you use must be linked to your Yostar ID.
