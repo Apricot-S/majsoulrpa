@@ -19,18 +19,24 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "mitmproxy>=12.2.1",
-    "numpy>=2.2.6",
-    "opencv-python>=4.12.0.88",
-    "playwright>=1.56.0",
-    "protobuf>=6.33.1",
     "pydantic>=2.11.10",
+]
+
+[project.optional-dependencies]
+browser = [
+    "mitmproxy>=12.2.1",
+    "playwright>=1.56.0",
     "pyzmq>=27.1.0",
     "tornado>=6.5.2; sys_platform == 'win32'",
     "wsproto>=1.2.0",
 ]
-
-[project.optional-dependencies]
+client = [
+    "numpy>=2.2.6",
+    "opencv-python>=4.12.0.88",
+    "protobuf>=6.33.1",
+    "pyzmq>=27.1.0",
+    "tornado>=6.5.2; sys_platform == 'win32'",
+]
 email-s3 = [
     "aioboto3>=15.5.0",
 ]
@@ -51,6 +57,8 @@ dev = [
     { include-group = "test" },
     { include-group = "typing" },
     { include-group = "docs" },
+    { include-group = "browser" },
+    { include-group = "client" },
     { include-group = "email-s3" },
 ]
 lint = [
@@ -61,11 +69,17 @@ test = [
 ]
 typing = [
     "mypy>=1.18.2,<2",
-    "types-protobuf>=6.32.1.20251105",
 ]
 docs = [
     "sphinx>=8.2.3",
     "sphinx-rtd-theme>=3.0.2",
+]
+browser = [
+    "majsoulrpa[browser]",
+]
+client = [
+    "majsoulrpa[client]",
+    "types-protobuf>=6.32.1.20251105",
 ]
 email-s3 = [
     "majsoulrpa[email-s3]",
