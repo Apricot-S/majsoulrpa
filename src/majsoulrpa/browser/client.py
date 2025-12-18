@@ -61,7 +61,7 @@ class Client(ClientBase):
         return schemas.RESPONSE_ADAPTER.validate_json(res)
 
     def _close(self) -> None:
-        self._socket.close()
+        self._socket.close(linger=0)
         logger.debug("Closing socket for %s", self._endpoint)
 
         self._ctx.destroy()
