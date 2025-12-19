@@ -36,7 +36,7 @@ class HomePresentation(Presentation):
     @override
     async def _pre_dispatch(self) -> None:
         await self._close_notifications()
-        await self._drain_message_queue()
+        self._drain_message_queue()
 
         if self._message_queue.account_id is None:
             msg = "Account ID not found after home screen transition."
@@ -44,7 +44,7 @@ class HomePresentation(Presentation):
 
         await asyncio.sleep(0.5)
 
-    async def _drain_message_queue(self) -> None:
+    def _drain_message_queue(self) -> None:
         while self._message_queue.get_nowait() is not None:
             pass
 
