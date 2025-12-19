@@ -38,7 +38,16 @@ class RPAClient:
             await asyncio.sleep(0.5)
 
     async def _dispatch(self, presentation: Presentation, data: Any) -> Any:
+        logger.debug(
+            "Starting pre-dispatch for `%s`",
+            type(presentation).__name__,
+        )
         await presentation._pre_dispatch()  # noqa: SLF001
+        logger.debug(
+            "Pre-dispatch for `%s` completed",
+            type(presentation).__name__,
+        )
+
         callback = self._callbacks[type(presentation)]
 
         logger.debug(
