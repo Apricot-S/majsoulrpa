@@ -39,18 +39,18 @@ class RPAClient:
 
     async def _dispatch(self, presentation: Presentation, data: Any) -> Any:
         await presentation._pre_dispatch()  # noqa: SLF001
-        callback = self._callbacks[type(presentation)](presentation, data)
+        callback = self._callbacks[type(presentation)]
 
         logger.debug(
             "Dispatching callback for `%s`",
             type(presentation).__name__,
         )
-        ret = await callback
-
+        ret = await callback(presentation, data)
         logger.debug(
             "Callback for `%s` completed",
             type(presentation).__name__,
         )
+
         return ret
 
     def on[P: Presentation](
