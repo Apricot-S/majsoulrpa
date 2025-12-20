@@ -10,6 +10,11 @@ from majsoulrpa.presentation.base import Presentation
 class HomePresentation(Presentation):
     _templates: ClassVar = {
         "summon": home_templates.SUMMON,
+        "notification_close": home_templates.NOTIFICATION_CLOSE,
+        "mail_close": home_templates.MAIL_CLOSE,
+        "event_close": home_templates.EVENT_CLOSE,
+        "rewards_sign_in": home_templates.REWARDS_SIGN_IN,
+        "rewards_confirm": home_templates.REWARDS_CONFIRM,
     }
     _regions: ClassVar = {}
 
@@ -35,6 +40,7 @@ class HomePresentation(Presentation):
 
     @override
     async def _pre_dispatch(self) -> None:
+        await asyncio.sleep(0.5)
         await self._close_notifications()
         self._drain_message_queue()
 
@@ -42,12 +48,33 @@ class HomePresentation(Presentation):
             msg = "Account ID not found after home screen transition."
             raise exceptions.UnexpectedStateError(msg, None)
 
-        await asyncio.sleep(0.5)
+    async def _close_notifications(self) -> None:
+        while not await self._close_notifications_impl():
+            pass
+
+    async def _close_notifications_impl(self) -> bool:
+        templates = [
+            self._templates["notification_close"],
+            self._templates["mail_close"],
+            self._templates["event_close"],
+        ]
+        if await self._click_if_match_one_of(templates):
+            await asyncio.sleep(1.0)
+            return True
+
+        if await self._click_if_match(self._templates["rewards_sign_in"]):
+            await asyncio.sleep(2.0)
+
+            if await self._click_if_match(self._templates["rewards_confirm"]):
+                await asyncio.sleep(0.5)
+                return True
+
+            msg = '"Confirm" button for accumulated sign in rewards could not be detected.'  # noqa: E501
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationNotDetectedError(msg, ss)
+
+        return False
 
     def _drain_message_queue(self) -> None:
         while self._message_queue.get_nowait() is not None:
             pass
-
-    async def _close_notifications(self) -> None:
-        # TODO: 告知の閉じるボタンをクリックする処理を追加する
-        pass

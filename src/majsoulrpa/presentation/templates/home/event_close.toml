@@ -1,0 +1,14 @@
+[region]
+left = 1794
+top = 219
+width = 52
+height = 55
+
+[margin]
+left = 10
+right = 10
+top = 10
+bottom = 10
+
+[settings]
+threshold = 0.95
