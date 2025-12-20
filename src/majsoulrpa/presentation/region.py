@@ -1,7 +1,7 @@
 import random
 from dataclasses import dataclass
 
-DEFAULT_EDGE_SIGMA = 1.24
+DEFAULT_EDGE_SIGMA = 1.76
 
 
 @dataclass(frozen=True)
