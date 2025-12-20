@@ -52,26 +52,6 @@ def _sample_normal_in_interval(
     length: float,
     edge_sigma: float,
 ) -> float:
-    """Samples a random value within interval using normal distribution.
-
-    The distribution is centered at the midpoint of the interval, and
-    the standard deviation is computed as (length / 2) / edge_sigma.
-    Reject sampling ensures the result lies strictly
-    within (origin, origin + length).
-
-    Note:
-        This function does not validate parameters.
-
-    Args:
-        origin: The starting coordinate of the interval
-            (e.g., left or top).
-        length: The size of the interval (e.g., width or height).
-        edge_sigma: Controls spread; smaller values concentrate
-            near center.
-
-    Returns:
-        A random value inside the interval.
-    """
     end = origin + length
     mu = origin + length / 2.0
     sigma = (length / 2.0) / edge_sigma
@@ -85,23 +65,6 @@ def get_random_point_in_region(
     region: Region,
     edge_sigma: float = DEFAULT_EDGE_SIGMA,
 ) -> tuple[float, float]:
-    """Returns random point in region.
-
-    The point is sampled from a normal distribution centered at
-    the region midpoint.
-
-    Note:
-        This function does not validate parameters.
-
-    Args:
-        region: Rectangular region defined by top-left corner and size.
-        edge_sigma: Controls spread; smaller values concentrate
-            near center. Defaults to 0.2.
-
-    Returns:
-        A random point (x, y) inside the region.
-    """
     x = _sample_normal_in_interval(region.left, region.width, edge_sigma)
     y = _sample_normal_in_interval(region.top, region.height, edge_sigma)
-
     return (x, y)
