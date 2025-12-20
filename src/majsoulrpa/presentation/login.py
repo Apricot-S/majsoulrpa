@@ -20,6 +20,7 @@ class LoginPresentation(Presentation):
         "confirm": login_templates.CONFIRM,
         "login_1": login_templates.LOGIN_1,
         "login_2": login_templates.LOGIN_2,
+        "ok": login_templates.OK,
         "unavailable": login_templates.UNAVAILABLE,
     }
     _regions: ClassVar = {
@@ -62,8 +63,16 @@ class LoginPresentation(Presentation):
             raise exceptions.PresentationNotDetectedError(msg, ss)
         await asyncio.sleep(0.5)
 
+    async def _detect_maintenance(self) -> None:
+        if await self._has_match(self._templates["ok"]):
+            msg = "Login cannot proceed during server maintenance."
+            ss = await self.get_screenshot()
+            raise exceptions.UnexpectedStateError(msg, ss)
+
     @require_active
     async def enter_email_address(self, email_address: str) -> None:
+        await self._detect_maintenance()
+
         if len(email_address) > MAX_EMAIL_ADDRESS_LENGTH:
             msg = f"Keep an email address within {MAX_EMAIL_ADDRESS_LENGTH} characters."  # noqa: E501
             raise exceptions.InvalidArgumentError(msg, None)
@@ -162,5 +171,7 @@ class LoginPresentation(Presentation):
 
             msg = "Verification failed. Verification code may be incorrect."
             raise exceptions.InvalidArgumentError(msg, None)
+
+        await self._detect_maintenance()
 
         self._mark_finished()

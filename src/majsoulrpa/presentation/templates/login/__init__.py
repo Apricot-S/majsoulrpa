@@ -19,3 +19,7 @@ CONFIRM = Matcher(_CONFIRM_IMAGE, _CONFIRM_CONFIG)
 _LOGIN_2_IMAGE = FileImage(_PARENT / "login_2.png")
 _LOGIN_2_CONFIG = Config.from_file(_PARENT / "login_2.toml")
 LOGIN_2 = Matcher(_LOGIN_2_IMAGE, _LOGIN_2_CONFIG)
+
+_OK_IMAGE = FileImage(_PARENT / "ok.png")
+_OK_CONFIG = Config.from_file(_PARENT / "ok.toml")
+OK = Matcher(_OK_IMAGE, _OK_CONFIG)
