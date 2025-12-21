@@ -19,6 +19,7 @@ class HomePresentation(Presentation):
         "event_close": home_templates.EVENT_CLOSE,
         "rewards_sign_in": home_templates.REWARDS_SIGN_IN,
         "rewards_confirm": home_templates.REWARDS_CONFIRM,
+        "friendly_match": home_templates.FRIENDLY_MATCH,
     }
     _regions: ClassVar = {}
 
@@ -49,8 +50,13 @@ class HomePresentation(Presentation):
 
         await asyncio.sleep(0.5)
         await self._close_notifications()
-        self._drain_message_queue()
 
+        if not await self._ensure_home_screen_ready():
+            msg = "Home screen did not become interactable."
+            ss = await self.get_screenshot()
+            raise exceptions.UnexpectedStateError(msg, ss)
+
+        self._drain_message_queue()
         if self._message_queue.account_id is None:
             msg = "Account ID not found after home screen transition."
             raise exceptions.UnexpectedStateError(msg, None)
@@ -107,6 +113,9 @@ class HomePresentation(Presentation):
             raise exceptions.PresentationNotDetectedError(msg, ss)
 
         return False
+
+    async def _ensure_home_screen_ready(self) -> bool:
+        return await self._has_match(self._templates["friendly_match"])
 
     def _drain_message_queue(self) -> None:
         while self._message_queue.get_nowait() is not None:
