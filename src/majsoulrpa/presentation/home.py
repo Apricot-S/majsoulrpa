@@ -1,10 +1,13 @@
 import asyncio
-from typing import ClassVar, Self, override
+from typing import TYPE_CHECKING, ClassVar, Self, override
 
 import majsoulrpa.presentation.templates.home as home_templates
 from majsoulrpa import browser, sniffer
 from majsoulrpa.presentation import exceptions
 from majsoulrpa.presentation.base import Presentation
+
+if TYPE_CHECKING:
+    from majsoulrpa.sniffer.message import Message
 
 
 class HomePresentation(Presentation):
@@ -51,11 +54,19 @@ class HomePresentation(Presentation):
             raise exceptions.UnexpectedStateError(msg, None)
 
     def _has_month_ticket(self) -> bool:
+        buffer: list[Message] = []
+        has_ticket = False
+
         while (message := self._message_queue.get_nowait()) is not None:
-            self._message_queue.put_back(message)
+            buffer.append(message)
             if message.name == ".lq.Lobby.payMonthTicket":
-                return True
-        return False
+                has_ticket = True
+                break
+
+        for m in buffer:
+            self._message_queue.put_back(m)
+
+        return has_ticket
 
     async def _receive_daily_bonus(self) -> None:
         try:
