@@ -41,6 +41,8 @@ class HomePresentation(Presentation):
     @override
     async def _pre_dispatch(self) -> None:
         await asyncio.sleep(0.5)
+        if self._has_month_ticket():
+            await self._receive_daily_bonus()
         await self._close_notifications()
         self._drain_message_queue()
 
@@ -48,8 +50,26 @@ class HomePresentation(Presentation):
             msg = "Account ID not found after home screen transition."
             raise exceptions.UnexpectedStateError(msg, None)
 
+    def _has_month_ticket(self) -> bool:
+        while (message := self._message_queue.get_nowait()) is not None:
+            self._message_queue.put_back(message)
+            if message.name == ".lq.Lobby.payMonthTicket":
+                return True
+        return False
+
+    async def _receive_daily_bonus(self) -> None:
+        try:
+            async with asyncio.timeout(6):
+                await self._click_when_match(self._templates["jade"])
+        except TimeoutError as e:
+            msg = "Daily bonus jade was not detected."
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationTimeoutError(msg, ss) from e
+
+        await asyncio.sleep(0.5)
+
     async def _close_notifications(self) -> None:
-        while not await self._close_notifications_impl():
+        while await self._close_notifications_impl():
             pass
 
     async def _close_notifications_impl(self) -> bool:
