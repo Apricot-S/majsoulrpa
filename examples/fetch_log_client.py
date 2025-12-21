@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any
+from typing import Any, override
 
 from majsoulrpa import ConfigInput
 from majsoulrpa.presentation.base import require_active
@@ -9,6 +9,15 @@ from majsoulrpa.rpa_client import RPAClient
 
 
 class FetchLogPresentation(HomePresentation):
+    @override
+    async def _pre_dispatch(self) -> None:
+        # When we're only fetching logs, there's no need to close
+        # dialogs, claim daily bonuses, or detect the account ID.
+        # To avoid failures caused by special events
+        # (e.g., collab commemorative sign-in rewards),
+        # we skip the processing entirely.
+        pass
+
     @require_active
     async def fetch_log(self, log_id: str) -> None:
         await self._driver.goto_log(log_id)
