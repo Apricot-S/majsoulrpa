@@ -8,6 +8,10 @@ _SUMMON_IMAGE = FileImage(_PARENT / "summon.png")
 _SUMMON_CONFIG = Config.from_file(_PARENT / "summon.toml")
 SUMMON = Matcher(_SUMMON_IMAGE, _SUMMON_CONFIG)
 
+_JADE_IMAGE = FileImage(_PARENT / "jade.png")
+_JADE_CONFIG = Config.from_file(_PARENT / "jade.toml")
+JADE = Matcher(_JADE_IMAGE, _JADE_CONFIG)
+
 _NOTIFICATION_CLOSE_IMAGE = FileImage(_PARENT / "notification_close.png")
 _NOTIFICATION_CLOSE_CONFIG = Config.from_file(
     _PARENT / "notification_close.toml",

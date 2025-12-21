@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 class HomePresentation(Presentation):
     _templates: ClassVar = {
         "summon": home_templates.SUMMON,
+        "jade": home_templates.JADE,
         "notification_close": home_templates.NOTIFICATION_CLOSE,
         "mail_close": home_templates.MAIL_CLOSE,
         "event_close": home_templates.EVENT_CLOSE,
