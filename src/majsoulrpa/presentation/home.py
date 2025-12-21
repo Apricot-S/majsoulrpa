@@ -78,7 +78,7 @@ class HomePresentation(Presentation):
 
     async def _receive_daily_bonus(self) -> None:
         try:
-            async with asyncio.timeout(6):
+            async with asyncio.timeout(5):
                 await self._click_when_match(self._templates["jade"])
         except TimeoutError as e:
             msg = "Daily bonus jade was not detected."
