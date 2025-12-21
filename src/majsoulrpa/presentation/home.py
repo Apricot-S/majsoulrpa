@@ -43,9 +43,10 @@ class HomePresentation(Presentation):
 
     @override
     async def _pre_dispatch(self) -> None:
-        await asyncio.sleep(0.5)
         if self._has_month_ticket():
             await self._receive_daily_bonus()
+
+        await asyncio.sleep(0.5)
         await self._close_notifications()
         self._drain_message_queue()
 
