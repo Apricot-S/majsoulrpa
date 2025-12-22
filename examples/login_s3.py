@@ -65,7 +65,7 @@ async def main() -> None:
     client_config = config_input.build_client_config()
     yostar_login_config = config_input.build_yostar_login_config()
 
-    await rpa.run(client_config, yostar_login_config)
+    await rpa.run(client_config, data=yostar_login_config)
 
 
 if __name__ == "__main__":
