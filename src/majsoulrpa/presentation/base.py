@@ -305,13 +305,13 @@ def log_api_call[R](
 ) -> Callable[..., Awaitable[R]]:
     @wraps(method)
     async def _log_api_call(self: Presentation, *args, **kwargs) -> R:
-        logger.info("%s called", method.__name__)
+        logger.info("`%s` called", method.__name__)
         start = time.perf_counter()
 
         ret = await method(self, *args, **kwargs)
 
         duration_ms = int((time.perf_counter() - start) * 1000)
-        logger.info("%s completed (%d ms)", method.__name__, duration_ms)
+        logger.info("`%s` completed (%d ms)", method.__name__, duration_ms)
 
         return ret
 
