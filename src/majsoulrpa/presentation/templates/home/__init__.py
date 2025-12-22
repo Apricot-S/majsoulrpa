@@ -40,3 +40,7 @@ REWARDS_CONFIRM = Matcher(_REWARDS_CONFIRM_IMAGE, _REWARDS_CONFIRM_CONFIG)
 _FRIENDLY_MATCH_IMAGE = FileImage(_PARENT / "friendly_match.png")
 _FRIENDLY_MATCH_CONFIG = Config.from_file(_PARENT / "friendly_match.toml")
 FRIENDLY_MATCH = Matcher(_FRIENDLY_MATCH_IMAGE, _FRIENDLY_MATCH_CONFIG)
+
+_CREATE_ROOM_IMAGE = FileImage(_PARENT / "create_room.png")
+_CREATE_ROOM_CONFIG = Config.from_file(_PARENT / "create_room.toml")
+CREATE_ROOM = Matcher(_CREATE_ROOM_IMAGE, _CREATE_ROOM_CONFIG)

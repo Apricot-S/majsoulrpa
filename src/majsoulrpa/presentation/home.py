@@ -21,6 +21,7 @@ class HomePresentation(Presentation):
         "rewards_sign_in": home_templates.REWARDS_SIGN_IN,
         "rewards_confirm": home_templates.REWARDS_CONFIRM,
         "friendly_match": home_templates.FRIENDLY_MATCH,
+        "create_room": home_templates.CREATE_ROOM,
     }
     _regions: ClassVar = {}
 
@@ -131,6 +132,13 @@ class HomePresentation(Presentation):
     ) -> None:
         if not await self._click_if_match(self._templates["friendly_match"]):
             msg = '"Friendly Match" button could not be detected.'
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationNotDetectedError(msg, ss)
+
+        await asyncio.sleep(1.0)
+
+        if not await self._click_if_match(self._templates["create_room"]):
+            msg = '"Create Room" button could not be detected.'
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
 
