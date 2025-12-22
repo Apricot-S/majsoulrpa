@@ -150,4 +150,11 @@ class HomePresentation(Presentation):
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
 
-        raise NotImplementedError
+        if not await self._click_if_match(
+            self._templates["create_room/create"],
+        ):
+            msg = '"Create" button could not be detected.'
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationNotDetectedError(msg, ss)
+
+        self._mark_finished()
