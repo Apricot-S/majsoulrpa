@@ -12,4 +12,5 @@ __all__ = [
     "exceptions",  # type: ignore[reportUnsupportedDunderAll]
     "home",  # type: ignore[reportUnsupportedDunderAll]
     "login",  # type: ignore[reportUnsupportedDunderAll]
+    "room_settings",  # type: ignore[reportUnsupportedDunderAll]
 ]
