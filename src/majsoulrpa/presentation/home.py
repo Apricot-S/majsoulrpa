@@ -1,5 +1,5 @@
 import asyncio
-from typing import TYPE_CHECKING, ClassVar, Self, override
+from typing import TYPE_CHECKING, ClassVar, Self, assert_never, override
 
 import majsoulrpa.presentation.templates.home as home_templates
 from majsoulrpa import browser, sniffer
@@ -23,6 +23,8 @@ class HomePresentation(Presentation):
         "friendly_match": home_templates.FRIENDLY_MATCH,
         "create_room": home_templates.CREATE_ROOM,
         "create_room/create": home_templates.create_room.CREATE,
+        "create_room/4-player": home_templates.create_room.FOUR_PLAYER,
+        "create_room/two-wind_match": home_templates.create_room.TWO_WIND_MATCH,  # noqa: E501
     }
     _regions: ClassVar = {}
 
@@ -149,6 +151,31 @@ class HomePresentation(Presentation):
             msg = '"Create" button could not be detected.'
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
+
+        match mode:
+            case Mode.FOUR_PLAYER:
+                mode_template = self._templates["create_room/4-player"]
+            case Mode.THREE_PLAYER:
+                mode_template = self._templates["create_room/3-player"]
+            case _ as unreachable_mode:
+                assert_never(unreachable_mode)
+
+        match length:
+            case Length.ONE_GAME:
+                length_template = self._templates["create_room/1_game"]
+            case Length.EAST_ONLY:
+                length_template = self._templates["create_room/east_only"]
+            case Length.TWO_WIND_MATCH:
+                length_template = self._templates["create_room/two-wind_match"]
+            case Length.VS_AI:
+                length_template = self._templates["create_room/vs_ai"]
+            case _ as unreachable_length:
+                assert_never(unreachable_length)
+
+        await self._click_if_match(mode_template)
+        await asyncio.sleep(0.5)
+        await self._click_if_match(length_template)
+        await asyncio.sleep(0.5)
 
         if not await self._click_if_match(
             self._templates["create_room/create"],
