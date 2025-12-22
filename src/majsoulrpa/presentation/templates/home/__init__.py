@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from majsoulrpa.presentation.template import Config, FileImage, Matcher
+from majsoulrpa.presentation.templates.home import create_room
 
 _PARENT = Path(__file__).parent
 
@@ -44,3 +45,20 @@ FRIENDLY_MATCH = Matcher(_FRIENDLY_MATCH_IMAGE, _FRIENDLY_MATCH_CONFIG)
 _CREATE_ROOM_IMAGE = FileImage(_PARENT / "create_room.png")
 _CREATE_ROOM_CONFIG = Config.from_file(_PARENT / "create_room.toml")
 CREATE_ROOM = Matcher(_CREATE_ROOM_IMAGE, _CREATE_ROOM_CONFIG)
+
+__all__ = [
+    "CREATE_ROOM",
+    "EVENT_CLOSE",
+    "FRIENDLY_MATCH",
+    "JADE",
+    "MAIL_CLOSE",
+    "NOTIFICATION_CLOSE",
+    "REWARDS_CONFIRM",
+    "REWARDS_SIGN_IN",
+    "SUMMON",
+]
+
+# submodules
+__all__ += [
+    "create_room",
+]
