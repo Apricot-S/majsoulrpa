@@ -1,13 +1,26 @@
 import asyncio
+from enum import Enum, auto
 from typing import TYPE_CHECKING, ClassVar, Self, override
 
 import majsoulrpa.presentation.templates.home as home_templates
 from majsoulrpa import browser, sniffer
 from majsoulrpa.presentation import exceptions
-from majsoulrpa.presentation.base import Presentation
+from majsoulrpa.presentation.base import Presentation, require_active
 
 if TYPE_CHECKING:
     from majsoulrpa.sniffer.message import Message
+
+
+class RoomMode(Enum):
+    FOUR_PLAYER = auto()
+    THREE_PLAYER = auto()
+
+
+class RoomLength(Enum):
+    ONE_GAME = auto()
+    EAST_ONLY = auto()
+    TWO_WIND_MATCH = auto()
+    VS_AI = auto()
 
 
 class HomePresentation(Presentation):
@@ -83,7 +96,7 @@ class HomePresentation(Presentation):
         except TimeoutError as e:
             msg = "Daily bonus jade was not detected."
             ss = await self.get_screenshot()
-            raise exceptions.PresentationTimeoutError(msg, ss) from e
+            raise exceptions.PresentationNotDetectedError(msg, ss) from e
 
         await asyncio.sleep(0.5)
 
@@ -120,3 +133,16 @@ class HomePresentation(Presentation):
     def _drain_message_queue(self) -> None:
         while self._message_queue.get_nowait() is not None:
             pass
+
+    @require_active
+    async def create_room(
+        self,
+        mode: RoomMode = RoomMode.FOUR_PLAYER,
+        length: RoomLength = RoomLength.TWO_WIND_MATCH,
+    ) -> None:
+        if not await self._click_if_match(self._templates["friendly_match"]):
+            msg = '"Friendly Match" button could not be detected.'
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationNotDetectedError(msg, ss)
+
+        raise NotImplementedError
