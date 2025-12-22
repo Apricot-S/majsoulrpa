@@ -5,7 +5,7 @@ import majsoulrpa.presentation.templates.home as home_templates
 from majsoulrpa import browser, sniffer
 from majsoulrpa.presentation import exceptions
 from majsoulrpa.presentation.base import Presentation, require_active
-from majsoulrpa.presentation.room_settings import Length, Mode
+from majsoulrpa.presentation.room_settings import Length, Mode, ThinkingTime
 
 if TYPE_CHECKING:
     from majsoulrpa.sniffer.message import Message
@@ -127,6 +127,7 @@ class HomePresentation(Presentation):
         self,
         mode: Mode = Mode.FOUR_PLAYER,
         length: Length = Length.TWO_WIND_MATCH,
+        thinking_time: ThinkingTime = ThinkingTime.FivePlusTwenty,
     ) -> None:
         if not await self._click_if_match(self._templates["friendly_match"]):
             msg = '"Friendly Match" button could not be detected.'

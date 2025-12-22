@@ -11,3 +11,11 @@ class Length(Enum):
     EAST_ONLY = auto()
     TWO_WIND_MATCH = auto()
     VS_AI = auto()
+
+
+class ThinkingTime(Enum):
+    ThreePlusFive = auto()
+    FivePlusTen = auto()
+    FivePlusTwenty = auto()
+    SixtyPlusZero = auto()
+    ThreeHundredPlusZero = auto()
