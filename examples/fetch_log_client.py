@@ -2,7 +2,7 @@ import asyncio
 from typing import Any, override
 
 from majsoulrpa import ConfigInput
-from majsoulrpa.presentation.base import require_active
+from majsoulrpa.presentation.base import rpa_api
 from majsoulrpa.presentation.home import HomePresentation
 from majsoulrpa.presentation.login import LoginPresentation
 from majsoulrpa.rpa_client import RPAClient
@@ -18,7 +18,7 @@ class FetchLogPresentation(HomePresentation):
         # we skip the processing entirely.
         pass
 
-    @require_active
+    @rpa_api
     async def fetch_log(self, log_id: str) -> None:
         await self._driver.goto_log(log_id)
         while True:

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, ClassVar, Self, override
 import majsoulrpa.presentation.templates.home as home_templates
 from majsoulrpa import browser, sniffer
 from majsoulrpa.presentation import exceptions
-from majsoulrpa.presentation.base import Presentation, require_active
+from majsoulrpa.presentation.base import Presentation, rpa_api
 from majsoulrpa.presentation.room_settings import Length, Mode, ThinkingTime
 
 if TYPE_CHECKING:
@@ -124,7 +124,7 @@ class HomePresentation(Presentation):
         while self._message_queue.get_nowait() is not None:
             pass
 
-    @require_active
+    @rpa_api
     async def create_room(
         self,
         mode: Mode = Mode.FOUR_PLAYER,

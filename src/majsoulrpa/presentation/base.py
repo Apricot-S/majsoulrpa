@@ -1,6 +1,9 @@
 import asyncio
+import time
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Iterable
+from functools import wraps
+from logging import getLogger
 from typing import ClassVar, Self
 
 from majsoulrpa import browser, sniffer
@@ -12,6 +15,8 @@ from majsoulrpa.presentation.region import (
     Region,
     get_random_point_in_region,
 )
+
+logger = getLogger(__name__)
 
 DEFAULT_CLICK_BASE_DELAY = 120  # milliseconds
 DEFAULT_CLICK_DELAY_SIGMA = 0.2
@@ -279,7 +284,8 @@ class Presentation(ABC):
 def require_active[R](
     method: Callable[..., Awaitable[R]],
 ) -> Callable[..., Awaitable[R]]:
-    async def wrapper(self: Presentation, *args, **kwargs) -> R:
+    @wraps(method)
+    async def _require_active(self: Presentation, *args, **kwargs) -> R:
         if self._is_rpa_ended:
             msg = f"`{method.__name__}` called after RPA session has already ended."  # noqa: E501
             raise InvalidOperationError(msg, None)
@@ -291,4 +297,28 @@ def require_active[R](
 
         return await method(self, *args, **kwargs)
 
-    return wrapper
+    return _require_active
+
+
+def log_api_call[R](
+    method: Callable[..., Awaitable[R]],
+) -> Callable[..., Awaitable[R]]:
+    @wraps(method)
+    async def _log_api_call(self: Presentation, *args, **kwargs) -> R:
+        logger.info("%s called", method.__name__)
+        start = time.perf_counter()
+
+        ret = await method(self, *args, **kwargs)
+
+        duration_ms = int((time.perf_counter() - start) * 1000)
+        logger.info("%s completed (%d ms)", method.__name__, duration_ms)
+
+        return ret
+
+    return _log_api_call
+
+
+def rpa_api[R](
+    method: Callable[..., Awaitable[R]],
+) -> Callable[..., Awaitable[R]]:
+    return require_active(log_api_call(method))

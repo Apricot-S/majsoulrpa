@@ -8,7 +8,7 @@ import majsoulrpa.presentation.templates.login as login_templates
 from majsoulrpa import browser, sniffer
 from majsoulrpa.browser.driver import Key
 from majsoulrpa.presentation import exceptions
-from majsoulrpa.presentation.base import Presentation, require_active
+from majsoulrpa.presentation.base import Presentation, rpa_api
 
 MAX_EMAIL_ADDRESS_LENGTH = 50  # JP version
 REQUEST_INTERVAL = timedelta(seconds=60)
@@ -69,7 +69,7 @@ class LoginPresentation(Presentation):
             ss = await self.get_screenshot()
             raise exceptions.UnexpectedStateError(msg, ss)
 
-    @require_active
+    @rpa_api
     async def enter_email_address(self, email_address: str) -> None:
         await self._detect_maintenance()
 
@@ -121,7 +121,7 @@ class LoginPresentation(Presentation):
         self._entered_email_address = True
         self._last_request_time = datetime.now(UTC)
 
-    @require_active
+    @rpa_api
     async def enter_verification_code(self, verification_code: str) -> None:
         # Validate the format of verification code.
         if VERIFICATION_CODE_PATTERN.fullmatch(verification_code) is None:
