@@ -1,26 +1,14 @@
 import asyncio
-from enum import Enum, auto
 from typing import TYPE_CHECKING, ClassVar, Self, override
 
 import majsoulrpa.presentation.templates.home as home_templates
 from majsoulrpa import browser, sniffer
 from majsoulrpa.presentation import exceptions
 from majsoulrpa.presentation.base import Presentation, require_active
+from majsoulrpa.presentation.room_settings import Length, Mode
 
 if TYPE_CHECKING:
     from majsoulrpa.sniffer.message import Message
-
-
-class RoomMode(Enum):
-    FOUR_PLAYER = auto()
-    THREE_PLAYER = auto()
-
-
-class RoomLength(Enum):
-    ONE_GAME = auto()
-    EAST_ONLY = auto()
-    TWO_WIND_MATCH = auto()
-    VS_AI = auto()
 
 
 class HomePresentation(Presentation):
@@ -137,8 +125,8 @@ class HomePresentation(Presentation):
     @require_active
     async def create_room(
         self,
-        mode: RoomMode = RoomMode.FOUR_PLAYER,
-        length: RoomLength = RoomLength.TWO_WIND_MATCH,
+        mode: Mode = Mode.FOUR_PLAYER,
+        length: Length = Length.TWO_WIND_MATCH,
     ) -> None:
         if not await self._click_if_match(self._templates["friendly_match"]):
             msg = '"Friendly Match" button could not be detected.'
