@@ -281,9 +281,15 @@ class Presentation(ABC):
         pass
 
 
+type _RPAAPI[T: Presentation, **P, R] = Callable[
+    Concatenate[T, P],
+    Awaitable[R],
+]
+
+
 def require_active[T: Presentation, **P, R](
-    method: Callable[Concatenate[T, P], Awaitable[R]],
-) -> Callable[Concatenate[T, P], Awaitable[R]]:
+    method: _RPAAPI[T, P, R],
+) -> _RPAAPI[T, P, R]:
     @wraps(method)
     async def _require_active(self: T, *args: P.args, **kwargs: P.kwargs) -> R:
         if self._is_rpa_ended:
@@ -301,8 +307,8 @@ def require_active[T: Presentation, **P, R](
 
 
 def log_api_call[T: Presentation, **P, R](
-    method: Callable[Concatenate[T, P], Awaitable[R]],
-) -> Callable[Concatenate[T, P], Awaitable[R]]:
+    method: _RPAAPI[T, P, R],
+) -> _RPAAPI[T, P, R]:
     @wraps(method)
     async def _log_api_call(self: T, *args: P.args, **kwargs: P.kwargs) -> R:
         logger.info("`%s` called", method.__name__)
@@ -319,6 +325,6 @@ def log_api_call[T: Presentation, **P, R](
 
 
 def rpa_api[T: Presentation, **P, R](
-    method: Callable[Concatenate[T, P], Awaitable[R]],
-) -> Callable[Concatenate[T, P], Awaitable[R]]:
+    method: _RPAAPI[T, P, R],
+) -> _RPAAPI[T, P, R]:
     return require_active(log_api_call(method))
