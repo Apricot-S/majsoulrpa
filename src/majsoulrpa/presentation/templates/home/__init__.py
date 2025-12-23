@@ -46,11 +46,16 @@ _CREATE_ROOM_IMAGE = FileImage(_PARENT / "create_room.png")
 _CREATE_ROOM_CONFIG = Config.from_file(_PARENT / "create_room.toml")
 CREATE_ROOM = Matcher(_CREATE_ROOM_IMAGE, _CREATE_ROOM_CONFIG)
 
+_JOIN_ROOM_IMAGE = FileImage(_PARENT / "join_room.png")
+_JOIN_ROOM_CONFIG = Config.from_file(_PARENT / "join_room.toml")
+JOIN_ROOM = Matcher(_JOIN_ROOM_IMAGE, _JOIN_ROOM_CONFIG)
+
 __all__ = [
     "CREATE_ROOM",
     "EVENT_CLOSE",
     "FRIENDLY_MATCH",
     "JADE",
+    "JOIN_ROOM",
     "MAIL_CLOSE",
     "NOTIFICATION_CLOSE",
     "REWARDS_CONFIRM",

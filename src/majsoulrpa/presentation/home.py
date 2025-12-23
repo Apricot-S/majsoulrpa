@@ -1,4 +1,6 @@
 import asyncio
+import re
+from enum import IntEnum
 from typing import TYPE_CHECKING, ClassVar, Self, assert_never, override
 
 import majsoulrpa.presentation.templates.home as home_templates
@@ -9,6 +11,22 @@ from majsoulrpa.presentation.room_settings import Length, Mode, ThinkingTime
 
 if TYPE_CHECKING:
     from majsoulrpa.sniffer.message import Message
+
+ROOM_ID_PATTERN = re.compile(r"\d{5}")
+
+
+class JoinRoomFailureReason(IntEnum):
+    """Reason for failure to join a friendly match room.
+
+    Attributes:
+        NOT_FOUND: The room was not found.
+        FULL: The room was full.
+        ALREADY_STARTED: A match was already started.
+    """
+
+    NOT_FOUND = 1100
+    FULL = 1101
+    ALREADY_STARTED = 1109
 
 
 class HomePresentation(Presentation):
@@ -34,6 +52,7 @@ class HomePresentation(Presentation):
         "create_room/5+20s": home_templates.create_room.FIVE_PLUS_TWENTY,
         "create_room/60+0s": home_templates.create_room.SIXTY_PLUS_ZERO,
         "create_room/300+0s": home_templates.create_room.THREE_HUNDRED_PLUS_ZERO,  # noqa: E501
+        "join_room": home_templates.JOIN_ROOM,
     }
     _regions: ClassVar = {}
 
@@ -211,3 +230,25 @@ class HomePresentation(Presentation):
             raise exceptions.PresentationNotDetectedError(msg, ss)
 
         self._mark_finished()
+
+    @rpa_api
+    async def join_room(self, room_id: str) -> JoinRoomFailureReason | None:
+        if ROOM_ID_PATTERN.fullmatch(room_id) is None:
+            msg = "Room ID must be a 5-digit number."
+            raise exceptions.InvalidArgumentError(msg, None)
+
+        if not await self._click_if_match(self._templates["friendly_match"]):
+            msg = '"Friendly Match" button could not be detected.'
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationNotDetectedError(msg, ss)
+
+        await asyncio.sleep(1.0)
+
+        if not await self._click_if_match(self._templates["join_room"]):
+            msg = '"Join Room" button could not be detected.'
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationNotDetectedError(msg, ss)
+
+        await asyncio.sleep(1.0)
+
+        return None
