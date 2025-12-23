@@ -29,8 +29,11 @@ class HomePresentation(Presentation):
         "create_room/east_only": home_templates.create_room.EAST_ONLY,
         "create_room/two-wind_match": home_templates.create_room.TWO_WIND_MATCH,  # noqa: E501
         "create_room/vs_ai": home_templates.create_room.VS_AI,
+        "create_room/3+5s": home_templates.create_room.THREE_PLUS_FIVE,
         "create_room/5+10s": home_templates.create_room.FIVE_PLUS_TEN,
         "create_room/5+20s": home_templates.create_room.FIVE_PLUS_TWENTY,
+        "create_room/60+0s": home_templates.create_room.SIXTY_PLUS_ZERO,
+        "create_room/300+0s": home_templates.create_room.THREE_HUNDRED_PLUS_ZERO,  # noqa: E501
     }
     _regions: ClassVar = {}
 
