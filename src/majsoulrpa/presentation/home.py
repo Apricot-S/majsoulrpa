@@ -25,6 +25,7 @@ class HomePresentation(Presentation):
         "create_room/create": home_templates.create_room.CREATE,
         "create_room/4-player": home_templates.create_room.FOUR_PLAYER,
         "create_room/3-player": home_templates.create_room.THREE_PLAYER,
+        "create_room/east_only": home_templates.create_room.EAST_ONLY,
         "create_room/two-wind_match": home_templates.create_room.TWO_WIND_MATCH,  # noqa: E501
         "create_room/5+20s": home_templates.create_room.FIVE_PLUS_TWENTY,
     }
