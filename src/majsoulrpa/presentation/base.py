@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Iterable
 from functools import wraps
 from logging import getLogger
-from typing import ClassVar, Self
+from typing import ClassVar, Concatenate, Self
 
 from majsoulrpa import browser, sniffer
 from majsoulrpa.presentation import template
@@ -281,11 +281,11 @@ class Presentation(ABC):
         pass
 
 
-def require_active[R](
-    method: Callable[..., Awaitable[R]],
-) -> Callable[..., Awaitable[R]]:
+def require_active[T: Presentation, **P, R](
+    method: Callable[Concatenate[T, P], Awaitable[R]],
+) -> Callable[Concatenate[T, P], Awaitable[R]]:
     @wraps(method)
-    async def _require_active(self: Presentation, *args, **kwargs) -> R:
+    async def _require_active(self: T, *args: P.args, **kwargs: P.kwargs) -> R:
         if self._is_rpa_ended:
             msg = f"`{method.__name__}` called after RPA session has already ended."  # noqa: E501
             raise InvalidOperationError(msg, None)
@@ -300,11 +300,11 @@ def require_active[R](
     return _require_active
 
 
-def log_api_call[R](
-    method: Callable[..., Awaitable[R]],
-) -> Callable[..., Awaitable[R]]:
+def log_api_call[T: Presentation, **P, R](
+    method: Callable[Concatenate[T, P], Awaitable[R]],
+) -> Callable[Concatenate[T, P], Awaitable[R]]:
     @wraps(method)
-    async def _log_api_call(self: Presentation, *args, **kwargs) -> R:
+    async def _log_api_call(self: T, *args: P.args, **kwargs: P.kwargs) -> R:
         logger.info("`%s` called", method.__name__)
         start = time.perf_counter()
 
@@ -318,7 +318,7 @@ def log_api_call[R](
     return _log_api_call
 
 
-def rpa_api[R](
-    method: Callable[..., Awaitable[R]],
-) -> Callable[..., Awaitable[R]]:
+def rpa_api[T: Presentation, **P, R](
+    method: Callable[Concatenate[T, P], Awaitable[R]],
+) -> Callable[Concatenate[T, P], Awaitable[R]]:
     return require_active(log_api_call(method))
