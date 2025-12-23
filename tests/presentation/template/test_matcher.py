@@ -44,6 +44,25 @@ def test_matcher_returns_correct_coordinates_not_scaled() -> None:
     assert matcher.match(screen, scale=1.0) == Region(0, 50, 50, 50)
 
 
+def test_matcher_returns_correct_coordinates_non_square_template() -> None:
+    screen_array = np.zeros((100, 100, 3), dtype=np.uint8)
+    screen_array[50:100, 0:60] = 255
+    screen_array[50:60, 0:20] = 0
+    screen = ndarray_to_png_bytes(screen_array)
+
+    template = np.ones((40, 60, 3), dtype=np.uint8) * 255
+    template[0:10, 0:20] = 0
+
+    cfg = Config(
+        region=config.Region(left=0, top=50, width=60, height=40),
+        margin=config.Margin(left=0, right=0, top=0, bottom=0),
+        settings=config.Settings(threshold=0.99),
+    )
+
+    matcher = Matcher(DummyImage(template), cfg)
+    assert matcher.match(screen, scale=1.0) == Region(0, 50, 60, 40)
+
+
 def test_matcher_returns_correct_coordinates_scaled() -> None:
     screen_array = np.zeros((200, 200, 3), dtype=np.uint8)
     screen_array[100:200, 0:100] = 255

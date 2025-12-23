@@ -64,7 +64,7 @@ class Matcher(MatcherBase):
 
         left = x0 + argmax_x
         top = y0 + argmax_y
-        width = scale * self._config.region.width
-        height = scale * self._config.region.height
+        width = template.shape[1]
+        height = template.shape[0]
 
         return Region(left=left, top=top, width=width, height=height)
