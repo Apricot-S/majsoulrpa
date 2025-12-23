@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from majsoulrpa.presentation.template import Config, FileImage, Matcher
-from majsoulrpa.presentation.templates.home import create_room
+from majsoulrpa.presentation.templates.home import create_room, join_room
 
 _PARENT = Path(__file__).parent
 
@@ -66,4 +66,5 @@ __all__ = [
 # submodules
 __all__ += [
     "create_room",
+    "join_room",
 ]

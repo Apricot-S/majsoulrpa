@@ -53,6 +53,7 @@ class HomePresentation(Presentation):
         "create_room/60+0s": home_templates.create_room.SIXTY_PLUS_ZERO,
         "create_room/300+0s": home_templates.create_room.THREE_HUNDRED_PLUS_ZERO,  # noqa: E501
         "join_room": home_templates.JOIN_ROOM,
+        "join_room/confirm": home_templates.join_room.CONFIRM,
     }
     _regions: ClassVar = {}
 
@@ -250,5 +251,10 @@ class HomePresentation(Presentation):
             raise exceptions.PresentationNotDetectedError(msg, ss)
 
         await asyncio.sleep(1.0)
+
+        if not await self._has_match(self._templates["join_room/confirm"]):
+            msg = '"Confirm" button could not be detected.'
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationNotDetectedError(msg, ss)
 
         return None
