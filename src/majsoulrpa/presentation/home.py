@@ -25,8 +25,11 @@ class HomePresentation(Presentation):
         "create_room/create": home_templates.create_room.CREATE,
         "create_room/4-player": home_templates.create_room.FOUR_PLAYER,
         "create_room/3-player": home_templates.create_room.THREE_PLAYER,
+        "create_room/1_game": home_templates.create_room.ONE_GAME,
         "create_room/east_only": home_templates.create_room.EAST_ONLY,
         "create_room/two-wind_match": home_templates.create_room.TWO_WIND_MATCH,  # noqa: E501
+        "create_room/vs_ai": home_templates.create_room.VS_AI,
+        "create_room/5+10s": home_templates.create_room.FIVE_PLUS_TEN,
         "create_room/5+20s": home_templates.create_room.FIVE_PLUS_TWENTY,
     }
     _regions: ClassVar = {}
