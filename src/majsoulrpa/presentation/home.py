@@ -25,6 +25,7 @@ class HomePresentation(Presentation):
         "create_room/create": home_templates.create_room.CREATE,
         "create_room/4-player": home_templates.create_room.FOUR_PLAYER,
         "create_room/two-wind_match": home_templates.create_room.TWO_WIND_MATCH,  # noqa: E501
+        "create_room/5+20s": home_templates.create_room.FIVE_PLUS_TWENTY,
     }
     _regions: ClassVar = {}
 
@@ -172,9 +173,26 @@ class HomePresentation(Presentation):
             case _ as unreachable_length:
                 assert_never(unreachable_length)
 
+        match thinking_time:
+            case ThinkingTime.ThreePlusFive:
+                thinking_time_template = self._templates["create_room/3+5s"]
+            case ThinkingTime.FivePlusTen:
+                thinking_time_template = self._templates["create_room/5+10s"]
+            case ThinkingTime.FivePlusTwenty:
+                thinking_time_template = self._templates["create_room/5+20s"]
+            case ThinkingTime.SixtyPlusZero:
+                thinking_time_template = self._templates["create_room/60+0s"]
+            case ThinkingTime.ThreeHundredPlusZero:
+                thinking_time_template = self._templates["create_room/300+0s"]
+            case _ as unreachable_thinking_time:
+                assert_never(unreachable_thinking_time)
+
+        # No need to click if already selected
         await self._click_if_match(mode_template)
         await asyncio.sleep(0.5)
         await self._click_if_match(length_template)
+        await asyncio.sleep(0.5)
+        await self._click_if_match(thinking_time_template)
         await asyncio.sleep(0.5)
 
         if not await self._click_if_match(
