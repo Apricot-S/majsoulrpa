@@ -13,6 +13,9 @@ _UNSELECTED_IMAGE = FileImage(_PARENT / "unselected.png")
 _FOUR_PLAYER_CONFIG = Config.from_file(_PARENT / "4-player.toml")
 FOUR_PLAYER = Matcher(_UNSELECTED_IMAGE, _FOUR_PLAYER_CONFIG)
 
+_THREE_PLAYER_CONFIG = Config.from_file(_PARENT / "3-player.toml")
+THREE_PLAYER = Matcher(_UNSELECTED_IMAGE, _THREE_PLAYER_CONFIG)
+
 _TWO_WIND_MATCH_CONFIG = Config.from_file(_PARENT / "two-wind_match.toml")
 TWO_WIND_MATCH = Matcher(_UNSELECTED_IMAGE, _TWO_WIND_MATCH_CONFIG)
 
@@ -23,5 +26,6 @@ __all__ = [
     "CREATE",
     "FIVE_PLUS_TWENTY",
     "FOUR_PLAYER",
+    "THREE_PLAYER",
     "TWO_WIND_MATCH",
 ]
