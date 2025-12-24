@@ -1,6 +1,6 @@
 import asyncio
 import re
-from enum import IntEnum
+from enum import Enum
 from logging import getLogger
 from typing import TYPE_CHECKING, Any, ClassVar, Self, assert_never, override
 
@@ -19,7 +19,7 @@ logger = getLogger(__name__)
 ROOM_ID_PATTERN = re.compile(r"\d{5}")
 
 
-class JoinRoomFailureReason(IntEnum):
+class JoinRoomFailureReason(Enum):
     """Reason for failure to join a friendly match room.
 
     Attributes:
@@ -301,10 +301,11 @@ class HomePresentation(Presentation):
 
         failure_reason = self._parse_error_code(response)
         if failure_reason is None:
+            logger.info("Successfully joined room.")
             self._mark_finished()
             return None
 
-        logger.warning("%s", response)
+        logger.warning("Failed to join room. reason=%s", failure_reason.name)
 
         await asyncio.sleep(0.5)
         if not await self._click_if_match(
