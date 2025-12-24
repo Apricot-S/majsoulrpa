@@ -257,4 +257,13 @@ class HomePresentation(Presentation):
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
 
+        if not await self._click_if_match(
+            self._templates["join_room/confirm"],
+        ):
+            msg = '"Confirm" button could not be detected.'
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationNotDetectedError(msg, ss)
+
+        self._mark_finished()
+
         return None
