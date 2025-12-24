@@ -3,6 +3,7 @@ import re
 from enum import IntEnum
 from typing import TYPE_CHECKING, ClassVar, Self, assert_never, override
 
+import majsoulrpa.presentation.regions.home as home_regions
 import majsoulrpa.presentation.templates.home as home_templates
 from majsoulrpa import browser, sniffer
 from majsoulrpa.presentation import exceptions
@@ -55,7 +56,9 @@ class HomePresentation(Presentation):
         "join_room": home_templates.JOIN_ROOM,
         "join_room/confirm": home_templates.join_room.CONFIRM,
     }
-    _regions: ClassVar = {}
+    _regions: ClassVar = {
+        "join_room/room_id_field": home_regions.join_room.ROOM_ID_FIELD,
+    }
 
     @override
     def __init__(
@@ -256,6 +259,14 @@ class HomePresentation(Presentation):
             msg = '"Confirm" button could not be detected.'
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
+
+        # Click the text box to focus it.
+        await self._click_region(self._regions["join_room/room_id_field"])
+        await asyncio.sleep(0.5)
+
+        # Enter the room ID in the text box.
+        await self._type_key(room_id)
+        await asyncio.sleep(0.5)
 
         if not await self._click_if_match(
             self._templates["join_room/confirm"],
