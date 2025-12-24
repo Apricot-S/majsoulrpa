@@ -283,26 +283,38 @@ class HomePresentation(Presentation):
         # Wait for `.lq.Lobby.joinRoom` to be exchanged.
         await asyncio.sleep(0.5)
 
+        join_room_message = None
         while (message := self._message_queue.get_nowait()) is not None:
-            if message.name != ".lq.Lobby.joinRoom":
-                continue
+            if message.name == ".lq.Lobby.joinRoom":
+                join_room_message = message
+                break
 
-            response = message.response
-            if response is None:
-                msg = "`.lq.Lobby.joinRoom` has no response message."
-                raise exceptions.InconsistentMessageError(msg, None)
+        if join_room_message is None:
+            msg = "`.lq.Lobby.joinRoom` was not exchanged."
+            ss = await self.get_screenshot()
+            raise exceptions.InconsistentMessageError(msg, ss)
 
-            failure_reason = self._parse_error_code(response)
-            if failure_reason is None:
-                self._mark_finished()
-                return None
+        response = join_room_message.response
+        if response is None:
+            msg = "`.lq.Lobby.joinRoom` has no response message."
+            raise exceptions.InconsistentMessageError(msg, None)
 
-            # TODO: エラーダイアログを閉じる、warningログを出す
-            return failure_reason
+        failure_reason = self._parse_error_code(response)
+        if failure_reason is None:
+            self._mark_finished()
+            return None
 
-        msg = "`.lq.Lobby.joinRoom` was not exchanged."
-        ss = await self.get_screenshot()
-        raise exceptions.InconsistentMessageError(msg, ss)
+        logger.warning("%s", response)
+
+        await asyncio.sleep(0.5)
+        if not await self._click_if_match(
+            self._templates["join_room/error_confirm"],
+        ):
+            msg = '"Confirm" button could not be detected.'
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationNotDetectedError(msg, ss)
+
+        return failure_reason
 
     @staticmethod
     def _parse_error_code(
