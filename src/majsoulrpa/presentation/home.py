@@ -60,6 +60,7 @@ class HomePresentation(Presentation):
         "create_room/300+0s": home_templates.create_room.THREE_HUNDRED_PLUS_ZERO,  # noqa: E501
         "join_room": home_templates.JOIN_ROOM,
         "join_room/confirm": home_templates.join_room.CONFIRM,
+        "join_room/error_confirm": home_templates.join_room.ERROR_CONFIRM,
     }
     _regions: ClassVar = {
         "join_room/room_id_field": home_regions.join_room.ROOM_ID_FIELD,

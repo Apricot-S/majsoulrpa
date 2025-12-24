@@ -8,6 +8,11 @@ _CONFIRM_IMAGE = FileImage(_PARENT / "confirm.png")
 _CONFIRM_CONFIG = Config.from_file(_PARENT / "confirm.toml")
 CONFIRM = Matcher(_CONFIRM_IMAGE, _CONFIRM_CONFIG)
 
+_ERROR_CONFIRM_IMAGE = FileImage(_PARENT / "error_confirm.png")
+_ERROR_CONFIRM_CONFIG = Config.from_file(_PARENT / "error_confirm.toml")
+ERROR_CONFIRM = Matcher(_ERROR_CONFIRM_IMAGE, _ERROR_CONFIRM_CONFIG)
+
 __all__ = [
     "CONFIRM",
+    "ERROR_CONFIRM",
 ]
