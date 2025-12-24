@@ -96,7 +96,7 @@ class HomePresentation(Presentation):
         self._drain_message_queue()
         if self._message_queue.account_id is None:
             msg = "Account ID not found after home screen transition."
-            raise exceptions.InconsistentMessageError(msg, None)
+            raise exceptions.UnexpectedStateError(msg, None)
 
     def _has_month_ticket(self) -> bool:
         buffer: list[Message] = []
