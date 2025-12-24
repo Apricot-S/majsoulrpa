@@ -305,7 +305,7 @@ class HomePresentation(Presentation):
             self._mark_finished()
             return None
 
-        logger.warning("Failed to join room. reason=%s", failure_reason.name)
+        logger.warning("Failed to join room. reason: %s", failure_reason.name)
 
         await asyncio.sleep(0.5)
         if not await self._click_if_match(
@@ -327,14 +327,16 @@ class HomePresentation(Presentation):
 
         error_code = error.get("code")
         if error_code is None:
-            msg = f"No error code in `.lq.Lobby.joinRoom`. {response=}"
+            msg = (
+                f"No error code in `.lq.Lobby.joinRoom`. response: {response}"
+            )
             raise exceptions.InconsistentMessageError(msg, None)
 
         try:
             return JoinRoomFailureReason(error_code)
         except ValueError:
             logger.exception(
-                "Unsupported error code in `.lq.Lobby.joinRoom`. Falling back to UNKNOWN. response=%s",  # noqa: E501
+                "Unsupported error code in `.lq.Lobby.joinRoom`. Falling back to UNKNOWN. response: %s",  # noqa: E501
                 response,
             )
             return JoinRoomFailureReason.UNKNOWN
