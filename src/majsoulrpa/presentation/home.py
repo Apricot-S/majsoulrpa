@@ -315,6 +315,8 @@ class HomePresentation(Presentation):
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
 
+        await asyncio.sleep(0.5)
+
         return failure_reason
 
     @staticmethod
