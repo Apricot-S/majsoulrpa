@@ -73,6 +73,12 @@ class PresentationNotDetectedError(BaseError):
         super().__init__(message, screenshot)
 
 
+class InconsistentMessageError(BaseError):
+    """Error raised when messages exchanged between the browser and
+    the Mahjong Soul server do not match the expected sequence or type.
+    """
+
+
 class InvalidOperationError(BaseError):
     """Error raised when an operation is attempted
     that is invalid for the current state of the presentation.

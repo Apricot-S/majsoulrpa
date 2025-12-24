@@ -96,7 +96,7 @@ class HomePresentation(Presentation):
         self._drain_message_queue()
         if self._message_queue.account_id is None:
             msg = "Account ID not found after home screen transition."
-            raise exceptions.UnexpectedStateError(msg, None)
+            raise exceptions.InconsistentMessageError(msg, None)
 
     def _has_month_ticket(self) -> bool:
         buffer: list[Message] = []
@@ -275,6 +275,21 @@ class HomePresentation(Presentation):
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
 
-        self._mark_finished()
+        # Wait for `.lq.Lobby.joinRoom` to be exchanged.
+        await asyncio.sleep(0.5)
 
-        return None
+        while (message := self._message_queue.get_nowait()) is not None:
+            if message.name != ".lq.Lobby.joinRoom":
+                continue
+
+            response = message.response
+            if response is None:
+                msg = "`.lq.Lobby.joinRoom` has no response message."
+                raise exceptions.InconsistentMessageError(msg, None)
+
+            self._mark_finished()
+            return None
+
+        msg = "`.lq.Lobby.joinRoom` was not exchanged."
+        ss = await self.get_screenshot()
+        raise exceptions.InconsistentMessageError(msg, ss)
