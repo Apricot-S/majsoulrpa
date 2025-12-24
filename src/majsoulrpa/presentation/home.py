@@ -1,7 +1,8 @@
 import asyncio
 import re
 from enum import IntEnum
-from typing import TYPE_CHECKING, ClassVar, Self, assert_never, override
+from logging import getLogger
+from typing import TYPE_CHECKING, Any, ClassVar, Self, assert_never, override
 
 import majsoulrpa.presentation.regions.home as home_regions
 import majsoulrpa.presentation.templates.home as home_templates
@@ -13,6 +14,8 @@ from majsoulrpa.presentation.room_settings import Length, Mode, ThinkingTime
 if TYPE_CHECKING:
     from majsoulrpa.sniffer.message import Message
 
+logger = getLogger(__name__)
+
 ROOM_ID_PATTERN = re.compile(r"\d{5}")
 
 
@@ -23,11 +26,13 @@ class JoinRoomFailureReason(IntEnum):
         NOT_FOUND: The room was not found.
         FULL: The room was full.
         ALREADY_STARTED: A match was already started.
+        UNKNOWN: An unrecognized or unsupported error code.
     """
 
     NOT_FOUND = 1100
     FULL = 1101
     ALREADY_STARTED = 1109
+    UNKNOWN = -1
 
 
 class HomePresentation(Presentation):
@@ -287,9 +292,36 @@ class HomePresentation(Presentation):
                 msg = "`.lq.Lobby.joinRoom` has no response message."
                 raise exceptions.InconsistentMessageError(msg, None)
 
-            self._mark_finished()
-            return None
+            failure_reason = self._parse_error_code(response)
+            if failure_reason is None:
+                self._mark_finished()
+                return None
+
+            # TODO: エラーダイアログを閉じる、warningログを出す
+            return failure_reason
 
         msg = "`.lq.Lobby.joinRoom` was not exchanged."
         ss = await self.get_screenshot()
         raise exceptions.InconsistentMessageError(msg, ss)
+
+    @staticmethod
+    def _parse_error_code(
+        response: dict[str, Any],
+    ) -> JoinRoomFailureReason | None:
+        error: dict | None = response.get("error")
+        if error is None:
+            return None
+
+        error_code = error.get("code")
+        if error_code is None:
+            msg = f"No error code in `.lq.Lobby.joinRoom`. {response=}"
+            raise exceptions.InconsistentMessageError(msg, None)
+
+        try:
+            return JoinRoomFailureReason(error_code)
+        except ValueError:
+            logger.exception(
+                "Unsupported error code in `.lq.Lobby.joinRoom`. Falling back to UNKNOWN. response=%s",  # noqa: E501
+                response,
+            )
+            return JoinRoomFailureReason.UNKNOWN
