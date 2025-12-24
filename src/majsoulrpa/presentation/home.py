@@ -335,7 +335,7 @@ class HomePresentation(Presentation):
         try:
             return JoinRoomFailureReason(error_code)
         except ValueError:
-            logger.exception(
+            logger.error(  # noqa: TRY400
                 "Unsupported error code in `.lq.Lobby.joinRoom`. Falling back to UNKNOWN. response: %s",  # noqa: E501
                 response,
             )
