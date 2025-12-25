@@ -14,8 +14,8 @@ class Length(Enum):
 
 
 class ThinkingTime(Enum):
-    ThreePlusFive = auto()
-    FivePlusTen = auto()
-    FivePlusTwenty = auto()
-    SixtyPlusZero = auto()
-    ThreeHundredPlusZero = auto()
+    THREE_PLUS_FIVE = auto()
+    FIVE_PLUS_TEN = auto()
+    FIVE_PLUS_TWENTY = auto()
+    SIXTY_PLUS_ZERO = auto()
+    THREE_HUNDRED_PLUS_ZERO = auto()

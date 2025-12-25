@@ -169,7 +169,7 @@ class HomePresentation(Presentation):
         self,
         mode: Mode = Mode.FOUR_PLAYER,
         length: Length = Length.TWO_WIND_MATCH,
-        thinking_time: ThinkingTime = ThinkingTime.FivePlusTwenty,
+        thinking_time: ThinkingTime = ThinkingTime.FIVE_PLUS_TWENTY,
     ) -> None:
         if not await self._click_if_match(self._templates["friendly_match"]):
             msg = '"Friendly Match" button could not be detected.'
@@ -211,15 +211,15 @@ class HomePresentation(Presentation):
                 assert_never(unreachable_length)
 
         match thinking_time:
-            case ThinkingTime.ThreePlusFive:
+            case ThinkingTime.THREE_PLUS_FIVE:
                 thinking_time_template = self._templates["create_room/3+5s"]
-            case ThinkingTime.FivePlusTen:
+            case ThinkingTime.FIVE_PLUS_TEN:
                 thinking_time_template = self._templates["create_room/5+10s"]
-            case ThinkingTime.FivePlusTwenty:
+            case ThinkingTime.FIVE_PLUS_TWENTY:
                 thinking_time_template = self._templates["create_room/5+20s"]
-            case ThinkingTime.SixtyPlusZero:
+            case ThinkingTime.SIXTY_PLUS_ZERO:
                 thinking_time_template = self._templates["create_room/60+0s"]
-            case ThinkingTime.ThreeHundredPlusZero:
+            case ThinkingTime.THREE_HUNDRED_PLUS_ZERO:
                 thinking_time_template = self._templates["create_room/300+0s"]
             case _ as unreachable_thinking_time:
                 assert_never(unreachable_thinking_time)
