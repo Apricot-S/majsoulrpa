@@ -110,6 +110,9 @@ class LoginPresentation(Presentation):
             ss = await self.get_screenshot()
             raise exceptions.InvalidArgumentError(msg, ss)
 
+        self._entered_email_address = True
+        self._last_request_time = datetime.now(UTC)
+
         # Wait for the "Confirm" button to appear, then click it.
         await asyncio.sleep(1.0)
         if not await self._click_if_match(self._templates["confirm"]):
@@ -117,9 +120,6 @@ class LoginPresentation(Presentation):
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
         await asyncio.sleep(0.5)
-
-        self._entered_email_address = True
-        self._last_request_time = datetime.now(UTC)
 
     @rpa_api
     async def enter_verification_code(self, verification_code: str) -> None:
