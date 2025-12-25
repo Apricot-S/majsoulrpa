@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 logger = getLogger(__name__)
 
+TOURNAMENT_ID_PATTERN = re.compile(r"\d{6}")
 ROOM_ID_PATTERN = re.compile(r"\d{5}")
 
 
@@ -44,6 +45,7 @@ class HomePresentation(Presentation):
         "event_close": home_templates.EVENT_CLOSE,
         "rewards_sign_in": home_templates.REWARDS_SIGN_IN,
         "rewards_confirm": home_templates.REWARDS_CONFIRM,
+        "tournament_match": home_templates.TOURNAMENT_MATCH,
         "friendly_match": home_templates.FRIENDLY_MATCH,
         "create_room": home_templates.CREATE_ROOM,
         "create_room/create": home_templates.create_room.CREATE,
@@ -163,6 +165,21 @@ class HomePresentation(Presentation):
     def _drain_message_queue(self) -> None:
         while self._message_queue.get_nowait() is not None:
             pass
+
+    @rpa_api
+    async def enter_tournament(self, tournament_id: str) -> bool:
+        if TOURNAMENT_ID_PATTERN.fullmatch(tournament_id) is None:
+            msg = "Tournament ID must be a 6-digit number."
+            raise exceptions.InvalidArgumentError(msg, None)
+
+        if not await self._click_if_match(self._templates["tournament_match"]):
+            msg = '"Tournament Match" button could not be detected.'
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationNotDetectedError(msg, ss)
+
+        await asyncio.sleep(1.0)
+
+        return False
 
     @rpa_api
     async def create_room(

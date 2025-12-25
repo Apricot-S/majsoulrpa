@@ -38,6 +38,10 @@ _REWARDS_CONFIRM_IMAGE = FileImage(_PARENT / "rewards_confirm.png")
 _REWARDS_CONFIRM_CONFIG = Config.from_file(_PARENT / "rewards_confirm.toml")
 REWARDS_CONFIRM = Matcher(_REWARDS_CONFIRM_IMAGE, _REWARDS_CONFIRM_CONFIG)
 
+_TOURNAMENT_MATCH_IMAGE = FileImage(_PARENT / "tournament_match.png")
+_TOURNAMENT_MATCH_CONFIG = Config.from_file(_PARENT / "tournament_match.toml")
+TOURNAMENT_MATCH = Matcher(_TOURNAMENT_MATCH_IMAGE, _TOURNAMENT_MATCH_CONFIG)
+
 _FRIENDLY_MATCH_IMAGE = FileImage(_PARENT / "friendly_match.png")
 _FRIENDLY_MATCH_CONFIG = Config.from_file(_PARENT / "friendly_match.toml")
 FRIENDLY_MATCH = Matcher(_FRIENDLY_MATCH_IMAGE, _FRIENDLY_MATCH_CONFIG)
@@ -61,6 +65,7 @@ __all__ = [
     "REWARDS_CONFIRM",
     "REWARDS_SIGN_IN",
     "SUMMON",
+    "TOURNAMENT_MATCH",
 ]
 
 # submodules
