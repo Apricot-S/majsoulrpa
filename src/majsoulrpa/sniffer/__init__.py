@@ -11,13 +11,16 @@ else:
         )
     except ModuleNotFoundError:
 
-        class _MessageQueueUnavailable:
+        class MessageQueueBase:
+            def __init__(self, *args, **kwargs) -> None:  # noqa: ARG002
+                msg = "`MessageQueueBase` requires `client` extra"
+                raise RuntimeError(msg)
+
+        class MessageQueue:
             def __init__(self, *args, **kwargs) -> None:  # noqa: ARG002
                 msg = "`MessageQueue` requires `client` extra"
                 raise RuntimeError(msg)
 
-        MessageQueue = _MessageQueueUnavailable  # type: ignore[assignment,misc]
-        MessageQueueBase = _MessageQueueUnavailable  # type: ignore[assignment,misc]
 
 ADDON_PATH = Path(__file__).parent / "addon.py"
 

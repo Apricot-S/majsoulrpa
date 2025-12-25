@@ -9,12 +9,11 @@ else:
         from majsoulrpa.rpa_client.core import RPAClient
     except ModuleNotFoundError:
 
-        class _RPAClientUnavailable:
+        class RPAClient:
             def __init__(self, *args, **kwargs) -> None:  # noqa: ARG002
                 msg = "`RPAClient` requires `client` extra"
                 raise RuntimeError(msg)
 
-        RPAClient = _RPAClientUnavailable  # type: ignore[assignment,misc]
 
 __all__ = [
     "Config",
