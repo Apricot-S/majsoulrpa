@@ -46,6 +46,7 @@ class HomePresentation(Presentation):
         "rewards_sign_in": home_templates.REWARDS_SIGN_IN,
         "rewards_confirm": home_templates.REWARDS_CONFIRM,
         "tournament_match": home_templates.TOURNAMENT_MATCH,
+        "tournament_lobby": home_templates.TOURNAMENT_LOBBY,
         "friendly_match": home_templates.FRIENDLY_MATCH,
         "create_room": home_templates.CREATE_ROOM,
         "create_room/create": home_templates.create_room.CREATE,
@@ -174,6 +175,13 @@ class HomePresentation(Presentation):
 
         if not await self._click_if_match(self._templates["tournament_match"]):
             msg = '"Tournament Match" button could not be detected.'
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationNotDetectedError(msg, ss)
+
+        await asyncio.sleep(1.0)
+
+        if not await self._click_if_match(self._templates["tournament_lobby"]):
+            msg = '"Tournament Lobby" button could not be detected.'
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
 

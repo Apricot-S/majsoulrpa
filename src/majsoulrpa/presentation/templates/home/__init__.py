@@ -42,6 +42,10 @@ _TOURNAMENT_MATCH_IMAGE = FileImage(_PARENT / "tournament_match.png")
 _TOURNAMENT_MATCH_CONFIG = Config.from_file(_PARENT / "tournament_match.toml")
 TOURNAMENT_MATCH = Matcher(_TOURNAMENT_MATCH_IMAGE, _TOURNAMENT_MATCH_CONFIG)
 
+_TOURNAMENT_LOBBY_IMAGE = FileImage(_PARENT / "tournament_lobby.png")
+_TOURNAMENT_LOBBY_CONFIG = Config.from_file(_PARENT / "tournament_lobby.toml")
+TOURNAMENT_LOBBY = Matcher(_TOURNAMENT_LOBBY_IMAGE, _TOURNAMENT_LOBBY_CONFIG)
+
 _FRIENDLY_MATCH_IMAGE = FileImage(_PARENT / "friendly_match.png")
 _FRIENDLY_MATCH_CONFIG = Config.from_file(_PARENT / "friendly_match.toml")
 FRIENDLY_MATCH = Matcher(_FRIENDLY_MATCH_IMAGE, _FRIENDLY_MATCH_CONFIG)
@@ -65,6 +69,7 @@ __all__ = [
     "REWARDS_CONFIRM",
     "REWARDS_SIGN_IN",
     "SUMMON",
+    "TOURNAMENT_LOBBY",
     "TOURNAMENT_MATCH",
 ]
 
