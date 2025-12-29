@@ -25,10 +25,13 @@ class EnterTournamentFailureReason(Enum):
 
     Attributes:
         NOT_FOUND: The tournament was not found.
+        NO_ACTIVE_SEASON: There is no active season during
+            the tournament period.
         UNKNOWN: An unrecognized or unsupported error code.
     """
 
     NOT_FOUND = 2501
+    NO_ACTIVE_SEASON = 2536
     UNKNOWN = -1
 
 
