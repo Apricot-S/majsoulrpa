@@ -82,6 +82,7 @@ class HomePresentation(Presentation):
     }
     _regions: ClassVar = {
         "tournament_lobby/tournament_id_field": home_regions.tournament_lobby.TOURNAMENT_ID_FIELD,  # noqa: E501
+        "tournament_lobby/leave": home_regions.tournament_lobby.LEAVE,
         "join_room/room_id_field": home_regions.join_room.ROOM_ID_FIELD,
         "join_room/back": home_regions.join_room.BACK,
     }
@@ -279,7 +280,10 @@ class HomePresentation(Presentation):
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
 
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(1.0)
+
+        await self._click_region(self._regions["tournament_lobby/leave"])
+        await asyncio.sleep(1.0)
 
         return failure_reason
 
