@@ -239,23 +239,24 @@ class HomePresentation(Presentation):
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
 
-        # Wait for `.lq.Lobby.enterCustomizedContest` to be exchanged.
+        # Wait for `.lq.Lobby.fetchCustomizedContestByContestId`
+        # to be exchanged.
         await asyncio.sleep(0.5)
 
         enter_tournament_message = None
         while (message := self._message_queue.get_nowait()) is not None:
-            if message.name == ".lq.Lobby.enterCustomizedContest":
+            if message.name == ".lq.Lobby.fetchCustomizedContestByContestId":
                 enter_tournament_message = message
                 break
 
         if enter_tournament_message is None:
-            msg = "`.lq.Lobby.enterCustomizedContest` was not exchanged."
+            msg = "`.lq.Lobby.fetchCustomizedContestByContestId` was not exchanged."  # noqa: E501
             ss = await self.get_screenshot()
             raise exceptions.InconsistentMessageError(msg, ss)
 
         response = enter_tournament_message.response
         if response is None:
-            msg = "`.lq.Lobby.enterCustomizedContest` has no response message."
+            msg = "`.lq.Lobby.fetchCustomizedContestByContestId` has no response message."  # noqa: E501
             raise exceptions.InconsistentMessageError(msg, None)
 
         failure_reason = self._parse_tournament_error_code(response)
@@ -291,14 +292,14 @@ class HomePresentation(Presentation):
 
         error_code = error.get("code")
         if error_code is None:
-            msg = f"No error code in `.lq.Lobby.enterCustomizedContest`. response: {response}"  # noqa: E501
+            msg = f"No error code in `.lq.Lobby.fetchCustomizedContestByContestId`. response: {response}"  # noqa: E501
             raise exceptions.InconsistentMessageError(msg, None)
 
         try:
             return EnterTournamentFailureReason(error_code)
         except ValueError:
             logger.error(  # noqa: TRY400
-                "Unsupported error code in `.lq.Lobby.enterCustomizedContest`. Falling back to UNKNOWN. response: %s",  # noqa: E501
+                "Unsupported error code in `.lq.Lobby.fetchCustomizedContestByContestId`. Falling back to UNKNOWN. response: %s",  # noqa: E501
                 response,
             )
             return EnterTournamentFailureReason.UNKNOWN
