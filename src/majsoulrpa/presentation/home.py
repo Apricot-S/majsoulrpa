@@ -48,6 +48,7 @@ class HomePresentation(Presentation):
         "tournament_match": home_templates.TOURNAMENT_MATCH,
         "tournament_lobby": home_templates.TOURNAMENT_LOBBY,
         "tournament_lobby/enter": home_templates.tournament_lobby.ENTER,
+        "tournament_lobby/confirm": home_templates.tournament_lobby.CONFIRM,
         "friendly_match": home_templates.FRIENDLY_MATCH,
         "create_room": home_templates.CREATE_ROOM,
         "create_room/create": home_templates.create_room.CREATE,
@@ -67,6 +68,7 @@ class HomePresentation(Presentation):
         "join_room/error_confirm": home_templates.join_room.ERROR_CONFIRM,
     }
     _regions: ClassVar = {
+        "tournament_lobby/tournament_id_field": home_regions.tournament_lobby.TOURNAMENT_ID_FIELD,  # noqa: E501
         "join_room/room_id_field": home_regions.join_room.ROOM_ID_FIELD,
     }
 
@@ -196,6 +198,30 @@ class HomePresentation(Presentation):
             raise exceptions.PresentationNotDetectedError(msg, ss)
 
         await asyncio.sleep(1.0)
+
+        if not await self._has_match(
+            self._templates["tournament_lobby/confirm"],
+        ):
+            msg = '"Confirm" button could not be detected.'
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationNotDetectedError(msg, ss)
+
+        # Click the text box to focus it.
+        await self._click_region(
+            self._regions["tournament_lobby/tournament_id_field"],
+        )
+        await asyncio.sleep(0.5)
+
+        # Enter the tournament ID in the text box.
+        await self._type_key(tournament_id)
+        await asyncio.sleep(0.5)
+
+        if not await self._click_if_match(
+            self._templates["tournament_lobby/confirm"],
+        ):
+            msg = '"Confirm" button could not be detected.'
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationNotDetectedError(msg, ss)
 
         return False
 

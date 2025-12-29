@@ -8,6 +8,11 @@ _ENTER_IMAGE = FileImage(_PARENT / "enter.png")
 _ENTER_CONFIG = Config.from_file(_PARENT / "enter.toml")
 ENTER = Matcher(_ENTER_IMAGE, _ENTER_CONFIG)
 
+_CONFIRM_IMAGE = FileImage(_PARENT / "confirm.png")
+_CONFIRM_CONFIG = Config.from_file(_PARENT / "confirm.toml")
+CONFIRM = Matcher(_CONFIRM_IMAGE, _CONFIRM_CONFIG)
+
 __all__ = [
+    "CONFIRM",
     "ENTER",
 ]
