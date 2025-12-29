@@ -238,9 +238,69 @@ class HomePresentation(Presentation):
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
 
+        # Wait for `.lq.Lobby.enterCustomizedContest` to be exchanged.
         await asyncio.sleep(0.5)
 
-        return None
+        enter_tournament_message = None
+        while (message := self._message_queue.get_nowait()) is not None:
+            if message.name == ".lq.Lobby.enterCustomizedContest":
+                enter_tournament_message = message
+                break
+
+        if enter_tournament_message is None:
+            msg = "`.lq.Lobby.enterCustomizedContest` was not exchanged."
+            ss = await self.get_screenshot()
+            raise exceptions.InconsistentMessageError(msg, ss)
+
+        response = enter_tournament_message.response
+        if response is None:
+            msg = "`.lq.Lobby.enterCustomizedContest` has no response message."
+            raise exceptions.InconsistentMessageError(msg, None)
+
+        failure_reason = self._parse_tournament_error_code(response)
+        if failure_reason is None:
+            logger.info("Successfully entered tournament.")
+            self._mark_finished()
+            return None
+
+        logger.warning(
+            "Failed to enter tournament. reason: %s",
+            failure_reason.name,
+        )
+
+        await asyncio.sleep(0.5)
+        if not await self._click_if_match(
+            self._templates["tournament_lobby/error_confirm"],
+        ):
+            msg = '"Confirm" button could not be detected.'
+            ss = await self.get_screenshot()
+            raise exceptions.PresentationNotDetectedError(msg, ss)
+
+        await asyncio.sleep(0.5)
+
+        return failure_reason
+
+    @staticmethod
+    def _parse_tournament_error_code(
+        response: dict[str, Any],
+    ) -> EnterTournamentFailureReason | None:
+        error: dict | None = response.get("error")
+        if error is None:
+            return None
+
+        error_code = error.get("code")
+        if error_code is None:
+            msg = f"No error code in `.lq.Lobby.enterCustomizedContest`. response: {response}"  # noqa: E501
+            raise exceptions.InconsistentMessageError(msg, None)
+
+        try:
+            return EnterTournamentFailureReason(error_code)
+        except ValueError:
+            logger.error(  # noqa: TRY400
+                "Unsupported error code in `.lq.Lobby.enterCustomizedContest`. Falling back to UNKNOWN. response: %s",  # noqa: E501
+                response,
+            )
+            return EnterTournamentFailureReason.UNKNOWN
 
     @rpa_api
     async def create_room(
