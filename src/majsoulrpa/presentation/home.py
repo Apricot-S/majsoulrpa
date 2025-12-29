@@ -378,7 +378,7 @@ class HomePresentation(Presentation):
             msg = "`.lq.Lobby.joinRoom` has no response message."
             raise exceptions.InconsistentMessageError(msg, None)
 
-        failure_reason = self._parse_error_code(response)
+        failure_reason = self._parse_room_error_code(response)
         if failure_reason is None:
             logger.info("Successfully joined room.")
             self._mark_finished()
@@ -399,7 +399,7 @@ class HomePresentation(Presentation):
         return failure_reason
 
     @staticmethod
-    def _parse_error_code(
+    def _parse_room_error_code(
         response: dict[str, Any],
     ) -> JoinRoomFailureReason | None:
         error: dict | None = response.get("error")
