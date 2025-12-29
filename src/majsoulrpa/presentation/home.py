@@ -61,6 +61,7 @@ class HomePresentation(Presentation):
         "tournament_lobby": home_templates.TOURNAMENT_LOBBY,
         "tournament_lobby/enter": home_templates.tournament_lobby.ENTER,
         "tournament_lobby/confirm": home_templates.tournament_lobby.CONFIRM,
+        "tournament_lobby/error_confirm": home_templates.tournament_lobby.ERROR_CONFIRM,  # noqa: E501
         "friendly_match": home_templates.FRIENDLY_MATCH,
         "create_room": home_templates.CREATE_ROOM,
         "create_room/create": home_templates.create_room.CREATE,
