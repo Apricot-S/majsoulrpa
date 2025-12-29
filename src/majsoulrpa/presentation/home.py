@@ -20,6 +20,18 @@ TOURNAMENT_ID_PATTERN = re.compile(r"\d{6}")
 ROOM_ID_PATTERN = re.compile(r"\d{5}")
 
 
+class EnterTournamentFailureReason(Enum):
+    """Reason for failure to enter a tournament.
+
+    Attributes:
+        NOT_FOUND: The tournament was not found.
+        UNKNOWN: An unrecognized or unsupported error code.
+    """
+
+    NOT_FOUND = 2501
+    UNKNOWN = -1
+
+
 class JoinRoomFailureReason(Enum):
     """Reason for failure to join a friendly match room.
 
@@ -171,7 +183,10 @@ class HomePresentation(Presentation):
             pass
 
     @rpa_api
-    async def enter_tournament(self, tournament_id: str) -> bool:
+    async def enter_tournament(
+        self,
+        tournament_id: str,
+    ) -> EnterTournamentFailureReason | None:
         if TOURNAMENT_ID_PATTERN.fullmatch(tournament_id) is None:
             msg = "Tournament ID must be a 6-digit number."
             raise exceptions.InvalidArgumentError(msg, None)
@@ -223,7 +238,9 @@ class HomePresentation(Presentation):
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
 
-        return False
+        await asyncio.sleep(0.5)
+
+        return None
 
     @rpa_api
     async def create_room(
