@@ -178,7 +178,7 @@ class Sniffer:
 
         header = parse_message_header(content)
 
-        sniffed: SniffedMessage | None = None
+        sniffed: SniffedMessage | None
         match header:
             case NotificationHeader():
                 sniffed = self._handle_notification(header, direction, content)
