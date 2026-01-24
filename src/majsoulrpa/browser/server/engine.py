@@ -132,12 +132,10 @@ def _request_handler_factory(
     scale = _get_scale(viewport)
 
     async def handle_request(req: schemas.Request) -> schemas.Response:
+        res: schemas.Response
         match req:
             case schemas.ResolutionRequest():
-                res: schemas.Response = await _handle_resolution(
-                    viewport,
-                    scale,
-                )
+                res = await _handle_resolution(viewport, scale)
             case schemas.MoveMouseRequest():
                 res = await _handle_move_mouse(page, req)
             case schemas.ClickMouseRequest():
