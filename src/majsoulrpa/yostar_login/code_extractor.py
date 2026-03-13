@@ -3,12 +3,10 @@ from abc import ABC, abstractmethod
 from email.message import EmailMessage
 from typing import override
 
-VERIFICATION_CODE_PATTERN = re.compile(r">(\d{6})<")
-"""Regular expression for extracting a 6-digit verification code.
-
-The verification code is expected to be a 6-digit number enclosed
-between HTML tags (e.g., `<span style=3D"">123456</span>`).
-"""
+VERIFICATION_CODE_PATTERN = re.compile(
+    r"^【Yostar】メールアドレスの認証コードは　(\d{6})$",
+)  # JP version
+"""Regular expression for extracting a 6-digit verification code."""
 
 
 class CodeExtractorBase(ABC):
@@ -29,10 +27,9 @@ class CodeExtractor(CodeExtractorBase):
 
     @override
     def extract_code(self, mail: EmailMessage) -> str | None:
-        body_part = mail.get_body()
-        if body_part is None:
+        subject = mail.get("Subject")
+        if subject is None:
             return None
 
-        body = body_part.get_content()
-        match = self._pattern.search(body)
+        match = self._pattern.search(subject)
         return match.group(1) if match else None

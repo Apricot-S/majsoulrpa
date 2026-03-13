@@ -8,7 +8,7 @@ from typing import override
 
 YOSTAR_EMAIL_ADDRESS = "info@passport.yostar.co.jp"  # JP version
 YOSTAR_EMAIL_SUBJECT_PATTERN = re.compile(
-    r"【Yostar】メールアドレスの認証コードは　\d{6}",
+    r"^【Yostar】メールアドレスの認証コードは　\d{6}$",
 )  # JP version
 DEFAULT_EXPIRATION = datetime.timedelta(minutes=30)
 

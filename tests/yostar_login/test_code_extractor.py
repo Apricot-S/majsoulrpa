@@ -6,14 +6,14 @@ import pytest
 from majsoulrpa.yostar_login.code_extractor import CodeExtractor
 
 
-def make_mail(body: str) -> EmailMessage:
+def make_mail(subject: str) -> EmailMessage:
     msg = EmailMessage(policy=email.policy.SMTP)
-    msg.set_content(body)
+    msg["Subject"] = subject
     return msg
 
 
 def test_extract_code_success() -> None:
-    mail = make_mail("<span style=3D>123456</span>")
+    mail = make_mail("【Yostar】メールアドレスの認証コードは　123456")
     extractor = CodeExtractor()
     assert extractor.extract_code(mail) == "123456"
 
@@ -22,10 +22,10 @@ def test_extract_code_success() -> None:
     "text",
     [
         "",
-        "<span style=3D></span>",
-        "<span style=3D>12345</span>",
-        "<span style=3D>1234567</span>",
-        "<span style=3D> 123456 </span>",
+        "【Yostar】メールアドレスの認証コードは　",
+        "【Yostar】メールアドレスの認証コードは　12345",
+        "【Yostar】メールアドレスの認証コードは　1234567",
+        "【Yostar】メールアドレスの認証コードは 123456",
     ],
 )
 def test_extract_code_none(text: str) -> None:
