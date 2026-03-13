@@ -1,9 +1,10 @@
 from logging import NullHandler, getLogger
 
-from majsoulrpa._version import __version__
 from majsoulrpa.config_input import ConfigInput
 
 getLogger(__name__).addHandler(NullHandler())
+
+__version__ = "0.1.0"
 
 __all__ = [
     "ConfigInput",
