@@ -39,16 +39,21 @@ def setup_async_logging() -> QueueListener:
     return listener
 
 
+async def input_async(prompt: object = "", /) -> str:
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, input, prompt)
+
+
 rpa = RPAClient()
 
 
 @rpa.on(LoginPresentation)
 async def on_login(p: LoginPresentation, data: Any) -> Any:
-    email_address = input("Enter your email address: ")
+    email_address = await input_async("Enter your email address: ")
     async with asyncio.timeout(30):
         await p.enter_email_address(email_address)
 
-    verification_code = input("Enter the verification code: ")
+    verification_code = await input_async("Enter the verification code: ")
     async with asyncio.timeout(30):
         await p.enter_verification_code(verification_code)
 
