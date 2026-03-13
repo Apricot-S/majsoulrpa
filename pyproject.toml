@@ -68,7 +68,7 @@ test = [
     "pytest>=9.0.1,<10",
 ]
 typing = [
-    "mypy>=1.18.2,<2",
+    "ty>=0.0.23",
 ]
 docs = [
     "sphinx>=9.1.0",
@@ -137,9 +137,11 @@ convention = "google"
     "PLR2004", # magic-value-comparison
 ]
 
-[tool.mypy]
-plugins = ["pydantic.mypy"]
-exclude = [
-    'liqi_pb2\.py$',
-    'liqi_pb2\.pyi$',
+[[tool.ty.overrides]]
+include = [
+    "src/majsoulrpa/_majsoul_internal/protocol/liqi_pb2.py",
+    "src/majsoulrpa/_majsoul_internal/protocol/liqi_pb2.pyi",
 ]
+
+[tool.ty.overrides.rules]
+all = "ignore"
