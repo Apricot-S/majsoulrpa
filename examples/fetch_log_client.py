@@ -8,6 +8,11 @@ from majsoulrpa.presentation.login import LoginPresentation
 from majsoulrpa.rpa_client import RPAClient
 
 
+async def input_async(prompt: object = "", /) -> str:
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(None, input, prompt)
+
+
 class FetchLogPresentation(HomePresentation):
     @override
     async def _pre_dispatch(self) -> None:
@@ -32,11 +37,11 @@ rpa = RPAClient()
 
 @rpa.on(LoginPresentation)
 async def on_login(p: LoginPresentation, data: Any) -> Any:
-    email_address = input("Enter your email address: ")
+    email_address = await input_async("Enter your email address: ")
     async with asyncio.timeout(30):
         await p.enter_email_address(email_address)
 
-    verification_code = input("Enter the verification code: ")
+    verification_code = await input_async("Enter the verification code: ")
     async with asyncio.timeout(30):
         await p.enter_verification_code(verification_code)
 
@@ -45,7 +50,7 @@ async def on_login(p: LoginPresentation, data: Any) -> Any:
 
 @rpa.on(FetchLogPresentation)
 async def on_home(p: FetchLogPresentation, data: Any) -> Any:
-    log_id = input("Enter the log id: ")
+    log_id = await input_async("Enter the log id: ")
     async with asyncio.timeout(60):
         await p.fetch_log(log_id)
 
