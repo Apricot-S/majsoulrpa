@@ -9,8 +9,9 @@ manages interactions with widgets on the screen.
 
 # submodules
 __all__ = [
-    "exceptions",  # type: ignore[reportUnsupportedDunderAll]
-    "home",  # type: ignore[reportUnsupportedDunderAll]
-    "login",  # type: ignore[reportUnsupportedDunderAll]
-    "room_settings",  # type: ignore[reportUnsupportedDunderAll]
+    "exceptions",
+    "home",
+    "login",
+    "room",
+    "room_settings",
 ]

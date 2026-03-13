@@ -8,5 +8,5 @@ __all__ = [
 
 # submodules
 __all__ += [
-    "email_repository",  # type: ignore[reportUnsupportedDunderAll]
+    "email_repository",
 ]
