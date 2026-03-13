@@ -10,7 +10,7 @@ from majsoulrpa.yostar_login.email_classifier import (
 )
 
 _YOSTAR_EMAIL_ADDRESS = "info@passport.yostar.co.jp"
-_YOSTAR_EMAIL_SUBJECT = "Eメールアドレスの確認"
+_YOSTAR_EMAIL_SUBJECT = "【Yostar】メールアドレスの認証コードは　140526"
 
 _EXAMPLE_TO = "majsoulrpa-dev@example.com"
 

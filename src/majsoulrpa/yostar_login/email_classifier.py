@@ -1,4 +1,5 @@
 import datetime
+import re
 from abc import ABC, abstractmethod
 from email.message import EmailMessage
 from email.utils import parsedate_to_datetime
@@ -6,7 +7,9 @@ from enum import Enum, auto
 from typing import override
 
 YOSTAR_EMAIL_ADDRESS = "info@passport.yostar.co.jp"  # JP version
-YOSTAR_EMAIL_SUBJECT = "Eメールアドレスの確認"  # JP version
+YOSTAR_EMAIL_SUBJECT_PATTERN = re.compile(
+    r"【Yostar】メールアドレスの認証コードは　\d{6}",
+)  # JP version
 DEFAULT_EXPIRATION = datetime.timedelta(minutes=30)
 
 
@@ -31,7 +34,7 @@ class EmailClassifier(EmailClassifierBase):
     def __init__(
         self,
         sender: str = YOSTAR_EMAIL_ADDRESS,
-        subject: str = YOSTAR_EMAIL_SUBJECT,
+        subject: re.Pattern[str] = YOSTAR_EMAIL_SUBJECT_PATTERN,
         expiration: datetime.timedelta = DEFAULT_EXPIRATION,
     ) -> None:
         self._sender = sender
@@ -50,7 +53,7 @@ class EmailClassifier(EmailClassifierBase):
             return ClassificationResult.UNRELATED
 
         subject = mail.get("Subject")
-        if subject is None or subject != self._subject:
+        if subject is None or not self._subject.match(subject):
             return ClassificationResult.UNRELATED
 
         raw_date = mail.get("Date")
