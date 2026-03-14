@@ -115,14 +115,6 @@ class LoginPresentation(Presentation):
         self._entered_email_address = True
         self._last_request_time = datetime.now(UTC)
 
-        # Wait for the "Confirm" button to appear, then click it.
-        await asyncio.sleep(1.0)
-        if not await self._click_if_match(self._templates["confirm"]):
-            msg = '"Confirm" button could not be detected.'
-            ss = await self.get_screenshot()
-            raise exceptions.PresentationNotDetectedError(msg, ss)
-        await asyncio.sleep(0.5)
-
     @rpa_api
     async def enter_verification_code(self, verification_code: str) -> None:
         # Validate the format of verification code.
