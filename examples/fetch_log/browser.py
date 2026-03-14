@@ -6,7 +6,7 @@ from majsoulrpa.browser.server.runtime import run_browser_server
 from majsoulrpa.browser.server.sniffer import run_sniffer
 from majsoulrpa.config_input import Browser, ConfigInput
 
-ADDON_PATH = Path(__file__).parent / "fetch_log_addon.py"
+ADDON_PATH = Path(__file__).parent / "addon.py"
 
 
 def archiver_runner(config: Config) -> Popen:
