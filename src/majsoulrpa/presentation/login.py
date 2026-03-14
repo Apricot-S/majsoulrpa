@@ -21,7 +21,7 @@ class LoginPresentation(Presentation):
         "login_1": login_templates.LOGIN_1,
         "login_2": login_templates.LOGIN_2,
         "ok": login_templates.OK,
-        "unavailable": login_templates.UNAVAILABLE,
+        "send": login_templates.SEND,
     }
     _regions: ClassVar = {
         "email_address_field": login_regions.EMAIL_ADDRESS_FIELD,
@@ -100,12 +100,13 @@ class LoginPresentation(Presentation):
         await self._type_key(email_address)
         await asyncio.sleep(0.5)
 
-        # Click the "Send Code" button.
+        # Click the "Send" button.
         await self._click_region(self._regions["send_code"])
         await asyncio.sleep(0.2)
 
-        # Check if the email address is unavailable.
-        if await self._has_match(self._templates["unavailable"]):
+        # Check if the email address is unavailable by checking that
+        # the "Send" button is hidden by the error message.
+        if not await self._has_match(self._templates["send"]):
             msg = "This email address is unavailable."
             ss = await self.get_screenshot()
             raise exceptions.InvalidArgumentError(msg, ss)
