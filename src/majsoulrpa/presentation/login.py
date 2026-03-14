@@ -149,23 +149,6 @@ class LoginPresentation(Presentation):
             ss = await self.get_screenshot()
             raise exceptions.PresentationNotDetectedError(msg, ss)
 
-        # Check if the verification code is incorrect.
-        # If the verification code is incorrect,
-        # a dialog box will appear, so click "Confirm".
-        await asyncio.sleep(1.5)
-        if await self._click_if_match(self._templates["confirm"]):
-            # After clicking "Confirm", the email input field closes,
-            # so click the "Login" button to reopen it.
-            await asyncio.sleep(1.0)
-            if not await self._click_if_match(self._templates["login_1"]):
-                msg = '"Login" button could not be detected.'
-                ss = await self.get_screenshot()
-                raise exceptions.PresentationNotDetectedError(msg, ss)
-            await asyncio.sleep(0.5)
-
-            msg = "Verification failed. Verification code may be incorrect."
-            raise exceptions.InvalidArgumentError(msg, None)
-
         await self._detect_maintenance()
 
         self._mark_finished()
