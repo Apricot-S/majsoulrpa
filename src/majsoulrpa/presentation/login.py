@@ -25,7 +25,7 @@ class LoginPresentation(Presentation):
     }
     _regions: ClassVar = {
         "email_address_field": login_regions.EMAIL_ADDRESS_FIELD,
-        "send_code": login_regions.SEND_CODE,
+        "send": login_regions.SEND,
         "verification_code_field": login_regions.VERIFICATION_CODE_FIELD,
     }
 
@@ -101,7 +101,7 @@ class LoginPresentation(Presentation):
         await asyncio.sleep(0.5)
 
         # Click the "Send" button.
-        await self._click_region(self._regions["send_code"])
+        await self._click_region(self._regions["send"])
         await asyncio.sleep(0.2)
 
         # Check if the email address is unavailable by checking that
