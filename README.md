@@ -124,7 +124,6 @@ See [examples/](examples/) for complete implementations.
 
 > [!IMPORTANT]
 > The email address you use must be linked to your Yostar ID.
-> See [discussion #287](https://github.com/Apricot-S/majsoulrpa/discussions/287) for more details.
 
 ## License
 
