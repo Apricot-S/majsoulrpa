@@ -102,11 +102,12 @@ class LoginPresentation(Presentation):
 
         # Click the "Send" button.
         await self._click_region(self._regions["send"])
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(3.0)
 
-        # Check if the email address is unavailable by checking that
-        # the "Send" button is hidden by the error message.
-        if not await self._has_match(self._templates["send"]):
+        # Check if the "Send" button has changed to the countdown timer
+        # indicating the interval until resending becomes available.
+        # If it has not changed, it remains as the "Send" button.
+        if await self._has_match(self._templates["send"]):
             msg = "This email address is unavailable."
             ss = await self.get_screenshot()
             raise exceptions.InvalidArgumentError(msg, ss)

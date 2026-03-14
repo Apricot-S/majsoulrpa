@@ -11,4 +11,4 @@ top = 10
 bottom = 10
 
 [settings]
-threshold = 0.95
+threshold = 0.90
