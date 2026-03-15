@@ -73,6 +73,10 @@ class LoginPresentation(Presentation):
     async def enter_email_address(self, email_address: str) -> None:
         await self._detect_maintenance()
 
+        if not email_address:
+            msg = "Email address cannot be empty."
+            raise exceptions.InvalidArgumentError(msg, None)
+
         if len(email_address) > MAX_EMAIL_ADDRESS_LENGTH:
             msg = f"Keep an email address within {MAX_EMAIL_ADDRESS_LENGTH} characters."  # noqa: E501
             raise exceptions.InvalidArgumentError(msg, None)
