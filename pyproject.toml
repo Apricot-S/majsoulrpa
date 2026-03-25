@@ -33,7 +33,7 @@ browser = [
 client = [
     "numpy>=2.4.1",
     "opencv-python>=4.13.0.90",
-    "protobuf>=6.33.1",
+    "protobuf>=7.34.1",
     "pyzmq>=27.1.0",
     "tornado>=6.5.2; sys_platform == 'win32'",
 ]
@@ -79,7 +79,7 @@ browser = [
 ]
 client = [
     "majsoulrpa[client]",
-    "types-protobuf>=6.32.1.20251105",
+    "types-protobuf>=6.32.1.20260221",
 ]
 email-s3 = [
     "majsoulrpa[email-s3]",
