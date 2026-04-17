@@ -24,7 +24,7 @@ dependencies = [
 
 [project.optional-dependencies]
 browser = [
-    "mitmproxy>=12.2.1",
+    "mitmproxy>=12.2.2",
     "playwright>=1.57.0",
     "pyzmq>=27.1.0",
     "tornado>=6.5.2; sys_platform == 'win32'",
