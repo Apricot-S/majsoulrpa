@@ -12,7 +12,7 @@ from majsoulrpa.constants import DEFAULT_VIEWPORT_HEIGHT
 
 LOG_QUERY_PARAM = "?paipu="
 
-PAGE_WAIT_TIMEOUT = 30_000
+PAGE_WAIT_TIMEOUT = 60_000
 
 type BrowserEngineRunner = Callable[
     [Config, Option, core.ServerRunner],
@@ -112,7 +112,7 @@ async def _handle_log(
 
 async def _handle_reload(page: Page) -> schemas.ReloadResponse:
     await page.reload()
-    await page.wait_for_selector("#layaCanvas", timeout=PAGE_WAIT_TIMEOUT)
+    await page.wait_for_selector("#unity-canvas", timeout=PAGE_WAIT_TIMEOUT)
     return schemas.ReloadResponse()
 
 
@@ -161,7 +161,7 @@ def _request_handler_factory(
 
 async def _prepare_majsoul_page(page: Page, url: str) -> None:
     await page.goto(url)
-    await page.wait_for_selector("#layaCanvas", timeout=PAGE_WAIT_TIMEOUT)
+    await page.wait_for_selector("#unity-canvas", timeout=PAGE_WAIT_TIMEOUT)
 
 
 async def _get_spoofed_user_agent() -> str:
