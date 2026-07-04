@@ -22,8 +22,16 @@ class BrowserHost:
     async def start(self, config: AppConfig) -> None:
         try:
             await self._backend.start(config)
-        except asyncio.CancelledError:
-            await self._backend.stop()
+        except asyncio.CancelledError as cancellation:
+            try:
+                await self._backend.stop()
+            except Exception as cleanup_error:
+                self._running = False
+                msg = "Browser host start was cancelled and cleanup failed."
+                raise BaseExceptionGroup(
+                    msg,
+                    [cancellation, cleanup_error],
+                ) from cleanup_error
             self._running = False
             raise
         else:

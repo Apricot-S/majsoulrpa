@@ -11,6 +11,7 @@ class BrowserBackendSpy:
         self.started = 0
         self.stopped = 0
         self.start_error: BaseException | None = None
+        self.stop_error: Exception | None = None
         self.last_config: AppConfig | None = None
 
     async def start(self, config: AppConfig) -> None:
@@ -21,6 +22,8 @@ class BrowserBackendSpy:
 
     async def stop(self) -> None:
         self.stopped += 1
+        if self.stop_error is not None:
+            raise self.stop_error
 
 
 def test_browser_host_is_running_after_start() -> None:
@@ -63,6 +66,24 @@ def test_browser_host_cleans_up_when_start_is_cancelled() -> None:
 
     assert host.is_running is False
     assert backend.stopped == 1
+
+
+def test_browser_host_reports_cleanup_failure_after_cancellation() -> None:
+    backend = BrowserBackendSpy()
+    backend.start_error = asyncio.CancelledError()
+    backend.stop_error = RuntimeError("failed to clean up")
+    host = BrowserHost(backend)
+
+    with pytest.raises(BaseExceptionGroup) as exc_info:
+        asyncio.run(host.start(AppConfig()))
+
+    errors = exc_info.value.exceptions
+    assert any(isinstance(error, asyncio.CancelledError) for error in errors)
+    assert any(
+        isinstance(error, RuntimeError) and str(error) == "failed to clean up"
+        for error in errors
+    )
+    assert host.is_running is False
 
 
 def test_browser_host_stop_marks_stopped() -> None:
