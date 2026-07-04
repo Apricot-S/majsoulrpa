@@ -29,13 +29,13 @@
 
 ## Phase 3: browser host lifecycle
 
-- [ ] browser host 起動成功時に running 状態になる
-- [ ] browser host 起動失敗時に例外を返す
-- [ ] 起動失敗を成功扱いにしない
-- [ ] stop を 1 回呼ぶと stopped 状態になる
-- [ ] stop を 2 回呼んだ場合の挙動を固定する
+- [x] browser host 起動成功時に running 状態になる
+- [x] browser host 起動失敗時に例外を返す
+- [x] 起動失敗を成功扱いにしない
+- [x] stop を 1 回呼ぶと stopped 状態になる
+- [x] stop を 2 回呼んだ場合の挙動を固定する
 - [ ] 起動中に cancellation された場合に cleanup する
-- [ ] capture backend の start に失敗した場合に browser を閉じる
+- [ ] sniffer backend の start に失敗した場合に browser を閉じる
 - [ ] shutdown 中の副次的失敗を完全には捨てない
 
 ## Phase 4: callback dispatch
@@ -72,15 +72,15 @@
 どちらを選ぶ場合も、先に fake browser operation のテストを書きます。
 実ゲーム確認が終わるまで、もう片方には進みません。
 
-## Phase 7: WebSocket capture
+## Phase 7: WebSocket sniffer
 
-- [ ] fake capture backend が synthetic payload を発行できる
+- [ ] fake sniffer backend が synthetic payload を発行できる
 - [ ] raw payload を hook に渡せる
 - [ ] raw payload をデバッグ用ログに出せる
 - [ ] raw payload ログのテストは synthetic payload だけを使う
 - [ ] decode 失敗を成功扱いにしない
 - [ ] hook が例外を投げた場合の扱いを固定する
-- [ ] capture stop が呼ばれる
+- [ ] sniffer stop が呼ばれる
 
 ## examples / docs
 
