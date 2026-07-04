@@ -10,9 +10,44 @@ from majsoulrpa.browser.driver import Key
 from majsoulrpa.presentation import exceptions
 from majsoulrpa.presentation.base import Presentation, rpa_api
 
-MAX_EMAIL_ADDRESS_LENGTH = 50  # JP version
 REQUEST_INTERVAL = timedelta(seconds=60)
+MAX_EMAIL_ADDRESS_LENGTH = 254
+MAX_EMAIL_LOCAL_PART_LENGTH = 64
+MAX_EMAIL_DOMAIN_LENGTH = 253
+MAX_EMAIL_DOMAIN_LABEL_LENGTH = 63
+EMAIL_ADDRESS_PATTERN = re.compile(
+    r"[\w!#$%&'*+/=?^_`{|}~-]+(?:\.[\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\w](?:[\w-]*[\w])?\.)+[\w](?:[\w-]*[\w])?",
+    re.ASCII,
+)
+DOMAIN_LABEL_PATTERN = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?")
 VERIFICATION_CODE_PATTERN = re.compile(r"\d{6}")
+
+
+def validate_email_address(email_address: str) -> None:
+    if not email_address:
+        msg = "Email address cannot be empty."
+        raise exceptions.InvalidArgumentError(msg, None)
+
+    if EMAIL_ADDRESS_PATTERN.fullmatch(email_address) is None:
+        msg = "Email address is not available for Yostar login."
+        raise exceptions.InvalidArgumentError(msg, None)
+
+    local_part, domain = email_address.rsplit("@", maxsplit=1)
+    if (
+        len(email_address) > MAX_EMAIL_ADDRESS_LENGTH
+        or len(local_part) > MAX_EMAIL_LOCAL_PART_LENGTH
+        or len(domain) > MAX_EMAIL_DOMAIN_LENGTH
+    ):
+        msg = "Email address is invalid."
+        raise exceptions.InvalidArgumentError(msg, None)
+
+    if any(
+        len(label) > MAX_EMAIL_DOMAIN_LABEL_LENGTH
+        or DOMAIN_LABEL_PATTERN.fullmatch(label) is None
+        for label in domain.split(".")
+    ):
+        msg = "Email address is invalid."
+        raise exceptions.InvalidArgumentError(msg, None)
 
 
 class LoginPresentation(Presentation):
@@ -73,13 +108,7 @@ class LoginPresentation(Presentation):
     async def enter_email_address(self, email_address: str) -> None:
         await self._detect_maintenance()
 
-        if not email_address:
-            msg = "Email address cannot be empty."
-            raise exceptions.InvalidArgumentError(msg, None)
-
-        if len(email_address) > MAX_EMAIL_ADDRESS_LENGTH:
-            msg = f"Keep an email address within {MAX_EMAIL_ADDRESS_LENGTH} characters."  # noqa: E501
-            raise exceptions.InvalidArgumentError(msg, None)
+        validate_email_address(email_address)
 
         if self._last_request_time is not None:
             delta = datetime.now(UTC) - self._last_request_time
