@@ -26,7 +26,7 @@ v2 の公開利用例では、以下が中心でした。
 以下は設計の雰囲気を示す例であり、確定 API ではありません。
 
 ```python
-app = RpaApp()
+app = RPAApp()
 
 
 @app.on(LoginScreen)

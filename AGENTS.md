@@ -9,19 +9,23 @@ MajsoulRPA v3 は、v2 の README と examples にある利用感を出発点に
 - [v3 の方針](docs/agents/v3-charter.md)
 - [開発計画](docs/agents/development-plan.md)
 - [API 設計方針](docs/agents/api-guidelines.md)
+- [公開 API 草案](docs/agents/public-api-draft.md)
 - [内部設計方針](docs/agents/internal-design.md)
+- [v3 アーキテクチャ草案](docs/agents/v3-architecture.md)
 - [カスタマイズ方針](docs/agents/customization.md)
 - [WebSocket キャプチャ方針](docs/agents/websocket-capture.md)
 - [テストと品質基準](docs/agents/testing-quality.md)
+- [初回テストリスト](docs/agents/initial-test-list.md)
 - [安全性と秘密情報](docs/agents/safety-secrets.md)
 
 ## 最重要ルール
 
 - 合意済みの友人戦・大会での利用のみを対象にします。
 - オープン対局、段位戦、未合意の対局への参加を可能にする機能は追加しません。
-- 認証情報、Cookie、アクセストークン、実メール、ライブ通信キャプチャ、
-  AWS credential を、テスト、フィクスチャ、ログ、サンプル、ドキュメント、
-  コミットに含めません。
+- 認証情報、Cookie、アクセストークン、実メール、AWS credential を、
+  テスト、フィクスチャ、ログ、サンプル、ドキュメント、コミットに含めません。
+- raw WebSocket payload は v2 同様デバッグ用ログへ出してよいですが、
+  テスト、フィクスチャ、サンプル、ドキュメント、コミットには含めません。
 - v2 のコードや資産は一度削除する前提です。スクリーンショット画像や
   `.proto` ファイルが必要になった場合は、ユーザーにコミットを依頼します。
 - t_wada の TDD 手順に従います。まずテストリストを作り、ひとつずつ
