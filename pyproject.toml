@@ -1,0 +1,113 @@
+[project]
+name = "majsoulrpa"
+version = "0.1.0"
+description = "A Robotic Process Automation (RPA) framework for Mahjong Soul (雀魂)"
+authors = [
+    { name = "Apricot S." },
+    { name = "Cryolite", email = "cryolite.indigo@gmail.com" },
+]
+license = "MIT"
+license-files = ["LICENSE", "THIRD-PARTY-NOTICES.md"]
+readme = "README.md"
+requires-python = ">=3.12"
+keywords = ["mahjong", "Mahjong Soul", "Majsoul", "automation", "RPA"]
+classifiers = [
+    "Private :: Do Not Upload",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = []
+
+[project.optional-dependencies]
+
+[project.scripts]
+majsoulrpa-browser = "majsoulrpa.cli:main" # The path is provisional.
+
+[project.urls]
+Repository = "https://github.com/Apricot-S/majsoulrpa.git"
+
+[build-system]
+requires = ["uv_build>=0.11.26,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    { include-group = "lint" },
+    { include-group = "test" },
+    { include-group = "typing" },
+    { include-group = "docs" },
+]
+lint = [
+    "ruff>=0.15.20,<0.16",
+]
+test = [
+    "pytest>=9.1.1,<10",
+]
+typing = [
+    "ty>=0.0.56",
+]
+docs = [
+    "sphinx>=9.1.0",
+    "sphinx-rtd-theme>=3.1.0",
+]
+
+[tool.pytest]
+minversion = "9.0"
+strict = true
+testpaths = ["tests"]
+
+[tool.ruff]
+src = ["src"]
+extend-exclude = ["src/majsoulrpa/_majsoul_internal/protocol"] # The path is provisional.
+line-length = 79
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "D",
+    "COM812",  # missing-trailing-comma
+    "C901",    # complex-structure
+    "ANN002",  # missing-type-args
+    "ANN003",  # missing-type-kwargs
+    "TD002",   # missing-todo-author
+    "TD003",   # missing-todo-link
+    "PLR0911", # too-many-return-statements
+    "PLR0912", # too-many-branches
+    "PLR0913", # too-many-arguments
+    "PLR0915", # too-many-statements
+]
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 72
+ignore-overlong-task-comments = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"./docs/**.py" = ["ALL"]
+
+[tool.ruff.lint.extend-per-file-ignores]
+"./examples/*" = [
+    "D",      # pydocstyle
+    "ANN401", # any-type
+    "S101",   # assert
+    "INP001", # implicit-namespace-package
+    "T201",   # print
+    "TRY004", # type-check-without-type-error
+]
+"./tests/*" = [
+    "D",       # pydocstyle
+    "S101",    # assert
+    "SLF001",  # private-member-access
+    "PLR2004", # magic-value-comparison
+]
+
+[tool.ty.src]
+exclude = [
+    "src/majsoulrpa/_majsoul_internal/protocol/liqi_pb2.py",  # The path is provisional.
+    "src/majsoulrpa/_majsoul_internal/protocol/liqi_pb2.pyi", # The path is provisional.
+]
