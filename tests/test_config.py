@@ -1,4 +1,5 @@
 from pathlib import Path
+from textwrap import dedent
 
 import pytest
 from pydantic import ValidationError
@@ -38,3 +39,51 @@ def test_browser_user_data_dir_accepts_path() -> None:
     config = BrowserConfig(user_data_dir=Path("user-data"))
 
     assert config.user_data_dir == Path("user-data")
+
+
+def test_app_config_can_be_loaded_from_toml_text() -> None:
+    config = AppConfig.from_toml_text(
+        dedent(
+            """
+            [endpoint]
+            browser_host = "192.0.2.10"
+            client_host = "192.0.2.20"
+            remote_port = 12000
+            sniffer_port = 12001
+
+            [browser]
+            window_left = 100
+            window_top = 200
+            viewport_height = 720
+            headless = true
+            user_data_dir = "user-data"
+            """,
+        ),
+    )
+
+    assert config.endpoint.browser_host == "192.0.2.10"
+    assert config.endpoint.client_host == "192.0.2.20"
+    assert config.endpoint.remote_port == 12000
+    assert config.endpoint.sniffer_port == 12001
+    assert config.browser.window_left == 100
+    assert config.browser.window_top == 200
+    assert config.browser.viewport_height == 720
+    assert config.browser.headless is True
+    assert config.browser.user_data_dir == Path("user-data")
+
+
+def test_app_config_can_be_loaded_from_toml_file(tmp_path: Path) -> None:
+    config_file = tmp_path / "config.toml"
+    config_file.write_text(
+        "[browser]\nviewport_height = 1440\n",
+        encoding="utf-8",
+    )
+
+    config = AppConfig.from_toml_file(config_file)
+
+    assert config.browser.viewport_height == 1440
+
+
+def test_app_config_rejects_unknown_toml_key() -> None:
+    with pytest.raises(ValidationError, match="unexpected"):
+        AppConfig.from_toml_text("unexpected = true\n")

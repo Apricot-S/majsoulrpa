@@ -18,8 +18,8 @@
 ## Phase 2: config
 
 - [x] `AppConfig()` がローカル一体構成の default を持つ
-- [ ] TOML から `AppConfig` を作れる
-- [ ] TOML の未知 key をエラーにする
+- [x] TOML から `AppConfig` を作れる
+- [x] TOML の未知 key をエラーにする
 - [x] endpoint の host が空文字の場合にエラーにする
 - [x] port が範囲外の場合にエラーにする
 - [x] viewport height が許可値外の場合にエラーにする

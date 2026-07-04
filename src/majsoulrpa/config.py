@@ -1,3 +1,4 @@
+import tomllib
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -35,3 +36,12 @@ class AppConfig(BaseModel):
 
     endpoint: EndpointConfig = Field(default_factory=EndpointConfig)
     browser: BrowserConfig = Field(default_factory=BrowserConfig)
+
+    @classmethod
+    def from_toml_text(cls, text: str) -> "AppConfig":
+        return cls.model_validate(tomllib.loads(text))
+
+    @classmethod
+    def from_toml_file(cls, path: Path) -> "AppConfig":
+        with path.open("rb") as fp:
+            return cls.model_validate(tomllib.load(fp))
