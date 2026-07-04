@@ -34,7 +34,7 @@
 - [x] 起動失敗を成功扱いにしない
 - [x] stop を 1 回呼ぶと stopped 状態になる
 - [x] stop を 2 回呼んだ場合の挙動を固定する
-- [ ] 起動中に cancellation された場合に cleanup する
+- [x] 起動中に cancellation された場合に cleanup する
 - [ ] sniffer backend の start に失敗した場合に browser を閉じる
 - [ ] shutdown 中の副次的失敗を完全には捨てない
 

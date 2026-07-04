@@ -1,3 +1,4 @@
+import asyncio
 from typing import Protocol
 
 from majsoulrpa.config import AppConfig
@@ -19,8 +20,14 @@ class BrowserHost:
         return self._running
 
     async def start(self, config: AppConfig) -> None:
-        await self._backend.start(config)
-        self._running = True
+        try:
+            await self._backend.start(config)
+        except asyncio.CancelledError:
+            await self._backend.stop()
+            self._running = False
+            raise
+        else:
+            self._running = True
 
     async def stop(self) -> None:
         if not self._running:

@@ -10,7 +10,7 @@ class BrowserBackendSpy:
     def __init__(self) -> None:
         self.started = 0
         self.stopped = 0
-        self.start_error: Exception | None = None
+        self.start_error: BaseException | None = None
         self.last_config: AppConfig | None = None
 
     async def start(self, config: AppConfig) -> None:
@@ -51,6 +51,18 @@ def test_browser_host_start_failure_does_not_mark_running() -> None:
         asyncio.run(host.start(AppConfig()))
 
     assert host.is_running is False
+
+
+def test_browser_host_cleans_up_when_start_is_cancelled() -> None:
+    backend = BrowserBackendSpy()
+    backend.start_error = asyncio.CancelledError()
+    host = BrowserHost(backend)
+
+    with pytest.raises(asyncio.CancelledError):
+        asyncio.run(host.start(AppConfig()))
+
+    assert host.is_running is False
+    assert backend.stopped == 1
 
 
 def test_browser_host_stop_marks_stopped() -> None:
