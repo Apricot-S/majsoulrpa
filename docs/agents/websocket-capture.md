@@ -9,6 +9,7 @@ v3 では、examples の牌譜バイナリ保存のように、ユーザーが�
 
 - Mahjong Soul の WebSocket frame を観測できる
 - raw bytes を必要に応じてユーザー処理へ渡せる
+- raw payload をデバッグ用ログへ出せる
 - message 名などの metadata で分岐できる
 - request / response の対応付けを扱える
 - browser host と client を分離した構成でも使える
@@ -81,9 +82,10 @@ Playwright 案は、次を満たせる場合に採用候補とします。
 - fake capture backend を使う
 - 実サーバー、実雀魂、実 proxy、実 certificate を使わない
 - 実 payload を fixture にしない
+- raw payload ログのテストには synthetic payload だけを使う
 
 手動確認:
 
 - 実通信確認が必要になったら、保存場所と削除方針を明示する
-- 取得した payload はコミットしない
+- 取得した payload はログに出してよいが、コミットしない
 - 必要な `.proto` や生成物はユーザーにコミットを依頼する

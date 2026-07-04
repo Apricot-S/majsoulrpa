@@ -44,6 +44,7 @@ v3 は、標準の使い方を簡単にしつつ、必要なユーザーが安�
 
 - message metadata を見る
 - request / response の raw bytes を保存する
+- raw WebSocket payload をデバッグ用ログへ出す
 - decode した message 名で分岐する
 - 保存処理をユーザー側に置く
 

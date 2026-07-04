@@ -49,6 +49,7 @@ key-prefix = "example-prefix/"
 - timeout 秒数
 - synthetic test id
 - secret を含まない設定値
+- デバッグ用の raw WebSocket payload
 
 ログに出してはいけないもの:
 
@@ -56,12 +57,16 @@ key-prefix = "example-prefix/"
 - 認証コード
 - Cookie
 - token
-- raw WebSocket payload
 - 実メール本文
 
 ## WebSocket payload
 
-実通信 payload は保存しない、コミットしない、fixture にしないことを原則にします。
+raw WebSocket payload は、v2 と同様にデバッグ用ログへ出してよいものとします。
+加工済みの要約だけでは原因調査が難しいため、ユーザーが必要に応じて raw
+payload を確認できる状態を優先します。
+
+ただし、実通信 payload はコミットしない、fixture にしない、ドキュメントに
+貼らないことを原則にします。
 
 手動確認で一時保存が必要な場合:
 
