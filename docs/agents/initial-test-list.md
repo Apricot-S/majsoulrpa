@@ -6,14 +6,14 @@
 
 ## Phase 1: 空のプロジェクト骨格
 
-- [ ] package を import できる
-- [ ] `majsoulrpa.__version__` の扱いを決め、テストする
-- [ ] README の最小 example が import できる
+- [x] package を import できる
+- [x] `majsoulrpa.__version__` の扱いを決め、テストする
+- [x] README が v3 初期状態と安全スコープを説明している
 - [ ] Sphinx や古い API docs に依存しない
 - [ ] `pyproject.toml` の optional dependency group が解決できる
-- [ ] `python -m ruff check .` が通る
-- [ ] `python -m ruff format --check .` が通る
-- [ ] `python -m ty check` が通る
+- [x] `python -m ruff check .` が通る
+- [x] `python -m ruff format --check .` が通る
+- [x] `python -m ty check` が通る
 
 ## Phase 2: config
 

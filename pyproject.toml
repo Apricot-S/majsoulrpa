@@ -24,7 +24,7 @@ dependencies = []
 [project.optional-dependencies]
 
 [project.scripts]
-majsoulrpa-browser = "majsoulrpa.cli:main" # The path is provisional.
+majsoulrpa-browser = "majsoulrpa.cli:main"
 
 [project.urls]
 Repository = "https://github.com/Apricot-S/majsoulrpa.git"
