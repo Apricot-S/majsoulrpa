@@ -87,7 +87,6 @@ TOML から読む補助 API は用意しますが、TOML 形式を内部表現�
 class AppConfig:
     endpoint: EndpointConfig
     browser: BrowserConfig
-    capture: CaptureConfig
 ```
 
 方針:
@@ -178,14 +177,14 @@ async def enter_lobby(self, tournament_id: str) -> None: ...
 これらは候補であり、一度に実装しません。高レベル API は 1 つ実装するごとに
 ユーザーの実ゲーム確認を挟みます。
 
-## Capture hook
+## Sniffer hook
 
-WebSocket capture は、raw payload をユーザーが確認できる形にします。
+WebSocket sniffer は、raw payload をユーザーが確認できる形にします。
 
 候補:
 
 ```python
-class CaptureHook:
+class SnifferHook:
     async def on_websocket_payload(self, payload: bytes, metadata: MessageMetadata) -> None:
         ...
 ```

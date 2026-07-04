@@ -6,4 +6,4 @@ def test_package_exposes_version() -> None:
 
 
 def test_public_exports_are_explicit() -> None:
-    assert majsoulrpa.__all__ == ["__version__"]
+    assert majsoulrpa.__all__ == ["AppConfig", "__version__"]

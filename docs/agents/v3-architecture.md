@@ -186,6 +186,9 @@ capture は差し替え価値があるため、狭い境界を許可します。
 Playwright capture を最初に spike し、要件を満たせない場合に mitmproxy を
 採用候補にします。
 
+`SnifferConfig` は初期 config には置きません。sniffer backend の spike 後に、
+ユーザーが実際に設定すべき値が明確になってから追加します。
+
 ## `testing/`
 
 testing package は、実ブラウザや実通信なしで TDD を進めるために用意します。

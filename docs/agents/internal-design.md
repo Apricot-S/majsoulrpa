@@ -14,7 +14,7 @@ v3 は、過剰な抽象化や定型的な「クリーンアーキテクチャ�
 - Browser runtime: Playwright 起動、browser context、page lifecycle
 - Client runtime: Presentation 検出、callback dispatch、state 受け渡し
 - Presentation: 画面検出と画面操作
-- Capture: WebSocket message の観測、decode、ユーザー hook
+- Sniffer: WebSocket message の観測、decode、ユーザー hook
 - Login support: Yostar login code provider などの optional 機能
 - Test support: fake browser、fake screen、synthetic capture
 

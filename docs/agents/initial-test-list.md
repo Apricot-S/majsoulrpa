@@ -17,13 +17,13 @@
 
 ## Phase 2: config
 
-- [ ] `AppConfig()` がローカル一体構成の default を持つ
+- [x] `AppConfig()` がローカル一体構成の default を持つ
 - [ ] TOML から `AppConfig` を作れる
 - [ ] TOML の未知 key をエラーにする
-- [ ] endpoint の host が空文字の場合にエラーにする
-- [ ] port が範囲外の場合にエラーにする
-- [ ] viewport height が許可値外の場合にエラーにする
-- [ ] `user_data_dir` が未指定の場合の意味が明確である
+- [x] endpoint の host が空文字の場合にエラーにする
+- [x] port が範囲外の場合にエラーにする
+- [x] viewport height が許可値外の場合にエラーにする
+- [x] `user_data_dir` が未指定の場合の意味が明確である
 - [ ] secret に相当する値を config repr に出さない
 - [ ] secret に相当する値を validation error に出さない
 
