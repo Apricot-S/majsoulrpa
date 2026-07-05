@@ -56,7 +56,7 @@
 - [x] fake screenshot で Screen を検出できる
 - [x] Screen detection が false のとき callback されない
 - [x] Screen detection が例外を投げたら隠さない
-- [ ] 複数 Screen が一致した場合は登録順で選ばれる
+- [x] 複数 Screen が一致した場合は登録順で選ばれる
 - [ ] ScreenContext から browser operation を記録できる
 - [ ] ScreenContext から stop 要求を出せる
 

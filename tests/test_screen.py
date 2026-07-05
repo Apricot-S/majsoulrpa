@@ -119,3 +119,55 @@ def test_screen_detection_exception_is_not_hidden() -> None:
 
     with pytest.raises(RuntimeError, match="detection failed"):
         asyncio.run(app.run(AppConfig(), object()))
+
+
+def test_multiple_matching_screens_use_registration_order() -> None:
+    class FakeScreenshot:
+        def __init__(self, *, matches: bool) -> None:
+            self.matches = matches
+
+    class FirstScreen(Screen):
+        @classmethod
+        @override
+        def detection_spec(cls) -> ScreenDetectionSpec:
+            return ScreenDetectionSpec(
+                predicate=lambda screenshot: (
+                    isinstance(screenshot, FakeScreenshot)
+                    and screenshot.matches
+                ),
+            )
+
+    class SecondScreen(Screen):
+        @classmethod
+        @override
+        def detection_spec(cls) -> ScreenDetectionSpec:
+            return ScreenDetectionSpec(
+                predicate=lambda screenshot: (
+                    isinstance(screenshot, FakeScreenshot)
+                    and screenshot.matches
+                ),
+            )
+
+    screenshots = [FakeScreenshot(matches=True), FakeScreenshot(matches=False)]
+
+    async def screenshot() -> FakeScreenshot:
+        return screenshots.pop(0)
+
+    def runtime_factory(
+        callbacks: Mapping[type[Screen], Callback[Any]],
+    ) -> RPARuntime:
+        return RPARuntime(callbacks, ScreenshotScreenDetector(screenshot))
+
+    app = RPAApp(runtime_factory=runtime_factory)
+
+    @app.on(FirstScreen)
+    async def handle_first(_screen: FirstScreen, _data: object) -> str:
+        return "first"
+
+    @app.on(SecondScreen)
+    async def handle_second(_screen: SecondScreen, _data: object) -> str:
+        return "second"
+
+    result = asyncio.run(app.run(AppConfig(), None))
+
+    assert result == "first"
