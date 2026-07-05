@@ -18,9 +18,4 @@ class LoginScreen(Screen):
         return ScreenDetectionSpec(predicate=_login_template_matches)
 
     async def enter_email_address(self, email_address: str) -> None:
-        region = self.context.scale_region(self.email_address_region)
-        await self.context.record_browser_operation(
-            "fill_region",
-            region=region,
-            value=email_address,
-        )
+        await self.fill_region(self.email_address_region, email_address)

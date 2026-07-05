@@ -8,6 +8,7 @@ from majsoulrpa import RPAApp
 from majsoulrpa.client import ScreenshotScreenDetector
 from majsoulrpa.client.runtime import RPARuntime
 from majsoulrpa.config import AppConfig
+from majsoulrpa.presentation import Region
 from majsoulrpa.screens import (
     BrowserOperation,
     Screen,
@@ -237,6 +238,38 @@ def test_screen_context_records_browser_operation() -> None:
             name="fill",
             parameters={
                 "selector": "#email",
+                "value": "player@example.invalid",
+            },
+        ),
+    ]
+
+
+def test_screen_fills_scaled_region() -> None:
+    operations: list[BrowserOperation] = []
+
+    async def record(operation: BrowserOperation) -> None:
+        operations.append(operation)
+
+    screen = LoginScreen(
+        context=ScreenContext(
+            record_browser_operation=record,
+            viewport_width=1280,
+            viewport_height=720,
+        ),
+    )
+
+    asyncio.run(
+        screen.fill_region(
+            Region(left=300, top=150, width=6, height=3),
+            "player@example.invalid",
+        ),
+    )
+
+    assert operations == [
+        BrowserOperation(
+            name="fill_region",
+            parameters={
+                "region": Region(left=200, top=100, width=4, height=2),
                 "value": "player@example.invalid",
             },
         ),

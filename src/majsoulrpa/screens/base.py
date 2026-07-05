@@ -83,6 +83,13 @@ class Screen(ABC):
             raise RuntimeError(msg)
         return self._context
 
+    async def fill_region(self, region: Region, value: str) -> None:
+        await self.context.record_browser_operation(
+            "fill_region",
+            region=self.context.scale_region(region),
+            value=value,
+        )
+
     @classmethod
     @abstractmethod
     def detection_spec(cls) -> ScreenDetectionSpec:
