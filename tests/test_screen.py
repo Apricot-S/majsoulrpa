@@ -2,6 +2,8 @@ import asyncio
 from collections.abc import Mapping
 from typing import Any, override
 
+import pytest
+
 from majsoulrpa import RPAApp
 from majsoulrpa.client import ScreenshotScreenDetector
 from majsoulrpa.client.runtime import RPARuntime
@@ -85,3 +87,35 @@ def test_false_screen_detection_does_not_call_callback() -> None:
 
     assert result is data
     assert called is False
+
+
+def test_screen_detection_exception_is_not_hidden() -> None:
+    class FakeScreenshot:
+        pass
+
+    def raise_detection_error(_screenshot: object) -> bool:
+        msg = "detection failed"
+        raise RuntimeError(msg)
+
+    class BrokenScreen(Screen):
+        @classmethod
+        @override
+        def detection_spec(cls) -> ScreenDetectionSpec:
+            return ScreenDetectionSpec(predicate=raise_detection_error)
+
+    async def screenshot() -> FakeScreenshot:
+        return FakeScreenshot()
+
+    def runtime_factory(
+        callbacks: Mapping[type[Screen], Callback[Any]],
+    ) -> RPARuntime:
+        return RPARuntime(callbacks, ScreenshotScreenDetector(screenshot))
+
+    app = RPAApp(runtime_factory=runtime_factory)
+
+    @app.on(BrokenScreen)
+    async def handle_broken(_screen: BrokenScreen, data: object) -> object:
+        return data
+
+    with pytest.raises(RuntimeError, match="detection failed"):
+        asyncio.run(app.run(AppConfig(), object()))
