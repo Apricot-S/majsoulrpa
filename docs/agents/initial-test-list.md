@@ -68,22 +68,22 @@
 
 テンプレート照合:
 
-- [ ] TOML から `TemplateMatchSettings` を読める
-- [ ] unknown key を reject する
-- [ ] region、margin、threshold の不正値を reject する
-- [ ] `RegionConfig.to_region()` が immutable な `Region` を返す
-- [ ] `Region.right` と `Region.bottom` が計算される
-- [ ] template size と region size が違うと例外
-- [ ] 1920x1080 screenshot では scale 1 で照合する
-- [ ] 1280x720 screenshot では template、region、margin を `2 / 3` に scale して照合する
-- [ ] 2560x1440 screenshot では template、region、margin を `4 / 3` に scale して照合する
-- [ ] アスペクト比が 16:9 でない screenshot は例外
-- [ ] fake `np.ndarray` screenshot の指定 region が一致したら `matches()` が true
-- [ ] `match()` が `score` と実 screenshot 座標系の `Region` を返す
-- [ ] margin 内でずれたテンプレートも match し、ずれた `Region` を返す
-- [ ] threshold 未満なら `matches()` が false
-- [ ] screenshot が探索領域より小さい場合は例外
-- [ ] `LoginScreen.detection_spec()` が template predicate を返す
+- [x] TOML から `TemplateMatchSettings` を読める
+- [x] unknown key を reject する
+- [x] region、margin、threshold の不正値を reject する
+- [x] `RegionConfig.to_region()` が immutable な `Region` を返す
+- [x] `Region.right` と `Region.bottom` が計算される
+- [x] template size と region size が違うと例外
+- [x] 1920x1080 screenshot では scale 1 で照合する
+- [x] 1280x720 screenshot では template、region、margin を `2 / 3` に scale して照合する
+- [x] 2560x1440 screenshot では template、region、margin を `4 / 3` に scale して照合する
+- [x] アスペクト比が 16:9 でない screenshot は例外
+- [x] fake `np.ndarray` screenshot の指定 region が一致したら `matches()` が true
+- [x] `match()` が `score` と実 screenshot 座標系の `Region` を返す
+- [x] margin 内でずれたテンプレートも match し、ずれた `Region` を返す
+- [x] threshold 未満なら `matches()` が false
+- [x] screenshot が探索領域より小さい場合は例外
+- [x] `LoginScreen.detection_spec()` が template predicate を返す
 
 候補:
 

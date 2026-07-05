@@ -22,6 +22,8 @@ optional dependency へ移すかどうかを再検討します。
 ## Region
 
 `Region` は画面上の矩形領域を表す実行時の値オブジェクトです。
+テンプレート照合なしに決め打ちの定数領域として使うこともあるため、
+`presentation.template` ではなく `presentation.region` に置きます。
 
 ```python
 from dataclasses import dataclass
