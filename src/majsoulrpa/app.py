@@ -1,13 +1,27 @@
 import inspect
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from typing import Any
 
-type Callback[ScreenT] = Callable[[ScreenT, Any], Awaitable[Any]]
+from majsoulrpa.client.runtime import RPARuntime, RuntimeFactory
+from majsoulrpa.config import AppConfig
+from majsoulrpa.types import Callback
+
+
+class _NoScreenDetector:
+    async def detect(
+        self,
+        screen_types: tuple[type[object], ...],
+    ) -> object | None:
+        _ = screen_types
+        return None
 
 
 class RPAApp:
-    def __init__(self) -> None:
+    def __init__(self, runtime_factory: RuntimeFactory | None = None) -> None:
         self._callbacks: dict[type[object], Callback[Any]] = {}
+        self._runtime_factory = (
+            runtime_factory or self._default_runtime_factory
+        )
 
     @property
     def registered_screen_types(self) -> tuple[type[object], ...]:
@@ -30,3 +44,13 @@ class RPAApp:
             return callback
 
         return register
+
+    async def run(self, config: AppConfig, data: Any) -> Any:  # noqa: ANN401
+        runtime = self._runtime_factory(self._callbacks)
+        return await runtime.run(config, data)
+
+    @staticmethod
+    def _default_runtime_factory(
+        callbacks: dict[type[object], Callback[Any]],
+    ) -> RPARuntime:
+        return RPARuntime(callbacks, _NoScreenDetector())

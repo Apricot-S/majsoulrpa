@@ -9,12 +9,12 @@
 - callback は `async def` のみ受け付ける
 - 同じ Presentation class への callback 登録は 1 つだけ許す
 - 重複登録は起動時ではなく登録時に例外にする
-- callback の戻り値を次の state とする
-- state はフレームワークが解釈、保存、serialize、log しない
+- callback の戻り値を次の data とする
+- data はフレームワークが解釈、保存、serialize、log しない
 - 未登録 Presentation は検出しても dispatch しない
 - detection timeout と操作 timeout は分ける
 
-同じ Presentation に複数 callback を登録できると、state の更新順序と例外時の
+同じ Presentation に複数 callback を登録できると、data の更新順序と例外時の
 扱いが曖昧になります。v3 初期では禁止し、必要が出たらユーザー側で 1 つの
 callback から複数処理を呼び出す形にします。
 
@@ -32,20 +32,20 @@ app = RPAApp()
 
 
 @app.on(LoginScreen)
-async def login(screen: LoginScreen, state: State) -> State:
-    await screen.enter_email_address(state.email_address)
-    code = await state.code_provider.fetch()
+async def login(screen: LoginScreen, data: UserData) -> UserData:
+    await screen.enter_email_address(data.email_address)
+    code = await data.code_provider.fetch()
     await screen.enter_verification_code(code)
-    return state
+    return data
 
 
 @app.on(HomeScreen)
-async def home(screen: HomeScreen, state: State) -> State:
+async def home(screen: HomeScreen, data: UserData) -> UserData:
     await screen.stop(close_browser=True)
-    return state
+    return data
 
 
-result = await app.run(AppConfig(), state, detection_timeout=60)
+result = await app.run(AppConfig(), data, detection_timeout=60)
 ```
 
 ## `RPAApp`
@@ -55,7 +55,7 @@ result = await app.run(AppConfig(), state, detection_timeout=60)
 - Presentation class と callback の対応を保持する
 - client runtime を起動する
 - 検出された Presentation を callback へ dispatch する
-- state の受け渡しを行う
+- data の受け渡しを行う
 - timeout、cancellation、例外伝播を整理する
 
 公開候補:
@@ -67,14 +67,14 @@ class RPAApp:
     async def run(
         self,
         config: AppConfig,
-        state: StateT,
+        data: Any,
         *,
         detection_timeout: float | None = None,
-    ) -> StateT: ...
+    ) -> Any: ...
 ```
 
 `run()` は callback が明示的に停止を要求するか、例外が発生するまで loop します。
-戻り値は最後の state です。
+戻り値は最後の data です。
 
 ## `AppConfig`
 
@@ -127,12 +127,12 @@ await run_browser_host(config)
 ```python
 class Screen:
     @classmethod
-    async def detect(cls, context: ScreenContext) -> bool: ...
+    def detection_spec(cls) -> ScreenDetectionSpec | None: ...
 ```
 
-ただし、`detect()` を public classmethod とするか、runtime 側の detector に
-分離するかは実装前に再検討します。custom screen を書きやすくすることを
-優先します。
+画面検出の制御は runtime 側の detector に集約し、Screen は検出に必要な
+記述を提供します。custom screen を書くユーザーは、操作 API と
+`detection_spec()` を同じ class に置けます。
 
 標準 screen 候補:
 

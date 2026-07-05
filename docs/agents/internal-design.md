@@ -12,7 +12,7 @@ v3 は、過剰な抽象化や定型的な「クリーンアーキテクチャ�
 
 - Public API: callback 登録、config、主要 Presentation
 - Browser runtime: Playwright 起動、browser context、page lifecycle
-- Client runtime: Presentation 検出、callback dispatch、state 受け渡し
+- Client runtime: Presentation 検出、callback dispatch、data 受け渡し
 - Presentation: 画面検出と画面操作
 - Sniffer: WebSocket message の観測、decode、ユーザー hook
 - Login support: Yostar login code provider などの optional 機能

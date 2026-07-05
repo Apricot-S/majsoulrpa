@@ -36,12 +36,12 @@ src/majsoulrpa/
     home.py
     room.py
     tournament.py
-  capture/
+  sniffer/
     __init__.py
     hook.py
     metadata.py
-    playwright_capture.py
-    mitmproxy_capture.py
+    playwright.py
+    mitmproxy.py
   yostar/
     __init__.py
     code_provider.py
@@ -65,19 +65,19 @@ RPAApp
       -> screen detection
       -> callback dispatch
       -> browser client
-      -> capture event stream
+      -> sniffer event stream
 
 browser host
   -> Playwright runtime
-  -> capture backend
+  -> sniffer backend
 
 screens
   -> screen context
   -> browser operations
-  -> capture queue when needed
+  -> sniffer queue when needed
 ```
 
-`screens` は `RPAApp` に依存しません。`capture` は `screens` の具体 class に
+`screens` は `RPAApp` に依存しません。`sniffer` は `screens` の具体 class に
 依存しません。`yostar` は core runtime から独立させ、ユーザー callback から
 使う optional integration にします。
 
@@ -90,7 +90,7 @@ screens
 - callback registry
 - 重複登録の検出
 - `run()` の public entrypoint
-- state の受け渡し
+- data の受け渡し
 
 持たせない責務:
 
@@ -139,12 +139,12 @@ Screen base は、custom screen を書くための最小 surface にします。
 - browser 操作用 port
 - screenshot 取得 API
 - template match API
-- capture queue 参照
+- sniffer queue 参照
 - runtime stop 要求 API
 
 `ScreenContext` に含めないもの:
 
-- user state
+- user data
 - callback registry
 - AWS / email 設定
 - raw credential
@@ -159,15 +159,15 @@ browser host は browser lifecycle を担当します。
 - context と page の作成
 - viewport、headless、user data dir の適用
 - client からの操作要求の受付
-- capture backend の開始と停止
+- sniffer backend の開始と停止
 - shutdown
 
 browser host は「起動したふり」をしません。Playwright が起動できない場合は、
 明示的に失敗させます。
 
-## `capture/`
+## `sniffer/`
 
-capture は差し替え価値があるため、狭い境界を許可します。
+sniffer は差し替え価値があるため、狭い境界を許可します。
 
 境界に含めるもの:
 
@@ -183,7 +183,7 @@ capture は差し替え価値があるため、狭い境界を許可します。
 - protocol 生成物の管理
 - 保存先 policy
 
-Playwright capture を最初に spike し、要件を満たせない場合に mitmproxy を
+Playwright sniffer を最初に spike し、要件を満たせない場合に mitmproxy を
 採用候補にします。
 
 `SnifferConfig` は初期 config には置きません。sniffer backend の spike 後に、
@@ -197,7 +197,7 @@ testing package は、実ブラウザや実通信なしで TDD を進めるた�
 
 - fake browser operation recorder
 - fake screenshot source
-- fake capture event stream
+- fake sniffer event stream
 - fake screen
 - callback dispatch helper
 

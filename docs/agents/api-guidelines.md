@@ -14,8 +14,8 @@ v2 の公開利用例では、以下が中心でした。
 - Python から browser host を起動する
 - `RPAClient` 相当の object に Presentation ごとの callback を登録する
 - callback は async 関数
-- callback の引数には Presentation と任意の state/data が渡る
-- callback の戻り値が次の state/data になる
+- callback の引数には Presentation と任意の data が渡る
+- callback の戻り値が次の data になる
 - 登録されていない Presentation は検出対象外
 - `detection_timeout` 相当の時間制限を指定できる
 - Presentation を継承して画面処理を差し替えられる
@@ -30,27 +30,27 @@ app = RPAApp()
 
 
 @app.on(LoginScreen)
-async def handle_login(screen: LoginScreen, state: State) -> State:
-    await screen.enter_email_address(state.email_address)
-    code = await state.code_provider.fetch()
+async def handle_login(screen: LoginScreen, data: UserData) -> UserData:
+    await screen.enter_email_address(data.email_address)
+    code = await data.code_provider.fetch()
     await screen.enter_verification_code(code)
-    return state
+    return data
 
 
 @app.on(HomeScreen)
-async def handle_home(screen: HomeScreen, state: State) -> State:
+async def handle_home(screen: HomeScreen, data: UserData) -> UserData:
     await screen.close_notifications()
     await screen.stop(close_browser=True)
-    return state
+    return data
 
 
-result = await app.run(config, state, detection_timeout=60)
+result = await app.run(config, data, detection_timeout=60)
 ```
 
 守りたい点:
 
 - callback 登録は読みやすく、通常ユーザーはこれだけで使える
-- ユーザー state はフレームワークが解釈しない
+- ユーザー data はフレームワークが解釈しない
 - Presentation の API は async に統一する
 - timeout は呼び出し側が読める位置で指定できる
 - 失敗時は明示的な例外として表す
@@ -71,15 +71,15 @@ result = await app.run(config, state, detection_timeout=60)
 - 内部都合だけを公開 API に漏らしている
 - private 実装を温存するためだけに必要になる
 
-## callback と state
+## callback と data
 
 callback は v3 の主 API です。
 
 - callback は Presentation class に紐づける
 - 同じ Presentation への複数 callback を許すかは、設計時に明示する
-- callback の戻り値を次の state として扱う
-- state の型はユーザーが決める
-- フレームワークは state を保存、serialize、log しない
+- callback の戻り値を次の data として扱う
+- data の型はユーザーが決め、callback ごとに変わってもよい
+- フレームワークは data を保存、serialize、log しない
 
 ## Presentation
 

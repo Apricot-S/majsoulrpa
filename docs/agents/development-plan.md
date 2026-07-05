@@ -102,13 +102,13 @@
 
 - Presentation class ごとの async callback 登録
 - 登録された Presentation だけを検出対象にする
-- state/data を callback 間で受け渡す
+- data を callback 間で受け渡す
 - detection timeout を明示する
 
 テスト:
 
 - fake screenshot / fake detector による Presentation 選択
-- callback の戻り値が次の state になること
+- callback の戻り値が次の data になること
 - 未登録 Presentation が無視されること
 - timeout と例外伝播
 
