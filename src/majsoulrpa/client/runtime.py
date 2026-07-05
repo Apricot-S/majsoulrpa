@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from typing import Any, Protocol
 
 from majsoulrpa.config import AppConfig
@@ -7,6 +7,7 @@ from majsoulrpa.screens import Screen
 from majsoulrpa.types import Callback
 
 type ScreenTypes = tuple[type[Screen], ...]
+type Cleanup = Callable[[], Awaitable[None]]
 
 
 class ScreenDetector(Protocol):
@@ -18,9 +19,11 @@ class RPARuntime:
         self,
         callbacks: Mapping[type[Screen], Callback[Any]],
         detector: ScreenDetector,
+        cleanup: Cleanup | None = None,
     ) -> None:
         self._callbacks = callbacks
         self._detector = detector
+        self._cleanup = cleanup
 
     async def run(
         self,
@@ -42,7 +45,11 @@ class RPARuntime:
             if callback is None:
                 continue
 
-            current_data = await callback(screen, current_data)
+            try:
+                current_data = await callback(screen, current_data)
+            except asyncio.CancelledError:
+                await self._run_cleanup()
+                raise
 
     async def _detect(
         self,
@@ -51,6 +58,12 @@ class RPARuntime:
     ) -> Screen | None:
         async with asyncio.timeout(detection_timeout):
             return await self._detector.detect(screen_types)
+
+    async def _run_cleanup(self) -> None:
+        if self._cleanup is None:
+            return
+
+        await self._cleanup()
 
 
 type RuntimeFactory = Callable[

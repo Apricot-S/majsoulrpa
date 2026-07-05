@@ -48,7 +48,7 @@
 - [x] callback の戻り値が次の data になる
 - [x] callback が例外を投げたら `run()` から伝播する
 - [x] detection timeout で明示的な例外になる
-- [ ] callback 実行中の cancellation で cleanup する
+- [x] callback 実行中の cancellation で cleanup する
 - [ ] data を log しない
 
 ## Phase 5: Screen base

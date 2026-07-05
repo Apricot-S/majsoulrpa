@@ -53,18 +53,28 @@ class BlockingScreenDetector:
         await asyncio.Event().wait()
 
 
+class CleanupSpy:
+    def __init__(self) -> None:
+        self.called = 0
+
+    async def __call__(self) -> None:
+        self.called += 1
+
+
 class RuntimeFactorySpy:
     def __init__(
         self,
         detector: SequenceScreenDetector | BlockingScreenDetector,
+        cleanup: CleanupSpy | None = None,
     ) -> None:
         self._detector = detector
+        self._cleanup = cleanup
 
     def __call__(
         self,
         callbacks: Mapping[type[Screen], Callback[Any]],
     ) -> RPARuntime:
-        return RPARuntime(callbacks, self._detector)
+        return RPARuntime(callbacks, self._detector, cleanup=self._cleanup)
 
 
 def test_rpa_app_registers_async_callback() -> None:
@@ -187,3 +197,18 @@ def test_rpa_app_run_raises_detection_timeout() -> None:
 
     with pytest.raises(TimeoutError):
         asyncio.run(app.run(AppConfig(), None, detection_timeout=0.001))
+
+
+def test_rpa_app_run_cleans_up_when_callback_is_cancelled() -> None:
+    cleanup = CleanupSpy()
+    detector = SequenceScreenDetector(LoginScreen())
+    app = RPAApp(runtime_factory=RuntimeFactorySpy(detector, cleanup))
+
+    @app.on(LoginScreen)
+    async def handle_login(_screen: LoginScreen, _data: object) -> object:
+        raise asyncio.CancelledError
+
+    with pytest.raises(asyncio.CancelledError):
+        asyncio.run(app.run(AppConfig(), None))
+
+    assert cleanup.called == 1
