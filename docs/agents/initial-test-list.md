@@ -75,6 +75,7 @@
 - [x] region、margin、threshold の不正値を reject する
 - [x] `RegionConfig.to_region()` が immutable な `Region` を返す
 - [x] `Region.right` と `Region.bottom` が計算される
+- [x] 固定領域を実 viewport サイズへ scale できる
 - [x] template size と region size が違うと例外
 - [x] 1920x1080 screenshot では scale 1 で照合する
 - [x] 1280x720 screenshot では template、region、margin を `2 / 3` に scale して照合する
@@ -86,10 +87,12 @@
 - [x] threshold 未満なら `matches()` が false
 - [x] screenshot が探索領域より小さい場合は例外
 - [x] `LoginScreen.detection_spec()` が template predicate を返す
+- [x] `LoginScreen.enter_email_address()` の固定領域は実 viewport サイズへ scale される
 
 候補:
 
-- [ ] `LoginScreen.enter_email_address()` が入力欄を探して入力する
+- [x] `LoginScreen.enter_email_address()` が入力欄への browser operation を記録する
+- [ ] `LoginScreen.enter_email_address()` の実領域をスクリーンショット確認で確定する
 - [ ] `LoginScreen.enter_verification_code()` が認証コード欄へ入力する
 
 どちらを選ぶ場合も、先に fake browser operation のテストを書きます。

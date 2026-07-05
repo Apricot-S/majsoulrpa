@@ -3,6 +3,8 @@ from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
 
+from majsoulrpa.presentation import Region
+
 
 @dataclass(frozen=True)
 class BrowserOperation:
@@ -31,9 +33,13 @@ class ScreenContext:
         self,
         record_browser_operation: BrowserOperationRecorder,
         request_stop: StopRequester | None = None,
+        viewport_width: int = 1920,
+        viewport_height: int = 1080,
     ) -> None:
         self._record_browser_operation = record_browser_operation
         self._request_stop = request_stop or _ignore_stop_request
+        self._viewport_width = viewport_width
+        self._viewport_height = viewport_height
 
     async def record_browser_operation(
         self,
@@ -46,6 +52,12 @@ class ScreenContext:
 
     async def request_stop(self) -> None:
         await self._request_stop()
+
+    def scale_region(self, region: Region) -> Region:
+        return region.scale_to_viewport(
+            width=self._viewport_width,
+            height=self._viewport_height,
+        )
 
 
 def _never_matches(_screenshot: object) -> bool:
