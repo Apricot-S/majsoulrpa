@@ -127,12 +127,13 @@ await run_browser_host(config)
 ```python
 class Screen:
     @classmethod
-    def detection_spec(cls) -> ScreenDetectionSpec | None: ...
+    def detection_spec(cls) -> ScreenDetectionSpec: ...
 ```
 
 画面検出の制御は runtime 側の detector に集約し、Screen は検出に必要な
-記述を提供します。custom screen を書くユーザーは、操作 API と
-`detection_spec()` を同じ class に置けます。
+記述を必ず提供します。custom screen を書くユーザーは、操作 API と
+`detection_spec()` を同じ class に置けます。`Screen` は ABC とし、
+`detection_spec()` が `None` を返す設計にはしません。
 
 標準 screen 候補:
 

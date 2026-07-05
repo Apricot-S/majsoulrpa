@@ -1,13 +1,12 @@
-from typing import ClassVar
+from abc import ABC, abstractmethod
 
 
 class ScreenDetectionSpec:
     pass
 
 
-class Screen:
-    detection: ClassVar[ScreenDetectionSpec | None] = None
-
+class Screen(ABC):
     @classmethod
-    def detection_spec(cls) -> ScreenDetectionSpec | None:
-        return cls.detection
+    @abstractmethod
+    def detection_spec(cls) -> ScreenDetectionSpec:
+        raise NotImplementedError

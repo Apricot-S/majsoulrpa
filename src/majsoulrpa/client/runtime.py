@@ -2,19 +2,20 @@ from collections.abc import Callable, Mapping
 from typing import Any, Protocol
 
 from majsoulrpa.config import AppConfig
+from majsoulrpa.screens import Screen
 from majsoulrpa.types import Callback
 
-type ScreenTypes = tuple[type[object], ...]
+type ScreenTypes = tuple[type[Screen], ...]
 
 
 class ScreenDetector(Protocol):
-    async def detect(self, screen_types: ScreenTypes) -> object | None: ...
+    async def detect(self, screen_types: ScreenTypes) -> Screen | None: ...
 
 
 class RPARuntime:
     def __init__(
         self,
-        callbacks: Mapping[type[object], Callback[Any]],
+        callbacks: Mapping[type[Screen], Callback[Any]],
         detector: ScreenDetector,
     ) -> None:
         self._callbacks = callbacks
@@ -38,6 +39,6 @@ class RPARuntime:
 
 
 type RuntimeFactory = Callable[
-    [Mapping[type[object], Callback[Any]]],
+    [Mapping[type[Screen], Callback[Any]]],
     RPARuntime,
 ]

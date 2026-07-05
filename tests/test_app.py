@@ -7,30 +7,37 @@ import pytest
 from majsoulrpa import RPAApp
 from majsoulrpa.client import RPARuntime
 from majsoulrpa.config import AppConfig
+from majsoulrpa.screens import Screen, ScreenDetectionSpec
 from majsoulrpa.types import Callback
 
 
-class LoginScreen:
-    pass
+class LoginScreen(Screen):
+    @classmethod
+    def detection_spec(cls) -> ScreenDetectionSpec:
+        return ScreenDetectionSpec()
 
 
-class HomeScreen:
-    pass
+class HomeScreen(Screen):
+    @classmethod
+    def detection_spec(cls) -> ScreenDetectionSpec:
+        return ScreenDetectionSpec()
 
 
-class UnknownScreen:
-    pass
+class UnknownScreen(Screen):
+    @classmethod
+    def detection_spec(cls) -> ScreenDetectionSpec:
+        return ScreenDetectionSpec()
 
 
 class SequenceScreenDetector:
-    def __init__(self, *screens: object | None) -> None:
+    def __init__(self, *screens: Screen | None) -> None:
         self._screens = list(screens)
-        self.seen_screen_types: list[tuple[type[object], ...]] = []
+        self.seen_screen_types: list[tuple[type[Screen], ...]] = []
 
     async def detect(
         self,
-        screen_types: tuple[type[object], ...],
-    ) -> object | None:
+        screen_types: tuple[type[Screen], ...],
+    ) -> Screen | None:
         self.seen_screen_types.append(screen_types)
         if not self._screens:
             return None
@@ -43,7 +50,7 @@ class RuntimeFactorySpy:
 
     def __call__(
         self,
-        callbacks: Mapping[type[object], Callback[Any]],
+        callbacks: Mapping[type[Screen], Callback[Any]],
     ) -> RPARuntime:
         return RPARuntime(callbacks, self._detector)
 
