@@ -63,6 +63,27 @@ Presentation 検出は、画面状態を「できるだけ決定的に」扱い�
 - 未登録 Presentation は dispatch しない
 - 同時に複数 Presentation が成立する場合の優先順位を明示する
 
+## Browser 操作
+
+ブラウザ操作は、通信層と操作 API 層を分けます。
+
+- `BrowserTransport`: リモート先への `send` / `recv` だけを担当する
+- `RemoteBrowserController`: `fill_region` などの操作 API を `BrowserTransport` 上の
+  command / response に変換する
+- command / response は pydantic の判別共用体で表現する
+- browser host へ送る command は `Region` ではなく、click 座標や入力テキストなどの
+  低レベル情報にする
+- response は click result、text input result、error result を別型にする
+- click result と text input result は、必要に応じて BASE64 screenshot や実際に
+  クリックした座標などを持つ
+- `ScreenContext`: 現在の Screen 実行に必要な browser controller、viewport、stop request
+  を束ねる
+- `Screen`: `fill_region` など、継承先の画面 API が使う共通 helper を持つ
+
+`ScreenContext` は browser 操作層そのものではありません。runtime から Screen へ
+実行時依存を渡すための context です。実際の遠隔操作プロトコルや send/recv は
+browser package 側に閉じ込めます。
+
 ## 画像・テンプレート資産
 
 v3 初期状態では、v2 の画像資産を持ち込みません。

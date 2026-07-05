@@ -9,12 +9,7 @@ from majsoulrpa.client import ScreenshotScreenDetector
 from majsoulrpa.client.runtime import RPARuntime
 from majsoulrpa.config import AppConfig
 from majsoulrpa.presentation import Region
-from majsoulrpa.screens import (
-    BrowserOperation,
-    Screen,
-    ScreenContext,
-    ScreenDetectionSpec,
-)
+from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
 from majsoulrpa.types import Callback
 
 
@@ -25,6 +20,18 @@ class LoginScreen(Screen):
     @override
     def detection_spec(cls) -> ScreenDetectionSpec:
         return cls.spec
+
+
+class BrowserControllerSpy:
+    def __init__(self) -> None:
+        self.clicked_points: list[tuple[float, float]] = []
+        self.input_texts: list[str] = []
+
+    async def click(self, x: float, y: float) -> None:
+        self.clicked_points.append((x, y))
+
+    async def input_text(self, text: str) -> None:
+        self.input_texts.append(text)
 
 
 def test_screen_exposes_detection_spec() -> None:
@@ -80,10 +87,7 @@ def test_screen_detector_injects_context_into_detected_screen() -> None:
     async def screenshot() -> FakeScreenshot:
         return FakeScreenshot()
 
-    async def record(_operation: BrowserOperation) -> None:
-        return None
-
-    context = ScreenContext(record_browser_operation=record)
+    context = ScreenContext(browser=BrowserControllerSpy())
     detector = ScreenshotScreenDetector(screenshot, context=context)
 
     screen = asyncio.run(detector.detect((FakeLoginScreen,)))
@@ -217,42 +221,12 @@ def test_multiple_matching_screens_use_registration_order() -> None:
     assert result == "first"
 
 
-def test_screen_context_records_browser_operation() -> None:
-    operations: list[BrowserOperation] = []
-
-    async def record(operation: BrowserOperation) -> None:
-        operations.append(operation)
-
-    context = ScreenContext(record_browser_operation=record)
-
-    asyncio.run(
-        context.record_browser_operation(
-            "fill",
-            selector="#email",
-            value="player@example.invalid",
-        ),
-    )
-
-    assert operations == [
-        BrowserOperation(
-            name="fill",
-            parameters={
-                "selector": "#email",
-                "value": "player@example.invalid",
-            },
-        ),
-    ]
-
-
 def test_screen_fills_scaled_region() -> None:
-    operations: list[BrowserOperation] = []
-
-    async def record(operation: BrowserOperation) -> None:
-        operations.append(operation)
+    browser = BrowserControllerSpy()
 
     screen = LoginScreen(
         context=ScreenContext(
-            record_browser_operation=record,
+            browser=browser,
             viewport_width=1280,
             viewport_height=720,
         ),
@@ -265,29 +239,19 @@ def test_screen_fills_scaled_region() -> None:
         ),
     )
 
-    assert operations == [
-        BrowserOperation(
-            name="fill_region",
-            parameters={
-                "region": Region(left=200, top=100, width=4, height=2),
-                "value": "player@example.invalid",
-            },
-        ),
-    ]
+    assert browser.clicked_points == [(202, 101)]
+    assert browser.input_texts == ["player@example.invalid"]
 
 
 def test_screen_context_requests_stop() -> None:
     requested = False
-
-    async def record(_operation: BrowserOperation) -> None:
-        raise AssertionError
 
     async def request_stop() -> None:
         nonlocal requested
         requested = True
 
     context = ScreenContext(
-        record_browser_operation=record,
+        browser=BrowserControllerSpy(),
         request_stop=request_stop,
     )
 

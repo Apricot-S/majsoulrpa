@@ -1,5 +1,5 @@
 from majsoulrpa.screens.base import (
-    BrowserOperation,
+    BrowserController,
     Screen,
     ScreenContext,
     ScreenDetectionSpec,
@@ -7,7 +7,7 @@ from majsoulrpa.screens.base import (
 from majsoulrpa.screens.login import LoginScreen
 
 __all__ = [
-    "BrowserOperation",
+    "BrowserController",
     "LoginScreen",
     "Screen",
     "ScreenContext",

@@ -1,26 +1,16 @@
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from types import MappingProxyType
+from typing import Protocol
 
 from majsoulrpa.presentation import Region
 
 
-@dataclass(frozen=True)
-class BrowserOperation:
-    name: str
-    parameters: Mapping[str, object] = field(default_factory=dict)
-
-    def __post_init__(self) -> None:
-        copied_parameters = dict(self.parameters)
-        object.__setattr__(
-            self,
-            "parameters",
-            MappingProxyType(copied_parameters),
-        )
+class BrowserController(Protocol):
+    async def click(self, x: float, y: float) -> object: ...
+    async def input_text(self, text: str) -> object: ...
 
 
-type BrowserOperationRecorder = Callable[[BrowserOperation], Awaitable[None]]
 type StopRequester = Callable[[], Awaitable[None]]
 
 
@@ -31,24 +21,15 @@ async def _ignore_stop_request() -> None:
 class ScreenContext:
     def __init__(
         self,
-        record_browser_operation: BrowserOperationRecorder,
+        browser: BrowserController,
         request_stop: StopRequester | None = None,
         viewport_width: int = 1920,
         viewport_height: int = 1080,
     ) -> None:
-        self._record_browser_operation = record_browser_operation
+        self._browser = browser
         self._request_stop = request_stop or _ignore_stop_request
         self._viewport_width = viewport_width
         self._viewport_height = viewport_height
-
-    async def record_browser_operation(
-        self,
-        name: str,
-        **parameters: object,
-    ) -> None:
-        await self._record_browser_operation(
-            BrowserOperation(name=name, parameters=parameters),
-        )
 
     async def request_stop(self) -> None:
         await self._request_stop()
@@ -58,6 +39,10 @@ class ScreenContext:
             width=self._viewport_width,
             height=self._viewport_height,
         )
+
+    @property
+    def browser(self) -> BrowserController:
+        return self._browser
 
 
 def _never_matches(_screenshot: object) -> bool:
@@ -84,11 +69,12 @@ class Screen(ABC):
         return self._context
 
     async def fill_region(self, region: Region, value: str) -> None:
-        await self.context.record_browser_operation(
-            "fill_region",
-            region=self.context.scale_region(region),
-            value=value,
+        scaled_region = self.context.scale_region(region)
+        await self.context.browser.click(
+            scaled_region.left + scaled_region.width / 2,
+            scaled_region.top + scaled_region.height / 2,
         )
+        await self.context.browser.input_text(value)
 
     @classmethod
     @abstractmethod

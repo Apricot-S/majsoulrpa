@@ -57,10 +57,18 @@
 - [x] Screen detection が false のとき callback されない
 - [x] Screen detection が例外を投げたら隠さない
 - [x] 複数 Screen が一致した場合は登録順で選ばれる
-- [x] ScreenContext から browser operation を記録できる
+- [x] Screen から browser controller 経由で操作できる
 - [x] ScreenContext から stop 要求を出せる
 - [x] 検出された Screen に ScreenContext を注入できる
 - [x] ScreenContext 未設定の Screen 操作は例外になる
+
+## Phase 5.5: Browser 操作層
+
+- [x] remote transport は command の send と response の recv を分ける
+- [x] browser controller は `fill_region` を command / response に変換する
+- [x] browser controller は remote error response を例外にする
+- [x] browser host へ送る command は click 座標や text など低レベル情報にする
+- [x] response は click、text input、error を別型にする
 
 ## Phase 6: Login API ひとつ目
 
