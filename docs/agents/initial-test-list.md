@@ -74,8 +74,12 @@
 - [ ] `RegionConfig.to_region()` が immutable な `Region` を返す
 - [ ] `Region.right` と `Region.bottom` が計算される
 - [ ] template size と region size が違うと例外
+- [ ] 1920x1080 screenshot では scale 1 で照合する
+- [ ] 1280x720 screenshot では template、region、margin を `2 / 3` に scale して照合する
+- [ ] 2560x1440 screenshot では template、region、margin を `4 / 3` に scale して照合する
+- [ ] アスペクト比が 16:9 でない screenshot は例外
 - [ ] fake `np.ndarray` screenshot の指定 region が一致したら `matches()` が true
-- [ ] `match()` が `score` と `Region` を返す
+- [ ] `match()` が `score` と実 screenshot 座標系の `Region` を返す
 - [ ] margin 内でずれたテンプレートも match し、ずれた `Region` を返す
 - [ ] threshold 未満なら `matches()` が false
 - [ ] screenshot が探索領域より小さい場合は例外
