@@ -53,7 +53,7 @@
 
 ## Phase 5: Screen base
 
-- [ ] fake screenshot で Screen を検出できる
+- [x] fake screenshot で Screen を検出できる
 - [ ] Screen detection が false のとき callback されない
 - [ ] Screen detection が例外を投げたら隠さない
 - [ ] 複数 Screen が一致した場合は登録順で選ばれる

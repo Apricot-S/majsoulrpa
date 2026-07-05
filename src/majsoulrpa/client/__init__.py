@@ -1,3 +1,7 @@
-from majsoulrpa.client.runtime import RPARuntime, ScreenDetector
+from majsoulrpa.client.runtime import (
+    RPARuntime,
+    ScreenDetector,
+    ScreenshotScreenDetector,
+)
 
-__all__ = ["RPARuntime", "ScreenDetector"]
+__all__ = ["RPARuntime", "ScreenDetector", "ScreenshotScreenDetector"]

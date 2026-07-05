@@ -8,10 +8,23 @@ from majsoulrpa.types import Callback
 
 type ScreenTypes = tuple[type[Screen], ...]
 type Cleanup = Callable[[], Awaitable[None]]
+type ScreenshotProvider = Callable[[], Awaitable[object]]
 
 
 class ScreenDetector(Protocol):
     async def detect(self, screen_types: ScreenTypes) -> Screen | None: ...
+
+
+class ScreenshotScreenDetector:
+    def __init__(self, screenshot: ScreenshotProvider) -> None:
+        self._screenshot = screenshot
+
+    async def detect(self, screen_types: ScreenTypes) -> Screen | None:
+        screenshot = await self._screenshot()
+        for screen_type in screen_types:
+            if screen_type.detection_spec().matches(screenshot):
+                return screen_type()
+        return None
 
 
 class RPARuntime:
