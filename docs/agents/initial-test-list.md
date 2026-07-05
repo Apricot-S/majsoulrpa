@@ -40,11 +40,11 @@
 
 ## Phase 4: callback dispatch
 
-- [ ] `RPAApp.on(Screen)` で async callback を登録できる
-- [ ] sync callback 登録をエラーにする
-- [ ] 同じ Screen への重複登録をエラーにする
+- [x] `RPAApp.on(Screen)` で async callback を登録できる
+- [x] sync callback 登録をエラーにする
+- [x] 同じ Screen への重複登録をエラーにする
 - [ ] 未登録 Screen は dispatch しない
-- [ ] 登録順に detection を試す
+- [x] 登録順に detection を試す
 - [ ] callback の戻り値が次の state になる
 - [ ] callback が例外を投げたら `run()` から伝播する
 - [ ] detection timeout で明示的な例外になる
