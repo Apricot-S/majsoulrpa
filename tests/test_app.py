@@ -44,8 +44,20 @@ class SequenceScreenDetector:
         return self._screens.pop(0)
 
 
+class BlockingScreenDetector:
+    async def detect(
+        self,
+        screen_types: tuple[type[Screen], ...],
+    ) -> Screen | None:
+        _ = screen_types
+        await asyncio.Event().wait()
+
+
 class RuntimeFactorySpy:
-    def __init__(self, detector: SequenceScreenDetector) -> None:
+    def __init__(
+        self,
+        detector: SequenceScreenDetector | BlockingScreenDetector,
+    ) -> None:
         self._detector = detector
 
     def __call__(
@@ -168,3 +180,10 @@ def test_rpa_app_run_propagates_callback_exception() -> None:
 
     with pytest.raises(RuntimeError, match="callback failed"):
         asyncio.run(app.run(AppConfig(), None))
+
+
+def test_rpa_app_run_raises_detection_timeout() -> None:
+    app = RPAApp(runtime_factory=RuntimeFactorySpy(BlockingScreenDetector()))
+
+    with pytest.raises(TimeoutError):
+        asyncio.run(app.run(AppConfig(), None, detection_timeout=0.001))

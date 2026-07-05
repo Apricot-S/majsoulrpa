@@ -46,9 +46,19 @@ class RPAApp:
 
         return register
 
-    async def run(self, config: AppConfig, data: Any) -> Any:  # noqa: ANN401
+    async def run(
+        self,
+        config: AppConfig,
+        data: Any,  # noqa: ANN401
+        *,
+        detection_timeout: float | None = None,
+    ) -> Any:  # noqa: ANN401
         runtime = self._runtime_factory(self._callbacks)
-        return await runtime.run(config, data)
+        return await runtime.run(
+            config,
+            data,
+            detection_timeout=detection_timeout,
+        )
 
     @staticmethod
     def _default_runtime_factory(

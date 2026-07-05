@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Callable, Mapping
 from typing import Any, Protocol
 
@@ -21,13 +22,19 @@ class RPARuntime:
         self._callbacks = callbacks
         self._detector = detector
 
-    async def run(self, config: AppConfig, data: Any) -> Any:  # noqa: ANN401
+    async def run(
+        self,
+        config: AppConfig,
+        data: Any,  # noqa: ANN401
+        *,
+        detection_timeout: float | None = None,
+    ) -> Any:  # noqa: ANN401
         _ = config
         current_data = data
         screen_types = tuple(self._callbacks)
 
         while True:
-            screen = await self._detector.detect(screen_types)
+            screen = await self._detect(screen_types, detection_timeout)
             if screen is None:
                 return current_data
 
@@ -36,6 +43,14 @@ class RPARuntime:
                 continue
 
             current_data = await callback(screen, current_data)
+
+    async def _detect(
+        self,
+        screen_types: ScreenTypes,
+        detection_timeout: float | None,
+    ) -> Screen | None:
+        async with asyncio.timeout(detection_timeout):
+            return await self._detector.detect(screen_types)
 
 
 type RuntimeFactory = Callable[
