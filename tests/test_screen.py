@@ -60,6 +60,44 @@ def test_screen_detector_detects_screen_from_fake_screenshot() -> None:
     assert isinstance(screen, FakeLoginScreen)
 
 
+def test_screen_detector_injects_context_into_detected_screen() -> None:
+    class FakeScreenshot:
+        marker = "login"
+
+    def matches_login(screenshot: object) -> bool:
+        return (
+            isinstance(screenshot, FakeScreenshot)
+            and screenshot.marker == "login"
+        )
+
+    class FakeLoginScreen(Screen):
+        @classmethod
+        @override
+        def detection_spec(cls) -> ScreenDetectionSpec:
+            return ScreenDetectionSpec(predicate=matches_login)
+
+    async def screenshot() -> FakeScreenshot:
+        return FakeScreenshot()
+
+    async def record(_operation: BrowserOperation) -> None:
+        return None
+
+    context = ScreenContext(record_browser_operation=record)
+    detector = ScreenshotScreenDetector(screenshot, context=context)
+
+    screen = asyncio.run(detector.detect((FakeLoginScreen,)))
+
+    assert isinstance(screen, FakeLoginScreen)
+    assert screen.context is context
+
+
+def test_screen_context_is_required_before_screen_operation() -> None:
+    screen = LoginScreen()
+
+    with pytest.raises(RuntimeError, match="ScreenContext"):
+        _ = screen.context
+
+
 def test_false_screen_detection_does_not_call_callback() -> None:
     class FakeScreenshot:
         pass

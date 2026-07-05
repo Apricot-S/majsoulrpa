@@ -61,6 +61,16 @@ class ScreenDetectionSpec:
 
 
 class Screen(ABC):
+    def __init__(self, context: ScreenContext | None = None) -> None:
+        self._context = context
+
+    @property
+    def context(self) -> ScreenContext:
+        if self._context is None:
+            msg = "ScreenContext is not configured."
+            raise RuntimeError(msg)
+        return self._context
+
     @classmethod
     @abstractmethod
     def detection_spec(cls) -> ScreenDetectionSpec:

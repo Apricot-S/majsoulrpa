@@ -3,7 +3,7 @@ from collections.abc import Awaitable, Callable, Mapping
 from typing import Any, Protocol
 
 from majsoulrpa.config import AppConfig
-from majsoulrpa.screens import Screen
+from majsoulrpa.screens import Screen, ScreenContext
 from majsoulrpa.types import Callback
 
 type ScreenTypes = tuple[type[Screen], ...]
@@ -16,14 +16,19 @@ class ScreenDetector(Protocol):
 
 
 class ScreenshotScreenDetector:
-    def __init__(self, screenshot: ScreenshotProvider) -> None:
+    def __init__(
+        self,
+        screenshot: ScreenshotProvider,
+        context: ScreenContext | None = None,
+    ) -> None:
         self._screenshot = screenshot
+        self._context = context
 
     async def detect(self, screen_types: ScreenTypes) -> Screen | None:
         screenshot = await self._screenshot()
         for screen_type in screen_types:
             if screen_type.detection_spec().matches(screenshot):
-                return screen_type()
+                return screen_type(context=self._context)
         return None
 
 
