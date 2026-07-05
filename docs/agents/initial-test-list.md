@@ -76,6 +76,7 @@
 - [x] `RegionConfig.to_region()` が immutable な `Region` を返す
 - [x] `Region.right` と `Region.bottom` が計算される
 - [x] 固定領域を実 viewport サイズへ scale できる
+- [x] scale 後に固定領域の size が 0 以下なら例外
 - [x] template size と region size が違うと例外
 - [x] 1920x1080 screenshot では scale 1 で照合する
 - [x] 1280x720 screenshot では template、region、margin を `2 / 3` に scale して照合する
@@ -85,6 +86,7 @@
 - [x] `match()` が `score` と実 screenshot 座標系の `Region` を返す
 - [x] margin 内でずれたテンプレートも match し、ずれた `Region` を返す
 - [x] threshold 未満なら `matches()` が false
+- [x] scale 後に template size が 0 以下なら例外
 - [x] screenshot が探索領域より小さい場合は例外
 - [x] `LoginScreen.detection_spec()` が template predicate を返す
 - [x] `LoginScreen.enter_email_address()` の固定領域は実 viewport サイズへ scale される

@@ -26,15 +26,15 @@ class Region:
             msg = "viewport aspect ratio must match 16:9."
             raise ValueError(msg)
 
+        scaled_width = round(self.width * scale_x)
+        scaled_height = round(self.height * scale_y)
+        if scaled_width <= 0 or scaled_height <= 0:
+            msg = "scaled region size must be positive."
+            raise ValueError(msg)
+
         return Region(
             left=round(self.left * scale_x),
             top=round(self.top * scale_y),
-            width=max(
-                1,
-                round(self.right * scale_x) - round(self.left * scale_x),
-            ),
-            height=max(
-                1,
-                round(self.bottom * scale_y) - round(self.top * scale_y),
-            ),
+            width=scaled_width,
+            height=scaled_height,
         )

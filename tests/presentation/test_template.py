@@ -466,3 +466,30 @@ def test_template_matcher_rejects_too_small_search_area() -> None:
 
     with pytest.raises(ValueError, match="search region"):
         matcher.match(screenshot)
+
+
+def test_template_matcher_rejects_too_small_scaled_template() -> None:
+    settings = TemplateMatchSettings.from_toml_text(
+        """
+        [region]
+        left = 0
+        top = 0
+        width = 0.1
+        height = 3
+
+        [margin]
+        top = 0
+        right = 0
+        bottom = 0
+        left = 0
+
+        [match]
+        threshold = 0.99
+        """,
+    )
+    template = np.zeros((3, 0), dtype=np.uint8)
+    screenshot = np.zeros((720, 1280), dtype=np.uint8)
+    matcher = TemplateMatcher(template, settings)
+
+    with pytest.raises(ValueError, match="scaled region size"):
+        matcher.match(screenshot)

@@ -132,8 +132,8 @@ class TemplateMatcher:
             return self._template
 
         region = self._settings.region.to_region()
-        width = self._scaled_size(region.left, region.right, scale)
-        height = self._scaled_size(region.top, region.bottom, scale)
+        width = self._scaled_size(region.width, scale)
+        height = self._scaled_size(region.height, scale)
         resized = cv2.resize(
             self._template,
             (width, height),
@@ -146,19 +146,23 @@ class TemplateMatcher:
         margin = self._settings.margin
         left = region.left - margin.left
         top = region.top - margin.top
-        right = region.right + margin.right
-        bottom = region.bottom + margin.bottom
+        width = region.width + margin.left + margin.right
+        height = region.height + margin.top + margin.bottom
 
         return Region(
             left=round(left * scale),
             top=round(top * scale),
-            width=max(1, round(right * scale) - round(left * scale)),
-            height=max(1, round(bottom * scale) - round(top * scale)),
+            width=self._scaled_size(width, scale),
+            height=self._scaled_size(height, scale),
         )
 
     @staticmethod
-    def _scaled_size(start: float, end: float, scale: float) -> int:
-        return max(1, round(end * scale) - round(start * scale))
+    def _scaled_size(size: float, scale: float) -> int:
+        scaled_size = round(size * scale)
+        if scaled_size <= 0:
+            msg = "scaled region size must be positive."
+            raise ValueError(msg)
+        return scaled_size
 
     @staticmethod
     def _validate_search_region(

@@ -112,14 +112,14 @@ template image を同じ倍率で扱います。template image は 1920x1080 基
 
 丸め規則:
 
-- 左端、上端、右端、下端をそれぞれ scale して `round()` する
-- width は `round(right * scale) - round(left * scale)` から求める
-- height は `round(bottom * scale) - round(top * scale)` から求める
-- scale 後の width と height は最低 1 にする
+- left と top はそれぞれ scale して `round()` する
+- width と height は、元の矩形サイズを scale して `round()` する
+- scale 後の width または height が 0 以下になる場合は例外にする
 
-探索領域も同じ規則で scale します。`left + width` を scale するのではなく、
-`right` と `bottom` を scale してから差分を取ります。これにより、縮小時の境界ずれを
-小さくします。
+探索領域も同じ規則で scale します。端点を別々に丸めてから差分を取ると、
+left/top の丸め誤差が width/height に混ざります。このプロジェクトでは
+`Region.width` と `Region.height` の意味を保つため、引き算して得たサイズを
+scale してから丸めます。
 
 `TemplateMatchResult.region` は実 screenshot 座標系で返します。後続のクリック処理で
 そのまま使えるようにするためです。
@@ -200,6 +200,7 @@ class TemplateMatcher:
 - screenshot サイズに合わせて template、region、margin を scale する
 - 720p、1080p、1440p の screenshot に対応する
 - screenshot のアスペクト比が 16:9 でない場合は例外にする
+- scale 後の template または search region のサイズが 0 以下になる場合は例外にする
 - screenshot が探索領域を満たさない場合は例外にする
 - 単純な不一致は `False` として扱う
 - 設定不備、画像サイズ不整合、読み込み失敗は例外として見えるようにする
