@@ -19,14 +19,21 @@ class BrowserOperation:
 
 
 type BrowserOperationRecorder = Callable[[BrowserOperation], Awaitable[None]]
+type StopRequester = Callable[[], Awaitable[None]]
+
+
+async def _ignore_stop_request() -> None:
+    pass
 
 
 class ScreenContext:
     def __init__(
         self,
         record_browser_operation: BrowserOperationRecorder,
+        request_stop: StopRequester | None = None,
     ) -> None:
         self._record_browser_operation = record_browser_operation
+        self._request_stop = request_stop or _ignore_stop_request
 
     async def record_browser_operation(
         self,
@@ -36,6 +43,9 @@ class ScreenContext:
         await self._record_browser_operation(
             BrowserOperation(name=name, parameters=parameters),
         )
+
+    async def request_stop(self) -> None:
+        await self._request_stop()
 
 
 def _never_matches(_screenshot: object) -> bool:

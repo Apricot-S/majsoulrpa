@@ -58,7 +58,7 @@
 - [x] Screen detection が例外を投げたら隠さない
 - [x] 複数 Screen が一致した場合は登録順で選ばれる
 - [x] ScreenContext から browser operation を記録できる
-- [ ] ScreenContext から stop 要求を出せる
+- [x] ScreenContext から stop 要求を出せる
 
 ## Phase 6: Login API ひとつ目
 

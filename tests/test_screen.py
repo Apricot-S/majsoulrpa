@@ -203,3 +203,23 @@ def test_screen_context_records_browser_operation() -> None:
             },
         ),
     ]
+
+
+def test_screen_context_requests_stop() -> None:
+    requested = False
+
+    async def record(_operation: BrowserOperation) -> None:
+        raise AssertionError
+
+    async def request_stop() -> None:
+        nonlocal requested
+        requested = True
+
+    context = ScreenContext(
+        record_browser_operation=record,
+        request_stop=request_stop,
+    )
+
+    asyncio.run(context.request_stop())
+
+    assert requested is True
