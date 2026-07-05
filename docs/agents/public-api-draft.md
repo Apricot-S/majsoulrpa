@@ -144,6 +144,11 @@ class Screen:
 
 初期実装では `LoginScreen` の API を 1 つだけ選びます。
 
+`LoginScreen.enter_email_address()` に入る前に、まず `LoginScreen` に到達したかを
+判定するテンプレート照合を実装します。照合結果は score と `Region` を持つ
+`TemplateMatchResult` とし、`Region` は将来の画面クリックや固定領域指定にも使います。
+詳細は [テンプレート照合設計メモ](template-matching.md) を参照します。
+
 ## 操作 API
 
 操作 API は、その画面で意味があるものだけに限定します。

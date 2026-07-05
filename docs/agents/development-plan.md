@@ -116,9 +116,10 @@
 
 - 実ゲームではなく fake Presentation で examples を確認する
 
-## Phase 5: ログイン関連の最初の高レベル API
+## Phase 5: ログイン画面検出と最初の高レベル API
 
-目的: `LoginPresentation` 相当の最初の画面 API を 1 つだけ実装する。
+目的: `LoginScreen` の画面到達判定をテンプレート照合で実装し、その後で
+最初の画面 API を 1 つだけ実装する。
 
 候補 API:
 
@@ -128,6 +129,10 @@
 進め方:
 
 - まずテストリストを作る
+- `LoginScreen.enter_email_address()` には入らず、先にテンプレート照合による
+  `LoginScreen.detection_spec()` を作る
+- テンプレート照合は OpenCV と numpy を使い、synthetic array で自動テストする
+- 照合結果は score と `Region` を返す
 - 片方の API だけを実装する
 - 関連テストと品質ゲートを通す
 - ユーザーに実際の雀魂での確認を依頼する

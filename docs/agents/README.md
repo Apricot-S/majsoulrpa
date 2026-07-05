@@ -11,6 +11,7 @@
 - [公開 API 草案](public-api-draft.md)
 - [内部設計方針](internal-design.md)
 - [v3 アーキテクチャ草案](v3-architecture.md)
+- [テンプレート照合設計メモ](template-matching.md)
 - [カスタマイズ方針](customization.md)
 - [WebSocket キャプチャ方針](websocket-capture.md)
 - [テストと品質基準](testing-quality.md)
@@ -26,3 +27,6 @@
 API や内部構造を変更する作業では、[API 設計方針](api-guidelines.md) と
 [公開 API 草案](public-api-draft.md)、[内部設計方針](internal-design.md)、
 [v3 アーキテクチャ草案](v3-architecture.md) も確認してください。
+
+画面到達判定や固定領域クリックを扱う作業では、
+[テンプレート照合設計メモ](template-matching.md) も確認してください。

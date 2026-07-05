@@ -63,6 +63,23 @@
 ## Phase 6: Login API ひとつ目
 
 最初に実装する高レベル API は、実装直前に 1 つ選びます。
+まず `LoginScreen.enter_email_address()` には入らず、画面到達判定のための
+テンプレート照合を実装します。
+
+テンプレート照合:
+
+- [ ] TOML から `TemplateMatchSettings` を読める
+- [ ] unknown key を reject する
+- [ ] region、margin、threshold の不正値を reject する
+- [ ] `RegionConfig.to_region()` が immutable な `Region` を返す
+- [ ] `Region.right` と `Region.bottom` が計算される
+- [ ] template size と region size が違うと例外
+- [ ] fake `np.ndarray` screenshot の指定 region が一致したら `matches()` が true
+- [ ] `match()` が `score` と `Region` を返す
+- [ ] margin 内でずれたテンプレートも match し、ずれた `Region` を返す
+- [ ] threshold 未満なら `matches()` が false
+- [ ] screenshot が探索領域より小さい場合は例外
+- [ ] `LoginScreen.detection_spec()` が template predicate を返す
 
 候補:
 
