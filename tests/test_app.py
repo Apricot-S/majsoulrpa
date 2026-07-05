@@ -61,6 +61,12 @@ class CleanupSpy:
         self.called += 1
 
 
+class UnrepresentableData:
+    def __repr__(self) -> str:
+        msg = "data must not be represented"
+        raise AssertionError(msg)
+
+
 class RuntimeFactorySpy:
     def __init__(
         self,
@@ -177,6 +183,21 @@ def test_rpa_app_run_returns_callback_data() -> None:
     data = asyncio.run(app.run(AppConfig(), 123))
 
     assert data == "123"
+
+
+def test_rpa_app_run_does_not_represent_data() -> None:
+    detector = SequenceScreenDetector(LoginScreen(), None)
+    app = RPAApp(runtime_factory=RuntimeFactorySpy(detector))
+    data_in = UnrepresentableData()
+
+    @app.on(LoginScreen)
+    async def handle_login(_screen: LoginScreen, data: object) -> object:
+        assert data is data_in
+        return data
+
+    data_out = asyncio.run(app.run(AppConfig(), data_in))
+
+    assert data_out is data_in
 
 
 def test_rpa_app_run_propagates_callback_exception() -> None:
