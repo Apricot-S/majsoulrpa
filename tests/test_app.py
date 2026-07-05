@@ -1,6 +1,6 @@
 import asyncio
 from collections.abc import Mapping
-from typing import Any, cast
+from typing import Any, cast, override
 
 import pytest
 
@@ -13,18 +13,21 @@ from majsoulrpa.types import Callback
 
 class LoginScreen(Screen):
     @classmethod
+    @override
     def detection_spec(cls) -> ScreenDetectionSpec:
         return ScreenDetectionSpec()
 
 
 class HomeScreen(Screen):
     @classmethod
+    @override
     def detection_spec(cls) -> ScreenDetectionSpec:
         return ScreenDetectionSpec()
 
 
 class UnknownScreen(Screen):
     @classmethod
+    @override
     def detection_spec(cls) -> ScreenDetectionSpec:
         return ScreenDetectionSpec()
 

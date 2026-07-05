@@ -1,4 +1,5 @@
 import asyncio
+from typing import override
 
 from majsoulrpa.client import ScreenshotScreenDetector
 from majsoulrpa.screens import Screen, ScreenDetectionSpec
@@ -8,6 +9,7 @@ class LoginScreen(Screen):
     spec = ScreenDetectionSpec()
 
     @classmethod
+    @override
     def detection_spec(cls) -> ScreenDetectionSpec:
         return cls.spec
 
@@ -32,6 +34,7 @@ def test_screen_detector_detects_screen_from_fake_screenshot() -> None:
 
     class FakeLoginScreen(Screen):
         @classmethod
+        @override
         def detection_spec(cls) -> ScreenDetectionSpec:
             return ScreenDetectionSpec(predicate=matches_login)
 
