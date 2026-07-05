@@ -1,6 +1,41 @@
 from abc import ABC, abstractmethod
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field
+from types import MappingProxyType
+
+
+@dataclass(frozen=True)
+class BrowserOperation:
+    name: str
+    parameters: Mapping[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        copied_parameters = dict(self.parameters)
+        object.__setattr__(
+            self,
+            "parameters",
+            MappingProxyType(copied_parameters),
+        )
+
+
+type BrowserOperationRecorder = Callable[[BrowserOperation], Awaitable[None]]
+
+
+class ScreenContext:
+    def __init__(
+        self,
+        record_browser_operation: BrowserOperationRecorder,
+    ) -> None:
+        self._record_browser_operation = record_browser_operation
+
+    async def record_browser_operation(
+        self,
+        name: str,
+        **parameters: object,
+    ) -> None:
+        await self._record_browser_operation(
+            BrowserOperation(name=name, parameters=parameters),
+        )
 
 
 def _never_matches(_screenshot: object) -> bool:

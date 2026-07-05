@@ -8,7 +8,12 @@ from majsoulrpa import RPAApp
 from majsoulrpa.client import ScreenshotScreenDetector
 from majsoulrpa.client.runtime import RPARuntime
 from majsoulrpa.config import AppConfig
-from majsoulrpa.screens import Screen, ScreenDetectionSpec
+from majsoulrpa.screens import (
+    BrowserOperation,
+    Screen,
+    ScreenContext,
+    ScreenDetectionSpec,
+)
 from majsoulrpa.types import Callback
 
 
@@ -171,3 +176,30 @@ def test_multiple_matching_screens_use_registration_order() -> None:
     result = asyncio.run(app.run(AppConfig(), None))
 
     assert result == "first"
+
+
+def test_screen_context_records_browser_operation() -> None:
+    operations: list[BrowserOperation] = []
+
+    async def record(operation: BrowserOperation) -> None:
+        operations.append(operation)
+
+    context = ScreenContext(record_browser_operation=record)
+
+    asyncio.run(
+        context.record_browser_operation(
+            "fill",
+            selector="#email",
+            value="player@example.invalid",
+        ),
+    )
+
+    assert operations == [
+        BrowserOperation(
+            name="fill",
+            parameters={
+                "selector": "#email",
+                "value": "player@example.invalid",
+            },
+        ),
+    ]
