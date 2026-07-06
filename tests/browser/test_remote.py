@@ -1,4 +1,5 @@
 import asyncio
+from random import Random
 
 import pytest
 
@@ -48,20 +49,25 @@ def test_remote_browser_controller_sends_click_and_text_input() -> None:
         ClickResponse(x=25, y=40),
         TextInputResponse(text="player@example.invalid"),
     )
-    controller = RemoteBrowserController(transport)
+    controller = RemoteBrowserController(transport, rng=Random(0))
 
     asyncio.run(controller.click(25, 40))
-    asyncio.run(controller.input_text("player@example.invalid"))
+    asyncio.run(controller.input_text("ab"))
 
-    assert transport.sent_commands == [
-        ClickCommand(
-            x=25,
-            y=40,
-        ),
-        TextInputCommand(
-            text="player@example.invalid",
-        ),
-    ]
+    click_command, text_command = transport.sent_commands
+    assert isinstance(click_command, ClickCommand)
+    assert isinstance(text_command, TextInputCommand)
+    assert click_command == ClickCommand(
+        x=25,
+        y=40,
+        mouse_down_up_delay_seconds=click_command.mouse_down_up_delay_seconds,
+    )
+    assert click_command.mouse_down_up_delay_seconds > 0
+    assert text_command == TextInputCommand(
+        text="ab",
+        character_delay_seconds=text_command.character_delay_seconds,
+    )
+    assert text_command.character_delay_seconds > 0
 
 
 def test_remote_browser_controller_raises_response_error() -> None:
@@ -93,8 +99,24 @@ def test_browser_command_schema_rejects_unknown_key() -> None:
                 "type": "click",
                 "x": 10,
                 "y": 20,
+                "mouse_down_up_delay_seconds": 0.1,
                 "unexpected": True,
             },
+        )
+
+
+def test_browser_command_schema_rejects_invalid_delay() -> None:
+    with pytest.raises(ValueError, match="greater than 0"):
+        ClickCommand(
+            x=10,
+            y=20,
+            mouse_down_up_delay_seconds=0,
+        )
+
+    with pytest.raises(ValueError, match="greater than 0"):
+        TextInputCommand(
+            text="abc",
+            character_delay_seconds=0,
         )
 
 

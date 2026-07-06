@@ -204,6 +204,8 @@ def test_multiple_matching_screens_use_registration_order() -> None:
     screenshots = [FakeScreenshot(matches=True), FakeScreenshot(matches=False)]
 
     async def screenshot() -> FakeScreenshot:
+        if not screenshots:
+            return FakeScreenshot(matches=False)
         return screenshots.pop(0)
 
     def runtime_factory(

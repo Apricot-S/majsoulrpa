@@ -2,6 +2,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+PositiveDelay = Annotated[float, Field(gt=0)]
+
 
 class ClickCommand(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -9,6 +11,7 @@ class ClickCommand(BaseModel):
     type: Literal["click"] = "click"
     x: float
     y: float
+    mouse_down_up_delay_seconds: PositiveDelay
 
 
 class TextInputCommand(BaseModel):
@@ -16,6 +19,7 @@ class TextInputCommand(BaseModel):
 
     type: Literal["text_input"] = "text_input"
     text: str
+    character_delay_seconds: PositiveDelay
 
 
 class ScreenshotCommand(BaseModel):
