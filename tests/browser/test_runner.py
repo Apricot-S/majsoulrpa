@@ -47,6 +47,29 @@ class FailingRequestServer(RequestServerSpy):
         raise RuntimeError(msg)
 
 
+class InterruptingRequestServer(RequestServerSpy):
+    async def serve_forever(self) -> None:
+        raise KeyboardInterrupt
+
+
+class CleanupError(Exception):
+    pass
+
+
+class PlaywrightCloseFailingBackend(BackendSpy):
+    async def stop(self) -> None:
+        self.stopped = True
+        msg = "Browser.close: Connection closed while reading from the driver"
+        raise CleanupError(msg)
+
+
+class UnexpectedCloseFailingBackend(BackendSpy):
+    async def stop(self) -> None:
+        self.stopped = True
+        msg = "unexpected close failure"
+        raise CleanupError(msg)
+
+
 class ExecutorSpy:
     def __init__(self, page: object) -> None:
         self.page = page
@@ -128,6 +151,42 @@ def test_run_browser_host_cleans_up_when_serve_fails() -> None:
     server = FailingRequestServer()
 
     with pytest.raises(RuntimeError, match="serve failed"):
+        asyncio.run(
+            run_browser_host(
+                AppConfig(),
+                backend=backend,
+                command_executor_factory=ExecutorSpy,
+                request_server_factory=lambda _executor: server,
+            ),
+        )
+
+    assert server.stopped
+    assert backend.stopped
+
+
+def test_run_browser_host_keeps_interrupt_on_playwright_disconnect() -> None:
+    backend = PlaywrightCloseFailingBackend()
+    server = InterruptingRequestServer()
+
+    with pytest.raises(KeyboardInterrupt):
+        asyncio.run(
+            run_browser_host(
+                AppConfig(),
+                backend=backend,
+                command_executor_factory=ExecutorSpy,
+                request_server_factory=lambda _executor: server,
+            ),
+        )
+
+    assert server.stopped
+    assert backend.stopped
+
+
+def test_run_browser_host_reports_unexpected_cleanup_failure() -> None:
+    backend = UnexpectedCloseFailingBackend()
+    server = InterruptingRequestServer()
+
+    with pytest.raises(CleanupError, match="unexpected close failure"):
         asyncio.run(
             run_browser_host(
                 AppConfig(),

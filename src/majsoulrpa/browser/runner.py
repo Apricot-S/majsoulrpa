@@ -1,5 +1,7 @@
+import asyncio
 import importlib
 import ipaddress
+import sys
 from collections.abc import Callable
 from typing import Any, cast
 
@@ -71,7 +73,15 @@ async def run_browser_host(
             await request_server.stop()
         if zmq_context is not None:
             zmq_context.term()
-        await backend.stop()
+        active_exception = sys.exception()
+        try:
+            await backend.stop()
+        except Exception as cleanup_error:
+            if not _should_suppress_cleanup_error(
+                active_exception,
+                cleanup_error,
+            ):
+                raise
 
 
 def _make_playwright_command_executor(page: object) -> BrowserCommandExecutor:
@@ -95,3 +105,19 @@ def _make_zmq_request_server_factory(
         )
 
     return request_server_factory
+
+
+def _should_suppress_cleanup_error(
+    active_exception: BaseException | None,
+    cleanup_error: Exception,
+) -> bool:
+    if not isinstance(
+        active_exception,
+        KeyboardInterrupt | asyncio.CancelledError,
+    ):
+        return False
+    return _is_playwright_driver_disconnected_error(cleanup_error)
+
+
+def _is_playwright_driver_disconnected_error(error: Exception) -> bool:
+    return "Connection closed while reading from the driver" in str(error)
