@@ -1,6 +1,6 @@
 from random import Random
 
-DEFAULT_DELAY_SIGMA = 0.1
+DEFAULT_DELAY_SIGMA = 0.2
 _DEFAULT_RANDOM = Random()  # noqa: S311
 
 
