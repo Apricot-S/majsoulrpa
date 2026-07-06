@@ -29,6 +29,7 @@ from majsoulrpa.constants import (
     CANVAS_SELECTOR,
     CANVAS_WAIT_TIMEOUT_SECONDS,
     MAJSOUL_URL,
+    USER_AGENT_PROBE_URL,
 )
 
 
@@ -45,6 +46,7 @@ class PageLike(Protocol):
     keyboard: KeyboardLike
 
     async def goto(self, url: str) -> object: ...
+    async def evaluate(self, expression: str) -> object: ...
     async def screenshot(self, **kwargs: str) -> bytes: ...
     async def wait_for_selector(
         self,
@@ -118,6 +120,11 @@ class PlaywrightBrowserBackend:
         ignore_default_args = (
             ["--mute-audio"] if not config.browser.headless else None
         )
+        user_agent = (
+            await _get_spoofed_user_agent(self._playwright)
+            if config.browser.headless
+            else None
+        )
 
         try:
             if config.browser.user_data_dir is None:
@@ -126,6 +133,7 @@ class PlaywrightBrowserBackend:
                     viewport=viewport,
                     args=args,
                     ignore_default_args=ignore_default_args,
+                    user_agent=user_agent,
                 )
             else:
                 await self._start_persistent_context(
@@ -134,6 +142,7 @@ class PlaywrightBrowserBackend:
                     viewport=viewport,
                     args=args,
                     ignore_default_args=ignore_default_args,
+                    user_agent=user_agent,
                 )
             await self._open_majsoul_page()
         except Exception:
@@ -147,6 +156,7 @@ class PlaywrightBrowserBackend:
         viewport: ViewportSize,
         args: list[str],
         ignore_default_args: list[str] | None,
+        user_agent: str | None,
     ) -> None:
         if self._playwright is None:
             msg = "Playwright is not started."
@@ -157,7 +167,10 @@ class PlaywrightBrowserBackend:
             args=args,
             ignore_default_args=ignore_default_args,
         )
-        self._context = await self._browser.new_context(viewport=viewport)
+        self._context = await self._browser.new_context(
+            viewport=viewport,
+            user_agent=user_agent,
+        )
         self._page = await self._context.new_page()
 
     async def _start_persistent_context(
@@ -168,6 +181,7 @@ class PlaywrightBrowserBackend:
         viewport: ViewportSize,
         args: list[str],
         ignore_default_args: list[str] | None,
+        user_agent: str | None,
     ) -> None:
         if self._playwright is None:
             msg = "Playwright is not started."
@@ -180,6 +194,7 @@ class PlaywrightBrowserBackend:
                 viewport=viewport,
                 args=args,
                 ignore_default_args=ignore_default_args,
+                user_agent=user_agent,
             )
         )
         self._page = (
@@ -218,3 +233,15 @@ class PlaywrightBrowserBackend:
 
 def _viewport_width(height: int) -> int:
     return round(height * BASE_VIEWPORT_WIDTH / BASE_VIEWPORT_HEIGHT)
+
+
+async def _get_spoofed_user_agent(playwright: Playwright) -> str:
+    async with (
+        await playwright.chromium.launch(headless=True) as browser,
+        await browser.new_context() as context,
+        await context.new_page() as page,
+    ):
+        await page.goto(USER_AGENT_PROBE_URL)
+        user_agent = await page.evaluate("navigator.userAgent")
+
+    return str(user_agent).replace("HeadlessChrome", "Chrome")

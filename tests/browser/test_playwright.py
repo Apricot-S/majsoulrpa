@@ -1,7 +1,7 @@
 import asyncio
 import base64
 from pathlib import Path
-from typing import override
+from typing import Self, override
 
 import pytest
 
@@ -22,6 +22,7 @@ from majsoulrpa.constants import (
     CANVAS_SELECTOR,
     CANVAS_WAIT_TIMEOUT_SECONDS,
     MAJSOUL_URL,
+    USER_AGENT_PROBE_URL,
 )
 
 
@@ -51,9 +52,15 @@ class PageSpy:
         self.screenshot_bytes = b"\x89PNG\r\n\x1a\n"
         self.visited_urls: list[str] = []
         self.waited_selectors: list[tuple[str, float]] = []
+        self.evaluated_expressions: list[str] = []
+        self.user_agent = "Mozilla/5.0 HeadlessChrome/120.0.0.0 Safari/537.36"
 
     async def goto(self, url: str) -> None:
         self.visited_urls.append(url)
+
+    async def evaluate(self, expression: str) -> str:
+        self.evaluated_expressions.append(expression)
+        return self.user_agent
 
     async def screenshot(self, **kwargs: str) -> bytes:
         self.screenshot_types.append(kwargs["type"])
@@ -143,7 +150,16 @@ def test_playwright_command_executor_returns_error_response() -> None:
 
 
 class FakePage(PageSpy):
-    pass
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: object,
+        exc_value: object,
+        traceback: object,
+    ) -> None:
+        _ = (exc_type, exc_value, traceback)
 
 
 class FakeContext:
@@ -161,6 +177,18 @@ class FakeContext:
     async def close(self) -> None:
         self.closed += 1
 
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: object,
+        exc_value: object,
+        traceback: object,
+    ) -> None:
+        _ = (exc_type, exc_value, traceback)
+        await self.close()
+
 
 class FakeBrowser:
     def __init__(self) -> None:
@@ -175,10 +203,23 @@ class FakeBrowser:
     async def close(self) -> None:
         self.closed += 1
 
+    async def __aenter__(self) -> Self:
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: object,
+        exc_value: object,
+        traceback: object,
+    ) -> None:
+        _ = (exc_type, exc_value, traceback)
+        await self.close()
+
 
 class FakeChromium:
     def __init__(self) -> None:
         self.browser = FakeBrowser()
+        self.launched_browsers: list[FakeBrowser] = []
         self.persistent_context = FakeContext()
         self.launch_kwargs: dict[str, object] | None = None
         self.persistent_args: tuple[str, ...] | None = None
@@ -186,7 +227,9 @@ class FakeChromium:
 
     async def launch(self, **kwargs: object) -> FakeBrowser:
         self.launch_kwargs = kwargs
-        return self.browser
+        browser = FakeBrowser()
+        self.launched_browsers.append(browser)
+        return browser
 
     async def launch_persistent_context(
         self,
@@ -239,8 +282,10 @@ def test_playwright_browser_backend_starts_ephemeral_browser(
         ],
         "ignore_default_args": ["--mute-audio"],
     }
-    assert playwright.chromium.browser.new_context_kwargs == {
+    [browser] = playwright.chromium.launched_browsers
+    assert browser.new_context_kwargs == {
         "viewport": {"width": 1920, "height": 1080},
+        "user_agent": None,
     }
     assert isinstance(backend.page, FakePage)
     assert backend.page.visited_urls == [MAJSOUL_URL]
@@ -250,8 +295,8 @@ def test_playwright_browser_backend_starts_ephemeral_browser(
 
     asyncio.run(backend.stop())
 
-    assert playwright.chromium.browser.context.closed == 1
-    assert playwright.chromium.browser.closed == 1
+    assert browser.context.closed == 1
+    assert browser.closed == 1
     assert playwright.stopped == 1
 
 
@@ -287,7 +332,17 @@ def test_playwright_browser_backend_starts_persistent_context(
             "--window-position=0,0",
         ],
         "ignore_default_args": None,
+        "user_agent": "Mozilla/5.0 Chrome/120.0.0.0 Safari/537.36",
     }
+    [user_agent_browser] = playwright.chromium.launched_browsers
+    assert user_agent_browser.context.pages[0].visited_urls == [
+        USER_AGENT_PROBE_URL,
+    ]
+    assert user_agent_browser.context.pages[0].evaluated_expressions == [
+        "navigator.userAgent",
+    ]
+    assert user_agent_browser.context.closed == 1
+    assert user_agent_browser.closed == 1
     assert isinstance(backend.page, FakePage)
     assert backend.page.visited_urls == [MAJSOUL_URL]
     assert backend.page.waited_selectors == [
