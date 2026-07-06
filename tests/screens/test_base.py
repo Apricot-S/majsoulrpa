@@ -5,6 +5,7 @@ from typing import Any, override
 
 import pytest
 
+import majsoulrpa.screens.base as screens_base
 from majsoulrpa import RPAApp
 from majsoulrpa.client import ScreenshotScreenDetector
 from majsoulrpa.client.runtime import RPARuntime
@@ -27,12 +28,15 @@ class BrowserControllerSpy:
     def __init__(self) -> None:
         self.clicked_points: list[tuple[float, float]] = []
         self.input_texts: list[str] = []
+        self.events: list[str] = []
 
     async def click(self, x: float, y: float) -> None:
         self.clicked_points.append((x, y))
+        self.events.append("click")
 
     async def input_text(self, text: str) -> None:
         self.input_texts.append(text)
+        self.events.append("input_text")
 
 
 def test_screen_exposes_detection_spec() -> None:
@@ -222,8 +226,13 @@ def test_multiple_matching_screens_use_registration_order() -> None:
     assert result == "first"
 
 
-def test_screen_fills_scaled_region() -> None:
+def test_screen_fills_scaled_region(monkeypatch: pytest.MonkeyPatch) -> None:
     browser = BrowserControllerSpy()
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+        browser.events.append("sleep")
 
     screen = LoginScreen(
         context=ScreenContext(
@@ -233,6 +242,8 @@ def test_screen_fills_scaled_region() -> None:
             rng=Random(0),
         ),
     )
+
+    monkeypatch.setattr(screens_base.asyncio, "sleep", sleep)
 
     asyncio.run(
         screen.fill_region(
@@ -244,6 +255,8 @@ def test_screen_fills_scaled_region() -> None:
     [(x, y)] = browser.clicked_points
     assert 200 < x < 204
     assert 100 < y < 102
+    assert sleeps == [0.5]
+    assert browser.events == ["click", "sleep", "input_text"]
     assert browser.input_texts == ["player@example.invalid"]
 
 

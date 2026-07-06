@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
@@ -6,6 +7,8 @@ from typing import Protocol
 
 from majsoulrpa.constants import BASE_VIEWPORT_WIDTH, DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.presentation import Region
+
+FILL_REGION_CLICK_TO_INPUT_DELAY_SECONDS = 0.5
 
 
 class BrowserController(Protocol):
@@ -80,6 +83,7 @@ class Screen(ABC):
         scaled_region = self.context.scale_region(region)
         x, y = scaled_region.random_point(rng=self.context.rng)
         await self.context.browser.click(x, y)
+        await asyncio.sleep(FILL_REGION_CLICK_TO_INPUT_DELAY_SECONDS)
         await self.context.browser.input_text(value)
 
     @classmethod
