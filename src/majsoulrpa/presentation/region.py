@@ -15,6 +15,11 @@ class Region:
     width: float
     height: float
 
+    def __post_init__(self) -> None:
+        if self.width <= 0 or self.height <= 0:
+            msg = "region size must be positive."
+            raise ValueError(msg)
+
     @property
     def right(self) -> float:
         return self.left + self.width
@@ -49,10 +54,6 @@ class Region:
         boundary_sigma: float = DEFAULT_BOUNDARY_SIGMA,
         rng: Random | None = None,
     ) -> tuple[float, float]:
-        if self.width <= 0 or self.height <= 0:
-            msg = "region size must be positive."
-            raise ValueError(msg)
-
         random_source = rng or _DEFAULT_RANDOM
         x = _sample_truncated_normal(
             self.left,

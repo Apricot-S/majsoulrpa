@@ -39,8 +39,6 @@ def test_region_random_point_rejects_non_positive_boundary_sigma() -> None:
         region.random_point(boundary_sigma=0, rng=Random(0))
 
 
-def test_region_random_point_rejects_non_positive_size() -> None:
-    region = Region(left=10, top=20, width=0, height=40)
-
+def test_region_rejects_non_positive_size() -> None:
     with pytest.raises(ValueError, match="region size"):
-        region.random_point(rng=Random(0))
+        Region(left=10, top=20, width=0, height=40)
