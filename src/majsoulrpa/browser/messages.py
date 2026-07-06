@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
 PositiveDelay = Annotated[float, Field(gt=0)]
 
@@ -70,3 +70,22 @@ BrowserResponse = Annotated[
     | BrowserErrorResponse,
     Field(discriminator="type"),
 ]
+
+_BROWSER_COMMAND_ADAPTER = TypeAdapter(BrowserCommand)
+_BROWSER_RESPONSE_ADAPTER = TypeAdapter(BrowserResponse)
+
+
+def dump_browser_command_json(command: BrowserCommand) -> bytes:
+    return _BROWSER_COMMAND_ADAPTER.dump_json(command)
+
+
+def dump_browser_response_json(response: BrowserResponse) -> bytes:
+    return _BROWSER_RESPONSE_ADAPTER.dump_json(response)
+
+
+def parse_browser_command_json(payload: str | bytes) -> BrowserCommand:
+    return _BROWSER_COMMAND_ADAPTER.validate_json(payload)
+
+
+def parse_browser_response_json(payload: str | bytes) -> BrowserResponse:
+    return _BROWSER_RESPONSE_ADAPTER.validate_json(payload)

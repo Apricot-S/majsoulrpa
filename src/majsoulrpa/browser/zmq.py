@@ -1,10 +1,13 @@
-from pydantic import TypeAdapter
 from zmq.asyncio import Socket
 
-from majsoulrpa.browser.messages import BrowserCommand, BrowserResponse
-
-_COMMAND_ADAPTER = TypeAdapter(BrowserCommand)
-_RESPONSE_ADAPTER = TypeAdapter(BrowserResponse)
+from majsoulrpa.browser.messages import (
+    BrowserCommand,
+    BrowserResponse,
+    dump_browser_command_json,
+    dump_browser_response_json,
+    parse_browser_command_json,
+    parse_browser_response_json,
+)
 
 
 class BrowserZmqClientTransport:
@@ -12,11 +15,11 @@ class BrowserZmqClientTransport:
         self._socket = socket
 
     async def send(self, command: BrowserCommand) -> None:
-        await self._socket.send(_COMMAND_ADAPTER.dump_json(command))
+        await self._socket.send(dump_browser_command_json(command))
 
     async def recv(self) -> BrowserResponse:
         payload = await self._socket.recv()
-        return _RESPONSE_ADAPTER.validate_json(payload)
+        return parse_browser_response_json(payload)
 
 
 class BrowserZmqServerTransport:
@@ -25,7 +28,7 @@ class BrowserZmqServerTransport:
 
     async def recv_command(self) -> BrowserCommand:
         payload = await self._socket.recv()
-        return _COMMAND_ADAPTER.validate_json(payload)
+        return parse_browser_command_json(payload)
 
     async def send_response(self, response: BrowserResponse) -> None:
-        await self._socket.send(_RESPONSE_ADAPTER.dump_json(response))
+        await self._socket.send(dump_browser_response_json(response))

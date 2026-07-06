@@ -1,12 +1,14 @@
 import json
 from typing import Protocol
 
-from pydantic import TypeAdapter
-
-from majsoulrpa.browser.messages import BrowserCommand, BrowserResponse
-
-_COMMAND_ADAPTER = TypeAdapter(BrowserCommand)
-_RESPONSE_ADAPTER = TypeAdapter(BrowserResponse)
+from majsoulrpa.browser.messages import (
+    BrowserCommand,
+    BrowserResponse,
+    dump_browser_command_json,
+    dump_browser_response_json,
+    parse_browser_command_json,
+    parse_browser_response_json,
+)
 
 
 class StreamReaderLike(Protocol):
@@ -28,18 +30,18 @@ class BrowserJsonStreamTransport:
         self._writer = writer
 
     async def send(self, command: BrowserCommand) -> None:
-        await self._write_json(_COMMAND_ADAPTER.dump_json(command))
+        await self._write_json(dump_browser_command_json(command))
 
     async def recv(self) -> BrowserResponse:
         line = await self._read_line()
-        return _RESPONSE_ADAPTER.validate_json(line)
+        return parse_browser_response_json(line)
 
     async def recv_command(self) -> BrowserCommand:
         line = await self._read_line()
-        return _COMMAND_ADAPTER.validate_json(line)
+        return parse_browser_command_json(line)
 
     async def send_response(self, response: BrowserResponse) -> None:
-        await self._write_json(_RESPONSE_ADAPTER.dump_json(response))
+        await self._write_json(dump_browser_response_json(response))
 
     async def _read_line(self) -> bytes:
         line = await self._reader.readline()
@@ -56,11 +58,3 @@ class BrowserJsonStreamTransport:
     async def _write_json(self, payload: bytes) -> None:
         self._writer.write(payload + b"\n")
         await self._writer.drain()
-
-
-def parse_browser_command_json(payload: str | bytes) -> BrowserCommand:
-    return _COMMAND_ADAPTER.validate_json(payload)
-
-
-def parse_browser_response_json(payload: str | bytes) -> BrowserResponse:
-    return _RESPONSE_ADAPTER.validate_json(payload)
