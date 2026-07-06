@@ -25,6 +25,7 @@ class AsyncioServerLike(Protocol):
     @property
     def sockets(self) -> Sequence[socket] | None: ...
 
+    async def serve_forever(self) -> None: ...
     def close(self) -> None: ...
     async def wait_closed(self) -> None: ...
 
@@ -67,12 +68,18 @@ class BrowserTcpServer:
             raise RuntimeError(msg)
         return BrowserTcpAddress(self._host, self._bound_port())
 
-    async def start(self) -> None:
+    async def bind(self) -> None:
         self._server = await self._start_server(
             self._handle_client,
             self._host,
             self._port,
         )
+
+    async def serve_forever(self) -> None:
+        if self._server is None:
+            msg = "browser TCP server is not running."
+            raise RuntimeError(msg)
+        await self._server.serve_forever()
 
     async def stop(self) -> None:
         if self._server is None:

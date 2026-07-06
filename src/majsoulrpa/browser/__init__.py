@@ -25,6 +25,7 @@ from majsoulrpa.browser.messages import (
 from majsoulrpa.browser.server import (
     BrowserCommandExecutor,
     BrowserRequestHandler,
+    BrowserRequestServer,
 )
 from majsoulrpa.browser.tcp import BrowserTcpAddress, BrowserTcpServer
 from majsoulrpa.browser.transport import (
@@ -58,6 +59,7 @@ __all__ = [
     "BrowserJsonStreamTransport",
     "BrowserOperationError",
     "BrowserRequestHandler",
+    "BrowserRequestServer",
     "BrowserResponse",
     "BrowserServerTransport",
     "BrowserTcpAddress",

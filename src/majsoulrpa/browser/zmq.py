@@ -55,7 +55,7 @@ class BrowserZmqRequestServer:
         self._executor = executor
         self._socket: Socket | None = None
 
-    async def start(self) -> None:
+    async def bind(self) -> None:
         # On Windows, the `ProactorEventLoop` does not implement
         # the add_reader family of methods.
         # When using `zmq.asyncio`, Tornado automatically registers
@@ -88,7 +88,7 @@ class BrowserZmqRequestServer:
         handler = BrowserRequestHandler(transport, self._executor)
         await handler.serve_forever()
 
-    def close(self) -> None:
+    async def stop(self) -> None:
         if self._socket is None:
             return
         socket = self._socket

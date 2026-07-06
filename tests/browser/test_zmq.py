@@ -121,7 +121,7 @@ async def _zmq_request_server_handles_client_requests() -> None:
     client_socket = context.socket(zmq.REQ)
     task: asyncio.Task[None] | None = None
     try:
-        await server.start()
+        await server.bind()
         task = asyncio.create_task(server.serve_forever())
         client_socket.connect(endpoint)
         client = BrowserZmqClientTransport(client_socket)
@@ -148,7 +148,7 @@ async def _zmq_request_server_handles_client_requests() -> None:
             with suppress(asyncio.CancelledError):
                 await task
         client_socket.close(linger=0)
-        server.close()
+        await server.stop()
         context.term()
 
     assert executor.commands == [

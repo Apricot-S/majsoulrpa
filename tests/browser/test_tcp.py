@@ -35,7 +35,7 @@ async def _roundtrip_two_commands() -> None:
         port=0,
         executor=executor,
     )
-    await server.start()
+    await server.bind()
     try:
         address = server.address
         reader, writer = await asyncio.open_connection(
@@ -95,6 +95,9 @@ class ClosingServer:
     def close(self) -> None:
         self.closed = True
 
+    async def serve_forever(self) -> None:
+        raise asyncio.CancelledError
+
     async def wait_closed(self) -> None:
         self.wait_closed_called = True
 
@@ -122,7 +125,7 @@ async def _start_server_factory(
         executor=executor,
         start_server=start_server,
     )
-    await server.start()
+    await server.bind()
     await server.stop()
 
 
