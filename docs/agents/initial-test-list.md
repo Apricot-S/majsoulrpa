@@ -42,6 +42,8 @@
 - [x] Playwright backend が雀魂ページへ遷移して canvas selector を 1 分上限で待機する
 - [x] Playwright command executor が click、text input、screenshot を実行する
 - [x] Playwright command executor の操作失敗は error response にする
+- [x] browser host が request command を executor に渡して response を返す
+- [x] browser host の request loop は cancellation を伝播する
 
 ## Phase 4: callback dispatch
 

@@ -76,6 +76,10 @@ Presentation 検出は、画面状態を「できるだけ決定的に」扱い�
 - response は click result、text input result、error result を別型にする
 - click result と text input result は、必要に応じて BASE64 screenshot や実際に
   クリックした座標などを持つ
+- browser host 側は request を受け取り、command executor に渡して response を返す
+  loop を持つ
+- request/response loop は実 network transport と分離し、fake transport で自動テストする
+- 実 network server は request/response loop の挙動を固定した後で追加する
 - `ScreenContext`: 現在の Screen 実行に必要な browser controller、viewport、stop request
   を束ねる
 - `Screen`: `fill_region` など、継承先の画面 API が使う共通 helper を持つ
