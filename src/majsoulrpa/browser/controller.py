@@ -1,3 +1,5 @@
+import base64
+import binascii
 from random import Random
 
 from majsoulrpa.browser.messages import (
@@ -66,8 +68,13 @@ class RemoteBrowserController:
             ),
         )
 
-    async def take_screenshot(self) -> ScreenshotResponse:
-        return await self._request_screenshot(ScreenshotCommand())
+    async def screenshot(self) -> bytes:
+        response = await self._request_screenshot(ScreenshotCommand())
+        try:
+            return base64.b64decode(response.screenshot_base64, validate=True)
+        except binascii.Error as error:
+            msg = "screenshot response is not valid base64."
+            raise BrowserOperationError(msg) from error
 
     async def _request_click(self, command: ClickCommand) -> ClickResponse:
         await self._transport.send(command)

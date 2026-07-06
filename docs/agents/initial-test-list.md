@@ -72,6 +72,7 @@
 - [x] browser host へ送る command は click 座標や text など低レベル情報にする
 - [x] click command は mouse down/up 間の delay を持つ
 - [x] text input command は等間隔の文字入力 delay を持つ
+- [x] browser controller は screenshot command の base64 response を PNG bytes として返す
 - [x] response は click、text input、error を別型にする
 
 ## Phase 6: Login API ひとつ目

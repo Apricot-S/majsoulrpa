@@ -23,6 +23,9 @@ class BrowserControllerSpy:
     async def input_text(self, text: str) -> None:
         self.input_texts.append(text)
 
+    async def screenshot(self) -> bytes:
+        return b"\x89PNG\r\n\x1a\n"
+
 
 def test_login_screen_is_screen() -> None:
     assert issubclass(LoginScreen, Screen)

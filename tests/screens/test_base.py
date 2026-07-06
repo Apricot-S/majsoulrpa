@@ -29,6 +29,7 @@ class BrowserControllerSpy:
         self.clicked_points: list[tuple[float, float]] = []
         self.input_texts: list[str] = []
         self.events: list[str] = []
+        self.screenshot_bytes = b"\x89PNG\r\n\x1a\n"
 
     async def click(self, x: float, y: float) -> None:
         self.clicked_points.append((x, y))
@@ -37,6 +38,10 @@ class BrowserControllerSpy:
     async def input_text(self, text: str) -> None:
         self.input_texts.append(text)
         self.events.append("input_text")
+
+    async def screenshot(self) -> bytes:
+        self.events.append("screenshot")
+        return self.screenshot_bytes
 
 
 def test_screen_exposes_detection_spec() -> None:
@@ -277,3 +282,13 @@ def test_screen_context_requests_stop() -> None:
     asyncio.run(context.request_stop())
 
     assert requested is True
+
+
+def test_screen_context_browser_can_take_screenshot() -> None:
+    browser = BrowserControllerSpy()
+    context = ScreenContext(browser=browser)
+
+    screenshot = asyncio.run(context.browser.screenshot())
+
+    assert screenshot == b"\x89PNG\r\n\x1a\n"
+    assert browser.events == ["screenshot"]

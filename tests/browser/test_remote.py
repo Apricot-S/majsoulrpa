@@ -80,16 +80,26 @@ def test_remote_browser_controller_raises_response_error() -> None:
         asyncio.run(controller.click(10, 20))
 
 
-def test_remote_browser_controller_takes_screenshot_explicitly() -> None:
+def test_remote_browser_controller_returns_screenshot_png_bytes() -> None:
     transport = BrowserTransportSpy(
-        ScreenshotResponse(screenshot_base64="c2NyZWVu"),
+        ScreenshotResponse(screenshot_base64="iVBORw0KGgo="),
     )
     controller = RemoteBrowserController(transport)
 
-    response = asyncio.run(controller.take_screenshot())
+    screenshot = asyncio.run(controller.screenshot())
 
     assert transport.sent_commands == [ScreenshotCommand()]
-    assert response.screenshot_base64 == "c2NyZWVu"
+    assert screenshot == b"\x89PNG\r\n\x1a\n"
+
+
+def test_remote_browser_controller_rejects_invalid_screenshot_base64() -> None:
+    transport = BrowserTransportSpy(
+        ScreenshotResponse(screenshot_base64="invalid!"),
+    )
+    controller = RemoteBrowserController(transport)
+
+    with pytest.raises(BrowserOperationError, match="valid base64"):
+        asyncio.run(controller.screenshot())
 
 
 def test_browser_command_schema_rejects_unknown_key() -> None:
