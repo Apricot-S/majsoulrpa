@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from random import Random
 from typing import Protocol
 
+from majsoulrpa.constants import BASE_VIEWPORT_WIDTH, DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.presentation import Region
 
 
@@ -24,8 +25,8 @@ class ScreenContext:
         self,
         browser: BrowserController,
         request_stop: StopRequester | None = None,
-        viewport_width: int = 1920,
-        viewport_height: int = 1080,
+        viewport_width: int = BASE_VIEWPORT_WIDTH,
+        viewport_height: int = DEFAULT_VIEWPORT_HEIGHT,
         rng: Random | None = None,
     ) -> None:
         self._browser = browser

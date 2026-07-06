@@ -7,10 +7,8 @@ import numpy as np
 from numpy.typing import NDArray
 from pydantic import BaseModel, ConfigDict, Field
 
+from majsoulrpa.constants import BASE_VIEWPORT_HEIGHT, BASE_VIEWPORT_WIDTH
 from majsoulrpa.presentation.region import Region
-
-BASE_VIEWPORT_WIDTH = 1920
-BASE_VIEWPORT_HEIGHT = 1080
 
 NonNegativeCoordinate = Annotated[float, Field(ge=0)]
 PositiveSize = Annotated[float, Field(gt=0)]

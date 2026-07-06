@@ -1,32 +1,52 @@
 import tomllib
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
-USER_PORT_MIN = 1024
-USER_PORT_MAX = 49151
+from majsoulrpa.constants import (
+    DEFAULT_BROWSER_HOST,
+    DEFAULT_CLIENT_HOST,
+    DEFAULT_REMOTE_PORT,
+    DEFAULT_SNIFFER_PORT,
+    DEFAULT_VIEWPORT_HEIGHT,
+    DEFAULT_WINDOW_LEFT,
+    DEFAULT_WINDOW_TOP,
+    SUPPORTED_VIEWPORT_HEIGHTS,
+    USER_PORT_MAX,
+    USER_PORT_MIN,
+)
+
 UserPort = Annotated[int, Field(ge=USER_PORT_MIN, le=USER_PORT_MAX)]
 
 Host = Annotated[str, Field(min_length=1)]
-ViewportHeight = Literal[720, 1080, 1440]
+
+
+def _validate_viewport_height(value: int) -> int:
+    if value not in SUPPORTED_VIEWPORT_HEIGHTS:
+        msg = "viewport_height must be one of supported viewport heights."
+        raise ValueError(msg)
+    return value
+
+
+ViewportHeight = Annotated[int, AfterValidator(_validate_viewport_height)]
 
 
 class EndpointConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    browser_host: Host = "127.0.0.1"
-    client_host: Host = "127.0.0.1"
-    remote_port: UserPort = 19222
-    sniffer_port: UserPort = 37247
+    browser_host: Host = DEFAULT_BROWSER_HOST
+    client_host: Host = DEFAULT_CLIENT_HOST
+    remote_port: UserPort = DEFAULT_REMOTE_PORT
+    sniffer_port: UserPort = DEFAULT_SNIFFER_PORT
 
 
 class BrowserConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    window_left: int = 0
-    window_top: int = 0
-    viewport_height: ViewportHeight = 1080
+    window_left: int = DEFAULT_WINDOW_LEFT
+    window_top: int = DEFAULT_WINDOW_TOP
+    viewport_height: ViewportHeight = DEFAULT_VIEWPORT_HEIGHT
     headless: bool = False
     user_data_dir: Path | None = None
 

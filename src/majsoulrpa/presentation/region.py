@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 from random import Random
 
-BASE_VIEWPORT_WIDTH = 1920
-BASE_VIEWPORT_HEIGHT = 1080
+from majsoulrpa.constants import BASE_VIEWPORT_HEIGHT, BASE_VIEWPORT_WIDTH
 
 # sqrt(-2.0 * log((4.0 - pi) / 4.0)) ~= 1.76
 DEFAULT_BOUNDARY_SIGMA = 1.76

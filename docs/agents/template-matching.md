@@ -93,8 +93,7 @@ threshold = 0.92
 基準座標系は 1920x1080 です。
 
 ```python
-BASE_VIEWPORT_WIDTH = 1920
-BASE_VIEWPORT_HEIGHT = 1080
+from majsoulrpa.constants import BASE_VIEWPORT_HEIGHT, BASE_VIEWPORT_WIDTH
 ```
 
 720p と 1440p はスケーリングで対応します。
