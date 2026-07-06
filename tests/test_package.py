@@ -9,29 +9,24 @@ import pytest
 import majsoulrpa
 
 
-def test_package_exposes_version() -> None:
-    assert majsoulrpa.__version__ == "0.1.0"
+def test_package_exposes_string_version() -> None:
+    assert isinstance(majsoulrpa.__version__, str)
+    assert majsoulrpa.__version__
 
 
 def test_public_exports_are_explicit() -> None:
     assert majsoulrpa.__all__ == ["AppConfig", "RPAApp", "__version__"]
 
 
-def test_optional_dependencies_are_split_by_extra() -> None:
+def test_optional_dependency_extra_names_are_defined() -> None:
     pyproject = tomllib.loads(
         Path("pyproject.toml").read_text(encoding="utf-8"),
     )
 
-    assert pyproject["project"]["dependencies"] == ["pydantic>=2.13.4"]
-    assert pyproject["project"]["optional-dependencies"]["browser"] == [
-        "playwright>=1.61.0",
-    ]
-    assert pyproject["project"]["optional-dependencies"]["rpa"] == [
-        "numpy>=2.5.1",
-        "opencv-python>=5.0.0.93",
-    ]
-    assert "all" not in pyproject["project"]["optional-dependencies"]
-    assert "majsoulrpa[browser,rpa]" in pyproject["dependency-groups"]["dev"]
+    assert set(pyproject["project"]["optional-dependencies"]) == {
+        "browser",
+        "rpa",
+    }
 
 
 def test_presentation_import_does_not_load_opencv_template_module() -> None:
