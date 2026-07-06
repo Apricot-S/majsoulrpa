@@ -14,6 +14,10 @@ from majsoulrpa.browser.messages import (
     TextInputCommand,
     TextInputResponse,
 )
+from majsoulrpa.browser.playwright import (
+    PlaywrightBrowserBackend,
+    PlaywrightCommandExecutor,
+)
 from majsoulrpa.browser.transport import BrowserTransport
 
 __all__ = [
@@ -26,6 +30,8 @@ __all__ = [
     "BrowserTransport",
     "ClickCommand",
     "ClickResponse",
+    "PlaywrightBrowserBackend",
+    "PlaywrightCommandExecutor",
     "RemoteBrowserController",
     "ScreenshotCommand",
     "ScreenshotResponse",

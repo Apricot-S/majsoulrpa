@@ -1,0 +1,196 @@
+import base64
+from pathlib import Path
+from typing import Protocol
+
+from playwright.async_api import (
+    Browser,
+    BrowserContext,
+    Page,
+    Playwright,
+    ViewportSize,
+    async_playwright,
+)
+
+from majsoulrpa.browser.messages import (
+    BrowserCommand,
+    BrowserErrorResponse,
+    BrowserResponse,
+    ClickCommand,
+    ClickResponse,
+    ScreenshotCommand,
+    ScreenshotResponse,
+    TextInputCommand,
+    TextInputResponse,
+)
+from majsoulrpa.config import AppConfig
+from majsoulrpa.constants import BASE_VIEWPORT_HEIGHT, BASE_VIEWPORT_WIDTH
+
+
+class MouseLike(Protocol):
+    async def click(self, x: float, y: float, *, delay: float) -> None: ...
+
+
+class KeyboardLike(Protocol):
+    async def type(self, text: str, *, delay: float) -> None: ...
+
+
+class PageLike(Protocol):
+    mouse: MouseLike
+    keyboard: KeyboardLike
+
+    async def screenshot(self, **kwargs: str) -> bytes: ...
+
+
+class PlaywrightCommandExecutor:
+    def __init__(self, page: PageLike) -> None:
+        self._page = page
+
+    async def execute(self, command: BrowserCommand) -> BrowserResponse:
+        try:
+            match command:
+                case ClickCommand():
+                    return await self._click(command)
+                case TextInputCommand():
+                    return await self._input_text(command)
+                case ScreenshotCommand():
+                    return await self._screenshot()
+        except Exception as error:  # noqa: BLE001
+            return BrowserErrorResponse(message=str(error))
+
+    async def _click(self, command: ClickCommand) -> ClickResponse:
+        await self._page.mouse.click(
+            command.x,
+            command.y,
+            delay=command.mouse_down_up_delay_seconds * 1000,
+        )
+        return ClickResponse(x=command.x, y=command.y)
+
+    async def _input_text(
+        self,
+        command: TextInputCommand,
+    ) -> TextInputResponse:
+        await self._page.keyboard.type(
+            command.text,
+            delay=command.character_delay_seconds * 1000,
+        )
+        return TextInputResponse(text=command.text)
+
+    async def _screenshot(self) -> ScreenshotResponse:
+        screenshot = await self._page.screenshot(type="png")
+        return ScreenshotResponse(
+            screenshot_base64=base64.b64encode(screenshot).decode("ascii"),
+        )
+
+
+class PlaywrightBrowserBackend:
+    def __init__(self) -> None:
+        self._playwright: Playwright | None = None
+        self._browser: Browser | None = None
+        self._context: BrowserContext | None = None
+        self._page: Page | None = None
+
+    @property
+    def page(self) -> Page | None:
+        return self._page
+
+    async def start(self, config: AppConfig) -> None:
+        self._playwright = await async_playwright().start()
+        viewport_width = _viewport_width(config.browser.viewport_height)
+        viewport = ViewportSize(
+            width=viewport_width,
+            height=config.browser.viewport_height,
+        )
+        args = [
+            f"--window-position={config.browser.window_left},{config.browser.window_top}",
+        ]
+        ignore_default_args = (
+            ["--mute-audio"] if not config.browser.headless else None
+        )
+
+        try:
+            if config.browser.user_data_dir is None:
+                await self._start_ephemeral_browser(
+                    headless=config.browser.headless,
+                    viewport=viewport,
+                    args=args,
+                    ignore_default_args=ignore_default_args,
+                )
+            else:
+                await self._start_persistent_context(
+                    user_data_dir=config.browser.user_data_dir,
+                    headless=config.browser.headless,
+                    viewport=viewport,
+                    args=args,
+                    ignore_default_args=ignore_default_args,
+                )
+        except Exception:
+            await self.stop()
+            raise
+
+    async def _start_ephemeral_browser(
+        self,
+        *,
+        headless: bool,
+        viewport: ViewportSize,
+        args: list[str],
+        ignore_default_args: list[str] | None,
+    ) -> None:
+        if self._playwright is None:
+            msg = "Playwright is not started."
+            raise RuntimeError(msg)
+
+        self._browser = await self._playwright.chromium.launch(
+            headless=headless,
+            args=args,
+            ignore_default_args=ignore_default_args,
+        )
+        self._context = await self._browser.new_context(viewport=viewport)
+        self._page = await self._context.new_page()
+
+    async def _start_persistent_context(
+        self,
+        *,
+        user_data_dir: Path,
+        headless: bool,
+        viewport: ViewportSize,
+        args: list[str],
+        ignore_default_args: list[str] | None,
+    ) -> None:
+        if self._playwright is None:
+            msg = "Playwright is not started."
+            raise RuntimeError(msg)
+
+        self._context = await (
+            self._playwright.chromium.launch_persistent_context(
+                str(user_data_dir),
+                headless=headless,
+                viewport=viewport,
+                args=args,
+                ignore_default_args=ignore_default_args,
+            )
+        )
+        self._page = (
+            self._context.pages[0]
+            if self._context.pages
+            else await self._context.new_page()
+        )
+
+    async def stop(self) -> None:
+        context = self._context
+        browser = self._browser
+        playwright = self._playwright
+        self._page = None
+        self._context = None
+        self._browser = None
+        self._playwright = None
+
+        if context is not None:
+            await context.close()
+        if browser is not None:
+            await browser.close()
+        if playwright is not None:
+            await playwright.stop()
+
+
+def _viewport_width(height: int) -> int:
+    return round(height * BASE_VIEWPORT_WIDTH / BASE_VIEWPORT_HEIGHT)

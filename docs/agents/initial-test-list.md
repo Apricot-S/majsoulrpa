@@ -37,6 +37,9 @@
 - [x] 起動中に cancellation された場合に cleanup する
 - [ ] sniffer backend の start に失敗した場合に browser を閉じる
 - [x] shutdown 中の副次的失敗を完全には捨てない
+- [x] Playwright backend が config から browser context と page を作る
+- [x] Playwright command executor が click、text input、screenshot を実行する
+- [x] Playwright command executor の操作失敗は error response にする
 
 ## Phase 4: callback dispatch
 
