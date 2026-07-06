@@ -80,6 +80,8 @@ Presentation 検出は、画面状態を「できるだけ決定的に」扱い�
   loop を持つ
 - request/response loop は実 network transport と分離し、fake transport で自動テストする
 - 実 network server は request/response loop の挙動を固定した後で追加する
+- client と host の実 transport は、まず newline-delimited JSON stream として実装する
+- JSON stream は pydantic の判別共用体 schema で command / response を検証する
 - `ScreenContext`: 現在の Screen 実行に必要な browser controller、viewport、stop request
   を束ねる
 - `Screen`: `fill_region` など、継承先の画面 API が使う共通 helper を持つ
