@@ -2,17 +2,14 @@ import inspect
 from collections.abc import Callable
 from typing import Any
 
-from majsoulrpa.client.runtime import RPARuntime, RuntimeFactory
+from majsoulrpa.client.runtime import RPARuntime, RuntimeFactory, ScreenTypes
 from majsoulrpa.config import AppConfig
 from majsoulrpa.screens import Screen
 from majsoulrpa.types import Callback
 
 
 class _NoScreenDetector:
-    async def detect(
-        self,
-        screen_types: tuple[type[Screen], ...],
-    ) -> Screen | None:
+    async def detect(self, screen_types: ScreenTypes) -> Screen | None:
         _ = screen_types
         return None
 
