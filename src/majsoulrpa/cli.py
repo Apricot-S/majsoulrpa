@@ -49,7 +49,10 @@ def main(
         else AppConfig()
     )
     config = _apply_overrides(config, args)
-    asyncio.run(run_browser_host(config))
+    try:
+        asyncio.run(run_browser_host(config))
+    except KeyboardInterrupt:
+        return 130
     return 0
 
 

@@ -62,3 +62,10 @@ headless = true
     assert config.browser.user_data_dir == tmp_path / "user-data"
     assert config.browser.window_left == 10
     assert config.browser.window_top == 20
+
+
+def test_browser_cli_handles_keyboard_interrupt_without_traceback() -> None:
+    async def run_browser_host(_config) -> None:  # noqa: ANN001
+        raise KeyboardInterrupt
+
+    assert main([], run_browser_host=run_browser_host) == 130
