@@ -67,8 +67,11 @@ Presentation 検出は、画面状態を「できるだけ決定的に」扱い�
 
 ブラウザ操作は、通信層と操作 API 層を分けます。
 
-- `BrowserTransport`: リモート先への `send` / `recv` だけを担当する
-- `RemoteBrowserController`: `fill_region` などの操作 API を `BrowserTransport` 上の
+- `BrowserClientTransport`: client から browser host への `send_command` /
+  `recv_response` を担当する
+- `BrowserServerTransport`: browser host が `recv_command` / `send_response` で
+  request loop と接続する
+- `RemoteBrowserController`: `click` や `input_text` などの操作 API を client transport 上の
   command / response に変換する
 - command / response は pydantic の判別共用体で表現する
 - browser host へ送る command は `Region` ではなく、click 座標や入力テキストなどの

@@ -12,7 +12,7 @@ from majsoulrpa.browser.messages import (
     TextInputCommand,
     TextInputResponse,
 )
-from majsoulrpa.browser.transport import BrowserTransport
+from majsoulrpa.browser.transport import BrowserClientTransport
 from majsoulrpa.timing import get_random_delay
 
 DEFAULT_CLICK_MOUSE_DOWN_UP_DELAY_SECONDS = 0.1
@@ -26,7 +26,7 @@ class BrowserOperationError(RuntimeError):
 class RemoteBrowserController:
     def __init__(
         self,
-        transport: BrowserTransport,
+        transport: BrowserClientTransport,
         *,
         rng: Random | None = None,
         click_mouse_down_up_delay_seconds: float = (
@@ -77,8 +77,8 @@ class RemoteBrowserController:
             raise BrowserOperationError(msg) from error
 
     async def _request_click(self, command: ClickCommand) -> ClickResponse:
-        await self._transport.send(command)
-        response = await self._transport.recv()
+        await self._transport.send_command(command)
+        response = await self._transport.recv_response()
         if isinstance(response, ClickResponse):
             return response
         raise self._response_error(response)
@@ -87,8 +87,8 @@ class RemoteBrowserController:
         self,
         command: TextInputCommand,
     ) -> TextInputResponse:
-        await self._transport.send(command)
-        response = await self._transport.recv()
+        await self._transport.send_command(command)
+        response = await self._transport.recv_response()
         if isinstance(response, TextInputResponse):
             return response
         raise self._response_error(response)
@@ -97,8 +97,8 @@ class RemoteBrowserController:
         self,
         command: ScreenshotCommand,
     ) -> ScreenshotResponse:
-        await self._transport.send(command)
-        response = await self._transport.recv()
+        await self._transport.send_command(command)
+        response = await self._transport.recv_response()
         if isinstance(response, ScreenshotResponse):
             return response
         raise self._response_error(response)

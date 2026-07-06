@@ -29,10 +29,10 @@ class BrowserJsonStreamTransport:
         self._reader = reader
         self._writer = writer
 
-    async def send(self, command: BrowserCommand) -> None:
+    async def send_command(self, command: BrowserCommand) -> None:
         await self._write_json(dump_browser_command_json(command))
 
-    async def recv(self) -> BrowserResponse:
+    async def recv_response(self) -> BrowserResponse:
         line = await self._read_line()
         return parse_browser_response_json(line)
 

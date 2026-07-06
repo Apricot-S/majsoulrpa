@@ -76,7 +76,7 @@
 
 ## Phase 5.5: Browser 操作層
 
-- [x] remote transport は command の send と response の recv を分ける
+- [x] client transport は `send_command` と `recv_response` を分ける
 - [x] browser controller は `fill_region` を command / response に変換する
 - [x] browser controller は remote error response を例外にする
 - [x] browser host へ送る command は click 座標や text など低レベル情報にする

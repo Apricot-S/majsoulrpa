@@ -26,7 +26,7 @@ async def _roundtrip_command_and_response() -> None:
         client = BrowserZmqClientTransport(client_socket)
         server = BrowserZmqServerTransport(server_socket)
 
-        await client.send(
+        await client.send_command(
             ClickCommand(
                 x=25,
                 y=40,
@@ -35,7 +35,7 @@ async def _roundtrip_command_and_response() -> None:
         )
         command = await server.recv_command()
         await server.send_response(ClickResponse(x=25, y=40))
-        response = await client.recv()
+        response = await client.recv_response()
     finally:
         client_socket.close(linger=0)
         server_socket.close(linger=0)

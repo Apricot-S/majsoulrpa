@@ -14,10 +14,10 @@ class BrowserZmqClientTransport:
     def __init__(self, socket: Socket) -> None:
         self._socket = socket
 
-    async def send(self, command: BrowserCommand) -> None:
+    async def send_command(self, command: BrowserCommand) -> None:
         await self._socket.send(dump_browser_command_json(command))
 
-    async def recv(self) -> BrowserResponse:
+    async def recv_response(self) -> BrowserResponse:
         payload = await self._socket.recv()
         return parse_browser_response_json(payload)
 

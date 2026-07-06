@@ -25,10 +25,12 @@ from majsoulrpa.browser.messages import (
 from majsoulrpa.browser.server import (
     BrowserCommandExecutor,
     BrowserRequestHandler,
-    BrowserRequestTransport,
 )
 from majsoulrpa.browser.tcp import BrowserTcpAddress, BrowserTcpServer
-from majsoulrpa.browser.transport import BrowserTransport
+from majsoulrpa.browser.transport import (
+    BrowserClientTransport,
+    BrowserServerTransport,
+)
 from majsoulrpa.browser.zmq import (
     BrowserZmqClientTransport,
     BrowserZmqServerTransport,
@@ -47,6 +49,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "BrowserBackend",
+    "BrowserClientTransport",
     "BrowserCommand",
     "BrowserCommandExecutor",
     "BrowserErrorResponse",
@@ -54,11 +57,10 @@ __all__ = [
     "BrowserJsonStreamTransport",
     "BrowserOperationError",
     "BrowserRequestHandler",
-    "BrowserRequestTransport",
     "BrowserResponse",
+    "BrowserServerTransport",
     "BrowserTcpAddress",
     "BrowserTcpServer",
-    "BrowserTransport",
     "BrowserZmqClientTransport",
     "BrowserZmqServerTransport",
     "ClickCommand",

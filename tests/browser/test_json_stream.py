@@ -42,7 +42,7 @@ def test_browser_json_stream_transport_sends_command_json_line() -> None:
     transport = BrowserJsonStreamTransport(StreamReaderStub(), writer)
 
     asyncio.run(
-        transport.send(
+        transport.send_command(
             ClickCommand(
                 x=25,
                 y=40,
@@ -64,7 +64,7 @@ def test_browser_json_stream_transport_receives_response() -> None:
         StreamWriterSpy(),
     )
 
-    response = asyncio.run(transport.recv())
+    response = asyncio.run(transport.recv_response())
 
     assert response == ClickResponse(x=25, y=40)
 
@@ -96,7 +96,7 @@ def test_browser_json_stream_transport_rejects_invalid_json() -> None:
     )
 
     with pytest.raises(ValueError, match="invalid JSON"):
-        asyncio.run(transport.recv())
+        asyncio.run(transport.recv_response())
 
 
 def test_browser_json_stream_transport_reports_eof() -> None:

@@ -13,7 +13,7 @@ from majsoulrpa.browser import (
 )
 
 
-class BrowserRequestTransportSpy:
+class BrowserServerTransportSpy:
     def __init__(self, *commands: BrowserCommand) -> None:
         self._commands = list(commands)
         self.sent_responses: list[BrowserResponse] = []
@@ -44,7 +44,7 @@ def test_browser_request_handler_executes_command_and_sends_response() -> None:
         mouse_down_up_delay_seconds=0.1,
     )
     response = ClickResponse(x=25, y=40)
-    transport = BrowserRequestTransportSpy(command)
+    transport = BrowserServerTransportSpy(command)
     executor = BrowserCommandExecutorSpy(response)
     handler = BrowserRequestHandler(transport, executor)
 
@@ -66,7 +66,7 @@ def test_browser_request_handler_serves_until_cancelled() -> None:
     )
     click_response = ClickResponse(x=25, y=40)
     text_response = TextInputResponse(text="player@example.invalid")
-    transport = BrowserRequestTransportSpy(click_command, text_command)
+    transport = BrowserServerTransportSpy(click_command, text_command)
     executor = BrowserCommandExecutorSpy(click_response, text_response)
     handler = BrowserRequestHandler(transport, executor)
 
@@ -78,7 +78,7 @@ def test_browser_request_handler_serves_until_cancelled() -> None:
 
 
 def test_browser_request_handler_does_not_hide_cancellation() -> None:
-    transport = BrowserRequestTransportSpy()
+    transport = BrowserServerTransportSpy()
     executor = BrowserCommandExecutorSpy()
     handler = BrowserRequestHandler(transport, executor)
 

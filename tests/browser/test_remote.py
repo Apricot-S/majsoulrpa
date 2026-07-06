@@ -17,7 +17,7 @@ from majsoulrpa.browser import (
 )
 
 
-class BrowserTransportSpy:
+class BrowserClientTransportSpy:
     def __init__(
         self,
         *responses: (
@@ -30,10 +30,10 @@ class BrowserTransportSpy:
         self.sent_commands: list[BrowserCommand] = []
         self._responses = list(responses)
 
-    async def send(self, command: BrowserCommand) -> None:
+    async def send_command(self, command: BrowserCommand) -> None:
         self.sent_commands.append(command)
 
-    async def recv(
+    async def recv_response(
         self,
     ) -> (
         ClickResponse
@@ -45,7 +45,7 @@ class BrowserTransportSpy:
 
 
 def test_remote_browser_controller_sends_click_and_text_input() -> None:
-    transport = BrowserTransportSpy(
+    transport = BrowserClientTransportSpy(
         ClickResponse(x=25, y=40),
         TextInputResponse(text="player@example.invalid"),
     )
@@ -71,7 +71,7 @@ def test_remote_browser_controller_sends_click_and_text_input() -> None:
 
 
 def test_remote_browser_controller_raises_response_error() -> None:
-    transport = BrowserTransportSpy(
+    transport = BrowserClientTransportSpy(
         BrowserErrorResponse(message="remote failed"),
     )
     controller = RemoteBrowserController(transport)
@@ -81,7 +81,7 @@ def test_remote_browser_controller_raises_response_error() -> None:
 
 
 def test_remote_browser_controller_returns_screenshot_png_bytes() -> None:
-    transport = BrowserTransportSpy(
+    transport = BrowserClientTransportSpy(
         ScreenshotResponse(screenshot_base64="iVBORw0KGgo="),
     )
     controller = RemoteBrowserController(transport)
@@ -93,7 +93,7 @@ def test_remote_browser_controller_returns_screenshot_png_bytes() -> None:
 
 
 def test_remote_browser_controller_rejects_invalid_screenshot_base64() -> None:
-    transport = BrowserTransportSpy(
+    transport = BrowserClientTransportSpy(
         ScreenshotResponse(screenshot_base64="invalid!"),
     )
     controller = RemoteBrowserController(transport)
