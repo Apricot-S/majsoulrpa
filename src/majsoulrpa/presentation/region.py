@@ -1,3 +1,4 @@
+import random
 from dataclasses import dataclass
 
 BASE_VIEWPORT_WIDTH = 1920
@@ -38,3 +39,51 @@ class Region:
             width=scaled_width,
             height=scaled_height,
         )
+
+
+# `boundary_sigma` specifies the distance from the center to each edge
+# of the region, measured in standard deviations.
+#
+# Points are sampled independently for each axis from a normal
+# distribution centered on the region, then rejected when they fall
+# outside the region.
+# Therefore, the resulting distribution is concentrated near the center
+# and does not correspond to truncating a two-dimensional normal
+# distribution by the inscribed ellipse.
+#
+# The default value is derived from the radius `r` for which an
+# untruncated isotropic 2D standard normal distribution satisfies:
+#
+#     P(sqrt(x**2 + y**2) < r) = pi / 4
+#
+# where `pi / 4` is the area ratio of an ellipse inscribed in a
+# rectangle.
+# This is only a heuristic for selecting the default spread; it does not
+# mean that pi / 4 of the generated points lie inside the inscribed
+# ellipse.
+#
+# DEFAULT_BOUNDARY_SIGMA = sqrt(-2.0 * log((4.0 - pi) / 4.0)) ~= 1.76
+DEFAULT_BOUNDARY_SIGMA = 1.76
+
+
+def _sample_truncated_normal(
+    origin: float,
+    length: float,
+    boundary_sigma: float,
+) -> float:
+    end = origin + length
+    mu = origin + length / 2.0
+    sigma = (length / 2.0) / boundary_sigma
+    while True:
+        p = random.normalvariate(mu, sigma)
+        if origin < p < end:
+            return p
+
+
+def random_point_in_region(
+    region: Region,
+    boundary_sigma: float = DEFAULT_BOUNDARY_SIGMA,
+) -> tuple[float, float]:
+    x = _sample_truncated_normal(region.left, region.width, boundary_sigma)
+    y = _sample_truncated_normal(region.top, region.height, boundary_sigma)
+    return (x, y)
