@@ -27,6 +27,7 @@ from majsoulrpa.browser.server import (
     BrowserRequestHandler,
     BrowserRequestTransport,
 )
+from majsoulrpa.browser.tcp import BrowserTcpAddress, BrowserTcpServer
 from majsoulrpa.browser.transport import BrowserTransport
 
 _PLAYWRIGHT_EXPORTS = {
@@ -51,6 +52,8 @@ __all__ = [
     "BrowserRequestHandler",
     "BrowserRequestTransport",
     "BrowserResponse",
+    "BrowserTcpAddress",
+    "BrowserTcpServer",
     "BrowserTransport",
     "ClickCommand",
     "ClickResponse",

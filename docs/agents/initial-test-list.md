@@ -45,6 +45,7 @@
 - [x] browser host が request command を executor に渡して response を返す
 - [x] browser host の request loop は cancellation を伝播する
 - [x] browser JSON stream transport が command / response を 1 行 JSON として送受信する
+- [x] browser TCP server が接続ごとに JSON stream request を処理する
 
 ## Phase 4: callback dispatch
 
