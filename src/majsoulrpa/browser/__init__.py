@@ -29,6 +29,10 @@ from majsoulrpa.browser.server import (
 )
 from majsoulrpa.browser.tcp import BrowserTcpAddress, BrowserTcpServer
 from majsoulrpa.browser.transport import BrowserTransport
+from majsoulrpa.browser.zmq import (
+    BrowserZmqClientTransport,
+    BrowserZmqServerTransport,
+)
 
 _PLAYWRIGHT_EXPORTS = {
     "PlaywrightBrowserBackend",
@@ -55,6 +59,8 @@ __all__ = [
     "BrowserTcpAddress",
     "BrowserTcpServer",
     "BrowserTransport",
+    "BrowserZmqClientTransport",
+    "BrowserZmqServerTransport",
     "ClickCommand",
     "ClickResponse",
     "PlaywrightBrowserBackend",
