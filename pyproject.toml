@@ -20,13 +20,17 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-    "numpy>=2.5.1",
-    "opencv-python>=5.0.0.93",
-    "playwright>=1.61.0",
     "pydantic>=2.13.4",
 ]
 
 [project.optional-dependencies]
+browser = [
+    "playwright>=1.61.0",
+]
+rpa = [
+    "numpy>=2.5.1",
+    "opencv-python>=5.0.0.93",
+]
 
 [project.scripts]
 majsoulrpa-browser = "majsoulrpa.cli:main"
@@ -40,6 +44,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "majsoulrpa[browser,rpa]",
     { include-group = "lint" },
     { include-group = "test" },
     { include-group = "typing" },

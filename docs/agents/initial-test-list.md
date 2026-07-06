@@ -10,7 +10,8 @@
 - [x] `majsoulrpa.__version__` の扱いを決め、テストする
 - [x] README が v3 初期状態と安全スコープを説明している
 - [ ] Sphinx や古い API docs に依存しない
-- [ ] `pyproject.toml` の optional dependency group が解決できる
+- [x] `pyproject.toml` の optional dependency group が解決できる
+- [x] core import だけでは OpenCV と Playwright を import しない
 - [x] `python -m ruff check .` が通る
 - [x] `python -m ruff format --check .` が通る
 - [x] `python -m ty check` が通る

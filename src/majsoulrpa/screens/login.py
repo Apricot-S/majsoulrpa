@@ -1,6 +1,6 @@
 from typing import override
 
-from majsoulrpa.presentation import Region
+from majsoulrpa.presentation.region import Region
 from majsoulrpa.screens.base import Screen, ScreenDetectionSpec
 
 

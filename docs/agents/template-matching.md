@@ -16,8 +16,9 @@
 
 画像処理は OpenCV と numpy を使います。テストのためだけに Pillow は追加しません。
 
-現時点では OpenCV と numpy は通常 dependency として扱います。browser 実装後に
-optional dependency へ移すかどうかを再検討します。
+OpenCV と numpy は RPAApp 側の画像照合で必要になるため、`rpa` extra の
+optional dependency として扱います。core import だけで OpenCV と numpy を
+読み込まないようにします。
 
 ## Region
 
