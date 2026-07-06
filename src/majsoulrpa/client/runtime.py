@@ -10,6 +10,8 @@ type ScreenTypes = tuple[type[Screen], ...]
 type Cleanup = Callable[[], Awaitable[None]]
 type ScreenshotProvider = Callable[[], Awaitable[object]]
 
+SCREEN_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
+
 
 class ScreenDetector(Protocol):
     async def detect(self, screen_types: ScreenTypes) -> Screen | None: ...
@@ -74,8 +76,34 @@ class RPARuntime:
         screen_types: ScreenTypes,
         detection_timeout: float | None,
     ) -> Screen | None:
-        async with asyncio.timeout(detection_timeout):
-            return await self._detector.detect(screen_types)
+        loop = asyncio.get_running_loop()
+        deadline = (
+            None
+            if detection_timeout is None
+            else loop.time() + detection_timeout
+        )
+
+        while True:
+            timeout = None if deadline is None else deadline - loop.time()
+            if timeout is not None and timeout <= 0:
+                return None
+
+            async with asyncio.timeout(timeout):
+                screen = await self._detector.detect(screen_types)
+            if screen is not None:
+                return screen
+
+            if deadline is None:
+                sleep_seconds = SCREEN_DETECTION_RETRY_INTERVAL_SECONDS
+            else:
+                sleep_seconds = min(
+                    SCREEN_DETECTION_RETRY_INTERVAL_SECONDS,
+                    max(0, deadline - loop.time()),
+                )
+                if sleep_seconds <= 0:
+                    return None
+
+            await asyncio.sleep(sleep_seconds)
 
     async def _run_cleanup(self) -> None:
         if self._cleanup is None:

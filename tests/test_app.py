@@ -4,6 +4,7 @@ from typing import Any, cast, override
 
 import pytest
 
+import majsoulrpa.client.runtime as runtime_module
 from majsoulrpa import RPAApp
 from majsoulrpa.client import RPARuntime
 from majsoulrpa.config import AppConfig
@@ -157,7 +158,7 @@ def test_rpa_app_run_dispatches_registered_screen() -> None:
     async def handle_login(_screen: LoginScreen, data: int) -> int:
         return data + 1
 
-    data = asyncio.run(app.run(AppConfig(), 1))
+    data = asyncio.run(app.run(AppConfig(), 1, detection_timeout=0.001))
 
     assert data == 2
 
@@ -170,7 +171,7 @@ def test_rpa_app_run_ignores_unregistered_screen() -> None:
     async def handle_login(_screen: LoginScreen, data: int) -> int:
         return data + 1
 
-    data = asyncio.run(app.run(AppConfig(), 1))
+    data = asyncio.run(app.run(AppConfig(), 1, detection_timeout=0.001))
 
     assert data == 2
 
@@ -183,7 +184,7 @@ def test_rpa_app_run_returns_callback_data() -> None:
     async def handle_login(_screen: LoginScreen, data: int) -> str:
         return str(data)
 
-    data = asyncio.run(app.run(AppConfig(), 123))
+    data = asyncio.run(app.run(AppConfig(), 123, detection_timeout=0.001))
 
     assert data == "123"
 
@@ -198,9 +199,49 @@ def test_rpa_app_run_does_not_represent_data() -> None:
         assert data is data_in
         return data
 
-    data_out = asyncio.run(app.run(AppConfig(), data_in))
+    data_out = asyncio.run(
+        app.run(AppConfig(), data_in, detection_timeout=0.001),
+    )
 
     assert data_out is data_in
+
+
+def test_rpa_app_run_retries_screen_detection_until_screen_is_found(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    detector = SequenceScreenDetector(None, None, LoginScreen())
+    app = RPAApp(runtime_factory=RuntimeFactorySpy(detector))
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    monkeypatch.setattr(runtime_module.asyncio, "sleep", sleep)
+
+    @app.on(LoginScreen)
+    async def handle_login(_screen: LoginScreen, _data: object) -> object:
+        msg = "stop after detected"
+        raise RuntimeError(msg)
+
+    with pytest.raises(RuntimeError, match="stop after detected"):
+        asyncio.run(app.run(AppConfig(), None))
+
+    assert sleeps == [0.5, 0.5]
+    assert detector.seen_screen_types == [
+        (LoginScreen,),
+        (LoginScreen,),
+        (LoginScreen,),
+    ]
+
+
+def test_rpa_app_run_returns_data_when_detection_timeout_expires() -> None:
+    detector = SequenceScreenDetector(None)
+    app = RPAApp(runtime_factory=RuntimeFactorySpy(detector))
+    data = object()
+
+    result = asyncio.run(app.run(AppConfig(), data, detection_timeout=0.001))
+
+    assert result is data
 
 
 def test_rpa_app_run_propagates_callback_exception() -> None:

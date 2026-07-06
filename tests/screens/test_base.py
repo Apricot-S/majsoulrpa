@@ -136,7 +136,7 @@ def test_false_screen_detection_does_not_call_callback() -> None:
         return data
 
     data = object()
-    result = asyncio.run(app.run(AppConfig(), data))
+    result = asyncio.run(app.run(AppConfig(), data, detection_timeout=0.001))
 
     assert result is data
     assert called is False
@@ -221,7 +221,7 @@ def test_multiple_matching_screens_use_registration_order() -> None:
     async def handle_second(_screen: SecondScreen, _data: object) -> str:
         return "second"
 
-    result = asyncio.run(app.run(AppConfig(), None))
+    result = asyncio.run(app.run(AppConfig(), None, detection_timeout=0.001))
 
     assert result == "first"
 

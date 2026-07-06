@@ -48,6 +48,8 @@
 - [x] callback の戻り値が次の data になる
 - [x] callback が例外を投げたら `run()` から伝播する
 - [x] detection timeout で明示的な例外になる
+- [x] Screen 未検出時は timeout まで 0.5 秒間隔で再検出する
+- [x] Screen 未検出のまま timeout したら現在の data を返す
 - [x] callback 実行中の cancellation で cleanup する
 - [x] data を log しない
 
