@@ -18,6 +18,11 @@ from majsoulrpa.browser import (
     TextInputResponse,
 )
 from majsoulrpa.config import AppConfig, BrowserConfig
+from majsoulrpa.constants import (
+    CANVAS_SELECTOR,
+    CANVAS_WAIT_TIMEOUT_SECONDS,
+    MAJSOUL_URL,
+)
 
 
 class MouseSpy:
@@ -44,10 +49,23 @@ class PageSpy:
         self.keyboard: browser_playwright.KeyboardLike = self.keyboard_spy
         self.screenshot_types: list[str] = []
         self.screenshot_bytes = b"\x89PNG\r\n\x1a\n"
+        self.visited_urls: list[str] = []
+        self.waited_selectors: list[tuple[str, float]] = []
+
+    async def goto(self, url: str) -> None:
+        self.visited_urls.append(url)
 
     async def screenshot(self, **kwargs: str) -> bytes:
         self.screenshot_types.append(kwargs["type"])
         return self.screenshot_bytes
+
+    async def wait_for_selector(
+        self,
+        selector: str,
+        **kwargs: float,
+    ) -> None:
+        timeout = kwargs["timeout"]
+        self.waited_selectors.append((selector, timeout))
 
 
 def test_playwright_command_executor_clicks_with_mouse_delay() -> None:
@@ -225,6 +243,10 @@ def test_playwright_browser_backend_starts_ephemeral_browser(
         "viewport": {"width": 1920, "height": 1080},
     }
     assert isinstance(backend.page, FakePage)
+    assert backend.page.visited_urls == [MAJSOUL_URL]
+    assert backend.page.waited_selectors == [
+        (CANVAS_SELECTOR, CANVAS_WAIT_TIMEOUT_SECONDS * 1000),
+    ]
 
     asyncio.run(backend.stop())
 
@@ -267,6 +289,10 @@ def test_playwright_browser_backend_starts_persistent_context(
         "ignore_default_args": None,
     }
     assert isinstance(backend.page, FakePage)
+    assert backend.page.visited_urls == [MAJSOUL_URL]
+    assert backend.page.waited_selectors == [
+        (CANVAS_SELECTOR, CANVAS_WAIT_TIMEOUT_SECONDS * 1000),
+    ]
 
     asyncio.run(backend.stop())
 

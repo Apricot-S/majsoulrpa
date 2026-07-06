@@ -13,3 +13,7 @@ USER_PORT_MAX = 49151
 
 DEFAULT_WINDOW_LEFT = 0
 DEFAULT_WINDOW_TOP = 0
+
+MAJSOUL_URL = "https://game.mahjongsoul.com/"  # JP version
+CANVAS_SELECTOR = "#unity-canvas"
+CANVAS_WAIT_TIMEOUT_SECONDS = 60

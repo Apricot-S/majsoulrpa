@@ -82,17 +82,26 @@
 - browser host を CLI で起動する
 - Python から同じ host を起動する
 - headless、viewport、user data dir などを設定する
+- Playwright backend 起動後に雀魂ページへ遷移する
+- 雀魂ページの canvas selector が現れるまで、上限 1 分で待機する
 
 テスト:
 
 - 実 Playwright を使わない lifecycle test
 - CLI 引数から設定への変換
 - 起動失敗時の例外と終了コード
+- fake page による URL 遷移と selector 待機
+
+優先順:
+
+1. Playwright backend 起動後の雀魂ページ遷移と canvas selector 待機
+2. `majsoulrpa-browser` CLI から `BrowserHost(PlaywrightBrowserBackend)` を起動する
+3. remote command transport/server と CLI の常駐動作をつなぐ
 
 手動確認:
 
 - ここで初めて Playwright のローカル起動をユーザーに依頼する
-- 実際の雀魂アクセスはまだ必須にしない
+- 雀魂ページへのアクセスは自動テストでは行わず、必要になった時点で手動確認する
 
 ## Phase 4: Presentation 検出ループ
 

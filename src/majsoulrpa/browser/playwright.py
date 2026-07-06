@@ -23,7 +23,13 @@ from majsoulrpa.browser.messages import (
     TextInputResponse,
 )
 from majsoulrpa.config import AppConfig
-from majsoulrpa.constants import BASE_VIEWPORT_HEIGHT, BASE_VIEWPORT_WIDTH
+from majsoulrpa.constants import (
+    BASE_VIEWPORT_HEIGHT,
+    BASE_VIEWPORT_WIDTH,
+    CANVAS_SELECTOR,
+    CANVAS_WAIT_TIMEOUT_SECONDS,
+    MAJSOUL_URL,
+)
 
 
 class MouseLike(Protocol):
@@ -38,7 +44,13 @@ class PageLike(Protocol):
     mouse: MouseLike
     keyboard: KeyboardLike
 
+    async def goto(self, url: str) -> object: ...
     async def screenshot(self, **kwargs: str) -> bytes: ...
+    async def wait_for_selector(
+        self,
+        selector: str,
+        **kwargs: float,
+    ) -> object: ...
 
 
 class PlaywrightCommandExecutor:
@@ -123,6 +135,7 @@ class PlaywrightBrowserBackend:
                     args=args,
                     ignore_default_args=ignore_default_args,
                 )
+            await self._open_majsoul_page()
         except Exception:
             await self.stop()
             raise
@@ -173,6 +186,17 @@ class PlaywrightBrowserBackend:
             self._context.pages[0]
             if self._context.pages
             else await self._context.new_page()
+        )
+
+    async def _open_majsoul_page(self) -> None:
+        if self._page is None:
+            msg = "Playwright page is not created."
+            raise RuntimeError(msg)
+
+        await self._page.goto(MAJSOUL_URL)
+        await self._page.wait_for_selector(
+            CANVAS_SELECTOR,
+            timeout=CANVAS_WAIT_TIMEOUT_SECONDS * 1000,
         )
 
     async def stop(self) -> None:

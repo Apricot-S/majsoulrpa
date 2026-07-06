@@ -39,6 +39,7 @@
 - [ ] sniffer backend の start に失敗した場合に browser を閉じる
 - [x] shutdown 中の副次的失敗を完全には捨てない
 - [x] Playwright backend が config から browser context と page を作る
+- [x] Playwright backend が雀魂ページへ遷移して canvas selector を 1 分上限で待機する
 - [x] Playwright command executor が click、text input、screenshot を実行する
 - [x] Playwright command executor の操作失敗は error response にする
 
