@@ -52,6 +52,8 @@ class Region:
 - `left` と `top` は screenshot 全体座標系の左上座標とする
 - `width` と `height` は矩形サイズとする
 - クリック、入力欄探索、テンプレート照合結果、固定領域指定で同じ型を使う
+- 領域内のクリック点サンプリングは `Region.random_point()` として提供する
+- ランダムサンプリングはテストしやすいように `random.Random` を注入可能にする
 
 ## TOML 設定
 

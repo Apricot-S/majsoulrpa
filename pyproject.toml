@@ -108,6 +108,7 @@ convention = "google"
     "S101",    # assert
     "SLF001",  # private-member-access
     "PLR2004", # magic-value-comparison
+    "S311",    # suspicious-non-cryptographic-random-usage
 ]
 
 [tool.ty.src]

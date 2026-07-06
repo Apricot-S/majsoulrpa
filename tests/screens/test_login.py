@@ -1,4 +1,5 @@
 import asyncio
+from random import Random
 
 import pytest
 
@@ -39,15 +40,15 @@ def test_login_screen_enter_email_address_records_browser_operation() -> None:
     browser = BrowserControllerSpy()
 
     screen = LoginScreen(
-        context=ScreenContext(browser=browser),
+        context=ScreenContext(browser=browser, rng=Random(0)),
     )
 
     asyncio.run(screen.enter_email_address("player@example.invalid"))
 
     region = LoginScreen.email_address_region
-    assert browser.clicked_points == [
-        (region.left + region.width / 2, region.top + region.height / 2),
-    ]
+    [(x, y)] = browser.clicked_points
+    assert region.left < x < region.right
+    assert region.top < y < region.bottom
     assert browser.input_texts == ["player@example.invalid"]
     assert isinstance(LoginScreen.email_address_region, Region)
 
@@ -67,6 +68,7 @@ def test_login_screen_enter_email_address_scales_region_to_viewport() -> None:
             browser=browser,
             viewport_width=1280,
             viewport_height=720,
+            rng=Random(0),
         ),
     )
 
@@ -75,5 +77,7 @@ def test_login_screen_enter_email_address_scales_region_to_viewport() -> None:
     finally:
         LoginScreen.email_address_region = base_region
 
-    assert browser.clicked_points == [(202, 101)]
+    [(x, y)] = browser.clicked_points
+    assert 200 < x < 204
+    assert 100 < y < 102
     assert browser.input_texts == ["player@example.invalid"]

@@ -1,8 +1,12 @@
-import random
 from dataclasses import dataclass
+from random import Random
 
 BASE_VIEWPORT_WIDTH = 1920
 BASE_VIEWPORT_HEIGHT = 1080
+
+# sqrt(-2.0 * log((4.0 - pi) / 4.0)) ~= 1.76
+DEFAULT_BOUNDARY_SIGMA = 1.76
+_DEFAULT_RANDOM = Random()  # noqa: S311
 
 
 @dataclass(frozen=True)
@@ -40,6 +44,31 @@ class Region:
             height=scaled_height,
         )
 
+    def random_point(
+        self,
+        *,
+        boundary_sigma: float = DEFAULT_BOUNDARY_SIGMA,
+        rng: Random | None = None,
+    ) -> tuple[float, float]:
+        if self.width <= 0 or self.height <= 0:
+            msg = "region size must be positive."
+            raise ValueError(msg)
+
+        random_source = rng or _DEFAULT_RANDOM
+        x = _sample_truncated_normal(
+            self.left,
+            self.width,
+            boundary_sigma,
+            random_source,
+        )
+        y = _sample_truncated_normal(
+            self.top,
+            self.height,
+            boundary_sigma,
+            random_source,
+        )
+        return (x, y)
+
 
 # `boundary_sigma` specifies the distance from the center to each edge
 # of the region, measured in standard deviations.
@@ -61,29 +90,20 @@ class Region:
 # This is only a heuristic for selecting the default spread; it does not
 # mean that pi / 4 of the generated points lie inside the inscribed
 # ellipse.
-#
-# DEFAULT_BOUNDARY_SIGMA = sqrt(-2.0 * log((4.0 - pi) / 4.0)) ~= 1.76
-DEFAULT_BOUNDARY_SIGMA = 1.76
-
-
 def _sample_truncated_normal(
     origin: float,
     length: float,
     boundary_sigma: float,
+    rng: Random,
 ) -> float:
+    if boundary_sigma <= 0:
+        msg = "boundary_sigma must be positive."
+        raise ValueError(msg)
+
     end = origin + length
     mu = origin + length / 2.0
     sigma = (length / 2.0) / boundary_sigma
     while True:
-        p = random.normalvariate(mu, sigma)
+        p = rng.normalvariate(mu, sigma)
         if origin < p < end:
             return p
-
-
-def random_point_in_region(
-    region: Region,
-    boundary_sigma: float = DEFAULT_BOUNDARY_SIGMA,
-) -> tuple[float, float]:
-    x = _sample_truncated_normal(region.left, region.width, boundary_sigma)
-    y = _sample_truncated_normal(region.top, region.height, boundary_sigma)
-    return (x, y)

@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import Mapping
+from random import Random
 from typing import Any, override
 
 import pytest
@@ -229,6 +230,7 @@ def test_screen_fills_scaled_region() -> None:
             browser=browser,
             viewport_width=1280,
             viewport_height=720,
+            rng=Random(0),
         ),
     )
 
@@ -239,7 +241,9 @@ def test_screen_fills_scaled_region() -> None:
         ),
     )
 
-    assert browser.clicked_points == [(202, 101)]
+    [(x, y)] = browser.clicked_points
+    assert 200 < x < 204
+    assert 100 < y < 102
     assert browser.input_texts == ["player@example.invalid"]
 
 

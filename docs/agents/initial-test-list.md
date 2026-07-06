@@ -83,6 +83,8 @@
 - [x] region、margin、threshold の不正値を reject する
 - [x] `RegionConfig.to_region()` が immutable な `Region` を返す
 - [x] `Region.right` と `Region.bottom` が計算される
+- [x] `Region.random_point()` が領域内の点を返す
+- [x] `Region.random_point()` の不正パラメータは例外にする
 - [x] 固定領域を実 viewport サイズへ scale できる
 - [x] scale 後に固定領域の size が 0 以下なら例外
 - [x] template size と region size が違うと例外

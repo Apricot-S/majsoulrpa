@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from random import Random
 from typing import Protocol
 
 from majsoulrpa.presentation import Region
@@ -25,11 +26,13 @@ class ScreenContext:
         request_stop: StopRequester | None = None,
         viewport_width: int = 1920,
         viewport_height: int = 1080,
+        rng: Random | None = None,
     ) -> None:
         self._browser = browser
         self._request_stop = request_stop or _ignore_stop_request
         self._viewport_width = viewport_width
         self._viewport_height = viewport_height
+        self._rng = rng
 
     async def request_stop(self) -> None:
         await self._request_stop()
@@ -43,6 +46,10 @@ class ScreenContext:
     @property
     def browser(self) -> BrowserController:
         return self._browser
+
+    @property
+    def rng(self) -> Random | None:
+        return self._rng
 
 
 def _never_matches(_screenshot: object) -> bool:
@@ -70,10 +77,8 @@ class Screen(ABC):
 
     async def fill_region(self, region: Region, value: str) -> None:
         scaled_region = self.context.scale_region(region)
-        await self.context.browser.click(
-            scaled_region.left + scaled_region.width / 2,
-            scaled_region.top + scaled_region.height / 2,
-        )
+        x, y = scaled_region.random_point(rng=self.context.rng)
+        await self.context.browser.click(x, y)
         await self.context.browser.input_text(value)
 
     @classmethod
