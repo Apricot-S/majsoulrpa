@@ -3,11 +3,10 @@ import importlib
 import ipaddress
 import sys
 from collections.abc import Callable
-from typing import Any, cast
+from typing import Any, Protocol, cast
 
 import zmq.asyncio
 
-from majsoulrpa.browser.host import BrowserBackend
 from majsoulrpa.browser.server import (
     BrowserCommandExecutor,
     BrowserRequestServer,
@@ -17,6 +16,11 @@ from majsoulrpa.config import AppConfig
 
 CommandExecutorFactory = Callable[[object], BrowserCommandExecutor]
 RequestServerFactory = Callable[[BrowserCommandExecutor], BrowserRequestServer]
+
+
+class BrowserBackend(Protocol):
+    async def start(self, config: AppConfig) -> None: ...
+    async def stop(self) -> None: ...
 
 
 def make_zmq_endpoint(config: AppConfig) -> str:

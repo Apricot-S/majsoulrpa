@@ -8,13 +8,13 @@ from majsoulrpa import __version__
 from majsoulrpa.browser import run_browser_host as default_run_browser_host
 from majsoulrpa.config import AppConfig
 
-RunBrowserHost = Callable[[AppConfig], Coroutine[Any, Any, None]]
+RunBrowserFn = Callable[[AppConfig], Coroutine[Any, Any, None]]
 
 
 def main(
     argv: list[str] | None = None,
     *,
-    run_browser_host: RunBrowserHost = default_run_browser_host,
+    run_browser_host: RunBrowserFn = default_run_browser_host,
 ) -> int:
     parser = argparse.ArgumentParser(
         prog="majsoulrpa-browser",

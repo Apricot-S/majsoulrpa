@@ -95,7 +95,7 @@
 優先順:
 
 1. Playwright backend 起動後の雀魂ページ遷移と canvas selector 待機
-2. `majsoulrpa-browser` CLI から `BrowserHost(PlaywrightBrowserBackend)` を起動する
+2. `majsoulrpa-browser` CLI から `run_browser_host()` を起動する
 3. remote command transport/server と CLI の常駐動作をつなぐ
 
 手動確認:

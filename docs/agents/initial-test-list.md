@@ -30,12 +30,12 @@
 
 ## Phase 3: browser host lifecycle
 
-- [x] browser host 起動成功時に running 状態になる
-- [x] browser host 起動失敗時に例外を返す
-- [x] 起動失敗を成功扱いにしない
-- [x] stop を 1 回呼ぶと stopped 状態になる
-- [x] stop を 2 回呼んだ場合の挙動を固定する
-- [x] 起動中に cancellation された場合に cleanup する
+- [x] `run_browser_host()` が backend を起動して request server を bind / serve する
+- [x] `run_browser_host()` が backend 起動失敗時に例外を返す
+- [x] backend 起動失敗を成功扱いにしない
+- [x] request server 終了時に backend と server を cleanup する
+- [x] cleanup 中の Playwright driver disconnect は Ctrl+C を隠さない
+- [x] request loop 中の cancellation で cleanup する
 - [ ] sniffer backend の start に失敗した場合に browser を閉じる
 - [x] shutdown 中の副次的失敗を完全には捨てない
 - [x] Playwright backend が config から browser context と page を作る

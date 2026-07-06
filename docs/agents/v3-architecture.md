@@ -23,8 +23,10 @@ src/majsoulrpa/
   errors.py
   browser/
     __init__.py
-    host.py
-    playwright_runtime.py
+    runner.py
+    server.py
+    playwright.py
+    zmq.py
   client/
     __init__.py
     runtime.py
@@ -149,9 +151,10 @@ Screen base は、custom screen を書くための最小 surface にします。
 - AWS / email 設定
 - raw credential
 
-## `browser/host.py`
+## `browser/runner.py` / `browser/server.py`
 
-browser host は browser lifecycle を担当します。
+browser host の起動関数と request server は browser lifecycle と
+remote command の受付を担当します。
 
 責務:
 
