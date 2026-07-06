@@ -22,6 +22,7 @@ classifiers = [
 dependencies = [
     "pydantic>=2.13.4",
     "pyzmq>=27.1.0",
+    "tornado>=6.5.7 ; sys_platform == 'win32'",
 ]
 
 [project.optional-dependencies]

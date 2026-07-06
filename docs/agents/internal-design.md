@@ -85,9 +85,12 @@ Presentation 検出は、画面状態を「できるだけ決定的に」扱い�
 - 実 network server は request/response loop の挙動を固定した後で追加する
 - client と host の実 transport は、まず newline-delimited JSON stream として実装する
 - JSON stream は pydantic の判別共用体 schema で command / response を検証する
-- TCP server は接続ごとに JSON stream transport を生成し、request handler に処理を委譲する
+- TCP server は接続ごとに JSON stream transport を生成し、request handler に処理を委譲する。
+  これは newline-delimited JSON stream の検証用経路であり、ZeroMQ transport とは組み合わせない
 - ZeroMQ transport は REQ/REP の 1 request / 1 response とし、同じ command / response
   schema を JSON bytes として送受信する
+- ZeroMQ request server は REP socket を bind し、`BrowserZmqServerTransport` を
+  request handler に渡す
 - `ScreenContext`: 現在の Screen 実行に必要な browser controller、viewport、stop request
   を束ねる
 - `Screen`: `fill_region` など、継承先の画面 API が使う共通 helper を持つ

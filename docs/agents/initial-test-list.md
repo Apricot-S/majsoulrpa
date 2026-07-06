@@ -47,6 +47,7 @@
 - [x] browser JSON stream transport が command / response を 1 行 JSON として送受信する
 - [x] browser TCP server が接続ごとに JSON stream request を処理する
 - [x] browser ZeroMQ transport が REQ/REP で command / response を送受信する
+- [x] browser ZeroMQ request server が ZMQ transport で request handler を実行する
 
 ## Phase 4: callback dispatch
 

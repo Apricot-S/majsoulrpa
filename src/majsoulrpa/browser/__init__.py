@@ -33,6 +33,7 @@ from majsoulrpa.browser.transport import (
 )
 from majsoulrpa.browser.zmq import (
     BrowserZmqClientTransport,
+    BrowserZmqRequestServer,
     BrowserZmqServerTransport,
 )
 
@@ -62,6 +63,7 @@ __all__ = [
     "BrowserTcpAddress",
     "BrowserTcpServer",
     "BrowserZmqClientTransport",
+    "BrowserZmqRequestServer",
     "BrowserZmqServerTransport",
     "ClickCommand",
     "ClickResponse",

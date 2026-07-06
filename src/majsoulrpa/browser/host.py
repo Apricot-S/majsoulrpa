@@ -6,7 +6,6 @@ from majsoulrpa.config import AppConfig
 
 class BrowserBackend(Protocol):
     async def start(self, config: AppConfig) -> None: ...
-
     async def stop(self) -> None: ...
 
 
