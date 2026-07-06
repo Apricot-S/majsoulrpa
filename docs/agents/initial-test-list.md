@@ -44,8 +44,6 @@
 - [x] Playwright command executor の操作失敗は error response にする
 - [x] browser host が request command を executor に渡して response を返す
 - [x] browser host の request loop は cancellation を伝播する
-- [x] browser JSON stream transport が command / response を 1 行 JSON として送受信する
-- [x] browser TCP server が接続ごとに JSON stream request を処理する
 - [x] browser ZeroMQ transport が REQ/REP で command / response を送受信する
 - [x] browser ZeroMQ request server が ZMQ transport で request handler を実行する
 
