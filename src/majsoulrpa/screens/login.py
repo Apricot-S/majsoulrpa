@@ -15,7 +15,9 @@ LOGIN_1_TEMPLATE = load_png_template_matcher(
 
 
 class LoginScreen(Screen):
-    email_address_region = Region(left=770, top=430, width=138, height=20)
+    EMAIL_ADDRESS_REGION = Region(left=770, top=430, width=138, height=20)
+    SEND_REGION = Region(left=1102, top=508, width=40, height=22)
+    VERIFICATION_CODE_REGION = Region(left=768, top=508, width=100, height=20)
 
     @classmethod
     @override
@@ -27,4 +29,4 @@ class LoginScreen(Screen):
         await self.click_if_match(LOGIN_1_TEMPLATE)
 
     async def enter_email_address(self, email_address: str) -> None:
-        await self.fill_region(self.email_address_region, email_address)
+        await self.fill_region(self.EMAIL_ADDRESS_REGION, email_address)

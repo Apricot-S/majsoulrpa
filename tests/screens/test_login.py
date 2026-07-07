@@ -100,18 +100,18 @@ def test_login_screen_enter_email_address_records_browser_operation() -> None:
 
     asyncio.run(screen.enter_email_address("player@example.invalid"))
 
-    region = LoginScreen.email_address_region
+    region = LoginScreen.EMAIL_ADDRESS_REGION
     [(x, y)] = browser.clicked_points
     assert region.left < x < region.right
     assert region.top < y < region.bottom
     assert browser.input_texts == ["player@example.invalid"]
-    assert isinstance(LoginScreen.email_address_region, Region)
+    assert isinstance(LoginScreen.EMAIL_ADDRESS_REGION, Region)
 
 
 def test_login_screen_enter_email_address_scales_region_to_viewport() -> None:
     browser = BrowserControllerSpy()
-    base_region = LoginScreen.email_address_region
-    LoginScreen.email_address_region = Region(
+    base_region = LoginScreen.EMAIL_ADDRESS_REGION
+    LoginScreen.EMAIL_ADDRESS_REGION = Region(
         left=300,
         top=150,
         width=6,
@@ -130,7 +130,7 @@ def test_login_screen_enter_email_address_scales_region_to_viewport() -> None:
     try:
         asyncio.run(screen.enter_email_address("player@example.invalid"))
     finally:
-        LoginScreen.email_address_region = base_region
+        LoginScreen.EMAIL_ADDRESS_REGION = base_region
 
     [(x, y)] = browser.clicked_points
     assert 200 < x < 204
