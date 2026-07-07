@@ -3,13 +3,15 @@ from random import Random
 
 import pytest
 
-from majsoulrpa.browser import (
+from majsoulrpa.browser.controller import (
+    BrowserOperationError,
+    RemoteBrowserController,
+)
+from majsoulrpa.browser.messages import (
     BrowserCommand,
     BrowserErrorResponse,
-    BrowserOperationError,
     ClickCommand,
     ClickResponse,
-    RemoteBrowserController,
     ScreenshotCommand,
     ScreenshotResponse,
     TextInputCommand,

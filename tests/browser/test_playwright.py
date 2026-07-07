@@ -6,16 +6,18 @@ from typing import Self, override
 import pytest
 
 import majsoulrpa.browser.playwright as browser_playwright
-from majsoulrpa.browser import (
+from majsoulrpa.browser.messages import (
     BrowserErrorResponse,
     ClickCommand,
     ClickResponse,
-    PlaywrightBrowserBackend,
-    PlaywrightCommandExecutor,
     ScreenshotCommand,
     ScreenshotResponse,
     TextInputCommand,
     TextInputResponse,
+)
+from majsoulrpa.browser.playwright import (
+    PlaywrightBrowserBackend,
+    PlaywrightCommandExecutor,
 )
 from majsoulrpa.config import AppConfig, BrowserConfig
 from majsoulrpa.constants import (

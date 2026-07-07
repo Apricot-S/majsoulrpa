@@ -2,7 +2,6 @@ import inspect
 from collections.abc import Callable
 from typing import Any
 
-from majsoulrpa.client.controller_runtime import ControllerRuntimeFactory
 from majsoulrpa.client.runtime import RPARuntime, RuntimeFactory
 from majsoulrpa.config import AppConfig
 from majsoulrpa.screens import Screen
@@ -57,4 +56,8 @@ class RPAApp:
         callbacks: dict[type[Screen], Callback[Any]],
         config: AppConfig,
     ) -> RPARuntime:
+        from majsoulrpa.client.controller_runtime import (  # noqa: PLC0415
+            ControllerRuntimeFactory,
+        )
+
         return ControllerRuntimeFactory()(callbacks, config)

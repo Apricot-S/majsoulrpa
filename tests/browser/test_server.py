@@ -2,15 +2,15 @@ import asyncio
 
 import pytest
 
-from majsoulrpa.browser import (
+from majsoulrpa.browser.messages import (
     BrowserCommand,
-    BrowserRequestHandler,
     BrowserResponse,
     ClickCommand,
     ClickResponse,
     TextInputCommand,
     TextInputResponse,
 )
+from majsoulrpa.browser.server import BrowserRequestHandler
 
 
 class BrowserServerTransportSpy:

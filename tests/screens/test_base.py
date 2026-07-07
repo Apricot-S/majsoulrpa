@@ -7,8 +7,7 @@ import pytest
 
 import majsoulrpa.screens.base as screens_base
 from majsoulrpa import RPAApp
-from majsoulrpa.client import ScreenshotScreenDetector
-from majsoulrpa.client.runtime import RPARuntime
+from majsoulrpa.client.runtime import RPARuntime, ScreenshotScreenDetector
 from majsoulrpa.config import AppConfig
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec

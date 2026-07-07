@@ -4,16 +4,14 @@ from typing import override
 
 import pytest
 
-from majsoulrpa.browser import (
+from majsoulrpa.browser.messages import (
+    BrowserResponse,
     ClickCommand,
     ClickResponse,
     ScreenshotCommand,
     ScreenshotResponse,
     TextInputCommand,
     TextInputResponse,
-)
-from majsoulrpa.browser.messages import (
-    BrowserResponse,
     dump_browser_response_json,
     parse_browser_command_json,
 )

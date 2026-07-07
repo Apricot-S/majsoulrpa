@@ -5,10 +5,8 @@ from typing import Any, Protocol, cast
 import zmq
 import zmq.asyncio
 
-from majsoulrpa.browser import (
-    BrowserZmqClientTransport,
-    RemoteBrowserController,
-)
+from majsoulrpa.browser.controller import RemoteBrowserController
+from majsoulrpa.browser.zmq import BrowserZmqClientTransport
 from majsoulrpa.client.runtime import RPARuntime, ScreenshotScreenDetector
 from majsoulrpa.config import AppConfig
 from majsoulrpa.endpoint import make_browser_host_tcp_endpoint

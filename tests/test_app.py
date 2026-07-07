@@ -6,7 +6,7 @@ import pytest
 
 import majsoulrpa.client.runtime as runtime_module
 from majsoulrpa import RPAApp
-from majsoulrpa.client import RPARuntime
+from majsoulrpa.client.runtime import RPARuntime
 from majsoulrpa.config import AppConfig
 from majsoulrpa.screens import Screen, ScreenDetectionSpec
 from majsoulrpa.types import Callback

@@ -5,16 +5,18 @@ from uuid import uuid4
 import zmq
 import zmq.asyncio
 
-from majsoulrpa.browser import (
+from majsoulrpa.browser.messages import (
     BrowserCommand,
     BrowserResponse,
-    BrowserZmqClientTransport,
-    BrowserZmqRequestServer,
-    BrowserZmqServerTransport,
     ClickCommand,
     ClickResponse,
     TextInputCommand,
     TextInputResponse,
+)
+from majsoulrpa.browser.zmq import (
+    BrowserZmqClientTransport,
+    BrowserZmqRequestServer,
+    BrowserZmqServerTransport,
 )
 
 

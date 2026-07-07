@@ -3,7 +3,7 @@ import asyncio
 import pytest
 import zmq.asyncio
 
-from majsoulrpa.browser import BrowserCommand, BrowserResponse
+from majsoulrpa.browser.messages import BrowserCommand, BrowserResponse
 from majsoulrpa.browser.runner import (
     _make_zmq_request_server_factory,
     run_browser_host,

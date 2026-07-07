@@ -51,6 +51,18 @@ def test_browser_import_does_not_load_playwright_backend_module() -> None:
     assert "majsoulrpa.browser.playwright" not in sys.modules
 
 
+def test_browser_public_exports_are_minimal() -> None:
+    browser = importlib.import_module("majsoulrpa.browser")
+
+    assert browser.__all__ == [
+        "BrowserOperationError",
+        "PlaywrightBrowserBackend",
+        "PlaywrightCommandExecutor",
+        "RemoteBrowserController",
+        "run_browser_host",
+    ]
+
+
 def test_presentation_lazy_exports_are_cached_and_listed() -> None:
     sys.modules.pop("majsoulrpa.presentation", None)
     if hasattr(majsoulrpa, "presentation"):
