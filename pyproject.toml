@@ -73,7 +73,7 @@ testpaths = ["tests"]
 
 [tool.ruff]
 src = ["src"]
-extend-exclude = ["src/majsoulrpa/_majsoul_internal/protocol"] # The path is provisional.
+extend-exclude = ["src/majsoulrpa/assets/protocol"]
 line-length = 79
 
 [tool.ruff.lint]
@@ -121,6 +121,6 @@ convention = "google"
 
 [tool.ty.src]
 exclude = [
-    "src/majsoulrpa/_majsoul_internal/protocol/liqi_pb2.py",  # The path is provisional.
-    "src/majsoulrpa/_majsoul_internal/protocol/liqi_pb2.pyi", # The path is provisional.
+    "src/majsoulrpa/assets/protocol/liqi_pb2.py",
+    "src/majsoulrpa/assets/protocol/liqi_pb2.pyi",
 ]

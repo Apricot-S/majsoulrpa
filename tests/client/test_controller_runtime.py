@@ -26,6 +26,10 @@ SYNTHETIC_PNG = b"\x89PNG\r\n\x1a\n"
 
 
 class MatchingScreen(Screen):
+    @override
+    async def before_callback(self) -> None:
+        pass
+
     @classmethod
     @override
     def detection_spec(cls) -> ScreenDetectionSpec:

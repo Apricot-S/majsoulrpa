@@ -69,6 +69,7 @@ class RPARuntime:
                 if callback is None:
                     continue
 
+                await screen.before_callback()
                 current_data = await callback(screen, current_data)
                 if self._should_stop():
                     return current_data

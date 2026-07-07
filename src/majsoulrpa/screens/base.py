@@ -17,6 +17,15 @@ class BrowserController(Protocol):
     async def screenshot(self) -> bytes: ...
 
 
+class TemplateMatchResult(Protocol):
+    region: Region
+
+
+class TemplateMatcher(Protocol):
+    def match(self, screenshot: object) -> TemplateMatchResult: ...
+    def matches(self, screenshot: object) -> bool: ...
+
+
 type StopRequester = Callable[[], Awaitable[None]]
 
 
@@ -80,12 +89,35 @@ class Screen(ABC):
             raise RuntimeError(msg)
         return self._context
 
-    async def fill_region(self, region: Region, value: str) -> None:
+    async def click_region(self, region: Region) -> None:
         scaled_region = self.context.scale_region(region)
+        await self._click_region(scaled_region)
+
+    async def _click_region(self, scaled_region: Region) -> None:
         x, y = scaled_region.random_point(rng=self.context.rng)
         await self.context.browser.click(x, y)
+
+    async def fill_region(self, region: Region, value: str) -> None:
+        await self.click_region(region)
         await asyncio.sleep(FILL_REGION_CLICK_TO_INPUT_DELAY_SECONDS)
         await self.context.browser.input_text(value)
+
+    async def matches(self, template: TemplateMatcher) -> bool:
+        screenshot = await self.context.browser.screenshot()
+        return template.matches(screenshot)
+
+    async def click_if_match(self, template: TemplateMatcher) -> bool:
+        screenshot = await self.context.browser.screenshot()
+        if not template.matches(screenshot):
+            return False
+
+        result = template.match(screenshot)
+        await self._click_region(result.region)
+        return True
+
+    @abstractmethod
+    async def before_callback(self) -> None:
+        raise NotImplementedError
 
     @classmethod
     @abstractmethod

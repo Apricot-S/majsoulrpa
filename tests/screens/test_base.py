@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import Mapping
+from dataclasses import dataclass
 from random import Random
 from typing import Any, override
 
@@ -11,11 +12,16 @@ from majsoulrpa.client.runtime import RPARuntime, ScreenshotScreenDetector
 from majsoulrpa.config import AppConfig
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
+from majsoulrpa.screens.base import TemplateMatchResult
 from majsoulrpa.types import Callback
 
 
 class LoginScreen(Screen):
     spec = ScreenDetectionSpec()
+
+    @override
+    async def before_callback(self) -> None:
+        pass
 
     @classmethod
     @override
@@ -43,12 +49,35 @@ class BrowserControllerSpy:
         return self.screenshot_bytes
 
 
+class TemplateSpy:
+    def __init__(self, *, matches: bool, region: Region | None = None) -> None:
+        self.matches_result = matches
+        self.region = region or Region(left=0, top=0, width=10, height=10)
+        self.screenshots_for_matches: list[object] = []
+        self.screenshots_for_match: list[object] = []
+
+    def matches(self, screenshot: object) -> bool:
+        self.screenshots_for_matches.append(screenshot)
+        return self.matches_result
+
+    def match(self, screenshot: object) -> TemplateMatchResult:
+        self.screenshots_for_match.append(screenshot)
+        return TemplateMatchResultSpy(region=self.region)
+
+
+@dataclass(frozen=True)
+class TemplateMatchResultSpy:
+    region: Region
+
+
 def test_screen_exposes_detection_spec() -> None:
     assert LoginScreen.detection_spec() is LoginScreen.spec
 
 
 def test_screen_requires_detection_spec() -> None:
-    assert Screen.__abstractmethods__ == frozenset({"detection_spec"})
+    assert Screen.__abstractmethods__ == frozenset(
+        {"before_callback", "detection_spec"},
+    )
 
 
 def test_screen_detector_detects_screen_from_fake_screenshot() -> None:
@@ -62,6 +91,10 @@ def test_screen_detector_detects_screen_from_fake_screenshot() -> None:
         )
 
     class FakeLoginScreen(Screen):
+        @override
+        async def before_callback(self) -> None:
+            pass
+
         @classmethod
         @override
         def detection_spec(cls) -> ScreenDetectionSpec:
@@ -88,6 +121,10 @@ def test_screen_detector_injects_context_into_detected_screen() -> None:
         )
 
     class FakeLoginScreen(Screen):
+        @override
+        async def before_callback(self) -> None:
+            pass
+
         @classmethod
         @override
         def detection_spec(cls) -> ScreenDetectionSpec:
@@ -117,6 +154,10 @@ def test_false_screen_detection_does_not_call_callback() -> None:
         pass
 
     class NeverScreen(Screen):
+        @override
+        async def before_callback(self) -> None:
+            pass
+
         @classmethod
         @override
         def detection_spec(cls) -> ScreenDetectionSpec:
@@ -157,6 +198,10 @@ def test_screen_detection_exception_is_not_hidden() -> None:
         raise RuntimeError(msg)
 
     class BrokenScreen(Screen):
+        @override
+        async def before_callback(self) -> None:
+            pass
+
         @classmethod
         @override
         def detection_spec(cls) -> ScreenDetectionSpec:
@@ -188,6 +233,10 @@ def test_multiple_matching_screens_use_registration_order() -> None:
             self.matches = matches
 
     class FirstScreen(Screen):
+        @override
+        async def before_callback(self) -> None:
+            pass
+
         @classmethod
         @override
         def detection_spec(cls) -> ScreenDetectionSpec:
@@ -199,6 +248,10 @@ def test_multiple_matching_screens_use_registration_order() -> None:
             )
 
     class SecondScreen(Screen):
+        @override
+        async def before_callback(self) -> None:
+            pass
+
         @classmethod
         @override
         def detection_spec(cls) -> ScreenDetectionSpec:
@@ -272,6 +325,97 @@ def test_screen_fills_scaled_region(monkeypatch: pytest.MonkeyPatch) -> None:
     assert browser.input_texts == ["player@example.invalid"]
 
 
+def test_screen_clicks_scaled_region() -> None:
+    browser = BrowserControllerSpy()
+    screen = LoginScreen(
+        context=ScreenContext(
+            browser=browser,
+            viewport_width=1280,
+            viewport_height=720,
+            rng=Random(0),
+        ),
+    )
+
+    asyncio.run(
+        screen.click_region(Region(left=300, top=150, width=6, height=3)),
+    )
+
+    [(x, y)] = browser.clicked_points
+    assert 200 < x < 204
+    assert 100 < y < 102
+    assert browser.events == ["click"]
+
+
+def test_screen_matches_uses_detection_spec() -> None:
+    browser = BrowserControllerSpy()
+    browser.screenshot_bytes = b"match"
+    template = TemplateSpy(matches=True)
+    screen = LoginScreen(
+        context=ScreenContext(browser=browser),
+    )
+
+    assert asyncio.run(screen.matches(template)) is True
+    assert browser.events == ["screenshot"]
+    assert template.screenshots_for_matches == [b"match"]
+
+
+def test_screen_matches_returns_false_for_mismatch() -> None:
+    browser = BrowserControllerSpy()
+    browser.screenshot_bytes = b"miss"
+    template = TemplateSpy(matches=False)
+    screen = LoginScreen(
+        context=ScreenContext(browser=browser),
+    )
+
+    assert asyncio.run(screen.matches(template)) is False
+    assert browser.events == ["screenshot"]
+    assert template.screenshots_for_matches == [b"miss"]
+
+
+def test_screen_clicks_matched_region_without_scaling() -> None:
+    browser = BrowserControllerSpy()
+    browser.screenshot_bytes = b"match"
+    template = TemplateSpy(
+        matches=True,
+        region=Region(left=300, top=150, width=6, height=3),
+    )
+    screen = LoginScreen(
+        context=ScreenContext(
+            browser=browser,
+            viewport_width=1280,
+            viewport_height=720,
+            rng=Random(0),
+        ),
+    )
+
+    result = asyncio.run(screen.click_if_match(template))
+
+    assert result is True
+    assert browser.events == ["screenshot", "click"]
+    assert template.screenshots_for_matches == [b"match"]
+    assert template.screenshots_for_match == [b"match"]
+    [(x, y)] = browser.clicked_points
+    assert 300 < x < 306
+    assert 150 < y < 153
+
+
+def test_screen_does_not_click_if_current_screenshot_does_not_match() -> None:
+    browser = BrowserControllerSpy()
+    browser.screenshot_bytes = b"miss"
+    template = TemplateSpy(matches=False)
+    screen = LoginScreen(
+        context=ScreenContext(browser=browser, rng=Random(0)),
+    )
+
+    result = asyncio.run(screen.click_if_match(template))
+
+    assert result is False
+    assert browser.events == ["screenshot"]
+    assert template.screenshots_for_matches == [b"miss"]
+    assert template.screenshots_for_match == []
+    assert browser.clicked_points == []
+
+
 def test_screen_context_requests_stop() -> None:
     requested = False
 
@@ -297,3 +441,56 @@ def test_screen_context_browser_can_take_screenshot() -> None:
 
     assert screenshot == b"\x89PNG\r\n\x1a\n"
     assert browser.events == ["screenshot"]
+
+
+def test_runtime_calls_screen_before_callback() -> None:
+    class FakeScreenshot:
+        def __init__(self, *, matches: bool) -> None:
+            self.matches = matches
+
+    events: list[str] = []
+
+    class PreHookScreen(Screen):
+        @classmethod
+        @override
+        def detection_spec(cls) -> ScreenDetectionSpec:
+            return ScreenDetectionSpec(
+                predicate=lambda screenshot: (
+                    isinstance(screenshot, FakeScreenshot)
+                    and screenshot.matches
+                ),
+            )
+
+        @override
+        async def before_callback(self) -> None:
+            events.append("before_callback")
+
+    screenshots = [FakeScreenshot(matches=True)]
+
+    async def screenshot() -> FakeScreenshot:
+        if screenshots:
+            return screenshots.pop(0)
+        return FakeScreenshot(matches=False)
+
+    def runtime_factory(
+        callbacks: Mapping[type[Screen], Callback[Any]],
+        config: AppConfig,
+    ) -> RPARuntime:
+        _ = config
+        return RPARuntime(callbacks, ScreenshotScreenDetector(screenshot))
+
+    app = RPAApp(runtime_factory=runtime_factory)
+
+    @app.on(PreHookScreen)
+    async def handle_pre_hook(
+        _screen: PreHookScreen,
+        data: object,
+    ) -> object:
+        events.append("callback")
+        return data
+
+    data = object()
+    result = asyncio.run(app.run(AppConfig(), data, detection_timeout=0.001))
+
+    assert result is data
+    assert events == ["before_callback", "callback"]

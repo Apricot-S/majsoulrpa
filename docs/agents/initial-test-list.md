@@ -145,7 +145,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] scale 後に template size が 0 以下なら例外
 - [x] screenshot が探索領域より小さい場合は例外
 - [x] `LoginScreen.detection_spec()` が template predicate を返す
+- [x] `LoginScreen.detection_spec()` が PNG screenshot bytes を template matcher に渡せる
 - [x] `LoginScreen.enter_email_address()` の固定領域は実 viewport サイズへ scale される
+- [x] callback dispatch 前に `LoginScreen` の pre-hook でログインボタンをクリックできる
 
 候補:
 

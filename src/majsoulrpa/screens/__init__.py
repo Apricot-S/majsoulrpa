@@ -1,12 +1,6 @@
-from majsoulrpa.screens.base import (
-    Screen,
-    ScreenContext,
-    ScreenDetectionSpec,
-)
-from majsoulrpa.screens.login import LoginScreen
+from majsoulrpa.screens.base import Screen, ScreenContext, ScreenDetectionSpec
 
 __all__ = [
-    "LoginScreen",
     "Screen",
     "ScreenContext",
     "ScreenDetectionSpec",

@@ -51,6 +51,22 @@ def test_browser_import_does_not_load_playwright_backend_module() -> None:
     assert "majsoulrpa.browser.playwright" not in sys.modules
 
 
+def test_screens_import_does_not_load_login_screen_module() -> None:
+    sys.modules.pop("majsoulrpa.screens", None)
+    sys.modules.pop("majsoulrpa.screens.login", None)
+    if hasattr(majsoulrpa, "screens"):
+        delattr(majsoulrpa, "screens")
+
+    screens = importlib.import_module("majsoulrpa.screens")
+
+    assert screens.__all__ == [
+        "Screen",
+        "ScreenContext",
+        "ScreenDetectionSpec",
+    ]
+    assert "majsoulrpa.screens.login" not in sys.modules
+
+
 def test_browser_public_exports_are_minimal() -> None:
     browser = importlib.import_module("majsoulrpa.browser")
 
