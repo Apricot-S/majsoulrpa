@@ -81,9 +81,7 @@ def test_login_screen_before_callback_clicks_matched_region() -> None:
 def test_login_screen_enter_email_address_records_browser_operation() -> None:
     browser = BrowserControllerSpy()
 
-    screen = LoginScreen(
-        context=ScreenContext(browser=browser, rng=Random(0)),
-    )
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
 
     asyncio.run(screen.enter_email_address("player@example.invalid"))
 
