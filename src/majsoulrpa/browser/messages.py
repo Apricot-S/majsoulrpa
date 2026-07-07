@@ -28,6 +28,7 @@ class PressKeyCommand(BaseModel):
 
     type: Literal["press_key"] = "press_key"
     key: NonEmptyKey
+    key_down_up_delay_seconds: PositiveDelay
 
 
 class ScreenshotCommand(BaseModel):

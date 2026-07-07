@@ -19,6 +19,7 @@ from majsoulrpa.timing import get_random_delay
 
 DEFAULT_CLICK_MOUSE_DOWN_UP_DELAY_SECONDS = 0.1
 DEFAULT_TEXT_INPUT_CHARACTER_DELAY_SECONDS = 0.05
+DEFAULT_KEY_DOWN_UP_DELAY_SECONDS = 0.05
 
 
 class BrowserOperationError(RuntimeError):
@@ -37,6 +38,7 @@ class RemoteBrowserController:
         text_input_character_delay_seconds: float = (
             DEFAULT_TEXT_INPUT_CHARACTER_DELAY_SECONDS
         ),
+        key_down_up_delay_seconds: float = DEFAULT_KEY_DOWN_UP_DELAY_SECONDS,
     ) -> None:
         self._transport = transport
         self._rng = rng
@@ -46,6 +48,7 @@ class RemoteBrowserController:
         self._text_input_character_delay_seconds = (
             text_input_character_delay_seconds
         )
+        self._key_down_up_delay_seconds = key_down_up_delay_seconds
 
     async def click(self, x: float, y: float) -> ClickResponse:
         return await self._request_click(
@@ -71,7 +74,15 @@ class RemoteBrowserController:
         )
 
     async def press_key(self, key: str) -> PressKeyResponse:
-        return await self._request_press_key(PressKeyCommand(key=key))
+        return await self._request_press_key(
+            PressKeyCommand(
+                key=key,
+                key_down_up_delay_seconds=get_random_delay(
+                    self._key_down_up_delay_seconds,
+                    rng=self._rng,
+                ),
+            ),
+        )
 
     async def screenshot(self) -> bytes:
         response = await self._request_screenshot(ScreenshotCommand())

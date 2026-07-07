@@ -109,7 +109,9 @@ class Screen(ABC):
         await asyncio.sleep(FILL_REGION_CLICK_TO_INPUT_DELAY_SECONDS)
         if clear:
             await self.context.browser.press_key("ControlOrMeta+A")
+            await asyncio.sleep(FILL_REGION_CLICK_TO_INPUT_DELAY_SECONDS)
             await self.context.browser.press_key("Backspace")
+            await asyncio.sleep(FILL_REGION_CLICK_TO_INPUT_DELAY_SECONDS)
         await self.context.browser.input_text(value)
 
     async def matches(self, template: TemplateMatcher) -> bool:

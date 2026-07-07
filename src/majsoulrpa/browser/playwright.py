@@ -40,7 +40,7 @@ class MouseLike(Protocol):
 
 
 class KeyboardLike(Protocol):
-    async def press(self, key: str) -> None: ...
+    async def press(self, key: str, *, delay: float) -> None: ...
     async def type(self, text: str, *, delay: float) -> None: ...
 
 
@@ -98,7 +98,10 @@ class PlaywrightCommandExecutor:
         self,
         command: PressKeyCommand,
     ) -> PressKeyResponse:
-        await self._page.keyboard.press(command.key)
+        await self._page.keyboard.press(
+            command.key,
+            delay=command.key_down_up_delay_seconds * 1000,
+        )
         return PressKeyResponse(key=command.key)
 
     async def _screenshot(self) -> ScreenshotResponse:

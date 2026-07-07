@@ -41,13 +41,13 @@ class MouseSpy:
 class KeyboardSpy:
     def __init__(self) -> None:
         self.typed: list[tuple[str, float]] = []
-        self.pressed: list[str] = []
+        self.pressed: list[tuple[str, float]] = []
 
     async def type(self, text: str, *, delay: float) -> None:
         self.typed.append((text, delay))
 
-    async def press(self, key: str) -> None:
-        self.pressed.append(key)
+    async def press(self, key: str, *, delay: float) -> None:
+        self.pressed.append((key, delay))
 
 
 class PageSpy:
@@ -123,11 +123,16 @@ def test_playwright_command_executor_presses_key() -> None:
     executor = PlaywrightCommandExecutor(page)
 
     response = asyncio.run(
-        executor.execute(PressKeyCommand(key="Control+A")),
+        executor.execute(
+            PressKeyCommand(
+                key="Control+A",
+                key_down_up_delay_seconds=0.05,
+            ),
+        ),
     )
 
     assert response == PressKeyResponse(key="Control+A")
-    assert page.keyboard_spy.pressed == ["Control+A"]
+    assert page.keyboard_spy.pressed == [("Control+A", 50)]
 
 
 def test_playwright_command_executor_returns_base64_screenshot() -> None:

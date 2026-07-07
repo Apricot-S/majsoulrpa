@@ -221,8 +221,12 @@ def test_controller_runtime_can_clear_before_text_input() -> None:
     ]
     assert isinstance(commands[0], ScreenshotCommand)
     assert isinstance(commands[1], ClickCommand)
-    assert commands[2] == PressKeyCommand(key="Control+A")
-    assert commands[3] == PressKeyCommand(key="Backspace")
+    assert isinstance(commands[2], PressKeyCommand)
+    assert commands[2].key == "ControlOrMeta+A"
+    assert commands[2].key_down_up_delay_seconds > 0
+    assert isinstance(commands[3], PressKeyCommand)
+    assert commands[3].key == "Backspace"
+    assert commands[3].key_down_up_delay_seconds > 0
     assert isinstance(commands[4], TextInputCommand)
     assert commands[4].text == "value"
 

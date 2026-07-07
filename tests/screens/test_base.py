@@ -357,12 +357,15 @@ def test_screen_can_clear_region_before_filling(
         ),
     )
 
-    assert browser.pressed_keys == ["Control+A", "Backspace"]
+    assert browser.pressed_keys == ["ControlOrMeta+A", "Backspace"]
+    assert sleeps == [0.5, 0.5, 0.5]
     assert browser.events == [
         "click",
         "sleep",
-        "press_key:Control+A",
+        "press_key:ControlOrMeta+A",
+        "sleep",
         "press_key:Backspace",
+        "sleep",
         "input_text",
     ]
     assert browser.input_texts == ["player@example.invalid"]

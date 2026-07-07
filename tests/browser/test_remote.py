@@ -85,7 +85,10 @@ def test_remote_browser_controller_sends_press_key() -> None:
     response = asyncio.run(controller.press_key("Control+A"))
 
     assert response == PressKeyResponse(key="Control+A")
-    assert transport.sent_commands == [PressKeyCommand(key="Control+A")]
+    [command] = transport.sent_commands
+    assert isinstance(command, PressKeyCommand)
+    assert command.key == "Control+A"
+    assert command.key_down_up_delay_seconds > 0
 
 
 def test_remote_browser_controller_raises_response_error() -> None:
@@ -148,7 +151,16 @@ def test_browser_command_schema_rejects_invalid_delay() -> None:
         )
 
     with pytest.raises(ValueError, match="at least 1 character"):
-        PressKeyCommand(key="")
+        PressKeyCommand(
+            key="",
+            key_down_up_delay_seconds=0.05,
+        )
+
+    with pytest.raises(ValueError, match="greater than 0"):
+        PressKeyCommand(
+            key="Control+A",
+            key_down_up_delay_seconds=0,
+        )
 
 
 def test_browser_response_error_is_distinct_from_success_responses() -> None:
