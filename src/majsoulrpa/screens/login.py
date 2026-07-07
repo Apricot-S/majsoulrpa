@@ -1,3 +1,4 @@
+import asyncio
 from typing import override
 
 from majsoulrpa.assets.templates.login import (
@@ -32,7 +33,15 @@ class LoginScreen(Screen):
 
     @override
     async def before_callback(self) -> None:
-        await self.click_if_match(LOGIN_1_TEMPLATE)
+        if not await self.click_if_match(LOGIN_1_TEMPLATE):
+            msg = "Failed to find login button."
+            raise RuntimeError(msg)
+
+        await asyncio.sleep(1.0)
+
+        if not await self.matches(YOSTAR_LOGO_TEMPLATE):
+            msg = "Failed to find Yostar logo after login button click."
+            raise RuntimeError(msg)
 
     async def enter_email_address(self, email_address: str) -> None:
         await self.fill_region(self.EMAIL_ADDRESS_REGION, email_address)

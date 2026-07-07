@@ -162,11 +162,14 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `LoginScreen.detection_spec()` が PNG screenshot bytes を template matcher に渡せる
 - [x] `LoginScreen.enter_email_address()` の固定領域は実 viewport サイズへ scale される
 - [x] callback dispatch 前に `LoginScreen` の pre-hook でログインボタンをクリックできる
+- [x] `LoginScreen.before_callback()` がログインボタン不一致時に例外を投げる
+- [x] `LoginScreen.before_callback()` がログインボタンクリック後に 1.0 秒待機する
+- [x] `LoginScreen.before_callback()` が Yostar ロゴ不一致時に例外を投げる
 
 候補:
 
 - [x] `LoginScreen.enter_email_address()` が入力欄への browser operation を記録する
-- [ ] `LoginScreen.enter_email_address()` の実領域をスクリーンショット確認で確定する
+- [x] `LoginScreen.enter_email_address()` の実領域をスクリーンショット確認で確定する
 - [ ] `LoginScreen.enter_verification_code()` が認証コード欄へ入力する
 
 どちらを選ぶ場合も、先に fake browser operation のテストを書きます。

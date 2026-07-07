@@ -1,10 +1,12 @@
 import asyncio
+from importlib.resources.abc import Traversable
 from random import Random
 
 import cv2
 import numpy as np
 import pytest
 
+import majsoulrpa.screens.login as login_module
 from majsoulrpa.assets.templates.login import (
     LOGIN_1_SETTINGS_PATH,
     LOGIN_1_TEMPLATE_PATH,
@@ -17,10 +19,15 @@ from majsoulrpa.screens.login import YOSTAR_LOGO_TEMPLATE, LoginScreen
 
 
 class BrowserControllerSpy:
-    def __init__(self, screenshot: bytes = b"\x89PNG\r\n\x1a\n") -> None:
+    def __init__(
+        self,
+        screenshot: bytes = b"\x89PNG\r\n\x1a\n",
+        *screenshots: bytes,
+    ) -> None:
         self.clicked_points: list[tuple[float, float]] = []
         self.input_texts: list[str] = []
         self.screenshot_bytes = screenshot
+        self.screenshot_queue = [screenshot, *screenshots]
 
     async def click(self, x: float, y: float) -> None:
         self.clicked_points.append((x, y))
@@ -44,7 +51,54 @@ class BrowserControllerSpy:
         _ = key
 
     async def screenshot(self) -> bytes:
+        if self.screenshot_queue:
+            return self.screenshot_queue.pop(0)
         return self.screenshot_bytes
+
+
+def _synthetic_template_screenshot(
+    *,
+    template_path: Traversable,
+    left: int,
+    top: int,
+    width: int,
+    height: int,
+) -> bytes:
+    encoded = np.frombuffer(template_path.read_bytes(), dtype=np.uint8)
+    template = cv2.imdecode(encoded, cv2.IMREAD_GRAYSCALE)
+    assert template is not None
+    screenshot = np.zeros((1080, 1920), dtype=np.uint8)
+    screenshot[top : top + height, left : left + width] = template
+    success, screenshot_png = cv2.imencode(".png", screenshot)
+    assert success
+    return screenshot_png.tobytes()
+
+
+def _synthetic_blank_screenshot() -> bytes:
+    screenshot = np.zeros((1080, 1920), dtype=np.uint8)
+    success, screenshot_png = cv2.imencode(".png", screenshot)
+    assert success
+    return screenshot_png.tobytes()
+
+
+def _synthetic_login_button_screenshot() -> bytes:
+    return _synthetic_template_screenshot(
+        template_path=LOGIN_1_TEMPLATE_PATH,
+        left=1310,
+        top=435,
+        width=370,
+        height=65,
+    )
+
+
+def _synthetic_yostar_logo_screenshot() -> bytes:
+    return _synthetic_template_screenshot(
+        template_path=YOSTAR_LOGO_TEMPLATE_PATH,
+        left=865,
+        top=347,
+        width=190,
+        height=50,
+    )
 
 
 def test_login_screen_is_screen() -> None:
@@ -72,49 +126,66 @@ def test_yostar_logo_template_assets_exist() -> None:
 
 
 def test_yostar_logo_template_matches_synthetic_screenshot() -> None:
-    encoded = np.frombuffer(
-        YOSTAR_LOGO_TEMPLATE_PATH.read_bytes(),
-        dtype=np.uint8,
-    )
-    template = cv2.imdecode(encoded, cv2.IMREAD_GRAYSCALE)
-    assert template is not None
-    screenshot = np.zeros((1080, 1920), dtype=np.uint8)
-    screenshot[347:397, 865:1055] = template
-    success, screenshot_png = cv2.imencode(".png", screenshot)
-    assert success
-
-    assert YOSTAR_LOGO_TEMPLATE.matches(screenshot_png.tobytes())
+    assert YOSTAR_LOGO_TEMPLATE.matches(_synthetic_yostar_logo_screenshot())
 
 
 def test_login_button_template_matches_synthetic_screenshot() -> None:
-    encoded = np.frombuffer(LOGIN_1_TEMPLATE_PATH.read_bytes(), dtype=np.uint8)
-    template = cv2.imdecode(encoded, cv2.IMREAD_GRAYSCALE)
-    assert template is not None
-    screenshot = np.zeros((1080, 1920), dtype=np.uint8)
-    screenshot[435:500, 1310:1680] = template
-    success, screenshot_png = cv2.imencode(".png", screenshot)
-    assert success
-
-    assert LoginScreen.detection_spec().matches(screenshot_png.tobytes())
+    assert LoginScreen.detection_spec().matches(
+        _synthetic_login_button_screenshot(),
+    )
 
 
-def test_login_screen_before_callback_clicks_matched_region() -> None:
-    encoded = np.frombuffer(LOGIN_1_TEMPLATE_PATH.read_bytes(), dtype=np.uint8)
-    template = cv2.imdecode(encoded, cv2.IMREAD_GRAYSCALE)
-    assert template is not None
-    screenshot = np.zeros((1080, 1920), dtype=np.uint8)
-    screenshot[435:500, 1310:1680] = template
-    success, screenshot_png = cv2.imencode(".png", screenshot)
-    assert success
-    browser = BrowserControllerSpy(screenshot=screenshot_png.tobytes())
+def test_login_screen_before_callback_clicks_matched_region(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    browser = BrowserControllerSpy(
+        _synthetic_login_button_screenshot(),
+        _synthetic_yostar_logo_screenshot(),
+    )
     screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
 
     asyncio.run(screen.before_callback())
 
     [(x, y)] = browser.clicked_points
     assert 1310 < x < 1680
     assert 435 < y < 500
+    assert sleeps == [1.0]
     assert browser.input_texts == []
+
+
+def test_login_screen_before_callback_raises_without_login_button() -> None:
+    browser = BrowserControllerSpy(_synthetic_blank_screenshot())
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+
+    with pytest.raises(RuntimeError, match="login button"):
+        asyncio.run(screen.before_callback())
+
+    assert browser.clicked_points == []
+
+
+def test_login_screen_before_callback_raises_when_yostar_logo_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    browser = BrowserControllerSpy(
+        _synthetic_login_button_screenshot(),
+        _synthetic_blank_screenshot(),
+    )
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(RuntimeError, match="Yostar logo"):
+        asyncio.run(screen.before_callback())
+
+    assert browser.clicked_points
 
 
 def test_login_screen_enter_email_address_records_browser_operation() -> None:
