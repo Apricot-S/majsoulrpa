@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING, Any
 from majsoulrpa.presentation.region import Region
 
 _TEMPLATE_EXPORTS = {
+    "load_png_template_matcher",
+    "PngTemplateMatcher",
     "TemplateMatcher",
     "TemplateMatchResult",
     "TemplateMatchSettings",
@@ -11,16 +13,20 @@ _TEMPLATE_EXPORTS = {
 
 if TYPE_CHECKING:
     from majsoulrpa.presentation.template import (
+        PngTemplateMatcher,
         TemplateMatcher,
         TemplateMatchResult,
         TemplateMatchSettings,
+        load_png_template_matcher,
     )
 
 __all__ = [
+    "PngTemplateMatcher",
     "Region",
     "TemplateMatchResult",
     "TemplateMatchSettings",
     "TemplateMatcher",
+    "load_png_template_matcher",
 ]
 
 

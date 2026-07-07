@@ -1,5 +1,7 @@
 import tomllib
 from dataclasses import dataclass
+from importlib.resources.abc import Traversable
+from pathlib import Path
 from typing import Annotated, cast
 
 import cv2
@@ -63,6 +65,14 @@ class TemplateMatchSettings(BaseModel):
     @classmethod
     def from_toml_text(cls, text: str) -> "TemplateMatchSettings":
         return cls.model_validate(tomllib.loads(text))
+
+    @classmethod
+    def from_toml_file(
+        cls,
+        path: Path | Traversable,
+    ) -> "TemplateMatchSettings":
+        with path.open("rb") as fp:
+            return cls.model_validate(tomllib.load(fp))
 
 
 class TemplateMatcher:
@@ -176,3 +186,50 @@ class TemplateMatcher:
         ):
             msg = "search region must fit inside screenshot."
             raise ValueError(msg)
+
+
+class PngTemplateMatcher:
+    def __init__(self, matcher: TemplateMatcher) -> None:
+        self._matcher = matcher
+
+    def match(self, screenshot: object) -> TemplateMatchResult:
+        if not isinstance(screenshot, bytes):
+            msg = "screenshot must be PNG bytes."
+            raise TypeError(msg)
+        return self._matcher.match(_decode_grayscale_png(screenshot))
+
+    def matches(self, screenshot: object) -> bool:
+        if not isinstance(screenshot, bytes):
+            msg = "screenshot must be PNG bytes."
+            raise TypeError(msg)
+        return self._matcher.matches(_decode_grayscale_png(screenshot))
+
+
+def load_png_template_matcher(
+    *,
+    template_path: Path | Traversable,
+    settings_path: Path | Traversable,
+) -> PngTemplateMatcher:
+    return PngTemplateMatcher(
+        TemplateMatcher(
+            _read_grayscale_png(template_path),
+            TemplateMatchSettings.from_toml_file(settings_path),
+        ),
+    )
+
+
+def _read_grayscale_png(path: Path | Traversable) -> NDArray[np.uint8]:
+    try:
+        return _decode_grayscale_png(path.read_bytes())
+    except ValueError as error:
+        msg = f"PNG image could not be decoded: {path}"
+        raise ValueError(msg) from error
+
+
+def _decode_grayscale_png(payload: bytes) -> NDArray[np.uint8]:
+    encoded = np.frombuffer(payload, dtype=np.uint8)
+    image = cv2.imdecode(encoded, cv2.IMREAD_GRAYSCALE)
+    if image is None:
+        msg = "PNG image could not be decoded."
+        raise ValueError(msg)
+    return cast("NDArray[np.uint8]", image)

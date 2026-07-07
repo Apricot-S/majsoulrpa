@@ -5,17 +5,13 @@ import cv2
 import numpy as np
 import pytest
 
+from majsoulrpa.assets.templates.login import (
+    LOGIN_1_SETTINGS_PATH,
+    LOGIN_1_TEMPLATE_PATH,
+)
 from majsoulrpa.presentation import Region
-from majsoulrpa.screens import (
-    Screen,
-    ScreenContext,
-    ScreenDetectionSpec,
-)
-from majsoulrpa.screens.login import (
-    _LOGIN_1_SETTINGS_PATH,
-    _LOGIN_1_TEMPLATE_PATH,
-    LoginScreen,
-)
+from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
+from majsoulrpa.screens.login import LoginScreen
 
 
 class BrowserControllerSpy:
@@ -45,19 +41,15 @@ def test_login_screen_detection_spec_uses_login_button_template() -> None:
 
 
 def test_login_button_template_assets_exist() -> None:
-    assert _LOGIN_1_TEMPLATE_PATH.name == "login-1.png"
-    assert _LOGIN_1_TEMPLATE_PATH.parent.name == "login"
-    assert _LOGIN_1_TEMPLATE_PATH.is_file()
-    assert _LOGIN_1_SETTINGS_PATH.name == "login-1.toml"
-    assert _LOGIN_1_SETTINGS_PATH.parent.name == "login"
-    assert _LOGIN_1_SETTINGS_PATH.is_file()
+    assert LOGIN_1_TEMPLATE_PATH.name == "login-1.png"
+    assert LOGIN_1_TEMPLATE_PATH.is_file()
+    assert LOGIN_1_SETTINGS_PATH.name == "login-1.toml"
+    assert LOGIN_1_SETTINGS_PATH.is_file()
 
 
 def test_login_button_template_matches_synthetic_screenshot() -> None:
-    template = cv2.imread(
-        str(_LOGIN_1_TEMPLATE_PATH),
-        cv2.IMREAD_GRAYSCALE,
-    )
+    encoded = np.frombuffer(LOGIN_1_TEMPLATE_PATH.read_bytes(), dtype=np.uint8)
+    template = cv2.imdecode(encoded, cv2.IMREAD_GRAYSCALE)
     assert template is not None
     screenshot = np.zeros((1080, 1920), dtype=np.uint8)
     screenshot[435:500, 1310:1680] = template
@@ -68,19 +60,15 @@ def test_login_button_template_matches_synthetic_screenshot() -> None:
 
 
 def test_login_screen_before_callback_clicks_matched_region() -> None:
-    template = cv2.imread(
-        str(_LOGIN_1_TEMPLATE_PATH),
-        cv2.IMREAD_GRAYSCALE,
-    )
+    encoded = np.frombuffer(LOGIN_1_TEMPLATE_PATH.read_bytes(), dtype=np.uint8)
+    template = cv2.imdecode(encoded, cv2.IMREAD_GRAYSCALE)
     assert template is not None
     screenshot = np.zeros((1080, 1920), dtype=np.uint8)
     screenshot[435:500, 1310:1680] = template
     success, screenshot_png = cv2.imencode(".png", screenshot)
     assert success
     browser = BrowserControllerSpy(screenshot=screenshot_png.tobytes())
-    screen = LoginScreen(
-        context=ScreenContext(browser=browser, rng=Random(0)),
-    )
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
 
     asyncio.run(screen.before_callback())
 

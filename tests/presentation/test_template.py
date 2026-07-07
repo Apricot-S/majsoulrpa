@@ -1,4 +1,5 @@
 from dataclasses import FrozenInstanceError
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -10,6 +11,7 @@ from majsoulrpa.presentation import (
     TemplateMatcher,
     TemplateMatchResult,
     TemplateMatchSettings,
+    load_png_template_matcher,
 )
 
 
@@ -32,6 +34,41 @@ def test_template_match_settings_loads_from_toml_text() -> None:
         threshold = 0.92
         """,
     )
+
+    assert settings.region.left == 100
+    assert settings.region.top == 200
+    assert settings.region.width == 320
+    assert settings.region.height == 80
+    assert settings.margin.top == 4
+    assert settings.margin.right == 5
+    assert settings.margin.bottom == 6
+    assert settings.margin.left == 7
+    assert settings.match.threshold == 0.92
+
+
+def test_template_match_settings_loads_from_toml_file(tmp_path: Path) -> None:
+    settings_path = tmp_path / "template.toml"
+    settings_path.write_text(
+        """
+        [region]
+        left = 100
+        top = 200
+        width = 320
+        height = 80
+
+        [margin]
+        top = 4
+        right = 5
+        bottom = 6
+        left = 7
+
+        [match]
+        threshold = 0.92
+        """,
+        encoding="utf-8",
+    )
+
+    settings = TemplateMatchSettings.from_toml_file(settings_path)
 
     assert settings.region.left == 100
     assert settings.region.top == 200
@@ -493,3 +530,83 @@ def test_template_matcher_rejects_too_small_scaled_template() -> None:
 
     with pytest.raises(ValueError, match="scaled region size"):
         matcher.match(screenshot)
+
+
+def test_load_png_template_matcher_from_files(tmp_path: Path) -> None:
+    template = np.array(
+        [
+            [0, 64],
+            [128, 255],
+        ],
+        dtype=np.uint8,
+    )
+    template_path = tmp_path / "template.png"
+    settings_path = tmp_path / "template.toml"
+    assert cv2.imwrite(str(template_path), template)
+    settings_path.write_text(
+        """
+        [region]
+        left = 100
+        top = 200
+        width = 2
+        height = 2
+
+        [margin]
+        top = 0
+        right = 0
+        bottom = 0
+        left = 0
+
+        [match]
+        threshold = 0.99
+        """,
+        encoding="utf-8",
+    )
+    screenshot = np.zeros((1080, 1920), dtype=np.uint8)
+    screenshot[200:202, 100:102] = template
+    success, screenshot_png = cv2.imencode(".png", screenshot)
+    assert success
+
+    matcher = load_png_template_matcher(
+        template_path=template_path,
+        settings_path=settings_path,
+    )
+
+    assert matcher.matches(screenshot_png.tobytes()) is True
+    assert matcher.match(screenshot_png.tobytes()).region == Region(
+        left=100,
+        top=200,
+        width=2,
+        height=2,
+    )
+
+
+def test_load_png_template_matcher_rejects_invalid_png(tmp_path: Path) -> None:
+    template_path = tmp_path / "template.png"
+    settings_path = tmp_path / "template.toml"
+    template_path.write_bytes(b"not png")
+    settings_path.write_text(
+        """
+        [region]
+        left = 100
+        top = 200
+        width = 2
+        height = 2
+
+        [margin]
+        top = 0
+        right = 0
+        bottom = 0
+        left = 0
+
+        [match]
+        threshold = 0.99
+        """,
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="PNG image"):
+        load_png_template_matcher(
+            template_path=template_path,
+            settings_path=settings_path,
+        )
