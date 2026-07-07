@@ -1,5 +1,4 @@
 import importlib
-import ipaddress
 from collections.abc import Callable
 from contextlib import AsyncExitStack
 from typing import Any, Protocol, cast
@@ -12,6 +11,7 @@ from majsoulrpa.browser.server import (
 )
 from majsoulrpa.browser.zmq import BrowserZmqRequestServer
 from majsoulrpa.config import AppConfig
+from majsoulrpa.endpoint import make_client_tcp_endpoint
 
 CommandExecutorFactory = Callable[[object], BrowserCommandExecutor]
 RequestServerFactory = Callable[[BrowserCommandExecutor], BrowserRequestServer]
@@ -20,21 +20,6 @@ RequestServerFactory = Callable[[BrowserCommandExecutor], BrowserRequestServer]
 class BrowserBackend(Protocol):
     async def start(self, config: AppConfig) -> None: ...
     async def stop(self) -> None: ...
-
-
-def make_zmq_endpoint(config: AppConfig) -> str:
-    host = _format_zmq_host(config.endpoint.client_host)
-    return f"tcp://{host}:{config.endpoint.remote_port}"
-
-
-def _format_zmq_host(host: str) -> str:
-    try:
-        address = ipaddress.ip_address(host)
-    except ValueError:
-        return host
-    if isinstance(address, ipaddress.IPv6Address):
-        return f"[{host}]"
-    return host
 
 
 async def run_browser_host(
@@ -88,7 +73,7 @@ def _make_zmq_request_server_factory(
     config: AppConfig,
     context: zmq.asyncio.Context,
 ) -> RequestServerFactory:
-    endpoint = make_zmq_endpoint(config)
+    endpoint = make_client_tcp_endpoint(config)
 
     def request_server_factory(
         executor: BrowserCommandExecutor,

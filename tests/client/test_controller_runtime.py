@@ -17,10 +17,7 @@ from majsoulrpa.browser.messages import (
     dump_browser_response_json,
     parse_browser_command_json,
 )
-from majsoulrpa.client.controller_runtime import (
-    ControllerRuntimeFactory,
-    make_controller_zmq_endpoint,
-)
+from majsoulrpa.client.controller_runtime import ControllerRuntimeFactory
 from majsoulrpa.config import AppConfig, BrowserConfig, EndpointConfig
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens import Screen, ScreenDetectionSpec
@@ -88,42 +85,6 @@ class ZmqContextSpy:
 
     def term(self) -> None:
         self.terminated = True
-
-
-def test_make_controller_zmq_endpoint_uses_browser_host() -> None:
-    config = AppConfig(
-        endpoint=EndpointConfig(
-            browser_host="192.0.2.10",
-            remote_port=12000,
-        ),
-    )
-
-    assert make_controller_zmq_endpoint(config) == "tcp://192.0.2.10:12000"
-
-
-def test_make_controller_zmq_endpoint_brackets_ipv6_literal() -> None:
-    config = AppConfig(
-        endpoint=EndpointConfig(
-            browser_host="::1",
-            remote_port=12000,
-        ),
-    )
-
-    assert make_controller_zmq_endpoint(config) == "tcp://[::1]:12000"
-
-
-def test_make_controller_zmq_endpoint_keeps_hostname() -> None:
-    config = AppConfig(
-        endpoint=EndpointConfig(
-            browser_host="browser-host.local",
-            remote_port=12000,
-        ),
-    )
-
-    assert (
-        make_controller_zmq_endpoint(config)
-        == "tcp://browser-host.local:12000"
-    )
 
 
 def test_controller_runtime_connects_screenshot_and_cleans_up() -> None:

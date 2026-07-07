@@ -6,10 +6,9 @@ import zmq.asyncio
 from majsoulrpa.browser import BrowserCommand, BrowserResponse
 from majsoulrpa.browser.runner import (
     _make_zmq_request_server_factory,
-    make_zmq_endpoint,
     run_browser_host,
 )
-from majsoulrpa.config import AppConfig, EndpointConfig
+from majsoulrpa.config import AppConfig
 
 
 class BackendSpy:
@@ -85,28 +84,6 @@ class ExecutorSpy:
         _ = command
         msg = "not used"
         raise AssertionError(msg)
-
-
-def test_make_zmq_endpoint_uses_client_host_and_remote_port() -> None:
-    config = AppConfig(
-        endpoint=EndpointConfig(
-            client_host="192.0.2.20",
-            remote_port=12000,
-        ),
-    )
-
-    assert make_zmq_endpoint(config) == "tcp://192.0.2.20:12000"
-
-
-def test_make_zmq_endpoint_brackets_ipv6_literal() -> None:
-    config = AppConfig(
-        endpoint=EndpointConfig(
-            client_host="::1",
-            remote_port=12000,
-        ),
-    )
-
-    assert make_zmq_endpoint(config) == "tcp://[::1]:12000"
 
 
 def test_run_browser_host_binds_and_serves_request_server() -> None:

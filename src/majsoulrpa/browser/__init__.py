@@ -20,7 +20,7 @@ from majsoulrpa.browser.messages import (
     parse_browser_command_json,
     parse_browser_response_json,
 )
-from majsoulrpa.browser.runner import make_zmq_endpoint, run_browser_host
+from majsoulrpa.browser.runner import run_browser_host
 from majsoulrpa.browser.server import (
     BrowserCommandExecutor,
     BrowserRequestHandler,
@@ -71,7 +71,6 @@ __all__ = [
     "TextInputResponse",
     "dump_browser_command_json",
     "dump_browser_response_json",
-    "make_zmq_endpoint",
     "parse_browser_command_json",
     "parse_browser_response_json",
     "run_browser_host",

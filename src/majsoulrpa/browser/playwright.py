@@ -25,13 +25,12 @@ from majsoulrpa.browser.messages import (
 )
 from majsoulrpa.config import AppConfig
 from majsoulrpa.constants import (
-    BASE_VIEWPORT_HEIGHT,
-    BASE_VIEWPORT_WIDTH,
     CANVAS_SELECTOR,
     CANVAS_WAIT_TIMEOUT_SECONDS,
     MAJSOUL_URL,
     USER_AGENT_PROBE_URL,
 )
+from majsoulrpa.viewport import viewport_width_for_height
 
 
 class MouseLike(Protocol):
@@ -110,7 +109,9 @@ class PlaywrightBrowserBackend:
 
     async def start(self, config: AppConfig) -> None:
         self._playwright = await async_playwright().start()
-        viewport_width = _viewport_width(config.browser.viewport_height)
+        viewport_width = viewport_width_for_height(
+            config.browser.viewport_height,
+        )
         viewport = ViewportSize(
             width=viewport_width,
             height=config.browser.viewport_height,
@@ -231,10 +232,6 @@ class PlaywrightBrowserBackend:
                 stack.push_async_callback(browser.close)
             if context is not None:
                 stack.push_async_callback(context.close)
-
-
-def _viewport_width(height: int) -> int:
-    return round(height * BASE_VIEWPORT_WIDTH / BASE_VIEWPORT_HEIGHT)
 
 
 async def _get_spoofed_user_agent(playwright: Playwright) -> str:

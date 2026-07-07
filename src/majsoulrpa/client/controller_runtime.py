@@ -1,4 +1,3 @@
-import ipaddress
 from collections.abc import Callable, Mapping
 from contextlib import AsyncExitStack
 from typing import Any, Protocol, cast
@@ -12,8 +11,10 @@ from majsoulrpa.browser import (
 )
 from majsoulrpa.client.runtime import RPARuntime, ScreenshotScreenDetector
 from majsoulrpa.config import AppConfig
+from majsoulrpa.endpoint import make_browser_host_tcp_endpoint
 from majsoulrpa.screens import Screen, ScreenContext
 from majsoulrpa.types import Callback
+from majsoulrpa.viewport import viewport_width_for_height
 
 
 class ZmqSocketLike(Protocol):
@@ -31,11 +32,6 @@ class ZmqContextLike(Protocol):
 type ZmqContextFactory = Callable[[], ZmqContextLike]
 
 
-def make_controller_zmq_endpoint(config: AppConfig) -> str:
-    host = _format_zmq_host(config.endpoint.browser_host)
-    return f"tcp://{host}:{config.endpoint.remote_port}"
-
-
 class ControllerRuntimeFactory:
     def __init__(
         self,
@@ -51,14 +47,16 @@ class ControllerRuntimeFactory:
     ) -> RPARuntime:
         context = self._context_factory()
         socket = context.socket(zmq.REQ)
-        endpoint = make_controller_zmq_endpoint(config)
+        endpoint = make_browser_host_tcp_endpoint(config)
         socket.connect(endpoint)
 
         transport = BrowserZmqClientTransport(cast("Any", socket))
         controller = RemoteBrowserController(transport)
         screen_context = ScreenContext(
             browser=controller,
-            viewport_width=_viewport_width(config),
+            viewport_width=viewport_width_for_height(
+                config.browser.viewport_height,
+            ),
             viewport_height=config.browser.viewport_height,
         )
         detector = ScreenshotScreenDetector(
@@ -72,20 +70,6 @@ class ControllerRuntimeFactory:
                 stack.callback(socket.close, linger=0)
 
         return RPARuntime(callbacks, detector, cleanup=cleanup)
-
-
-def _format_zmq_host(host: str) -> str:
-    try:
-        address = ipaddress.ip_address(host)
-    except ValueError:
-        return host
-    if isinstance(address, ipaddress.IPv6Address):
-        return f"[{host}]"
-    return host
-
-
-def _viewport_width(config: AppConfig) -> int:
-    return round(config.browser.viewport_height * 16 / 9)
 
 
 def _make_zmq_context() -> ZmqContextLike:
