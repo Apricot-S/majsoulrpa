@@ -36,7 +36,6 @@
 - [x] request server 終了時に backend と server を cleanup する
 - [x] cleanup 中の Playwright driver disconnect は Ctrl+C を隠さない
 - [x] request loop 中の cancellation で cleanup する
-- [ ] sniffer backend の start に失敗した場合に browser を閉じる
 - [x] shutdown 中の副次的失敗を完全には捨てない
 - [x] Playwright backend が config から browser context と page を作る
 - [x] Playwright backend が雀魂ページへ遷移して canvas selector を 1 分上限で待機する
@@ -84,6 +83,37 @@
 - [x] browser controller は screenshot command の base64 response を PNG bytes として返す
 - [x] response は click、text input、error を別型にする
 
+## Phase 5.6: Controller runtime wiring
+
+目的: `RPAApp.run()` の既定経路から remote browser host に接続し、
+Screen 検出と Screen 操作で同じ controller を使えるようにする。
+
+タスク:
+
+- [ ] `AppConfig.endpoint` から controller 側の ZMQ endpoint を作る
+- [ ] controller 側で ZMQ context と REQ socket を作成する
+- [ ] `BrowserZmqClientTransport` と `RemoteBrowserController` を組み立てる
+- [ ] `ScreenContext` に controller、viewport、stop request を渡す
+- [ ] Screen 検出用 screenshot provider を controller の screenshot API につなぐ
+- [ ] runtime 正常終了時に socket / context を閉じる
+- [ ] callback 例外時に socket / context を閉じる
+- [ ] cancellation 時に socket / context を閉じる
+- [ ] remote browser error を成功扱いにしない
+- [ ] 自動テストでは実ブラウザ、実 ZMQ network、実雀魂にアクセスしない
+
+テスト:
+
+- [ ] 既定 `RPAApp.run()` が config の endpoint から controller runtime を作る
+- [ ] controller endpoint は IPv4 / hostname / IPv6 literal を正しく扱う
+- [ ] runtime が screenshot command を使って Screen 検出を行う
+- [ ] 検出された Screen に controller 入りの `ScreenContext` が注入される
+- [ ] Screen helper から呼ばれた click / text input が remote command になる
+- [ ] detection timeout で Screen 未検出の場合も transport を cleanup する
+- [ ] callback が例外を投げた場合も transport を cleanup する
+- [ ] callback 実行中の cancellation でも transport を cleanup する
+- [ ] remote error response は `BrowserOperationError` として伝播する
+- [ ] PNG screenshot decode が必要な場合は synthetic PNG のみでテストする
+
 ## Phase 6: Login API ひとつ目
 
 最初に実装する高レベル API は、実装直前に 1 つ選びます。
@@ -127,6 +157,7 @@
 
 ## Phase 7: WebSocket sniffer
 
+- [ ] sniffer backend の start に失敗した場合に browser を閉じる
 - [ ] fake sniffer backend が synthetic payload を発行できる
 - [ ] raw payload を hook に渡せる
 - [ ] raw payload をデバッグ用ログに出せる

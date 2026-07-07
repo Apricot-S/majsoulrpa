@@ -152,6 +152,36 @@
 - 実メール本文や認証コードをログに出さない
 - AWS S3 連携は別 Phase として扱う
 
+## Phase 5.6: Controller runtime wiring
+
+目的: browser host が完成した前提で、`RPAApp.run()` の既定経路から
+remote browser host へ接続し、Screen 検出と Screen 操作に同じ
+controller を渡す。
+
+作業:
+
+- `AppConfig.endpoint` から controller 側の接続先 endpoint を作る
+- controller 側で ZeroMQ REQ socket を作成する
+- `BrowserZmqClientTransport` と `RemoteBrowserController` を組み立てる
+- `ScreenContext` に controller、viewport、stop request を渡す
+- Screen 検出用 screenshot provider を controller の screenshot API へ接続する
+- runtime 終了時、callback 例外時、cancellation 時に transport を cleanup する
+
+テスト:
+
+- 既定 `RPAApp.run()` が実 network なしで controller runtime を組み立てる
+- IPv4、hostname、IPv6 literal の endpoint 文字列を確認する
+- screenshot command が Screen 検出に使われる
+- 検出 Screen に controller 入りの `ScreenContext` が注入される
+- Screen helper から click / text input command が送られる
+- timeout、callback 例外、cancellation で cleanup される
+- remote error response が成功扱いにならない
+
+注意:
+
+- この Phase でも自動テストから実ブラウザ、実雀魂、実 network へはアクセスしない
+- controller は低レベル操作 API に留め、`fill_region` などの画面 API は Screen 側に置く
+
 ## Phase 6: Home / room / tournament API
 
 目的: 合意済み友人戦・大会に必要な画面操作を、1 API ずつ追加する。
