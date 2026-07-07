@@ -13,6 +13,10 @@ from majsoulrpa.types import Callback
 
 
 class LoginScreen(Screen):
+    @override
+    async def before_callback(self) -> None:
+        pass
+
     @classmethod
     @override
     def detection_spec(cls) -> ScreenDetectionSpec:
@@ -20,6 +24,10 @@ class LoginScreen(Screen):
 
 
 class HomeScreen(Screen):
+    @override
+    async def before_callback(self) -> None:
+        pass
+
     @classmethod
     @override
     def detection_spec(cls) -> ScreenDetectionSpec:
@@ -27,6 +35,10 @@ class HomeScreen(Screen):
 
 
 class UnknownScreen(Screen):
+    @override
+    async def before_callback(self) -> None:
+        pass
+
     @classmethod
     @override
     def detection_spec(cls) -> ScreenDetectionSpec:
