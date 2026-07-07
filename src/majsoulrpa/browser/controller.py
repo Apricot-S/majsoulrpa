@@ -7,6 +7,8 @@ from majsoulrpa.browser.messages import (
     BrowserResponse,
     ClickCommand,
     ClickResponse,
+    PressKeyCommand,
+    PressKeyResponse,
     ScreenshotCommand,
     ScreenshotResponse,
     TextInputCommand,
@@ -68,6 +70,9 @@ class RemoteBrowserController:
             ),
         )
 
+    async def press_key(self, key: str) -> PressKeyResponse:
+        return await self._request_press_key(PressKeyCommand(key=key))
+
     async def screenshot(self) -> bytes:
         response = await self._request_screenshot(ScreenshotCommand())
         try:
@@ -90,6 +95,16 @@ class RemoteBrowserController:
         await self._transport.send_command(command)
         response = await self._transport.recv_response()
         if isinstance(response, TextInputResponse):
+            return response
+        raise self._response_error(response)
+
+    async def _request_press_key(
+        self,
+        command: PressKeyCommand,
+    ) -> PressKeyResponse:
+        await self._transport.send_command(command)
+        response = await self._transport.recv_response()
+        if isinstance(response, PressKeyResponse):
             return response
         raise self._response_error(response)
 

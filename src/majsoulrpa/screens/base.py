@@ -14,6 +14,7 @@ FILL_REGION_CLICK_TO_INPUT_DELAY_SECONDS = 0.5
 class BrowserController(Protocol):
     async def click(self, x: float, y: float) -> object: ...
     async def input_text(self, text: str) -> object: ...
+    async def press_key(self, key: str) -> object: ...
     async def screenshot(self) -> bytes: ...
 
 
@@ -97,9 +98,18 @@ class Screen(ABC):
         x, y = scaled_region.random_point(rng=self.context.rng)
         await self.context.browser.click(x, y)
 
-    async def fill_region(self, region: Region, value: str) -> None:
+    async def fill_region(
+        self,
+        region: Region,
+        value: str,
+        *,
+        clear: bool = False,
+    ) -> None:
         await self.click_region(region)
         await asyncio.sleep(FILL_REGION_CLICK_TO_INPUT_DELAY_SECONDS)
+        if clear:
+            await self.context.browser.press_key("ControlOrMeta+A")
+            await self.context.browser.press_key("Backspace")
         await self.context.browser.input_text(value)
 
     async def matches(self, template: TemplateMatcher) -> bool:

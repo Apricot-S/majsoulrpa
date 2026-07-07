@@ -33,6 +33,7 @@ class BrowserControllerSpy:
     def __init__(self) -> None:
         self.clicked_points: list[tuple[float, float]] = []
         self.input_texts: list[str] = []
+        self.pressed_keys: list[str] = []
         self.events: list[str] = []
         self.screenshot_bytes = b"\x89PNG\r\n\x1a\n"
 
@@ -43,6 +44,10 @@ class BrowserControllerSpy:
     async def input_text(self, text: str) -> None:
         self.input_texts.append(text)
         self.events.append("input_text")
+
+    async def press_key(self, key: str) -> None:
+        self.pressed_keys.append(key)
+        self.events.append(f"press_key:{key}")
 
     async def screenshot(self) -> bytes:
         self.events.append("screenshot")
@@ -322,6 +327,44 @@ def test_screen_fills_scaled_region(monkeypatch: pytest.MonkeyPatch) -> None:
     assert 100 < y < 102
     assert sleeps == [0.5]
     assert browser.events == ["click", "sleep", "input_text"]
+    assert browser.input_texts == ["player@example.invalid"]
+
+
+def test_screen_can_clear_region_before_filling(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    browser = BrowserControllerSpy()
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+        browser.events.append("sleep")
+
+    screen = LoginScreen(
+        context=ScreenContext(
+            browser=browser,
+            rng=Random(0),
+        ),
+    )
+
+    monkeypatch.setattr(screens_base.asyncio, "sleep", sleep)
+
+    asyncio.run(
+        screen.fill_region(
+            Region(left=0, top=0, width=10, height=10),
+            "player@example.invalid",
+            clear=True,
+        ),
+    )
+
+    assert browser.pressed_keys == ["Control+A", "Backspace"]
+    assert browser.events == [
+        "click",
+        "sleep",
+        "press_key:Control+A",
+        "press_key:Backspace",
+        "input_text",
+    ]
     assert browser.input_texts == ["player@example.invalid"]
 
 

@@ -10,6 +10,8 @@ from majsoulrpa.browser.messages import (
     BrowserResponse,
     ClickCommand,
     ClickResponse,
+    PressKeyCommand,
+    PressKeyResponse,
     ScreenshotCommand,
     ScreenshotResponse,
     TextInputCommand,
@@ -43,6 +45,13 @@ class InputScreen(MatchingScreen):
         await self.fill_region(
             Region(left=0, top=0, width=100, height=100),
             "value",
+        )
+
+    async def replace_value(self) -> None:
+        await self.fill_region(
+            Region(left=0, top=0, width=100, height=100),
+            "value",
+            clear=True,
         )
 
 
@@ -184,6 +193,40 @@ def test_controller_runtime_screen_helper_sends_click_and_text_input() -> None:
     assert context.terminated
 
 
+def test_controller_runtime_can_clear_before_text_input() -> None:
+    context = ZmqContextSpy(
+        ScreenshotResponse(
+            screenshot_base64=base64.b64encode(SYNTHETIC_PNG).decode("ascii"),
+        ),
+        ClickResponse(x=50, y=50),
+        PressKeyResponse(key="Control+A"),
+        PressKeyResponse(key="Backspace"),
+        TextInputResponse(text="value"),
+    )
+    factory = ControllerRuntimeFactory(context_factory=lambda: context)
+    config = AppConfig()
+    runtime = factory(
+        {
+            InputScreen: _replace_value_and_stop,
+        },
+        config,
+    )
+
+    with pytest.raises(RuntimeError, match="stop"):
+        asyncio.run(runtime.run(config, None, detection_timeout=0.001))
+
+    commands = [
+        parse_browser_command_json(payload)
+        for payload in context.socket_spy.sent_payloads
+    ]
+    assert isinstance(commands[0], ScreenshotCommand)
+    assert isinstance(commands[1], ClickCommand)
+    assert commands[2] == PressKeyCommand(key="Control+A")
+    assert commands[3] == PressKeyCommand(key="Backspace")
+    assert isinstance(commands[4], TextInputCommand)
+    assert commands[4].text == "value"
+
+
 def test_controller_runtime_cleans_up_when_callback_is_cancelled() -> None:
     context = ZmqContextSpy(
         ScreenshotResponse(
@@ -256,6 +299,15 @@ async def _enter_value_and_stop(
     _data: object,
 ) -> object:
     await screen.enter_value()
+    msg = "stop"
+    raise RuntimeError(msg)
+
+
+async def _replace_value_and_stop(
+    screen: InputScreen,
+    _data: object,
+) -> object:
+    await screen.replace_value()
     msg = "stop"
     raise RuntimeError(msg)
 

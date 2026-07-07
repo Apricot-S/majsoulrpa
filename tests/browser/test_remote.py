@@ -12,6 +12,8 @@ from majsoulrpa.browser.messages import (
     BrowserErrorResponse,
     ClickCommand,
     ClickResponse,
+    PressKeyCommand,
+    PressKeyResponse,
     ScreenshotCommand,
     ScreenshotResponse,
     TextInputCommand,
@@ -24,6 +26,7 @@ class BrowserClientTransportSpy:
         self,
         *responses: (
             ClickResponse
+            | PressKeyResponse
             | TextInputResponse
             | ScreenshotResponse
             | BrowserErrorResponse
@@ -39,6 +42,7 @@ class BrowserClientTransportSpy:
         self,
     ) -> (
         ClickResponse
+        | PressKeyResponse
         | TextInputResponse
         | ScreenshotResponse
         | BrowserErrorResponse
@@ -70,6 +74,18 @@ def test_remote_browser_controller_sends_click_and_text_input() -> None:
         character_delay_seconds=text_command.character_delay_seconds,
     )
     assert text_command.character_delay_seconds > 0
+
+
+def test_remote_browser_controller_sends_press_key() -> None:
+    transport = BrowserClientTransportSpy(
+        PressKeyResponse(key="Control+A"),
+    )
+    controller = RemoteBrowserController(transport)
+
+    response = asyncio.run(controller.press_key("Control+A"))
+
+    assert response == PressKeyResponse(key="Control+A")
+    assert transport.sent_commands == [PressKeyCommand(key="Control+A")]
 
 
 def test_remote_browser_controller_raises_response_error() -> None:
@@ -131,15 +147,20 @@ def test_browser_command_schema_rejects_invalid_delay() -> None:
             character_delay_seconds=0,
         )
 
+    with pytest.raises(ValueError, match="at least 1 character"):
+        PressKeyCommand(key="")
+
 
 def test_browser_response_error_is_distinct_from_success_responses() -> None:
     click = ClickResponse(x=10, y=20)
     text_input = TextInputResponse(text="player@example.invalid")
+    press_key = PressKeyResponse(key="Control+A")
     screenshot = ScreenshotResponse(screenshot_base64="c2NyZWVu")
     error = BrowserErrorResponse(message="remote failed")
 
     assert click.type == "click"
     assert text_input.type == "text_input"
+    assert press_key.type == "press_key"
     assert screenshot.type == "screenshot"
     assert screenshot.screenshot_base64 == "c2NyZWVu"
     assert error.type == "error"

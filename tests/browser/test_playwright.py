@@ -10,6 +10,8 @@ from majsoulrpa.browser.messages import (
     BrowserErrorResponse,
     ClickCommand,
     ClickResponse,
+    PressKeyCommand,
+    PressKeyResponse,
     ScreenshotCommand,
     ScreenshotResponse,
     TextInputCommand,
@@ -39,9 +41,13 @@ class MouseSpy:
 class KeyboardSpy:
     def __init__(self) -> None:
         self.typed: list[tuple[str, float]] = []
+        self.pressed: list[str] = []
 
     async def type(self, text: str, *, delay: float) -> None:
         self.typed.append((text, delay))
+
+    async def press(self, key: str) -> None:
+        self.pressed.append(key)
 
 
 class PageSpy:
@@ -110,6 +116,18 @@ def test_playwright_command_executor_types_with_millisecond_delay() -> None:
 
     assert response == TextInputResponse(text="player@example.invalid")
     assert page.keyboard_spy.typed == [("player@example.invalid", 50)]
+
+
+def test_playwright_command_executor_presses_key() -> None:
+    page = PageSpy()
+    executor = PlaywrightCommandExecutor(page)
+
+    response = asyncio.run(
+        executor.execute(PressKeyCommand(key="Control+A")),
+    )
+
+    assert response == PressKeyResponse(key="Control+A")
+    assert page.keyboard_spy.pressed == ["Control+A"]
 
 
 def test_playwright_command_executor_returns_base64_screenshot() -> None:

@@ -26,6 +26,9 @@ class BrowserControllerSpy:
     async def input_text(self, text: str) -> None:
         self.input_texts.append(text)
 
+    async def press_key(self, key: str) -> None:
+        _ = key
+
     async def screenshot(self) -> bytes:
         return self.screenshot_bytes
 

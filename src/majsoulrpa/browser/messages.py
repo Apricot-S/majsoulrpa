@@ -3,6 +3,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
 PositiveDelay = Annotated[float, Field(gt=0)]
+NonEmptyKey = Annotated[str, Field(min_length=1)]
 
 
 class ClickCommand(BaseModel):
@@ -22,6 +23,13 @@ class TextInputCommand(BaseModel):
     character_delay_seconds: PositiveDelay
 
 
+class PressKeyCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["press_key"] = "press_key"
+    key: NonEmptyKey
+
+
 class ScreenshotCommand(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -29,7 +37,7 @@ class ScreenshotCommand(BaseModel):
 
 
 BrowserCommand = Annotated[
-    ClickCommand | TextInputCommand | ScreenshotCommand,
+    ClickCommand | TextInputCommand | PressKeyCommand | ScreenshotCommand,
     Field(discriminator="type"),
 ]
 
@@ -49,6 +57,13 @@ class TextInputResponse(BaseModel):
     text: str
 
 
+class PressKeyResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["press_key"] = "press_key"
+    key: str
+
+
 class ScreenshotResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -66,6 +81,7 @@ class BrowserErrorResponse(BaseModel):
 BrowserResponse = Annotated[
     ClickResponse
     | TextInputResponse
+    | PressKeyResponse
     | ScreenshotResponse
     | BrowserErrorResponse,
     Field(discriminator="type"),

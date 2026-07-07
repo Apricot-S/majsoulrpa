@@ -18,6 +18,8 @@ from majsoulrpa.browser.messages import (
     BrowserResponse,
     ClickCommand,
     ClickResponse,
+    PressKeyCommand,
+    PressKeyResponse,
     ScreenshotCommand,
     ScreenshotResponse,
     TextInputCommand,
@@ -38,6 +40,7 @@ class MouseLike(Protocol):
 
 
 class KeyboardLike(Protocol):
+    async def press(self, key: str) -> None: ...
     async def type(self, text: str, *, delay: float) -> None: ...
 
 
@@ -66,6 +69,8 @@ class PlaywrightCommandExecutor:
                     return await self._click(command)
                 case TextInputCommand():
                     return await self._input_text(command)
+                case PressKeyCommand():
+                    return await self._press_key(command)
                 case ScreenshotCommand():
                     return await self._screenshot()
         except Exception as error:  # noqa: BLE001
@@ -88,6 +93,13 @@ class PlaywrightCommandExecutor:
             delay=command.character_delay_seconds * 1000,
         )
         return TextInputResponse(text=command.text)
+
+    async def _press_key(
+        self,
+        command: PressKeyCommand,
+    ) -> PressKeyResponse:
+        await self._page.keyboard.press(command.key)
+        return PressKeyResponse(key=command.key)
 
     async def _screenshot(self) -> ScreenshotResponse:
         screenshot = await self._page.screenshot(type="png")
