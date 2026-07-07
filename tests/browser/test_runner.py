@@ -47,6 +47,13 @@ class FailingRequestServer(RequestServerSpy):
         raise RuntimeError(msg)
 
 
+class StopFailingRequestServer(RequestServerSpy):
+    async def stop(self) -> None:
+        self.stopped = True
+        msg = "request server stop failed"
+        raise CleanupError(msg)
+
+
 class InterruptingRequestServer(RequestServerSpy):
     async def serve_forever(self) -> None:
         raise KeyboardInterrupt
@@ -164,11 +171,11 @@ def test_run_browser_host_cleans_up_when_serve_fails() -> None:
     assert backend.stopped
 
 
-def test_run_browser_host_keeps_interrupt_on_playwright_disconnect() -> None:
+def test_run_browser_host_reports_disconnect_on_interrupt_cleanup() -> None:
     backend = PlaywrightCloseFailingBackend()
     server = InterruptingRequestServer()
 
-    with pytest.raises(KeyboardInterrupt):
+    with pytest.raises(CleanupError, match="Connection closed"):
         asyncio.run(
             run_browser_host(
                 AppConfig(),
@@ -182,11 +189,47 @@ def test_run_browser_host_keeps_interrupt_on_playwright_disconnect() -> None:
     assert backend.stopped
 
 
-def test_run_browser_host_reports_unexpected_cleanup_failure() -> None:
+def test_run_browser_host_reports_cleanup_failure_during_interrupt() -> None:
     backend = UnexpectedCloseFailingBackend()
     server = InterruptingRequestServer()
 
     with pytest.raises(CleanupError, match="unexpected close failure"):
+        asyncio.run(
+            run_browser_host(
+                AppConfig(),
+                backend=backend,
+                command_executor_factory=ExecutorSpy,
+                request_server_factory=lambda _executor: server,
+            ),
+        )
+
+    assert server.stopped
+    assert backend.stopped
+
+
+def test_run_browser_host_keeps_disconnect_without_interrupt() -> None:
+    backend = PlaywrightCloseFailingBackend()
+    server = RequestServerSpy()
+
+    with pytest.raises(CleanupError, match="Connection closed"):
+        asyncio.run(
+            run_browser_host(
+                AppConfig(),
+                backend=backend,
+                command_executor_factory=ExecutorSpy,
+                request_server_factory=lambda _executor: server,
+            ),
+        )
+
+    assert server.stopped
+    assert backend.stopped
+
+
+def test_run_browser_host_stops_backend_after_server_stop_failure() -> None:
+    backend = BackendSpy()
+    server = StopFailingRequestServer()
+
+    with pytest.raises(CleanupError, match="request server stop failed"):
         asyncio.run(
             run_browser_host(
                 AppConfig(),

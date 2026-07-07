@@ -1,8 +1,7 @@
-import asyncio
 import importlib
 import ipaddress
-import sys
 from collections.abc import Callable
+from contextlib import AsyncExitStack
 from typing import Any, Protocol, cast
 
 import zmq.asyncio
@@ -61,31 +60,23 @@ async def run_browser_host(
     else:
         server_factory = request_server_factory
 
-    request_server: BrowserRequestServer | None = None
-    try:
+    async with AsyncExitStack() as stack:
         await backend.start(config)
+        stack.push_async_callback(backend.stop)
+
+        if zmq_context is not None:
+            stack.callback(zmq_context.term)
+
         page = getattr(backend, "page", None)
         if page is None:
             msg = "browser backend did not create a page."
             raise RuntimeError(msg)
+
         command_executor = executor_factory(page)
         request_server = server_factory(command_executor)
         await request_server.bind()
+        stack.push_async_callback(request_server.stop)
         await request_server.serve_forever()
-    finally:
-        if request_server is not None:
-            await request_server.stop()
-        if zmq_context is not None:
-            zmq_context.term()
-        active_exception = sys.exception()
-        try:
-            await backend.stop()
-        except Exception as cleanup_error:
-            if not _should_suppress_cleanup_error(
-                active_exception,
-                cleanup_error,
-            ):
-                raise
 
 
 def _make_playwright_command_executor(page: object) -> BrowserCommandExecutor:
@@ -109,19 +100,3 @@ def _make_zmq_request_server_factory(
         )
 
     return request_server_factory
-
-
-def _should_suppress_cleanup_error(
-    active_exception: BaseException | None,
-    cleanup_error: Exception,
-) -> bool:
-    if not isinstance(
-        active_exception,
-        KeyboardInterrupt | asyncio.CancelledError,
-    ):
-        return False
-    return _is_playwright_driver_disconnected_error(cleanup_error)
-
-
-def _is_playwright_driver_disconnected_error(error: Exception) -> bool:
-    return "Connection closed while reading from the driver" in str(error)
