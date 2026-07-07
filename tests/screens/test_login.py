@@ -8,10 +8,12 @@ import pytest
 from majsoulrpa.assets.templates.login import (
     LOGIN_1_SETTINGS_PATH,
     LOGIN_1_TEMPLATE_PATH,
+    YOSTAR_LOGO_SETTINGS_PATH,
+    YOSTAR_LOGO_TEMPLATE_PATH,
 )
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
-from majsoulrpa.screens.login import LoginScreen
+from majsoulrpa.screens.login import YOSTAR_LOGO_TEMPLATE, LoginScreen
 
 
 class BrowserControllerSpy:
@@ -60,6 +62,28 @@ def test_login_button_template_assets_exist() -> None:
     assert LOGIN_1_TEMPLATE_PATH.is_file()
     assert LOGIN_1_SETTINGS_PATH.name == "login-1.toml"
     assert LOGIN_1_SETTINGS_PATH.is_file()
+
+
+def test_yostar_logo_template_assets_exist() -> None:
+    assert YOSTAR_LOGO_TEMPLATE_PATH.name == "yostar-logo.png"
+    assert YOSTAR_LOGO_TEMPLATE_PATH.is_file()
+    assert YOSTAR_LOGO_SETTINGS_PATH.name == "yostar-logo.toml"
+    assert YOSTAR_LOGO_SETTINGS_PATH.is_file()
+
+
+def test_yostar_logo_template_matches_synthetic_screenshot() -> None:
+    encoded = np.frombuffer(
+        YOSTAR_LOGO_TEMPLATE_PATH.read_bytes(),
+        dtype=np.uint8,
+    )
+    template = cv2.imdecode(encoded, cv2.IMREAD_GRAYSCALE)
+    assert template is not None
+    screenshot = np.zeros((1080, 1920), dtype=np.uint8)
+    screenshot[347:397, 865:1055] = template
+    success, screenshot_png = cv2.imencode(".png", screenshot)
+    assert success
+
+    assert YOSTAR_LOGO_TEMPLATE.matches(screenshot_png.tobytes())
 
 
 def test_login_button_template_matches_synthetic_screenshot() -> None:

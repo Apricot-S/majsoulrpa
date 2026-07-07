@@ -3,6 +3,8 @@ from typing import override
 from majsoulrpa.assets.templates.login import (
     LOGIN_1_SETTINGS_PATH,
     LOGIN_1_TEMPLATE_PATH,
+    YOSTAR_LOGO_SETTINGS_PATH,
+    YOSTAR_LOGO_TEMPLATE_PATH,
 )
 from majsoulrpa.presentation.region import Region
 from majsoulrpa.presentation.template import load_png_template_matcher
@@ -11,6 +13,10 @@ from majsoulrpa.screens.base import Screen, ScreenDetectionSpec
 LOGIN_1_TEMPLATE = load_png_template_matcher(
     template_path=LOGIN_1_TEMPLATE_PATH,
     settings_path=LOGIN_1_SETTINGS_PATH,
+)
+YOSTAR_LOGO_TEMPLATE = load_png_template_matcher(
+    template_path=YOSTAR_LOGO_TEMPLATE_PATH,
+    settings_path=YOSTAR_LOGO_SETTINGS_PATH,
 )
 
 
