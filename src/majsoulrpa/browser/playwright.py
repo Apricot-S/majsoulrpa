@@ -1,4 +1,5 @@
 import base64
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Protocol
 
@@ -223,12 +224,29 @@ class PlaywrightBrowserBackend:
         self._browser = None
         self._playwright = None
 
+        cleanup_errors: list[BaseException] = []
         if context is not None:
-            await context.close()
+            await _try_cleanup(context.close, cleanup_errors)
         if browser is not None:
-            await browser.close()
+            await _try_cleanup(browser.close, cleanup_errors)
         if playwright is not None:
-            await playwright.stop()
+            await _try_cleanup(playwright.stop, cleanup_errors)
+
+        if len(cleanup_errors) == 1:
+            raise cleanup_errors[0]
+        if cleanup_errors:
+            msg = "Playwright browser backend cleanup failed."
+            raise BaseExceptionGroup(msg, cleanup_errors)
+
+
+async def _try_cleanup(
+    cleanup: Callable[[], Awaitable[None]],
+    errors: list[BaseException],
+) -> None:
+    try:
+        await cleanup()
+    except BaseException as error:  # noqa: BLE001
+        errors.append(error)
 
 
 def _viewport_width(height: int) -> int:

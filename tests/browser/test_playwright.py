@@ -195,6 +195,7 @@ class FakeBrowser:
         self.context = FakeContext()
         self.new_context_kwargs: dict[str, object] | None = None
         self.closed = 0
+        self.close_error: BaseException | None = None
 
     async def new_context(self, **kwargs: object) -> FakeContext:
         self.new_context_kwargs = kwargs
@@ -202,6 +203,8 @@ class FakeBrowser:
 
     async def close(self) -> None:
         self.closed += 1
+        if self.close_error is not None:
+            raise self.close_error
 
     async def __aenter__(self) -> Self:
         return self
@@ -353,4 +356,50 @@ def test_playwright_browser_backend_starts_persistent_context(
 
     assert playwright.chromium.persistent_context.closed == 1
     assert playwright.chromium.browser.closed == 0
+    assert playwright.stopped == 1
+
+
+def test_playwright_browser_backend_stops_playwright_when_browser_close_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    playwright = FakePlaywright()
+    starter = FakePlaywrightStarter(playwright)
+    monkeypatch.setattr(
+        browser_playwright,
+        "async_playwright",
+        lambda: starter,
+    )
+    backend = PlaywrightBrowserBackend()
+    asyncio.run(backend.start(AppConfig()))
+    [browser] = playwright.chromium.launched_browsers
+    browser.close_error = RuntimeError("browser close failed")
+
+    with pytest.raises(RuntimeError, match="browser close failed"):
+        asyncio.run(backend.stop())
+
+    assert browser.context.closed == 1
+    assert browser.closed == 1
+    assert playwright.stopped == 1
+
+
+def test_playwright_browser_backend_keeps_cleaning_up_after_base_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    playwright = FakePlaywright()
+    starter = FakePlaywrightStarter(playwright)
+    monkeypatch.setattr(
+        browser_playwright,
+        "async_playwright",
+        lambda: starter,
+    )
+    backend = PlaywrightBrowserBackend()
+    asyncio.run(backend.start(AppConfig()))
+    [browser] = playwright.chromium.launched_browsers
+    browser.close_error = KeyboardInterrupt()
+
+    with pytest.raises(KeyboardInterrupt):
+        asyncio.run(backend.stop())
+
+    assert browser.context.closed == 1
+    assert browser.closed == 1
     assert playwright.stopped == 1
