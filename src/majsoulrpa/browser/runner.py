@@ -23,7 +23,7 @@ class BrowserBackend(Protocol):
 
 
 def make_zmq_endpoint(config: AppConfig) -> str:
-    host = _format_zmq_host(config.endpoint.browser_host)
+    host = _format_zmq_host(config.endpoint.client_host)
     return f"tcp://{host}:{config.endpoint.remote_port}"
 
 

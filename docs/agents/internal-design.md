@@ -89,6 +89,9 @@ Presentation 検出は、画面状態を「できるだけ決定的に」扱い�
   schema を JSON bytes として送受信する
 - ZeroMQ request server は REP socket を bind し、`BrowserZmqServerTransport` を
   request handler に渡す
+- endpoint host 名は自分自身ではなく接続先を表す。browser host 側は
+  client からの接続を受けるため `client_host` に bind し、controller / client
+  側は `browser_host` に connect する
 - `ScreenContext`: 現在の Screen 実行に必要な browser controller、viewport、stop request
   を束ねる
 - `Screen`: `fill_region` など、継承先の画面 API が使う共通 helper を持つ

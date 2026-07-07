@@ -160,7 +160,8 @@ controller を渡す。
 
 作業:
 
-- `AppConfig.endpoint` から controller 側の接続先 endpoint を作る
+- controller 側は `AppConfig.endpoint.browser_host` から接続先 endpoint を作る
+- browser host 側は `AppConfig.endpoint.client_host` に bind する
 - controller 側で ZeroMQ REQ socket を作成する
 - `BrowserZmqClientTransport` と `RemoteBrowserController` を組み立てる
 - `ScreenContext` に controller、viewport、stop request を渡す
@@ -170,7 +171,8 @@ controller を渡す。
 テスト:
 
 - 既定 `RPAApp.run()` が実 network なしで controller runtime を組み立てる
-- IPv4、hostname、IPv6 literal の endpoint 文字列を確認する
+- controller 側の `browser_host` と browser host 側の `client_host` で、
+  IPv4、hostname、IPv6 literal の endpoint 文字列を確認する
 - screenshot command が Screen 検出に使われる
 - 検出 Screen に controller 入りの `ScreenContext` が注入される
 - Screen helper から click / text input command が送られる

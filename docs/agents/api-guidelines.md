@@ -111,6 +111,11 @@ Presentation に含めないもの:
 - browser host と client を分離できる形にする
 - 一体構成も簡単に書ける形にする
 
+endpoint の host 名は、自分自身ではなく接続先を表します。
+`browser_host` は controller / client 側から見た browser host の接続先です。
+`client_host` は browser host 側から見た client 接続用 endpoint です。
+そのため `majsoulrpa-browser` 側の CLI option は `--client-host` とします。
+
 ## エラー設計
 
 エラーは原因が分かる形で表します。

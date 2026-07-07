@@ -19,9 +19,10 @@ def test_app_config_defaults_to_local_combined_runtime() -> None:
     assert config.browser.user_data_dir is None
 
 
-def test_endpoint_host_must_not_be_empty() -> None:
-    with pytest.raises(ValidationError, match="browser_host"):
-        EndpointConfig(browser_host="")
+@pytest.mark.parametrize("host_key", ["browser_host", "client_host"])
+def test_endpoint_host_must_not_be_empty(host_key: str) -> None:
+    with pytest.raises(ValidationError, match=host_key):
+        EndpointConfig.model_validate({host_key: ""})
 
 
 @pytest.mark.parametrize("port", [1023, 49152])

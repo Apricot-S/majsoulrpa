@@ -19,6 +19,7 @@ def test_browser_cli_accepts_config_file_and_overrides(tmp_path: Path) -> None:
         """
 [endpoint]
 browser_host = "192.0.2.10"
+client_host = "192.0.2.20"
 remote_port = 12000
 
 [browser]
@@ -36,7 +37,7 @@ headless = true
         [
             "--config",
             str(config_path),
-            "--browser-host",
+            "--client-host",
             "127.0.0.1",
             "--remote-port",
             "13000",
@@ -55,7 +56,8 @@ headless = true
 
     assert result == 0
     config = called_configs[0]
-    assert config.endpoint.browser_host == "127.0.0.1"
+    assert config.endpoint.browser_host == "192.0.2.10"
+    assert config.endpoint.client_host == "127.0.0.1"
     assert config.endpoint.remote_port == 13000
     assert config.browser.viewport_height == 1080
     assert config.browser.headless is False

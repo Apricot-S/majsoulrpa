@@ -87,21 +87,21 @@ class ExecutorSpy:
         raise AssertionError(msg)
 
 
-def test_make_zmq_endpoint_uses_browser_host_and_remote_port() -> None:
+def test_make_zmq_endpoint_uses_client_host_and_remote_port() -> None:
     config = AppConfig(
         endpoint=EndpointConfig(
-            browser_host="192.0.2.10",
+            client_host="192.0.2.20",
             remote_port=12000,
         ),
     )
 
-    assert make_zmq_endpoint(config) == "tcp://192.0.2.10:12000"
+    assert make_zmq_endpoint(config) == "tcp://192.0.2.20:12000"
 
 
 def test_make_zmq_endpoint_brackets_ipv6_literal() -> None:
     config = AppConfig(
         endpoint=EndpointConfig(
-            browser_host="::1",
+            client_host="::1",
             remote_port=12000,
         ),
     )

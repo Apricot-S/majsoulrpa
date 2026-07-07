@@ -103,7 +103,7 @@ browser host は CLI と Python API の両方を用意します。
 CLI 候補:
 
 ```sh
-majsoulrpa-browser --viewport-height 1080 --user-data-dir ./user-data
+majsoulrpa-browser --client-host 127.0.0.1 --viewport-height 1080 --user-data-dir ./user-data
 ```
 
 Python API 候補:
@@ -116,6 +116,10 @@ await run_browser_host(config)
 
 `run_browser_host()` は、起動に失敗した場合に例外を投げます。起動済みのように
 見せる fallback は置きません。
+
+`browser_host` と `client_host` はどちらも「自分」ではなく接続先を表します。
+browser host を起動する CLI では、client からの接続先として `--client-host` を
+指定します。controller / client 側は `browser_host` へ接続します。
 
 ## Presentation / Screen
 

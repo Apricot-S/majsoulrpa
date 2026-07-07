@@ -90,7 +90,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 タスク:
 
-- [ ] `AppConfig.endpoint` から controller 側の ZMQ endpoint を作る
+- [ ] controller 側は `AppConfig.endpoint.browser_host` から ZMQ endpoint を作る
+- [ ] browser host 側は `AppConfig.endpoint.client_host` に bind する
 - [ ] controller 側で ZMQ context と REQ socket を作成する
 - [ ] `BrowserZmqClientTransport` と `RemoteBrowserController` を組み立てる
 - [ ] `ScreenContext` に controller、viewport、stop request を渡す
@@ -103,7 +104,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 テスト:
 
-- [ ] 既定 `RPAApp.run()` が config の endpoint から controller runtime を作る
+- [ ] 既定 `RPAApp.run()` が `browser_host` から controller runtime を作る
 - [ ] controller endpoint は IPv4 / hostname / IPv6 literal を正しく扱う
 - [ ] runtime が screenshot command を使って Screen 検出を行う
 - [ ] 検出された Screen に controller 入りの `ScreenContext` が注入される

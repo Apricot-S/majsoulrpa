@@ -30,7 +30,7 @@ def main(
         type=Path,
         help="Path to TOML config file.",
     )
-    parser.add_argument("--browser-host")
+    parser.add_argument("--client-host")
     parser.add_argument("--remote-port", type=int)
     parser.add_argument("--viewport-height", type=int)
     parser.add_argument(
@@ -58,8 +58,8 @@ def main(
 
 def _apply_overrides(config: AppConfig, args: argparse.Namespace) -> AppConfig:
     endpoint_updates = {}
-    if args.browser_host is not None:
-        endpoint_updates["browser_host"] = args.browser_host
+    if args.client_host is not None:
+        endpoint_updates["client_host"] = args.client_host
     if args.remote_port is not None:
         endpoint_updates["remote_port"] = args.remote_port
 
