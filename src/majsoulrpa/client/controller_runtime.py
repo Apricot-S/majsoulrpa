@@ -36,7 +36,7 @@ class ControllerRuntimeFactory:
         *,
         context_factory: ZmqContextFactory | None = None,
     ) -> None:
-        self._context_factory = context_factory or _make_zmq_context
+        self._context_factory = context_factory or zmq.asyncio.Context
 
     def __call__(
         self,
@@ -68,7 +68,3 @@ class ControllerRuntimeFactory:
                 stack.callback(socket.close, linger=0)
 
         return RPARuntime(callbacks, detector, cleanup=cleanup)
-
-
-def _make_zmq_context() -> ZmqContextLike:
-    return cast("ZmqContextLike", zmq.asyncio.Context())
