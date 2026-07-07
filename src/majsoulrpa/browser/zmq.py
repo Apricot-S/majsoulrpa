@@ -1,4 +1,5 @@
 import warnings
+from typing import Protocol, overload
 
 import zmq
 import zmq.asyncio
@@ -18,8 +19,19 @@ from majsoulrpa.browser.server import (
 )
 
 
+class BrowserZmqSocket(Protocol):
+    async def send(self, payload: bytes) -> object: ...
+    async def recv(self) -> bytes: ...
+
+
 class BrowserZmqClientTransport:
-    def __init__(self, socket: Socket) -> None:
+    @overload
+    def __init__(self, socket: Socket) -> None: ...
+
+    @overload
+    def __init__(self, socket: BrowserZmqSocket) -> None: ...
+
+    def __init__(self, socket: Socket | BrowserZmqSocket) -> None:
         self._socket = socket
 
     async def send_command(self, command: BrowserCommand) -> None:
@@ -31,7 +43,13 @@ class BrowserZmqClientTransport:
 
 
 class BrowserZmqServerTransport:
-    def __init__(self, socket: Socket) -> None:
+    @overload
+    def __init__(self, socket: Socket) -> None: ...
+
+    @overload
+    def __init__(self, socket: BrowserZmqSocket) -> None: ...
+
+    def __init__(self, socket: Socket | BrowserZmqSocket) -> None:
         self._socket = socket
 
     async def recv_command(self) -> BrowserCommand:

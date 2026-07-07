@@ -4,7 +4,9 @@ from typing import override
 
 import pytest
 
+from majsoulrpa.browser.controller import BrowserOperationError
 from majsoulrpa.browser.messages import (
+    BrowserErrorResponse,
     BrowserResponse,
     ClickCommand,
     ClickResponse,
@@ -196,6 +198,47 @@ def test_controller_runtime_cleans_up_when_callback_is_cancelled() -> None:
     assert context.terminated
 
 
+def test_controller_runtime_stops_when_screen_requests_stop() -> None:
+    context = ZmqContextSpy(
+        ScreenshotResponse(
+            screenshot_base64=base64.b64encode(b"screen").decode("ascii"),
+        ),
+    )
+    factory = ControllerRuntimeFactory(context_factory=lambda: context)
+    config = AppConfig()
+    runtime = factory(
+        {
+            MatchingScreen: _request_stop,
+        },
+        config,
+    )
+
+    result = asyncio.run(runtime.run(config, "data", detection_timeout=0.001))
+
+    assert result == "stopped"
+    assert len(context.socket_spy.sent_payloads) == 1
+    assert context.socket_spy.closed
+    assert context.terminated
+
+
+def test_controller_runtime_propagates_remote_error_response() -> None:
+    context = ZmqContextSpy(BrowserErrorResponse(message="remote failed"))
+    factory = ControllerRuntimeFactory(context_factory=lambda: context)
+    config = AppConfig()
+    runtime = factory(
+        {
+            MatchingScreen: _record_context,
+        },
+        config,
+    )
+
+    with pytest.raises(BrowserOperationError, match="remote failed"):
+        asyncio.run(runtime.run(config, None, detection_timeout=0.001))
+
+    assert context.socket_spy.closed
+    assert context.terminated
+
+
 async def _record_context(screen: MatchingScreen, _data: object) -> object:
     raise ContextCapturedError(screen.context)
 
@@ -211,3 +254,8 @@ async def _enter_value_and_stop(
 
 async def _cancel(_screen: MatchingScreen, _data: object) -> object:
     raise asyncio.CancelledError
+
+
+async def _request_stop(screen: MatchingScreen, _data: object) -> object:
+    await screen.context.request_stop()
+    return "stopped"

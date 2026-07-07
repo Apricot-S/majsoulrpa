@@ -8,6 +8,7 @@ from majsoulrpa.types import Callback
 
 type ScreenTypes = tuple[type[Screen], ...]
 type Cleanup = Callable[[], Awaitable[None]]
+type StopPredicate = Callable[[], bool]
 type ScreenshotProvider = Callable[[], Awaitable[object]]
 
 SCREEN_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
@@ -40,10 +41,12 @@ class RPARuntime:
         callbacks: Mapping[type[Screen], Callback[Any]],
         detector: ScreenDetector,
         cleanup: Cleanup | None = None,
+        should_stop: StopPredicate | None = None,
     ) -> None:
         self._callbacks = callbacks
         self._detector = detector
         self._cleanup = cleanup
+        self._should_stop = should_stop or _keep_running
 
     async def run(
         self,
@@ -67,6 +70,8 @@ class RPARuntime:
                     continue
 
                 current_data = await callback(screen, current_data)
+                if self._should_stop():
+                    return current_data
         finally:
             await self._run_cleanup()
 
@@ -115,3 +120,7 @@ type RuntimeFactory = Callable[
     [Mapping[type[Screen], Callback[Any]], AppConfig],
     RPARuntime,
 ]
+
+
+def _keep_running() -> bool:
+    return False

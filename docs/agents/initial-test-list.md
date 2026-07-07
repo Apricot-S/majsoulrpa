@@ -94,12 +94,12 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] browser host 側は `AppConfig.endpoint.client_host` に bind する
 - [x] controller 側で ZMQ context と REQ socket を作成する
 - [x] `BrowserZmqClientTransport` と `RemoteBrowserController` を組み立てる
-- [ ] `ScreenContext` に controller、viewport、stop request を渡す
+- [x] `ScreenContext` に controller、viewport、stop request を渡す
 - [x] Screen 検出用 screenshot provider を controller の screenshot API につなぐ
 - [x] runtime 正常終了時に socket / context を閉じる
 - [x] callback 例外時に socket / context を閉じる
 - [x] cancellation 時に socket / context を閉じる
-- [ ] remote browser error を成功扱いにしない
+- [x] remote browser error を成功扱いにしない
 - [ ] 自動テストでは実ブラウザ、実 ZMQ network、実雀魂にアクセスしない
 
 テスト:
@@ -112,7 +112,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] detection timeout で Screen 未検出の場合も transport を cleanup する
 - [x] callback が例外を投げた場合も transport を cleanup する
 - [x] callback 実行中の cancellation でも transport を cleanup する
-- [ ] remote error response は `BrowserOperationError` として伝播する
+- [x] remote error response は `BrowserOperationError` として伝播する
 - [ ] PNG screenshot decode が必要な場合は synthetic PNG のみでテストする
 
 ## Phase 6: Login API ひとつ目

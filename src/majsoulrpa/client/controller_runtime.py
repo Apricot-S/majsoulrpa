@@ -1,6 +1,6 @@
 from collections.abc import Callable, Mapping
 from contextlib import AsyncExitStack
-from typing import Any, Protocol, cast
+from typing import Any, Protocol
 
 import zmq
 import zmq.asyncio
@@ -30,6 +30,17 @@ class ZmqContextLike(Protocol):
 type ZmqContextFactory = Callable[[], ZmqContextLike]
 
 
+class StopFlag:
+    def __init__(self) -> None:
+        self._requested = False
+
+    async def request_stop(self) -> None:
+        self._requested = True
+
+    def is_requested(self) -> bool:
+        return self._requested
+
+
 class ControllerRuntimeFactory:
     def __init__(
         self,
@@ -48,10 +59,12 @@ class ControllerRuntimeFactory:
         endpoint = make_browser_host_tcp_endpoint(config)
         socket.connect(endpoint)
 
-        transport = BrowserZmqClientTransport(cast("Any", socket))
+        transport = BrowserZmqClientTransport(socket)
         controller = RemoteBrowserController(transport)
+        stop_flag = StopFlag()
         screen_context = ScreenContext(
             browser=controller,
+            request_stop=stop_flag.request_stop,
             viewport_width=viewport_width_for_height(
                 config.browser.viewport_height,
             ),
@@ -67,4 +80,9 @@ class ControllerRuntimeFactory:
                 stack.callback(context.term)
                 stack.callback(socket.close, linger=0)
 
-        return RPARuntime(callbacks, detector, cleanup=cleanup)
+        return RPARuntime(
+            callbacks,
+            detector,
+            cleanup=cleanup,
+            should_stop=stop_flag.is_requested,
+        )
