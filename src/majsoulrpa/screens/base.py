@@ -9,7 +9,7 @@ from majsoulrpa.constants import BASE_VIEWPORT_WIDTH, DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.presentation import Region
 
 SCREEN_ACTION_INTERVAL_SECONDS = 0.5
-LOG_URL_PREFIX = "https://game.mahjongsoul.com/new/index.html?paipu="
+LOG_URL_PREFIX = "https://game.mahjongsoul.com/?paipu="
 
 
 class BrowserController(Protocol):

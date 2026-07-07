@@ -553,7 +553,7 @@ def test_screen_can_go_to_log_url() -> None:
     asyncio.run(screen.goto_log("synthetic-log-id"))
 
     assert browser.visited_urls == [
-        "https://game.mahjongsoul.com/new/index.html?paipu=synthetic-log-id",
+        "https://game.mahjongsoul.com/?paipu=synthetic-log-id",
     ]
     assert browser.events == ["goto_url"]
 
