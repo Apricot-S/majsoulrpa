@@ -26,6 +26,12 @@ class BrowserControllerSpy:
     async def move_mouse(self, x: float, y: float) -> None:
         _ = (x, y)
 
+    async def goto_url(self, url: str) -> None:
+        _ = url
+
+    async def reload(self) -> None:
+        pass
+
     async def input_text(self, text: str) -> None:
         self.input_texts.append(text)
 

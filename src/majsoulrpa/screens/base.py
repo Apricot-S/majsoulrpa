@@ -9,11 +9,14 @@ from majsoulrpa.constants import BASE_VIEWPORT_WIDTH, DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.presentation import Region
 
 SCREEN_ACTION_INTERVAL_SECONDS = 0.5
+LOG_URL_PREFIX = "https://game.mahjongsoul.com/new/index.html?paipu="
 
 
 class BrowserController(Protocol):
     async def click(self, x: float, y: float) -> object: ...
     async def move_mouse(self, x: float, y: float) -> object: ...
+    async def goto_url(self, url: str) -> object: ...
+    async def reload(self) -> object: ...
     async def input_text(self, text: str) -> object: ...
     async def press_key(self, key: str) -> object: ...
     async def screenshot(self) -> bytes: ...
@@ -132,6 +135,15 @@ class Screen(ABC):
         result = template.match(screenshot)
         await self._click_region(result.region)
         return True
+
+    async def screenshot(self) -> bytes:
+        return await self.context.browser.screenshot()
+
+    async def reload(self) -> None:
+        await self.context.browser.reload()
+
+    async def goto_log(self, log_id: str) -> None:
+        await self.context.browser.goto_url(f"{LOG_URL_PREFIX}{log_id}")
 
     @abstractmethod
     async def before_callback(self) -> None:

@@ -33,9 +33,11 @@ class BrowserControllerSpy:
     def __init__(self) -> None:
         self.clicked_points: list[tuple[float, float]] = []
         self.moved_points: list[tuple[float, float]] = []
+        self.visited_urls: list[str] = []
         self.input_texts: list[str] = []
         self.pressed_keys: list[str] = []
         self.events: list[str] = []
+        self.reloads = 0
         self.screenshot_bytes = b"\x89PNG\r\n\x1a\n"
 
     async def click(self, x: float, y: float) -> None:
@@ -45,6 +47,14 @@ class BrowserControllerSpy:
     async def move_mouse(self, x: float, y: float) -> None:
         self.moved_points.append((x, y))
         self.events.append("move_mouse")
+
+    async def goto_url(self, url: str) -> None:
+        self.visited_urls.append(url)
+        self.events.append("goto_url")
+
+    async def reload(self) -> None:
+        self.reloads += 1
+        self.events.append("reload")
 
     async def input_text(self, text: str) -> None:
         self.input_texts.append(text)
@@ -514,6 +524,38 @@ def test_screen_context_browser_can_take_screenshot() -> None:
 
     assert screenshot == b"\x89PNG\r\n\x1a\n"
     assert browser.events == ["screenshot"]
+
+
+def test_screen_can_take_screenshot() -> None:
+    browser = BrowserControllerSpy()
+    screen = LoginScreen(context=ScreenContext(browser=browser))
+
+    screenshot = asyncio.run(screen.screenshot())
+
+    assert screenshot == b"\x89PNG\r\n\x1a\n"
+    assert browser.events == ["screenshot"]
+
+
+def test_screen_can_reload_current_page() -> None:
+    browser = BrowserControllerSpy()
+    screen = LoginScreen(context=ScreenContext(browser=browser))
+
+    asyncio.run(screen.reload())
+
+    assert browser.reloads == 1
+    assert browser.events == ["reload"]
+
+
+def test_screen_can_go_to_log_url() -> None:
+    browser = BrowserControllerSpy()
+    screen = LoginScreen(context=ScreenContext(browser=browser))
+
+    asyncio.run(screen.goto_log("synthetic-log-id"))
+
+    assert browser.visited_urls == [
+        "https://game.mahjongsoul.com/new/index.html?paipu=synthetic-log-id",
+    ]
+    assert browser.events == ["goto_url"]
 
 
 def test_runtime_calls_screen_before_callback() -> None:
