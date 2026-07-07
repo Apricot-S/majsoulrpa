@@ -15,7 +15,7 @@ LOGIN_1_TEMPLATE = load_png_template_matcher(
 
 
 class LoginScreen(Screen):
-    email_address_region = Region(left=0, top=0, width=1, height=1)
+    email_address_region = Region(left=770, top=430, width=138, height=20)
 
     @classmethod
     @override
