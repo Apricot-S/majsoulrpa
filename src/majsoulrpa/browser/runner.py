@@ -22,10 +22,16 @@ class BrowserBackend(Protocol):
     async def stop(self) -> None: ...
 
 
+class SnifferBackend(Protocol):
+    async def start(self, page: object) -> None: ...
+    async def stop(self) -> None: ...
+
+
 async def run_browser_host(
     config: AppConfig,
     *,
     backend: BrowserBackend | None = None,
+    sniffer_backend: SnifferBackend | None = None,
     command_executor_factory: CommandExecutorFactory | None = None,
     request_server_factory: RequestServerFactory | None = None,
 ) -> None:
@@ -56,6 +62,10 @@ async def run_browser_host(
         if page is None:
             msg = "browser backend did not create a page."
             raise RuntimeError(msg)
+
+        if sniffer_backend is not None:
+            await sniffer_backend.start(page)
+            stack.push_async_callback(sniffer_backend.stop)
 
         command_executor = executor_factory(page)
         request_server = server_factory(command_executor)

@@ -158,7 +158,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ## Phase 7: WebSocket sniffer
 
-- [ ] sniffer backend の start に失敗した場合に browser を閉じる
+- [x] sniffer backend の start に失敗した場合に browser を閉じる
 - [ ] fake sniffer backend が synthetic payload を発行できる
 - [ ] raw payload を hook に渡せる
 - [ ] raw payload をデバッグ用ログに出せる

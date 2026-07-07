@@ -24,6 +24,25 @@ class BackendSpy:
         self.stopped = True
 
 
+class SnifferBackendSpy:
+    def __init__(self) -> None:
+        self.started_pages: list[object] = []
+        self.stopped = False
+
+    async def start(self, page: object) -> None:
+        self.started_pages.append(page)
+
+    async def stop(self) -> None:
+        self.stopped = True
+
+
+class FailingSnifferBackend(SnifferBackendSpy):
+    async def start(self, page: object) -> None:
+        await super().start(page)
+        msg = "sniffer start failed"
+        raise RuntimeError(msg)
+
+
 class RequestServerSpy:
     def __init__(self) -> None:
         self.bound = False
@@ -115,6 +134,52 @@ def test_run_browser_host_binds_and_serves_request_server() -> None:
     assert server.bound
     assert server.served
     assert server.stopped
+    assert backend.stopped
+
+
+def test_run_browser_host_starts_and_stops_sniffer_backend() -> None:
+    backend = BackendSpy()
+    sniffer = SnifferBackendSpy()
+    server = RequestServerSpy()
+
+    asyncio.run(
+        run_browser_host(
+            AppConfig(),
+            backend=backend,
+            sniffer_backend=sniffer,
+            command_executor_factory=ExecutorSpy,
+            request_server_factory=lambda _executor: server,
+        ),
+    )
+
+    assert sniffer.started_pages == [backend.page]
+    assert server.bound
+    assert server.served
+    assert server.stopped
+    assert sniffer.stopped
+    assert backend.stopped
+
+
+def test_run_browser_host_stops_backend_when_sniffer_start_fails() -> None:
+    backend = BackendSpy()
+    sniffer = FailingSnifferBackend()
+    server = RequestServerSpy()
+
+    with pytest.raises(RuntimeError, match="sniffer start failed"):
+        asyncio.run(
+            run_browser_host(
+                AppConfig(),
+                backend=backend,
+                sniffer_backend=sniffer,
+                command_executor_factory=ExecutorSpy,
+                request_server_factory=lambda _executor: server,
+            ),
+        )
+
+    assert sniffer.started_pages == [backend.page]
+    assert sniffer.stopped is False
+    assert server.bound is False
+    assert server.stopped is False
     assert backend.stopped
 
 
