@@ -13,6 +13,7 @@ SCREEN_ACTION_INTERVAL_SECONDS = 0.5
 
 class BrowserController(Protocol):
     async def click(self, x: float, y: float) -> object: ...
+    async def move_mouse(self, x: float, y: float) -> object: ...
     async def input_text(self, text: str) -> object: ...
     async def press_key(self, key: str) -> object: ...
     async def screenshot(self) -> bytes: ...
@@ -97,6 +98,11 @@ class Screen(ABC):
     async def _click_region(self, scaled_region: Region) -> None:
         x, y = scaled_region.random_point(rng=self.context.rng)
         await self.context.browser.click(x, y)
+
+    async def move_region(self, region: Region) -> None:
+        scaled_region = self.context.scale_region(region)
+        x, y = scaled_region.random_point(rng=self.context.rng)
+        await self.context.browser.move_mouse(x, y)
 
     async def fill_region(
         self,

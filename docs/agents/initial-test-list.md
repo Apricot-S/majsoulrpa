@@ -76,10 +76,12 @@
 
 - [x] client transport は `send_command` と `recv_response` を分ける
 - [x] browser controller は `fill_region` を command / response に変換する
+- [x] browser controller は `move_mouse` を command / response に変換する
 - [x] browser controller は remote error response を例外にする
 - [x] browser host へ送る command は click 座標や text など低レベル情報にする
 - [x] click command は mouse down/up 間の delay を持つ
 - [x] text input command は等間隔の文字入力 delay を持つ
+- [x] move mouse command は移動先座標を持つ
 - [x] browser controller は screenshot command の base64 response を PNG bytes として返す
 - [x] response は click、text input、error を別型にする
 
@@ -109,6 +111,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] runtime が screenshot command を使って Screen 検出を行う
 - [x] 検出された Screen に controller 入りの `ScreenContext` が注入される
 - [x] Screen helper から呼ばれた click / text input が remote command になる
+- [x] Screen helper から呼ばれた move_region が remote command になる
 - [x] detection timeout で Screen 未検出の場合も transport を cleanup する
 - [x] callback が例外を投げた場合も transport を cleanup する
 - [x] callback 実行中の cancellation でも transport を cleanup する

@@ -18,6 +18,8 @@ from majsoulrpa.browser.messages import (
     BrowserResponse,
     ClickCommand,
     ClickResponse,
+    MoveMouseCommand,
+    MoveMouseResponse,
     PressKeyCommand,
     PressKeyResponse,
     ScreenshotCommand,
@@ -37,6 +39,7 @@ from majsoulrpa.viewport import viewport_width_for_height
 
 class MouseLike(Protocol):
     async def click(self, x: float, y: float, *, delay: float) -> None: ...
+    async def move(self, x: float, y: float) -> None: ...
 
 
 class KeyboardLike(Protocol):
@@ -67,6 +70,8 @@ class PlaywrightCommandExecutor:
             match command:
                 case ClickCommand():
                     return await self._click(command)
+                case MoveMouseCommand():
+                    return await self._move_mouse(command)
                 case TextInputCommand():
                     return await self._input_text(command)
                 case PressKeyCommand():
@@ -83,6 +88,13 @@ class PlaywrightCommandExecutor:
             delay=command.mouse_down_up_delay_seconds * 1000,
         )
         return ClickResponse(x=command.x, y=command.y)
+
+    async def _move_mouse(
+        self,
+        command: MoveMouseCommand,
+    ) -> MoveMouseResponse:
+        await self._page.mouse.move(command.x, command.y)
+        return MoveMouseResponse(x=command.x, y=command.y)
 
     async def _input_text(
         self,

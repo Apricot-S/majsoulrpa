@@ -32,6 +32,7 @@ class LoginScreen(Screen):
 class BrowserControllerSpy:
     def __init__(self) -> None:
         self.clicked_points: list[tuple[float, float]] = []
+        self.moved_points: list[tuple[float, float]] = []
         self.input_texts: list[str] = []
         self.pressed_keys: list[str] = []
         self.events: list[str] = []
@@ -40,6 +41,10 @@ class BrowserControllerSpy:
     async def click(self, x: float, y: float) -> None:
         self.clicked_points.append((x, y))
         self.events.append("click")
+
+    async def move_mouse(self, x: float, y: float) -> None:
+        self.moved_points.append((x, y))
+        self.events.append("move_mouse")
 
     async def input_text(self, text: str) -> None:
         self.input_texts.append(text)
@@ -390,6 +395,28 @@ def test_screen_clicks_scaled_region() -> None:
     assert 200 < x < 204
     assert 100 < y < 102
     assert browser.events == ["click"]
+
+
+def test_screen_moves_to_scaled_region() -> None:
+    browser = BrowserControllerSpy()
+    screen = LoginScreen(
+        context=ScreenContext(
+            browser=browser,
+            viewport_width=1280,
+            viewport_height=720,
+            rng=Random(0),
+        ),
+    )
+
+    asyncio.run(
+        screen.move_region(Region(left=300, top=150, width=6, height=3)),
+    )
+
+    [(x, y)] = browser.moved_points
+    assert 200 < x < 204
+    assert 100 < y < 102
+    assert browser.clicked_points == []
+    assert browser.events == ["move_mouse"]
 
 
 def test_screen_matches_uses_detection_spec() -> None:

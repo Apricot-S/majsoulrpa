@@ -10,6 +10,8 @@ from majsoulrpa.browser.messages import (
     BrowserErrorResponse,
     ClickCommand,
     ClickResponse,
+    MoveMouseCommand,
+    MoveMouseResponse,
     PressKeyCommand,
     PressKeyResponse,
     ScreenshotCommand,
@@ -33,9 +35,13 @@ from majsoulrpa.constants import (
 class MouseSpy:
     def __init__(self) -> None:
         self.clicks: list[tuple[float, float, float]] = []
+        self.moves: list[tuple[float, float]] = []
 
     async def click(self, x: float, y: float, *, delay: float) -> None:
         self.clicks.append((x, y, delay))
+
+    async def move(self, x: float, y: float) -> None:
+        self.moves.append((x, y))
 
 
 class KeyboardSpy:
@@ -99,6 +105,23 @@ def test_playwright_command_executor_clicks_with_mouse_delay() -> None:
 
     assert response == ClickResponse(x=25, y=40)
     assert page.mouse_spy.clicks == [(25, 40, 100)]
+
+
+def test_playwright_command_executor_moves_mouse() -> None:
+    page = PageSpy()
+    executor = PlaywrightCommandExecutor(page)
+
+    response = asyncio.run(
+        executor.execute(
+            MoveMouseCommand(
+                x=25,
+                y=40,
+            ),
+        ),
+    )
+
+    assert response == MoveMouseResponse(x=25, y=40)
+    assert page.mouse_spy.moves == [(25, 40)]
 
 
 def test_playwright_command_executor_types_with_millisecond_delay() -> None:

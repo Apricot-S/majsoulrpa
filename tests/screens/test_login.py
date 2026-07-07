@@ -23,6 +23,9 @@ class BrowserControllerSpy:
     async def click(self, x: float, y: float) -> None:
         self.clicked_points.append((x, y))
 
+    async def move_mouse(self, x: float, y: float) -> None:
+        _ = (x, y)
+
     async def input_text(self, text: str) -> None:
         self.input_texts.append(text)
 

@@ -7,6 +7,8 @@ from majsoulrpa.browser.messages import (
     BrowserResponse,
     ClickCommand,
     ClickResponse,
+    MoveMouseCommand,
+    MoveMouseResponse,
     PressKeyCommand,
     PressKeyResponse,
     ScreenshotCommand,
@@ -62,6 +64,9 @@ class RemoteBrowserController:
             ),
         )
 
+    async def move_mouse(self, x: float, y: float) -> MoveMouseResponse:
+        return await self._request_move_mouse(MoveMouseCommand(x=x, y=y))
+
     async def input_text(self, text: str) -> TextInputResponse:
         return await self._request_text_input(
             TextInputCommand(
@@ -96,6 +101,16 @@ class RemoteBrowserController:
         await self._transport.send_command(command)
         response = await self._transport.recv_response()
         if isinstance(response, ClickResponse):
+            return response
+        raise self._response_error(response)
+
+    async def _request_move_mouse(
+        self,
+        command: MoveMouseCommand,
+    ) -> MoveMouseResponse:
+        await self._transport.send_command(command)
+        response = await self._transport.recv_response()
+        if isinstance(response, MoveMouseResponse):
             return response
         raise self._response_error(response)
 

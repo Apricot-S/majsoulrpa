@@ -15,6 +15,14 @@ class ClickCommand(BaseModel):
     mouse_down_up_delay_seconds: PositiveDelay
 
 
+class MoveMouseCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["move_mouse"] = "move_mouse"
+    x: float
+    y: float
+
+
 class TextInputCommand(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -38,7 +46,11 @@ class ScreenshotCommand(BaseModel):
 
 
 BrowserCommand = Annotated[
-    ClickCommand | TextInputCommand | PressKeyCommand | ScreenshotCommand,
+    ClickCommand
+    | MoveMouseCommand
+    | TextInputCommand
+    | PressKeyCommand
+    | ScreenshotCommand,
     Field(discriminator="type"),
 ]
 
@@ -47,6 +59,14 @@ class ClickResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     type: Literal["click"] = "click"
+    x: float
+    y: float
+
+
+class MoveMouseResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["move_mouse"] = "move_mouse"
     x: float
     y: float
 
@@ -81,6 +101,7 @@ class BrowserErrorResponse(BaseModel):
 
 BrowserResponse = Annotated[
     ClickResponse
+    | MoveMouseResponse
     | TextInputResponse
     | PressKeyResponse
     | ScreenshotResponse

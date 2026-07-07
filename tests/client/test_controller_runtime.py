@@ -10,6 +10,8 @@ from majsoulrpa.browser.messages import (
     BrowserResponse,
     ClickCommand,
     ClickResponse,
+    MoveMouseCommand,
+    MoveMouseResponse,
     PressKeyCommand,
     PressKeyResponse,
     ScreenshotCommand,
@@ -53,6 +55,9 @@ class InputScreen(MatchingScreen):
             "value",
             clear=True,
         )
+
+    async def move_to_value(self) -> None:
+        await self.move_region(Region(left=0, top=0, width=100, height=100))
 
 
 class ContextCapturedError(RuntimeError):
@@ -231,6 +236,35 @@ def test_controller_runtime_can_clear_before_text_input() -> None:
     assert commands[4].text == "value"
 
 
+def test_controller_runtime_screen_helper_sends_move_mouse() -> None:
+    context = ZmqContextSpy(
+        ScreenshotResponse(
+            screenshot_base64=base64.b64encode(SYNTHETIC_PNG).decode("ascii"),
+        ),
+        MoveMouseResponse(x=50, y=50),
+    )
+    factory = ControllerRuntimeFactory(context_factory=lambda: context)
+    config = AppConfig()
+    runtime = factory(
+        {
+            InputScreen: _move_to_value_and_stop,
+        },
+        config,
+    )
+
+    with pytest.raises(RuntimeError, match="stop"):
+        asyncio.run(runtime.run(config, None, detection_timeout=0.001))
+
+    commands = [
+        parse_browser_command_json(payload)
+        for payload in context.socket_spy.sent_payloads
+    ]
+    assert isinstance(commands[0], ScreenshotCommand)
+    assert isinstance(commands[1], MoveMouseCommand)
+    assert 0 <= commands[1].x < 100
+    assert 0 <= commands[1].y < 100
+
+
 def test_controller_runtime_cleans_up_when_callback_is_cancelled() -> None:
     context = ZmqContextSpy(
         ScreenshotResponse(
@@ -312,6 +346,15 @@ async def _replace_value_and_stop(
     _data: object,
 ) -> object:
     await screen.replace_value()
+    msg = "stop"
+    raise RuntimeError(msg)
+
+
+async def _move_to_value_and_stop(
+    screen: InputScreen,
+    _data: object,
+) -> object:
+    await screen.move_to_value()
     msg = "stop"
     raise RuntimeError(msg)
 
