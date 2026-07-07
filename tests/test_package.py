@@ -62,6 +62,7 @@ def test_screens_import_does_not_load_login_screen_module() -> None:
     assert screens.__all__ == [
         "Screen",
         "ScreenContext",
+        "ScreenDetectionError",
         "ScreenDetectionSpec",
     ]
     assert "majsoulrpa.screens.login" not in sys.modules

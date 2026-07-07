@@ -15,6 +15,7 @@ from majsoulrpa.assets.templates.login import (
 )
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
+from majsoulrpa.screens.errors import ScreenDetectionError
 from majsoulrpa.screens.login import YOSTAR_LOGO_TEMPLATE, LoginScreen
 
 
@@ -163,9 +164,10 @@ def test_login_screen_before_callback_raises_without_login_button() -> None:
     browser = BrowserControllerSpy(_synthetic_blank_screenshot())
     screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
 
-    with pytest.raises(RuntimeError, match="login button"):
+    with pytest.raises(ScreenDetectionError, match="login button") as exc_info:
         asyncio.run(screen.before_callback())
 
+    assert exc_info.value.screenshot() == browser.screenshot_bytes
     assert browser.clicked_points == []
 
 
@@ -175,16 +177,18 @@ def test_login_screen_before_callback_raises_when_yostar_logo_is_missing(
     async def sleep(_seconds: float) -> None:
         pass
 
+    yostar_missing_screenshot = _synthetic_blank_screenshot()
     browser = BrowserControllerSpy(
         _synthetic_login_button_screenshot(),
-        _synthetic_blank_screenshot(),
+        yostar_missing_screenshot,
     )
     screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
     monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
 
-    with pytest.raises(RuntimeError, match="Yostar logo"):
+    with pytest.raises(ScreenDetectionError, match="Yostar logo") as exc_info:
         asyncio.run(screen.before_callback())
 
+    assert exc_info.value.screenshot() == yostar_missing_screenshot
     assert browser.clicked_points
 
 
