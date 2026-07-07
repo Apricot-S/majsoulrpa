@@ -71,6 +71,7 @@
 - [x] Screen から screenshot を利用者向け API として取得できる
 - [x] Screen から browser reload を利用者向け API として実行できる
 - [x] Screen から指定した牌譜 ID の URL へ移動できる
+- [x] Screen から RPAApp の実行ループ停止を利用者向け API として要求できる
 - [x] ScreenContext から stop 要求を出せる
 - [x] 検出された Screen に ScreenContext を注入できる
 - [x] ScreenContext 未設定の Screen 操作は例外になる

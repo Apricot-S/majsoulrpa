@@ -145,6 +145,9 @@ class Screen(ABC):
     async def goto_log(self, log_id: str) -> None:
         await self.context.browser.goto_url(f"{LOG_URL_PREFIX}{log_id}")
 
+    async def stop_rpa(self) -> None:
+        await self.context.request_stop()
+
     @abstractmethod
     async def before_callback(self) -> None:
         raise NotImplementedError

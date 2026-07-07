@@ -516,6 +516,25 @@ def test_screen_context_requests_stop() -> None:
     assert requested is True
 
 
+def test_screen_can_request_rpa_stop() -> None:
+    requested = False
+
+    async def request_stop() -> None:
+        nonlocal requested
+        requested = True
+
+    screen = LoginScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(),
+            request_stop=request_stop,
+        ),
+    )
+
+    asyncio.run(screen.stop_rpa())
+
+    assert requested is True
+
+
 def test_screen_context_browser_can_take_screenshot() -> None:
     browser = BrowserControllerSpy()
     context = ScreenContext(browser=browser)
