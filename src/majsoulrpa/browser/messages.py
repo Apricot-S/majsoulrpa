@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
 PositiveDelay = Annotated[float, Field(gt=0)]
 NonEmptyKey = Annotated[str, Field(min_length=1)]
+NonEmptyUrl = Annotated[str, Field(min_length=1)]
 
 
 class ClickCommand(BaseModel):
@@ -45,12 +46,27 @@ class ScreenshotCommand(BaseModel):
     type: Literal["screenshot"] = "screenshot"
 
 
+class GotoUrlCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["goto_url"] = "goto_url"
+    url: NonEmptyUrl
+
+
+class ReloadCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["reload"] = "reload"
+
+
 BrowserCommand = Annotated[
     ClickCommand
     | MoveMouseCommand
     | TextInputCommand
     | PressKeyCommand
-    | ScreenshotCommand,
+    | ScreenshotCommand
+    | GotoUrlCommand
+    | ReloadCommand,
     Field(discriminator="type"),
 ]
 
@@ -92,6 +108,19 @@ class ScreenshotResponse(BaseModel):
     screenshot_base64: str
 
 
+class GotoUrlResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["goto_url"] = "goto_url"
+    url: str
+
+
+class ReloadResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["reload"] = "reload"
+
+
 class BrowserErrorResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -105,6 +134,8 @@ BrowserResponse = Annotated[
     | TextInputResponse
     | PressKeyResponse
     | ScreenshotResponse
+    | GotoUrlResponse
+    | ReloadResponse
     | BrowserErrorResponse,
     Field(discriminator="type"),
 ]

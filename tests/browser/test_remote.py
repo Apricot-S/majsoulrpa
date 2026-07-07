@@ -12,10 +12,14 @@ from majsoulrpa.browser.messages import (
     BrowserErrorResponse,
     ClickCommand,
     ClickResponse,
+    GotoUrlCommand,
+    GotoUrlResponse,
     MoveMouseCommand,
     MoveMouseResponse,
     PressKeyCommand,
     PressKeyResponse,
+    ReloadCommand,
+    ReloadResponse,
     ScreenshotCommand,
     ScreenshotResponse,
     TextInputCommand,
@@ -28,8 +32,10 @@ class BrowserClientTransportSpy:
         self,
         *responses: (
             ClickResponse
+            | GotoUrlResponse
             | MoveMouseResponse
             | PressKeyResponse
+            | ReloadResponse
             | TextInputResponse
             | ScreenshotResponse
             | BrowserErrorResponse
@@ -45,8 +51,10 @@ class BrowserClientTransportSpy:
         self,
     ) -> (
         ClickResponse
+        | GotoUrlResponse
         | MoveMouseResponse
         | PressKeyResponse
+        | ReloadResponse
         | TextInputResponse
         | ScreenshotResponse
         | BrowserErrorResponse
@@ -91,6 +99,30 @@ def test_remote_browser_controller_sends_move_mouse() -> None:
     assert response == MoveMouseResponse(x=25, y=40)
     [command] = transport.sent_commands
     assert command == MoveMouseCommand(x=25, y=40)
+
+
+def test_remote_browser_controller_sends_goto_url() -> None:
+    transport = BrowserClientTransportSpy(
+        GotoUrlResponse(url="https://example.invalid/path"),
+    )
+    controller = RemoteBrowserController(transport)
+
+    response = asyncio.run(controller.goto_url("https://example.invalid/path"))
+
+    assert response == GotoUrlResponse(url="https://example.invalid/path")
+    assert transport.sent_commands == [
+        GotoUrlCommand(url="https://example.invalid/path"),
+    ]
+
+
+def test_remote_browser_controller_sends_reload() -> None:
+    transport = BrowserClientTransportSpy(ReloadResponse())
+    controller = RemoteBrowserController(transport)
+
+    response = asyncio.run(controller.reload())
+
+    assert response == ReloadResponse()
+    assert transport.sent_commands == [ReloadCommand()]
 
 
 def test_remote_browser_controller_sends_press_key() -> None:
@@ -182,16 +214,20 @@ def test_browser_command_schema_rejects_invalid_delay() -> None:
 
 def test_browser_response_error_is_distinct_from_success_responses() -> None:
     click = ClickResponse(x=10, y=20)
+    goto_url = GotoUrlResponse(url="https://example.invalid/")
     move_mouse = MoveMouseResponse(x=10, y=20)
     text_input = TextInputResponse(text="player@example.invalid")
     press_key = PressKeyResponse(key="Control+A")
+    reload = ReloadResponse()
     screenshot = ScreenshotResponse(screenshot_base64="c2NyZWVu")
     error = BrowserErrorResponse(message="remote failed")
 
     assert click.type == "click"
+    assert goto_url.type == "goto_url"
     assert move_mouse.type == "move_mouse"
     assert text_input.type == "text_input"
     assert press_key.type == "press_key"
+    assert reload.type == "reload"
     assert screenshot.type == "screenshot"
     assert screenshot.screenshot_base64 == "c2NyZWVu"
     assert error.type == "error"

@@ -7,10 +7,14 @@ from majsoulrpa.browser.messages import (
     BrowserResponse,
     ClickCommand,
     ClickResponse,
+    GotoUrlCommand,
+    GotoUrlResponse,
     MoveMouseCommand,
     MoveMouseResponse,
     PressKeyCommand,
     PressKeyResponse,
+    ReloadCommand,
+    ReloadResponse,
     ScreenshotCommand,
     ScreenshotResponse,
     TextInputCommand,
@@ -97,6 +101,12 @@ class RemoteBrowserController:
             msg = "screenshot response is not valid base64."
             raise BrowserOperationError(msg) from error
 
+    async def goto_url(self, url: str) -> GotoUrlResponse:
+        return await self._request_goto_url(GotoUrlCommand(url=url))
+
+    async def reload(self) -> ReloadResponse:
+        return await self._request_reload(ReloadCommand())
+
     async def _request_click(self, command: ClickCommand) -> ClickResponse:
         await self._transport.send_command(command)
         response = await self._transport.recv_response()
@@ -141,6 +151,26 @@ class RemoteBrowserController:
         await self._transport.send_command(command)
         response = await self._transport.recv_response()
         if isinstance(response, ScreenshotResponse):
+            return response
+        raise self._response_error(response)
+
+    async def _request_goto_url(
+        self,
+        command: GotoUrlCommand,
+    ) -> GotoUrlResponse:
+        await self._transport.send_command(command)
+        response = await self._transport.recv_response()
+        if isinstance(response, GotoUrlResponse):
+            return response
+        raise self._response_error(response)
+
+    async def _request_reload(
+        self,
+        command: ReloadCommand,
+    ) -> ReloadResponse:
+        await self._transport.send_command(command)
+        response = await self._transport.recv_response()
+        if isinstance(response, ReloadResponse):
             return response
         raise self._response_error(response)
 

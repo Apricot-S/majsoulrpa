@@ -10,10 +10,14 @@ from majsoulrpa.browser.messages import (
     BrowserErrorResponse,
     ClickCommand,
     ClickResponse,
+    GotoUrlCommand,
+    GotoUrlResponse,
     MoveMouseCommand,
     MoveMouseResponse,
     PressKeyCommand,
     PressKeyResponse,
+    ReloadCommand,
+    ReloadResponse,
     ScreenshotCommand,
     ScreenshotResponse,
     TextInputCommand,
@@ -65,12 +69,16 @@ class PageSpy:
         self.screenshot_types: list[str] = []
         self.screenshot_bytes = b"\x89PNG\r\n\x1a\n"
         self.visited_urls: list[str] = []
+        self.reloads = 0
         self.waited_selectors: list[tuple[str, float]] = []
         self.evaluated_expressions: list[str] = []
         self.user_agent = "Mozilla/5.0 HeadlessChrome/120.0.0.0 Safari/537.36"
 
     async def goto(self, url: str) -> None:
         self.visited_urls.append(url)
+
+    async def reload(self) -> None:
+        self.reloads += 1
 
     async def evaluate(self, expression: str) -> str:
         self.evaluated_expressions.append(expression)
@@ -122,6 +130,30 @@ def test_playwright_command_executor_moves_mouse() -> None:
 
     assert response == MoveMouseResponse(x=25, y=40)
     assert page.mouse_spy.moves == [(25, 40)]
+
+
+def test_playwright_command_executor_goes_to_url() -> None:
+    page = PageSpy()
+    executor = PlaywrightCommandExecutor(page)
+
+    response = asyncio.run(
+        executor.execute(
+            GotoUrlCommand(url="https://example.invalid/path"),
+        ),
+    )
+
+    assert response == GotoUrlResponse(url="https://example.invalid/path")
+    assert page.visited_urls == ["https://example.invalid/path"]
+
+
+def test_playwright_command_executor_reloads_page() -> None:
+    page = PageSpy()
+    executor = PlaywrightCommandExecutor(page)
+
+    response = asyncio.run(executor.execute(ReloadCommand()))
+
+    assert response == ReloadResponse()
+    assert page.reloads == 1
 
 
 def test_playwright_command_executor_types_with_millisecond_delay() -> None:

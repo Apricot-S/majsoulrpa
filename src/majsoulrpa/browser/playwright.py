@@ -18,10 +18,14 @@ from majsoulrpa.browser.messages import (
     BrowserResponse,
     ClickCommand,
     ClickResponse,
+    GotoUrlCommand,
+    GotoUrlResponse,
     MoveMouseCommand,
     MoveMouseResponse,
     PressKeyCommand,
     PressKeyResponse,
+    ReloadCommand,
+    ReloadResponse,
     ScreenshotCommand,
     ScreenshotResponse,
     TextInputCommand,
@@ -52,6 +56,7 @@ class PageLike(Protocol):
     keyboard: KeyboardLike
 
     async def goto(self, url: str) -> object: ...
+    async def reload(self) -> object: ...
     async def evaluate(self, expression: str) -> object: ...
     async def screenshot(self, **kwargs: str) -> bytes: ...
     async def wait_for_selector(
@@ -78,6 +83,10 @@ class PlaywrightCommandExecutor:
                     return await self._press_key(command)
                 case ScreenshotCommand():
                     return await self._screenshot()
+                case GotoUrlCommand():
+                    return await self._goto_url(command)
+                case ReloadCommand():
+                    return await self._reload()
         except Exception as error:  # noqa: BLE001
             return BrowserErrorResponse(message=str(error))
 
@@ -121,6 +130,17 @@ class PlaywrightCommandExecutor:
         return ScreenshotResponse(
             screenshot_base64=base64.b64encode(screenshot).decode("ascii"),
         )
+
+    async def _goto_url(
+        self,
+        command: GotoUrlCommand,
+    ) -> GotoUrlResponse:
+        await self._page.goto(command.url)
+        return GotoUrlResponse(url=command.url)
+
+    async def _reload(self) -> ReloadResponse:
+        await self._page.reload()
+        return ReloadResponse()
 
 
 class PlaywrightBrowserBackend:
