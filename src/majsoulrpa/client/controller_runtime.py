@@ -1,3 +1,4 @@
+import warnings
 from collections.abc import Callable, Mapping
 from contextlib import AsyncExitStack
 from typing import Any, Protocol
@@ -54,6 +55,22 @@ class ControllerRuntimeFactory:
         callbacks: Mapping[type[Screen], Callback[Any]],
         config: AppConfig,
     ) -> RPARuntime:
+        # On Windows, the `ProactorEventLoop` does not implement
+        # the add_reader family of methods.
+        # When using `zmq.asyncio`, Tornado automatically registers
+        # a selector thread to provide add_reader support.
+        # This behavior always triggers a `RuntimeWarning`,
+        # even though it is harmless.
+        # Since Tornado is functioning correctly and the warning only
+        # causes confusion, we suppress it here to keep the output
+        # clean.
+        warnings.filterwarnings(
+            "ignore",
+            message="Proactor event loop does not implement add_reader",
+            category=RuntimeWarning,
+            module="zmq",
+        )
+
         context = self._context_factory()
         socket = context.socket(zmq.REQ)
         endpoint = make_browser_host_tcp_endpoint(config)
