@@ -100,7 +100,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] callback 例外時に socket / context を閉じる
 - [x] cancellation 時に socket / context を閉じる
 - [x] remote browser error を成功扱いにしない
-- [ ] 自動テストでは実ブラウザ、実 ZMQ network、実雀魂にアクセスしない
+- [x] 自動テストでは実ブラウザ、実 ZMQ network、実雀魂にアクセスしない
 
 テスト:
 
@@ -113,7 +113,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] callback が例外を投げた場合も transport を cleanup する
 - [x] callback 実行中の cancellation でも transport を cleanup する
 - [x] remote error response は `BrowserOperationError` として伝播する
-- [ ] PNG screenshot decode が必要な場合は synthetic PNG のみでテストする
+- [x] PNG screenshot decode が必要な場合は synthetic PNG のみでテストする
 
 ## Phase 6: Login API ひとつ目
 

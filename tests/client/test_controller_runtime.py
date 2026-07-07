@@ -22,12 +22,16 @@ from majsoulrpa.config import AppConfig, BrowserConfig, EndpointConfig
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens import Screen, ScreenDetectionSpec
 
+SYNTHETIC_PNG = b"\x89PNG\r\n\x1a\n"
+
 
 class MatchingScreen(Screen):
     @classmethod
     @override
     def detection_spec(cls) -> ScreenDetectionSpec:
-        return ScreenDetectionSpec(lambda screenshot: screenshot == b"screen")
+        return ScreenDetectionSpec(
+            lambda screenshot: screenshot == SYNTHETIC_PNG,
+        )
 
 
 class InputScreen(MatchingScreen):
@@ -90,7 +94,7 @@ class ZmqContextSpy:
 def test_controller_runtime_connects_screenshot_and_cleans_up() -> None:
     context = ZmqContextSpy(
         ScreenshotResponse(
-            screenshot_base64=base64.b64encode(b"screenshot").decode(
+            screenshot_base64=base64.b64encode(SYNTHETIC_PNG).decode(
                 "ascii",
             ),
         ),
@@ -124,7 +128,7 @@ def test_controller_runtime_connects_screenshot_and_cleans_up() -> None:
 def test_controller_runtime_injects_screen_context() -> None:
     context = ZmqContextSpy(
         ScreenshotResponse(
-            screenshot_base64=base64.b64encode(b"screen").decode("ascii"),
+            screenshot_base64=base64.b64encode(SYNTHETIC_PNG).decode("ascii"),
         ),
     )
     factory = ControllerRuntimeFactory(context_factory=lambda: context)
@@ -147,7 +151,7 @@ def test_controller_runtime_injects_screen_context() -> None:
 def test_controller_runtime_screen_helper_sends_click_and_text_input() -> None:
     context = ZmqContextSpy(
         ScreenshotResponse(
-            screenshot_base64=base64.b64encode(b"screen").decode("ascii"),
+            screenshot_base64=base64.b64encode(SYNTHETIC_PNG).decode("ascii"),
         ),
         ClickResponse(x=50, y=50),
         TextInputResponse(text="value"),
@@ -179,7 +183,7 @@ def test_controller_runtime_screen_helper_sends_click_and_text_input() -> None:
 def test_controller_runtime_cleans_up_when_callback_is_cancelled() -> None:
     context = ZmqContextSpy(
         ScreenshotResponse(
-            screenshot_base64=base64.b64encode(b"screen").decode("ascii"),
+            screenshot_base64=base64.b64encode(SYNTHETIC_PNG).decode("ascii"),
         ),
     )
     factory = ControllerRuntimeFactory(context_factory=lambda: context)
@@ -201,7 +205,7 @@ def test_controller_runtime_cleans_up_when_callback_is_cancelled() -> None:
 def test_controller_runtime_stops_when_screen_requests_stop() -> None:
     context = ZmqContextSpy(
         ScreenshotResponse(
-            screenshot_base64=base64.b64encode(b"screen").decode("ascii"),
+            screenshot_base64=base64.b64encode(SYNTHETIC_PNG).decode("ascii"),
         ),
     )
     factory = ControllerRuntimeFactory(context_factory=lambda: context)
