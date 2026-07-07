@@ -72,6 +72,7 @@
 - [x] Screen から browser reload を利用者向け API として実行できる
 - [x] Screen から指定した牌譜 ID の URL へ移動できる
 - [x] Screen から RPAApp の実行ループ停止を利用者向け API として要求できる
+- [x] Screen から browser host の終了を利用者向け API として要求できる
 - [x] ScreenContext から stop 要求を出せる
 - [x] 検出された Screen に ScreenContext を注入できる
 - [x] ScreenContext 未設定の Screen 操作は例外になる
@@ -83,6 +84,7 @@
 - [x] browser controller は `move_mouse` を command / response に変換する
 - [x] browser controller は `goto_url` を command / response に変換する
 - [x] browser controller は `reload` を command / response に変換する
+- [x] browser controller は `stop_browser_host` を command / response に変換する
 - [x] browser controller は remote error response を例外にする
 - [x] browser host へ送る command は click 座標や text など低レベル情報にする
 - [x] click command は mouse down/up 間の delay を持つ
@@ -90,6 +92,7 @@
 - [x] move mouse command は移動先座標を持つ
 - [x] goto url command は遷移先 URL を持つ
 - [x] reload command は追加パラメータを持たない
+- [x] stop browser host command は response 送信後に request loop を停止する
 - [x] browser controller は screenshot command の base64 response を PNG bytes として返す
 - [x] response は click、text input、error を別型にする
 

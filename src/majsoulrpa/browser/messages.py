@@ -59,6 +59,12 @@ class ReloadCommand(BaseModel):
     type: Literal["reload"] = "reload"
 
 
+class StopBrowserHostCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["stop_browser_host"] = "stop_browser_host"
+
+
 BrowserCommand = Annotated[
     ClickCommand
     | MoveMouseCommand
@@ -66,7 +72,8 @@ BrowserCommand = Annotated[
     | PressKeyCommand
     | ScreenshotCommand
     | GotoUrlCommand
-    | ReloadCommand,
+    | ReloadCommand
+    | StopBrowserHostCommand,
     Field(discriminator="type"),
 ]
 
@@ -121,6 +128,12 @@ class ReloadResponse(BaseModel):
     type: Literal["reload"] = "reload"
 
 
+class StopBrowserHostResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["stop_browser_host"] = "stop_browser_host"
+
+
 class BrowserErrorResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -136,6 +149,7 @@ BrowserResponse = Annotated[
     | ScreenshotResponse
     | GotoUrlResponse
     | ReloadResponse
+    | StopBrowserHostResponse
     | BrowserErrorResponse,
     Field(discriminator="type"),
 ]

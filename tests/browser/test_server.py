@@ -7,6 +7,8 @@ from majsoulrpa.browser.messages import (
     BrowserResponse,
     ClickCommand,
     ClickResponse,
+    StopBrowserHostCommand,
+    StopBrowserHostResponse,
     TextInputCommand,
     TextInputResponse,
 )
@@ -75,6 +77,24 @@ def test_browser_request_handler_serves_until_cancelled() -> None:
 
     assert executor.executed_commands == [click_command, text_command]
     assert transport.sent_responses == [click_response, text_response]
+
+
+def test_browser_request_handler_stops_after_stop_browser_host() -> None:
+    stop_command = StopBrowserHostCommand()
+    stop_response = StopBrowserHostResponse()
+    next_command = ClickCommand(
+        x=25,
+        y=40,
+        mouse_down_up_delay_seconds=0.1,
+    )
+    transport = BrowserServerTransportSpy(stop_command, next_command)
+    executor = BrowserCommandExecutorSpy(stop_response)
+    handler = BrowserRequestHandler(transport, executor)
+
+    asyncio.run(handler.serve_forever())
+
+    assert executor.executed_commands == [stop_command]
+    assert transport.sent_responses == [stop_response]
 
 
 def test_browser_request_handler_does_not_hide_cancellation() -> None:

@@ -16,6 +16,8 @@ from majsoulrpa.browser.messages import (
     PressKeyResponse,
     ScreenshotCommand,
     ScreenshotResponse,
+    StopBrowserHostCommand,
+    StopBrowserHostResponse,
     TextInputCommand,
     TextInputResponse,
     dump_browser_response_json,
@@ -310,6 +312,35 @@ def test_controller_runtime_stops_when_screen_requests_stop() -> None:
     assert context.terminated
 
 
+def test_controller_runtime_screen_helper_sends_stop_browser_host() -> None:
+    context = ZmqContextSpy(
+        ScreenshotResponse(
+            screenshot_base64=base64.b64encode(SYNTHETIC_PNG).decode("ascii"),
+        ),
+        StopBrowserHostResponse(),
+    )
+    factory = ControllerRuntimeFactory(context_factory=lambda: context)
+    config = AppConfig()
+    runtime = factory(
+        {
+            MatchingScreen: _stop_browser_host_and_stop_rpa,
+        },
+        config,
+    )
+
+    result = asyncio.run(runtime.run(config, "data", detection_timeout=0.001))
+
+    assert result == "stopped"
+    commands = [
+        parse_browser_command_json(payload)
+        for payload in context.socket_spy.sent_payloads
+    ]
+    assert isinstance(commands[0], ScreenshotCommand)
+    assert isinstance(commands[1], StopBrowserHostCommand)
+    assert context.socket_spy.closed
+    assert context.terminated
+
+
 def test_controller_runtime_propagates_remote_error_response() -> None:
     context = ZmqContextSpy(BrowserErrorResponse(message="remote failed"))
     factory = ControllerRuntimeFactory(context_factory=lambda: context)
@@ -365,4 +396,13 @@ async def _cancel(_screen: MatchingScreen, _data: object) -> object:
 
 async def _request_stop(screen: MatchingScreen, _data: object) -> object:
     await screen.context.request_stop()
+    return "stopped"
+
+
+async def _stop_browser_host_and_stop_rpa(
+    screen: MatchingScreen,
+    _data: object,
+) -> object:
+    await screen.stop_browser_host()
+    await screen.stop_rpa()
     return "stopped"

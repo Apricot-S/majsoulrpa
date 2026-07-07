@@ -20,6 +20,8 @@ from majsoulrpa.browser.messages import (
     ReloadResponse,
     ScreenshotCommand,
     ScreenshotResponse,
+    StopBrowserHostCommand,
+    StopBrowserHostResponse,
     TextInputCommand,
     TextInputResponse,
 )
@@ -154,6 +156,15 @@ def test_playwright_command_executor_reloads_page() -> None:
 
     assert response == ReloadResponse()
     assert page.reloads == 1
+
+
+def test_playwright_command_executor_accepts_stop_browser_host() -> None:
+    page = PageSpy()
+    executor = PlaywrightCommandExecutor(page)
+
+    response = asyncio.run(executor.execute(StopBrowserHostCommand()))
+
+    assert response == StopBrowserHostResponse()
 
 
 def test_playwright_command_executor_types_with_millisecond_delay() -> None:

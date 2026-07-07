@@ -17,6 +17,8 @@ from majsoulrpa.browser.messages import (
     ReloadResponse,
     ScreenshotCommand,
     ScreenshotResponse,
+    StopBrowserHostCommand,
+    StopBrowserHostResponse,
     TextInputCommand,
     TextInputResponse,
 )
@@ -107,6 +109,9 @@ class RemoteBrowserController:
     async def reload(self) -> ReloadResponse:
         return await self._request_reload(ReloadCommand())
 
+    async def stop_browser_host(self) -> StopBrowserHostResponse:
+        return await self._request_stop_browser_host(StopBrowserHostCommand())
+
     async def _request_click(self, command: ClickCommand) -> ClickResponse:
         await self._transport.send_command(command)
         response = await self._transport.recv_response()
@@ -171,6 +176,16 @@ class RemoteBrowserController:
         await self._transport.send_command(command)
         response = await self._transport.recv_response()
         if isinstance(response, ReloadResponse):
+            return response
+        raise self._response_error(response)
+
+    async def _request_stop_browser_host(
+        self,
+        command: StopBrowserHostCommand,
+    ) -> StopBrowserHostResponse:
+        await self._transport.send_command(command)
+        response = await self._transport.recv_response()
+        if isinstance(response, StopBrowserHostResponse):
             return response
         raise self._response_error(response)
 

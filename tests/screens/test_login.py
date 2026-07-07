@@ -32,6 +32,9 @@ class BrowserControllerSpy:
     async def reload(self) -> None:
         pass
 
+    async def stop_browser_host(self) -> None:
+        pass
+
     async def input_text(self, text: str) -> None:
         self.input_texts.append(text)
 

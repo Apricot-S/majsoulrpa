@@ -38,6 +38,7 @@ class BrowserControllerSpy:
         self.pressed_keys: list[str] = []
         self.events: list[str] = []
         self.reloads = 0
+        self.browser_host_stops = 0
         self.screenshot_bytes = b"\x89PNG\r\n\x1a\n"
 
     async def click(self, x: float, y: float) -> None:
@@ -55,6 +56,10 @@ class BrowserControllerSpy:
     async def reload(self) -> None:
         self.reloads += 1
         self.events.append("reload")
+
+    async def stop_browser_host(self) -> None:
+        self.browser_host_stops += 1
+        self.events.append("stop_browser_host")
 
     async def input_text(self, text: str) -> None:
         self.input_texts.append(text)
@@ -533,6 +538,16 @@ def test_screen_can_request_rpa_stop() -> None:
     asyncio.run(screen.stop_rpa())
 
     assert requested is True
+
+
+def test_screen_can_request_browser_host_stop() -> None:
+    browser = BrowserControllerSpy()
+    screen = LoginScreen(context=ScreenContext(browser=browser))
+
+    asyncio.run(screen.stop_browser_host())
+
+    assert browser.browser_host_stops == 1
+    assert browser.events == ["stop_browser_host"]
 
 
 def test_screen_context_browser_can_take_screenshot() -> None:

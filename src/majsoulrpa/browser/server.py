@@ -1,6 +1,10 @@
 from typing import Protocol
 
-from majsoulrpa.browser.messages import BrowserCommand, BrowserResponse
+from majsoulrpa.browser.messages import (
+    BrowserCommand,
+    BrowserResponse,
+    StopBrowserHostCommand,
+)
 from majsoulrpa.browser.transport import BrowserServerTransport
 
 
@@ -23,11 +27,14 @@ class BrowserRequestHandler:
         self._transport = transport
         self._executor = executor
 
-    async def handle_once(self) -> None:
+    async def handle_once(self) -> bool:
         command = await self._transport.recv_command()
         response = await self._executor.execute(command)
         await self._transport.send_response(response)
+        return isinstance(command, StopBrowserHostCommand)
 
     async def serve_forever(self) -> None:
         while True:
-            await self.handle_once()
+            should_stop = await self.handle_once()
+            if should_stop:
+                return

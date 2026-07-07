@@ -22,6 +22,8 @@ from majsoulrpa.browser.messages import (
     ReloadResponse,
     ScreenshotCommand,
     ScreenshotResponse,
+    StopBrowserHostCommand,
+    StopBrowserHostResponse,
     TextInputCommand,
     TextInputResponse,
 )
@@ -38,6 +40,7 @@ class BrowserClientTransportSpy:
             | ReloadResponse
             | TextInputResponse
             | ScreenshotResponse
+            | StopBrowserHostResponse
             | BrowserErrorResponse
         ),
     ) -> None:
@@ -57,6 +60,7 @@ class BrowserClientTransportSpy:
         | ReloadResponse
         | TextInputResponse
         | ScreenshotResponse
+        | StopBrowserHostResponse
         | BrowserErrorResponse
     ):
         return self._responses.pop(0)
@@ -123,6 +127,16 @@ def test_remote_browser_controller_sends_reload() -> None:
 
     assert response == ReloadResponse()
     assert transport.sent_commands == [ReloadCommand()]
+
+
+def test_remote_browser_controller_sends_stop_browser_host() -> None:
+    transport = BrowserClientTransportSpy(StopBrowserHostResponse())
+    controller = RemoteBrowserController(transport)
+
+    response = asyncio.run(controller.stop_browser_host())
+
+    assert response == StopBrowserHostResponse()
+    assert transport.sent_commands == [StopBrowserHostCommand()]
 
 
 def test_remote_browser_controller_sends_press_key() -> None:
@@ -220,6 +234,7 @@ def test_browser_response_error_is_distinct_from_success_responses() -> None:
     press_key = PressKeyResponse(key="Control+A")
     reload = ReloadResponse()
     screenshot = ScreenshotResponse(screenshot_base64="c2NyZWVu")
+    stop_browser_host = StopBrowserHostResponse()
     error = BrowserErrorResponse(message="remote failed")
 
     assert click.type == "click"
@@ -230,4 +245,5 @@ def test_browser_response_error_is_distinct_from_success_responses() -> None:
     assert reload.type == "reload"
     assert screenshot.type == "screenshot"
     assert screenshot.screenshot_base64 == "c2NyZWVu"
+    assert stop_browser_host.type == "stop_browser_host"
     assert error.type == "error"

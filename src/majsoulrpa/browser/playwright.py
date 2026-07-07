@@ -28,6 +28,8 @@ from majsoulrpa.browser.messages import (
     ReloadResponse,
     ScreenshotCommand,
     ScreenshotResponse,
+    StopBrowserHostCommand,
+    StopBrowserHostResponse,
     TextInputCommand,
     TextInputResponse,
 )
@@ -87,6 +89,8 @@ class PlaywrightCommandExecutor:
                     return await self._goto_url(command)
                 case ReloadCommand():
                     return await self._reload()
+                case StopBrowserHostCommand():
+                    return StopBrowserHostResponse()
         except Exception as error:  # noqa: BLE001
             return BrowserErrorResponse(message=str(error))
 
