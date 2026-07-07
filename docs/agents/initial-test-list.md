@@ -90,28 +90,28 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 タスク:
 
-- [ ] controller 側は `AppConfig.endpoint.browser_host` から ZMQ endpoint を作る
-- [ ] browser host 側は `AppConfig.endpoint.client_host` に bind する
-- [ ] controller 側で ZMQ context と REQ socket を作成する
-- [ ] `BrowserZmqClientTransport` と `RemoteBrowserController` を組み立てる
+- [x] controller 側は `AppConfig.endpoint.browser_host` から ZMQ endpoint を作る
+- [x] browser host 側は `AppConfig.endpoint.client_host` に bind する
+- [x] controller 側で ZMQ context と REQ socket を作成する
+- [x] `BrowserZmqClientTransport` と `RemoteBrowserController` を組み立てる
 - [ ] `ScreenContext` に controller、viewport、stop request を渡す
-- [ ] Screen 検出用 screenshot provider を controller の screenshot API につなぐ
-- [ ] runtime 正常終了時に socket / context を閉じる
-- [ ] callback 例外時に socket / context を閉じる
-- [ ] cancellation 時に socket / context を閉じる
+- [x] Screen 検出用 screenshot provider を controller の screenshot API につなぐ
+- [x] runtime 正常終了時に socket / context を閉じる
+- [x] callback 例外時に socket / context を閉じる
+- [x] cancellation 時に socket / context を閉じる
 - [ ] remote browser error を成功扱いにしない
 - [ ] 自動テストでは実ブラウザ、実 ZMQ network、実雀魂にアクセスしない
 
 テスト:
 
-- [ ] 既定 `RPAApp.run()` が `browser_host` から controller runtime を作る
-- [ ] controller endpoint は IPv4 / hostname / IPv6 literal を正しく扱う
-- [ ] runtime が screenshot command を使って Screen 検出を行う
-- [ ] 検出された Screen に controller 入りの `ScreenContext` が注入される
-- [ ] Screen helper から呼ばれた click / text input が remote command になる
-- [ ] detection timeout で Screen 未検出の場合も transport を cleanup する
-- [ ] callback が例外を投げた場合も transport を cleanup する
-- [ ] callback 実行中の cancellation でも transport を cleanup する
+- [x] 既定 `RPAApp.run()` が `browser_host` から controller runtime を作る
+- [x] controller endpoint は IPv4 / hostname / IPv6 literal を正しく扱う
+- [x] runtime が screenshot command を使って Screen 検出を行う
+- [x] 検出された Screen に controller 入りの `ScreenContext` が注入される
+- [x] Screen helper から呼ばれた click / text input が remote command になる
+- [x] detection timeout で Screen 未検出の場合も transport を cleanup する
+- [x] callback が例外を投げた場合も transport を cleanup する
+- [x] callback 実行中の cancellation でも transport を cleanup する
 - [ ] remote error response は `BrowserOperationError` として伝播する
 - [ ] PNG screenshot decode が必要な場合は synthetic PNG のみでテストする
 

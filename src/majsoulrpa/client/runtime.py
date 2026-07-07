@@ -53,23 +53,22 @@ class RPARuntime:
         detection_timeout: float | None = None,
     ) -> Any:  # noqa: ANN401
         _ = config
-        current_data = data
-        screen_types = tuple(self._callbacks)
+        try:
+            current_data = data
+            screen_types = tuple(self._callbacks)
 
-        while True:
-            screen = await self._detect(screen_types, detection_timeout)
-            if screen is None:
-                return current_data
+            while True:
+                screen = await self._detect(screen_types, detection_timeout)
+                if screen is None:
+                    return current_data
 
-            callback = self._callbacks.get(type(screen))
-            if callback is None:
-                continue
+                callback = self._callbacks.get(type(screen))
+                if callback is None:
+                    continue
 
-            try:
                 current_data = await callback(screen, current_data)
-            except asyncio.CancelledError:
-                await self._run_cleanup()
-                raise
+        finally:
+            await self._run_cleanup()
 
     async def _detect(
         self,
@@ -113,6 +112,6 @@ class RPARuntime:
 
 
 type RuntimeFactory = Callable[
-    [Mapping[type[Screen], Callback[Any]]],
+    [Mapping[type[Screen], Callback[Any]], AppConfig],
     RPARuntime,
 ]

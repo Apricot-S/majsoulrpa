@@ -83,7 +83,9 @@ class RuntimeFactorySpy:
     def __call__(
         self,
         callbacks: Mapping[type[Screen], Callback[Any]],
+        config: AppConfig,
     ) -> RPARuntime:
+        _ = config
         return RPARuntime(callbacks, self._detector, cleanup=self._cleanup)
 
 
@@ -244,6 +246,16 @@ def test_rpa_app_run_returns_data_when_detection_timeout_expires() -> None:
     assert result is data
 
 
+def test_rpa_app_run_cleans_up_when_detection_timeout_expires() -> None:
+    cleanup = CleanupSpy()
+    detector = SequenceScreenDetector(None)
+    app = RPAApp(runtime_factory=RuntimeFactorySpy(detector, cleanup))
+
+    asyncio.run(app.run(AppConfig(), None, detection_timeout=0.001))
+
+    assert cleanup.called == 1
+
+
 def test_rpa_app_run_propagates_callback_exception() -> None:
     detector = SequenceScreenDetector(LoginScreen())
     app = RPAApp(runtime_factory=RuntimeFactorySpy(detector))
@@ -255,6 +267,22 @@ def test_rpa_app_run_propagates_callback_exception() -> None:
 
     with pytest.raises(RuntimeError, match="callback failed"):
         asyncio.run(app.run(AppConfig(), None))
+
+
+def test_rpa_app_run_cleans_up_when_callback_fails() -> None:
+    cleanup = CleanupSpy()
+    detector = SequenceScreenDetector(LoginScreen())
+    app = RPAApp(runtime_factory=RuntimeFactorySpy(detector, cleanup))
+
+    @app.on(LoginScreen)
+    async def handle_login(_screen: LoginScreen, _data: object) -> object:
+        msg = "callback failed"
+        raise RuntimeError(msg)
+
+    with pytest.raises(RuntimeError, match="callback failed"):
+        asyncio.run(app.run(AppConfig(), None))
+
+    assert cleanup.called == 1
 
 
 def test_rpa_app_run_raises_detection_timeout() -> None:

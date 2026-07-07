@@ -128,7 +128,9 @@ def test_false_screen_detection_does_not_call_callback() -> None:
 
     def runtime_factory(
         callbacks: Mapping[type[Screen], Callback[Any]],
+        config: AppConfig,
     ) -> RPARuntime:
+        _ = config
         return RPARuntime(callbacks, ScreenshotScreenDetector(screenshot))
 
     app = RPAApp(runtime_factory=runtime_factory)
@@ -166,7 +168,9 @@ def test_screen_detection_exception_is_not_hidden() -> None:
 
     def runtime_factory(
         callbacks: Mapping[type[Screen], Callback[Any]],
+        config: AppConfig,
     ) -> RPARuntime:
+        _ = config
         return RPARuntime(callbacks, ScreenshotScreenDetector(screenshot))
 
     app = RPAApp(runtime_factory=runtime_factory)
@@ -215,7 +219,9 @@ def test_multiple_matching_screens_use_registration_order() -> None:
 
     def runtime_factory(
         callbacks: Mapping[type[Screen], Callback[Any]],
+        config: AppConfig,
     ) -> RPARuntime:
+        _ = config
         return RPARuntime(callbacks, ScreenshotScreenDetector(screenshot))
 
     app = RPAApp(runtime_factory=runtime_factory)
