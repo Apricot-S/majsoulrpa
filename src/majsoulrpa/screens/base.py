@@ -8,7 +8,7 @@ from typing import Protocol
 from majsoulrpa.constants import BASE_VIEWPORT_WIDTH, DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.presentation import Region
 
-FILL_REGION_CLICK_TO_INPUT_DELAY_SECONDS = 0.5
+SCREEN_ACTION_INTERVAL_SECONDS = 0.5
 
 
 class BrowserController(Protocol):
@@ -106,12 +106,12 @@ class Screen(ABC):
         clear: bool = False,
     ) -> None:
         await self.click_region(region)
-        await asyncio.sleep(FILL_REGION_CLICK_TO_INPUT_DELAY_SECONDS)
+        await asyncio.sleep(SCREEN_ACTION_INTERVAL_SECONDS)
         if clear:
             await self.context.browser.press_key("ControlOrMeta+A")
-            await asyncio.sleep(FILL_REGION_CLICK_TO_INPUT_DELAY_SECONDS)
+            await asyncio.sleep(SCREEN_ACTION_INTERVAL_SECONDS)
             await self.context.browser.press_key("Backspace")
-            await asyncio.sleep(FILL_REGION_CLICK_TO_INPUT_DELAY_SECONDS)
+            await asyncio.sleep(SCREEN_ACTION_INTERVAL_SECONDS)
         await self.context.browser.input_text(value)
 
     async def matches(self, template: TemplateMatcher) -> bool:
