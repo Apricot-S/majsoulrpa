@@ -15,7 +15,10 @@ from majsoulrpa.assets.templates.login import (
 )
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
-from majsoulrpa.screens.errors import ScreenDetectionError
+from majsoulrpa.screens.errors import (
+    ScreenDetectionError,
+    ScreenInvalidArgumentError,
+)
 from majsoulrpa.screens.login import YOSTAR_LOGO_TEMPLATE, LoginScreen
 
 
@@ -205,6 +208,22 @@ def test_login_screen_enter_email_address_records_browser_operation() -> None:
     assert region.top < y < region.bottom
     assert browser.input_texts == ["player@example.invalid"]
     assert isinstance(LoginScreen.EMAIL_ADDRESS_REGION, Region)
+
+
+def test_login_screen_enter_email_address_rejects_invalid_address() -> None:
+    screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(screenshot)
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+
+    with pytest.raises(
+        ScreenInvalidArgumentError,
+        match="is not available for Yostar login",
+    ) as exc_info:
+        asyncio.run(screen.enter_email_address("not an email address"))
+
+    assert exc_info.value.screenshot == screenshot
+    assert browser.clicked_points == []
+    assert browser.input_texts == []
 
 
 def test_login_screen_enter_email_address_scales_region_to_viewport() -> None:

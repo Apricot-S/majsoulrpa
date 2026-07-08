@@ -75,6 +75,9 @@
 - [x] Screen から browser host の終了を利用者向け API として要求できる
 - [x] Screen 検出エラーに screenshot bytes を添付できる
 - [x] Screen 検出エラーの screenshot を file path または directory path へ保存できる
+- [x] Screen 検出 timeout エラーは `TimeoutError` としても捕捉できる
+- [x] Screen API の不正引数は `ScreenInvalidArgumentError` として表す
+- [x] Screen API の不正引数エラーは `ValueError` としても捕捉できる
 - [x] ScreenContext から stop 要求を出せる
 - [x] 検出された Screen に ScreenContext を注入できる
 - [x] ScreenContext 未設定の Screen 操作は例外になる

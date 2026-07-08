@@ -37,5 +37,9 @@ class ScreenDetectionError(ScreenError):
     pass
 
 
-class ScreenDetectionTimeoutError(ScreenError):
+class ScreenDetectionTimeoutError(ScreenError, TimeoutError):
+    pass
+
+
+class ScreenInvalidArgumentError(ScreenError, ValueError):
     pass

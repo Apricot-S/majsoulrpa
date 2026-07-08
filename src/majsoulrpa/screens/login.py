@@ -11,6 +11,7 @@ from majsoulrpa.assets.templates.login import (
 from majsoulrpa.presentation.region import Region
 from majsoulrpa.presentation.template import load_png_template_matcher
 from majsoulrpa.screens.base import Screen, ScreenDetectionSpec
+from majsoulrpa.screens.errors import ScreenInvalidArgumentError
 
 LOGIN_1_TEMPLATE = load_png_template_matcher(
     template_path=LOGIN_1_TEMPLATE_PATH,
@@ -54,6 +55,16 @@ class LoginScreen(Screen):
         await asyncio.sleep(0.5)
 
     async def enter_email_address(self, email_address: str) -> None:
+        if not email_address:
+            msg = "Email address cannot be empty."
+            screenshot = await self.screenshot()
+            raise ScreenInvalidArgumentError(msg, screenshot)
+
+        if EMAIL_ADDRESS_PATTERN.fullmatch(email_address) is None:
+            msg = "Email address is not available for Yostar login."
+            screenshot = await self.screenshot()
+            raise ScreenInvalidArgumentError(msg, screenshot)
+
         await self.fill_region(
             self.EMAIL_ADDRESS_REGION,
             email_address,
