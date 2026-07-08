@@ -1,4 +1,5 @@
 import asyncio
+import re
 from typing import override
 
 from majsoulrpa.assets.templates.login import (
@@ -18,6 +19,11 @@ LOGIN_1_TEMPLATE = load_png_template_matcher(
 YOSTAR_LOGO_TEMPLATE = load_png_template_matcher(
     template_path=YOSTAR_LOGO_TEMPLATE_PATH,
     settings_path=YOSTAR_LOGO_SETTINGS_PATH,
+)
+
+EMAIL_ADDRESS_PATTERN = re.compile(
+    "[\\w!#$%&'*+/=?^_`{|}~-]+(?:\\.[\\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\\w](?:[\\w-]*[\\w])?\\.)+[\\w](?:[\\w-]*[\\w])?",
+    re.ASCII,
 )
 
 
