@@ -145,7 +145,7 @@ class TemplateMatcher:
         resized = cv2.resize(
             self._template,
             (width, height),
-            interpolation=cv2.INTER_AREA,
+            interpolation=cv2.INTER_LINEAR,
         )
         return cast("NDArray[np.uint8]", resized)
 
