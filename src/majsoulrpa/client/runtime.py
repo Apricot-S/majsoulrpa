@@ -1,6 +1,6 @@
 import asyncio
 from collections.abc import Awaitable, Callable, Mapping
-from typing import Any, Protocol
+from typing import Any, NoReturn, Protocol
 
 from majsoulrpa.config import AppConfig
 from majsoulrpa.screens import Screen, ScreenContext
@@ -116,7 +116,7 @@ class RPARuntime:
 
             await asyncio.sleep(sleep_seconds)
 
-    async def _raise_detection_timeout(self) -> None:
+    async def _raise_detection_timeout(self) -> NoReturn:
         screenshot = await self._detector.screenshot()
         msg = "Screen detection timed out."
         raise ScreenDetectionTimeoutError(msg, screenshot)
