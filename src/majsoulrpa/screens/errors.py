@@ -14,6 +14,7 @@ class ScreenError(RuntimeError):
         self._screenshot = screenshot
         self._created_at = created_at or datetime.now(UTC)
 
+    @property
     def screenshot(self) -> bytes:
         return self._screenshot
 
