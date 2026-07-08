@@ -158,7 +158,7 @@ class TemplateMatcher:
         if scale == 1:
             return self._template
 
-        region = self._settings.region.to_region()
+        region = self._settings.region
         width = self._scaled_size(region.width, scale)
         height = self._scaled_size(region.height, scale)
         resized = cv2.resize(
@@ -169,7 +169,7 @@ class TemplateMatcher:
         return cast("NDArray[np.uint8]", resized)
 
     def _scaled_search_region(self, scale: float) -> Region:
-        region = self._settings.region.to_region()
+        region = self._settings.region
         margin = self._settings.margin
         left = region.left - margin.left
         top = region.top - margin.top
