@@ -27,6 +27,7 @@ from majsoulrpa.client.controller_runtime import ControllerRuntimeFactory
 from majsoulrpa.config import AppConfig, BrowserConfig, EndpointConfig
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens import Screen, ScreenDetectionSpec
+from majsoulrpa.screens.errors import ScreenDetectionTimeoutError
 
 SYNTHETIC_PNG = b"\x89PNG\r\n\x1a\n"
 
@@ -130,9 +131,10 @@ def test_controller_runtime_connects_screenshot_and_cleans_up() -> None:
     runtime = factory({}, config)
     data = object()
 
-    result = asyncio.run(runtime.run(config, data, detection_timeout=0.001))
+    with pytest.raises(ScreenDetectionTimeoutError) as exc_info:
+        asyncio.run(runtime.run(config, data, detection_timeout=0.001))
 
-    assert result is data
+    assert exc_info.value.screenshot() == SYNTHETIC_PNG
     assert context.socket_spy.connected_endpoints == [
         "tcp://192.0.2.10:12000",
     ]

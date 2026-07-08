@@ -13,6 +13,7 @@ from majsoulrpa.config import AppConfig
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
 from majsoulrpa.screens.base import TemplateMatchResult
+from majsoulrpa.screens.errors import ScreenDetectionTimeoutError
 from majsoulrpa.types import Callback
 
 
@@ -106,14 +107,10 @@ def test_screen_requires_detection_spec() -> None:
 
 
 def test_screen_detector_detects_screen_from_fake_screenshot() -> None:
-    class FakeScreenshot:
-        marker = "login"
+    login_screenshot = b"login"
 
     def matches_login(screenshot: object) -> bool:
-        return (
-            isinstance(screenshot, FakeScreenshot)
-            and screenshot.marker == "login"
-        )
+        return screenshot == login_screenshot
 
     class FakeLoginScreen(Screen):
         @override
@@ -125,8 +122,8 @@ def test_screen_detector_detects_screen_from_fake_screenshot() -> None:
         def detection_spec(cls) -> ScreenDetectionSpec:
             return ScreenDetectionSpec(predicate=matches_login)
 
-    async def screenshot() -> FakeScreenshot:
-        return FakeScreenshot()
+    async def screenshot() -> bytes:
+        return login_screenshot
 
     detector = ScreenshotScreenDetector(screenshot)
 
@@ -136,14 +133,10 @@ def test_screen_detector_detects_screen_from_fake_screenshot() -> None:
 
 
 def test_screen_detector_injects_context_into_detected_screen() -> None:
-    class FakeScreenshot:
-        marker = "login"
+    login_screenshot = b"login"
 
     def matches_login(screenshot: object) -> bool:
-        return (
-            isinstance(screenshot, FakeScreenshot)
-            and screenshot.marker == "login"
-        )
+        return screenshot == login_screenshot
 
     class FakeLoginScreen(Screen):
         @override
@@ -155,8 +148,8 @@ def test_screen_detector_injects_context_into_detected_screen() -> None:
         def detection_spec(cls) -> ScreenDetectionSpec:
             return ScreenDetectionSpec(predicate=matches_login)
 
-    async def screenshot() -> FakeScreenshot:
-        return FakeScreenshot()
+    async def screenshot() -> bytes:
+        return login_screenshot
 
     context = ScreenContext(browser=BrowserControllerSpy())
     detector = ScreenshotScreenDetector(screenshot, context=context)
@@ -175,8 +168,7 @@ def test_screen_context_is_required_before_screen_operation() -> None:
 
 
 def test_false_screen_detection_does_not_call_callback() -> None:
-    class FakeScreenshot:
-        pass
+    fake_screenshot = b"\x89PNG\r\n\x1a\n"
 
     class NeverScreen(Screen):
         @override
@@ -188,15 +180,19 @@ def test_false_screen_detection_does_not_call_callback() -> None:
         def detection_spec(cls) -> ScreenDetectionSpec:
             return ScreenDetectionSpec(predicate=lambda _screenshot: False)
 
-    async def screenshot() -> FakeScreenshot:
-        return FakeScreenshot()
+    async def screenshot() -> bytes:
+        return fake_screenshot
 
     def runtime_factory(
         callbacks: Mapping[type[Screen], Callback[Any]],
         config: AppConfig,
     ) -> RPARuntime:
         _ = config
-        return RPARuntime(callbacks, ScreenshotScreenDetector(screenshot))
+        return RPARuntime(
+            callbacks,
+            ScreenshotScreenDetector(screenshot),
+            should_stop=lambda: True,
+        )
 
     app = RPAApp(runtime_factory=runtime_factory)
     called = False
@@ -207,17 +203,14 @@ def test_false_screen_detection_does_not_call_callback() -> None:
         called = True
         return data
 
-    data = object()
-    result = asyncio.run(app.run(AppConfig(), data, detection_timeout=0.001))
+    with pytest.raises(ScreenDetectionTimeoutError) as exc_info:
+        asyncio.run(app.run(AppConfig(), object(), detection_timeout=0.001))
 
-    assert result is data
+    assert exc_info.value.screenshot() == fake_screenshot
     assert called is False
 
 
 def test_screen_detection_exception_is_not_hidden() -> None:
-    class FakeScreenshot:
-        pass
-
     def raise_detection_error(_screenshot: object) -> bool:
         msg = "detection failed"
         raise RuntimeError(msg)
@@ -232,15 +225,19 @@ def test_screen_detection_exception_is_not_hidden() -> None:
         def detection_spec(cls) -> ScreenDetectionSpec:
             return ScreenDetectionSpec(predicate=raise_detection_error)
 
-    async def screenshot() -> FakeScreenshot:
-        return FakeScreenshot()
+    async def screenshot() -> bytes:
+        return b"broken"
 
     def runtime_factory(
         callbacks: Mapping[type[Screen], Callback[Any]],
         config: AppConfig,
     ) -> RPARuntime:
         _ = config
-        return RPARuntime(callbacks, ScreenshotScreenDetector(screenshot))
+        return RPARuntime(
+            callbacks,
+            ScreenshotScreenDetector(screenshot),
+            should_stop=lambda: True,
+        )
 
     app = RPAApp(runtime_factory=runtime_factory)
 
@@ -253,9 +250,8 @@ def test_screen_detection_exception_is_not_hidden() -> None:
 
 
 def test_multiple_matching_screens_use_registration_order() -> None:
-    class FakeScreenshot:
-        def __init__(self, *, matches: bool) -> None:
-            self.matches = matches
+    matching_screenshot = b"match"
+    missing_screenshot = b"miss"
 
     class FirstScreen(Screen):
         @override
@@ -266,10 +262,7 @@ def test_multiple_matching_screens_use_registration_order() -> None:
         @override
         def detection_spec(cls) -> ScreenDetectionSpec:
             return ScreenDetectionSpec(
-                predicate=lambda screenshot: (
-                    isinstance(screenshot, FakeScreenshot)
-                    and screenshot.matches
-                ),
+                predicate=lambda screenshot: screenshot == matching_screenshot,
             )
 
     class SecondScreen(Screen):
@@ -281,17 +274,14 @@ def test_multiple_matching_screens_use_registration_order() -> None:
         @override
         def detection_spec(cls) -> ScreenDetectionSpec:
             return ScreenDetectionSpec(
-                predicate=lambda screenshot: (
-                    isinstance(screenshot, FakeScreenshot)
-                    and screenshot.matches
-                ),
+                predicate=lambda screenshot: screenshot == matching_screenshot,
             )
 
-    screenshots = [FakeScreenshot(matches=True), FakeScreenshot(matches=False)]
+    screenshots = [matching_screenshot, missing_screenshot]
 
-    async def screenshot() -> FakeScreenshot:
+    async def screenshot() -> bytes:
         if not screenshots:
-            return FakeScreenshot(matches=False)
+            return missing_screenshot
         return screenshots.pop(0)
 
     def runtime_factory(
@@ -299,7 +289,11 @@ def test_multiple_matching_screens_use_registration_order() -> None:
         config: AppConfig,
     ) -> RPARuntime:
         _ = config
-        return RPARuntime(callbacks, ScreenshotScreenDetector(screenshot))
+        return RPARuntime(
+            callbacks,
+            ScreenshotScreenDetector(screenshot),
+            should_stop=lambda: True,
+        )
 
     app = RPAApp(runtime_factory=runtime_factory)
 
@@ -593,9 +587,8 @@ def test_screen_can_go_to_log_url() -> None:
 
 
 def test_runtime_calls_screen_before_callback() -> None:
-    class FakeScreenshot:
-        def __init__(self, *, matches: bool) -> None:
-            self.matches = matches
+    matching_screenshot = b"match"
+    missing_screenshot = b"miss"
 
     events: list[str] = []
 
@@ -604,29 +597,30 @@ def test_runtime_calls_screen_before_callback() -> None:
         @override
         def detection_spec(cls) -> ScreenDetectionSpec:
             return ScreenDetectionSpec(
-                predicate=lambda screenshot: (
-                    isinstance(screenshot, FakeScreenshot)
-                    and screenshot.matches
-                ),
+                predicate=lambda screenshot: screenshot == matching_screenshot,
             )
 
         @override
         async def before_callback(self) -> None:
             events.append("before_callback")
 
-    screenshots = [FakeScreenshot(matches=True)]
+    screenshots = [matching_screenshot]
 
-    async def screenshot() -> FakeScreenshot:
+    async def screenshot() -> bytes:
         if screenshots:
             return screenshots.pop(0)
-        return FakeScreenshot(matches=False)
+        return missing_screenshot
 
     def runtime_factory(
         callbacks: Mapping[type[Screen], Callback[Any]],
         config: AppConfig,
     ) -> RPARuntime:
         _ = config
-        return RPARuntime(callbacks, ScreenshotScreenDetector(screenshot))
+        return RPARuntime(
+            callbacks,
+            ScreenshotScreenDetector(screenshot),
+            should_stop=lambda: True,
+        )
 
     app = RPAApp(runtime_factory=runtime_factory)
 

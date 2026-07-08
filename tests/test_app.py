@@ -9,7 +9,10 @@ from majsoulrpa import RPAApp
 from majsoulrpa.client.runtime import RPARuntime
 from majsoulrpa.config import AppConfig
 from majsoulrpa.screens import Screen, ScreenDetectionSpec
+from majsoulrpa.screens.errors import ScreenDetectionTimeoutError
 from majsoulrpa.types import Callback
+
+SYNTHETIC_PNG = b"\x89PNG\r\n\x1a\n"
 
 
 class LoginScreen(Screen):
@@ -49,6 +52,8 @@ class SequenceScreenDetector:
     def __init__(self, *screens: Screen | None) -> None:
         self._screens = list(screens)
         self.seen_screen_types: list[tuple[type[Screen], ...]] = []
+        self.screenshot_bytes = SYNTHETIC_PNG
+        self.detected_count = 0
 
     async def detect(
         self,
@@ -57,16 +62,30 @@ class SequenceScreenDetector:
         self.seen_screen_types.append(screen_types)
         if not self._screens:
             return None
-        return self._screens.pop(0)
+        screen = self._screens.pop(0)
+        if screen is not None:
+            self.detected_count += 1
+        return screen
+
+    async def screenshot(self) -> bytes:
+        return self.screenshot_bytes
+
+    def has_detected_screen(self) -> bool:
+        return self.detected_count > 0
 
 
 class BlockingScreenDetector:
+    screenshot_bytes = SYNTHETIC_PNG
+
     async def detect(
         self,
         screen_types: tuple[type[Screen], ...],
     ) -> Screen | None:
         _ = screen_types
         await asyncio.Event().wait()
+
+    async def screenshot(self) -> bytes:
+        return self.screenshot_bytes
 
 
 class CleanupSpy:
@@ -98,7 +117,17 @@ class RuntimeFactorySpy:
         config: AppConfig,
     ) -> RPARuntime:
         _ = config
-        return RPARuntime(callbacks, self._detector, cleanup=self._cleanup)
+        should_stop = (
+            self._detector.has_detected_screen
+            if isinstance(self._detector, SequenceScreenDetector)
+            else None
+        )
+        return RPARuntime(
+            callbacks,
+            self._detector,
+            cleanup=self._cleanup,
+            should_stop=should_stop,
+        )
 
 
 def test_rpa_app_registers_async_callback() -> None:
@@ -248,14 +277,14 @@ def test_rpa_app_run_retries_screen_detection_until_screen_is_found(
     ]
 
 
-def test_rpa_app_run_returns_data_when_detection_timeout_expires() -> None:
+def test_rpa_app_run_raises_detection_timeout_with_screenshot() -> None:
     detector = SequenceScreenDetector(None)
     app = RPAApp(runtime_factory=RuntimeFactorySpy(detector))
-    data = object()
 
-    result = asyncio.run(app.run(AppConfig(), data, detection_timeout=0.001))
+    with pytest.raises(ScreenDetectionTimeoutError) as exc_info:
+        asyncio.run(app.run(AppConfig(), object(), detection_timeout=0.001))
 
-    assert result is data
+    assert exc_info.value.screenshot() == SYNTHETIC_PNG
 
 
 def test_rpa_app_run_cleans_up_when_detection_timeout_expires() -> None:
@@ -263,7 +292,8 @@ def test_rpa_app_run_cleans_up_when_detection_timeout_expires() -> None:
     detector = SequenceScreenDetector(None)
     app = RPAApp(runtime_factory=RuntimeFactorySpy(detector, cleanup))
 
-    asyncio.run(app.run(AppConfig(), None, detection_timeout=0.001))
+    with pytest.raises(ScreenDetectionTimeoutError):
+        asyncio.run(app.run(AppConfig(), None, detection_timeout=0.001))
 
     assert cleanup.called == 1
 
@@ -300,8 +330,10 @@ def test_rpa_app_run_cleans_up_when_callback_fails() -> None:
 def test_rpa_app_run_raises_detection_timeout() -> None:
     app = RPAApp(runtime_factory=RuntimeFactorySpy(BlockingScreenDetector()))
 
-    with pytest.raises(TimeoutError):
+    with pytest.raises(ScreenDetectionTimeoutError) as exc_info:
         asyncio.run(app.run(AppConfig(), None, detection_timeout=0.001))
+
+    assert exc_info.value.screenshot() == SYNTHETIC_PNG
 
 
 def test_rpa_app_run_cleans_up_when_callback_is_cancelled() -> None:

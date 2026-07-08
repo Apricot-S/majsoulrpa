@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 
-class ScreenDetectionError(RuntimeError):
+class ScreenError(RuntimeError):
     def __init__(
         self,
         message: str,
@@ -30,3 +30,11 @@ class ScreenDetectionError(RuntimeError):
             )
             return path / f"{timestamp}-{type(self).__name__}.png"
         return path
+
+
+class ScreenDetectionError(ScreenError):
+    pass
+
+
+class ScreenDetectionTimeoutError(ScreenError):
+    pass

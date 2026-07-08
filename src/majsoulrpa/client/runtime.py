@@ -4,18 +4,20 @@ from typing import Any, Protocol
 
 from majsoulrpa.config import AppConfig
 from majsoulrpa.screens import Screen, ScreenContext
+from majsoulrpa.screens.errors import ScreenDetectionTimeoutError
 from majsoulrpa.types import Callback
 
 type ScreenTypes = tuple[type[Screen], ...]
 type Cleanup = Callable[[], Awaitable[None]]
 type StopPredicate = Callable[[], bool]
-type ScreenshotProvider = Callable[[], Awaitable[object]]
+type ScreenshotProvider = Callable[[], Awaitable[bytes]]
 
 SCREEN_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
 
 
 class ScreenDetector(Protocol):
     async def detect(self, screen_types: ScreenTypes) -> Screen | None: ...
+    async def screenshot(self) -> bytes: ...
 
 
 class ScreenshotScreenDetector:
@@ -33,6 +35,9 @@ class ScreenshotScreenDetector:
             if screen_type.detection_spec().matches(screenshot):
                 return screen_type(context=self._context)
         return None
+
+    async def screenshot(self) -> bytes:
+        return await self._screenshot()
 
 
 class RPARuntime:
@@ -62,8 +67,6 @@ class RPARuntime:
 
             while True:
                 screen = await self._detect(screen_types, detection_timeout)
-                if screen is None:
-                    return current_data
 
                 callback = self._callbacks.get(type(screen))
                 if callback is None:
@@ -80,7 +83,7 @@ class RPARuntime:
         self,
         screen_types: ScreenTypes,
         detection_timeout: float | None,
-    ) -> Screen | None:
+    ) -> Screen:
         loop = asyncio.get_running_loop()
         deadline = (
             None
@@ -91,10 +94,13 @@ class RPARuntime:
         while True:
             timeout = None if deadline is None else deadline - loop.time()
             if timeout is not None and timeout <= 0:
-                return None
+                await self._raise_detection_timeout()
 
-            async with asyncio.timeout(timeout):
-                screen = await self._detector.detect(screen_types)
+            try:
+                async with asyncio.timeout(timeout):
+                    screen = await self._detector.detect(screen_types)
+            except TimeoutError:
+                await self._raise_detection_timeout()
             if screen is not None:
                 return screen
 
@@ -106,9 +112,14 @@ class RPARuntime:
                     max(0, deadline - loop.time()),
                 )
                 if sleep_seconds <= 0:
-                    return None
+                    await self._raise_detection_timeout()
 
             await asyncio.sleep(sleep_seconds)
+
+    async def _raise_detection_timeout(self) -> None:
+        screenshot = await self._detector.screenshot()
+        msg = "Screen detection timed out."
+        raise ScreenDetectionTimeoutError(msg, screenshot)
 
     async def _run_cleanup(self) -> None:
         if self._cleanup is None:
