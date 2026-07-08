@@ -37,7 +37,7 @@ class LoginScreen(Screen):
         screenshot = await self.screenshot()
         if not LOGIN_1_TEMPLATE.matches(screenshot):
             msg = "Failed to find login button."
-            raise ScreenDetectionError(msg, screenshot=screenshot)
+            raise ScreenDetectionError(msg, screenshot)
 
         result = LOGIN_1_TEMPLATE.match(screenshot)
         await self._click_region(result.region)
@@ -47,7 +47,7 @@ class LoginScreen(Screen):
         screenshot = await self.screenshot()
         if not YOSTAR_LOGO_TEMPLATE.matches(screenshot):
             msg = "Failed to find Yostar logo after login button click."
-            raise ScreenDetectionError(msg, screenshot=screenshot)
+            raise ScreenDetectionError(msg, screenshot)
 
     async def enter_email_address(self, email_address: str) -> None:
         await self.fill_region(self.EMAIL_ADDRESS_REGION, email_address)

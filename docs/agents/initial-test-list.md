@@ -73,7 +73,7 @@
 - [x] Screen から指定した牌譜 ID の URL へ移動できる
 - [x] Screen から RPAApp の実行ループ停止を利用者向け API として要求できる
 - [x] Screen から browser host の終了を利用者向け API として要求できる
-- [x] Screen 検出エラーに任意の screenshot bytes を添付できる
+- [x] Screen 検出エラーに screenshot bytes を添付できる
 - [x] Screen 検出エラーの screenshot を file path または directory path へ保存できる
 - [x] ScreenContext から stop 要求を出せる
 - [x] 検出された Screen に ScreenContext を注入できる
