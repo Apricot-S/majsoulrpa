@@ -284,7 +284,7 @@ def test_rpa_app_run_raises_detection_timeout_with_screenshot() -> None:
     with pytest.raises(ScreenDetectionTimeoutError) as exc_info:
         asyncio.run(app.run(AppConfig(), object(), detection_timeout=0.001))
 
-    assert exc_info.value.screenshot() == SYNTHETIC_PNG
+    assert exc_info.value.screenshot == SYNTHETIC_PNG
 
 
 def test_rpa_app_run_cleans_up_when_detection_timeout_expires() -> None:
@@ -333,7 +333,7 @@ def test_rpa_app_run_raises_detection_timeout() -> None:
     with pytest.raises(ScreenDetectionTimeoutError) as exc_info:
         asyncio.run(app.run(AppConfig(), None, detection_timeout=0.001))
 
-    assert exc_info.value.screenshot() == SYNTHETIC_PNG
+    assert exc_info.value.screenshot == SYNTHETIC_PNG
 
 
 def test_rpa_app_run_cleans_up_when_callback_is_cancelled() -> None:

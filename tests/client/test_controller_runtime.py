@@ -134,7 +134,7 @@ def test_controller_runtime_connects_screenshot_and_cleans_up() -> None:
     with pytest.raises(ScreenDetectionTimeoutError) as exc_info:
         asyncio.run(runtime.run(config, data, detection_timeout=0.001))
 
-    assert exc_info.value.screenshot() == SYNTHETIC_PNG
+    assert exc_info.value.screenshot == SYNTHETIC_PNG
     assert context.socket_spy.connected_endpoints == [
         "tcp://192.0.2.10:12000",
     ]
