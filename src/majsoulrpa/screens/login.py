@@ -49,5 +49,7 @@ class LoginScreen(Screen):
             msg = "Failed to find Yostar logo after login button click."
             raise ScreenDetectionError(msg, screenshot)
 
+        await asyncio.sleep(0.5)
+
     async def enter_email_address(self, email_address: str) -> None:
         await self.fill_region(self.EMAIL_ADDRESS_REGION, email_address)
