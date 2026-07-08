@@ -48,4 +48,8 @@ class LoginScreen(Screen):
         await asyncio.sleep(0.5)
 
     async def enter_email_address(self, email_address: str) -> None:
-        await self.fill_region(self.EMAIL_ADDRESS_REGION, email_address)
+        await self.fill_region(
+            self.EMAIL_ADDRESS_REGION,
+            email_address,
+            clear=True,
+        )
