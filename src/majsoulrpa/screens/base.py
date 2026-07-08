@@ -126,9 +126,6 @@ class Screen(ABC):
             await asyncio.sleep(SCREEN_ACTION_INTERVAL_SECONDS)
         await self.context.browser.input_text(value)
 
-    async def matches(self, template: TemplateMatcher) -> bool:
-        return await self.find_template(template) is not None
-
     async def find_template(
         self,
         template: TemplateMatcher,

@@ -132,9 +132,6 @@ class TemplateMatcher:
             ),
         )
 
-    def matches(self, screenshot: NDArray[np.uint8]) -> bool:
-        return self.find(screenshot) is not None
-
     def find(
         self,
         screenshot: NDArray[np.uint8],
@@ -143,6 +140,9 @@ class TemplateMatcher:
         if result.score < self._settings.match.threshold:
             return None
         return result
+
+    def matches(self, screenshot: NDArray[np.uint8]) -> bool:
+        return self.find(screenshot) is not None
 
     def _validate_template_size(self) -> None:
         template_height, template_width = self._template.shape[:2]
@@ -226,14 +226,14 @@ class PngTemplateMatcher:
             raise TypeError(msg)
         return self._matcher.match(_decode_grayscale_png(screenshot))
 
-    def matches(self, screenshot: object) -> bool:
-        return self.find(screenshot) is not None
-
     def find(self, screenshot: object) -> TemplateMatchResult | None:
         if not isinstance(screenshot, bytes):
             msg = "screenshot must be PNG bytes."
             raise TypeError(msg)
         return self._matcher.find(_decode_grayscale_png(screenshot))
+
+    def matches(self, screenshot: object) -> bool:
+        return self.find(screenshot) is not None
 
 
 def load_png_template_matcher(

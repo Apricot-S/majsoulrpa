@@ -82,13 +82,8 @@ class TemplateSpy:
     def __init__(self, *, matches: bool, region: Region | None = None) -> None:
         self.matches_result = matches
         self.region = region or Region(left=0, top=0, width=10, height=10)
-        self.screenshots_for_matches: list[object] = []
         self.screenshots_for_find: list[object] = []
         self.screenshots_for_match: list[object] = []
-
-    def matches(self, screenshot: object) -> bool:
-        self.screenshots_for_matches.append(screenshot)
-        return self.matches_result
 
     def match(self, screenshot: object) -> TemplateMatchResult:
         self.screenshots_for_match.append(screenshot)
@@ -99,6 +94,9 @@ class TemplateSpy:
         if not self.matches_result:
             return None
         return TemplateMatchResultSpy(region=self.region)
+
+    def matches(self, screenshot: object) -> bool:
+        return self.find(screenshot) is not None
 
 
 @dataclass(frozen=True)
@@ -438,7 +436,7 @@ def test_screen_moves_to_scaled_region() -> None:
     assert browser.events == ["move_mouse"]
 
 
-def test_screen_matches_uses_detection_spec() -> None:
+def test_screen_finds_template() -> None:
     browser = BrowserControllerSpy()
     browser.screenshot_bytes = b"match"
     template = TemplateSpy(matches=True)
@@ -446,13 +444,16 @@ def test_screen_matches_uses_detection_spec() -> None:
         context=ScreenContext(browser=browser),
     )
 
-    assert asyncio.run(screen.matches(template)) is True
+    result = asyncio.run(screen.find_template(template))
+
+    assert result == TemplateMatchResultSpy(
+        region=Region(left=0, top=0, width=10, height=10),
+    )
     assert browser.events == ["screenshot"]
     assert template.screenshots_for_find == [b"match"]
-    assert template.screenshots_for_matches == []
 
 
-def test_screen_matches_returns_false_for_mismatch() -> None:
+def test_screen_returns_none_when_template_is_missing() -> None:
     browser = BrowserControllerSpy()
     browser.screenshot_bytes = b"miss"
     template = TemplateSpy(matches=False)
@@ -460,10 +461,9 @@ def test_screen_matches_returns_false_for_mismatch() -> None:
         context=ScreenContext(browser=browser),
     )
 
-    assert asyncio.run(screen.matches(template)) is False
+    assert asyncio.run(screen.find_template(template)) is None
     assert browser.events == ["screenshot"]
     assert template.screenshots_for_find == [b"miss"]
-    assert template.screenshots_for_matches == []
 
 
 def test_screen_clicks_required_template_without_scaling() -> None:
@@ -489,7 +489,6 @@ def test_screen_clicks_required_template_without_scaling() -> None:
     assert result.region == Region(left=300, top=150, width=6, height=3)
     assert browser.events == ["screenshot", "click"]
     assert template.screenshots_for_find == [b"match"]
-    assert template.screenshots_for_matches == []
     assert template.screenshots_for_match == []
     [(x, y)] = browser.clicked_points
     assert 300 < x < 306
