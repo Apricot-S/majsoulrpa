@@ -15,7 +15,7 @@ def test_screen_detection_error_exposes_screenshot() -> None:
     )
 
     assert str(error) == "detection failed"
-    assert error.screenshot() == b"png-bytes"
+    assert error.screenshot == b"png-bytes"
     assert isinstance(error, ScreenError)
 
 
