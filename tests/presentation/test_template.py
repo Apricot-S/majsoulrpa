@@ -310,7 +310,7 @@ def test_template_matcher_scales_to_1280x720_screenshot() -> None:
     scaled_template = cv2.resize(
         template,
         (4, 2),
-        interpolation=cv2.INTER_AREA,
+        interpolation=cv2.INTER_LINEAR,
     )
     screenshot = np.zeros((720, 1280), dtype=np.uint8)
     screenshot[100:102, 200:204] = scaled_template
@@ -353,7 +353,7 @@ def test_template_matcher_scales_to_2560x1440_screenshot() -> None:
     scaled_template = cv2.resize(
         template,
         (8, 4),
-        interpolation=cv2.INTER_AREA,
+        interpolation=cv2.INTER_LINEAR,
     )
     screenshot = np.zeros((1440, 2560), dtype=np.uint8)
     screenshot[200:204, 400:408] = scaled_template
@@ -435,6 +435,59 @@ def test_template_matcher_finds_template_shifted_within_margin() -> None:
 
     assert result.region == Region(left=107, top=195, width=4, height=3)
     assert result.score == pytest.approx(1.0)
+
+
+def test_template_matcher_uses_better_score_between_ccoeff_and_sqdiff(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = TemplateMatchSettings.from_toml_text(
+        """
+        [region]
+        left = 100
+        top = 200
+        width = 4
+        height = 3
+
+        [margin]
+        top = 0
+        right = 4
+        bottom = 0
+        left = 0
+
+        [match]
+        threshold = 0.99
+        """,
+    )
+    template = np.array(
+        [
+            [0, 64, 128, 255],
+            [255, 128, 64, 0],
+            [32, 96, 160, 224],
+        ],
+        dtype=np.uint8,
+    )
+    screenshot = np.zeros((1080, 1920), dtype=np.uint8)
+
+    def fake_match_template(
+        image: np.ndarray,
+        templ: np.ndarray,
+        method: int,
+    ) -> np.ndarray:
+        assert image.shape == (3, 8)
+        assert templ.shape == (3, 4)
+        if method == cv2.TM_CCOEFF_NORMED:
+            return np.array([[0.2, 0.4, 0.7, 0.3, 0.1]], dtype=np.float32)
+        if method == cv2.TM_SQDIFF_NORMED:
+            return np.array([[0.8, 0.6, 0.5, 0.04, 0.7]], dtype=np.float32)
+        raise AssertionError
+
+    monkeypatch.setattr(cv2, "matchTemplate", fake_match_template)
+
+    matcher = TemplateMatcher(template, settings)
+    result = matcher.match(screenshot)
+
+    assert result.region == Region(left=103, top=200, width=4, height=3)
+    assert result.score == pytest.approx(0.96)
 
 
 def test_template_matcher_returns_false_below_threshold() -> None:

@@ -94,17 +94,36 @@ class TemplateMatcher:
             round(search_region.top) : round(search_region.bottom),
             round(search_region.left) : round(search_region.right),
         ]
-        match_result = cv2.matchTemplate(
+        ccoeff_match_result = cv2.matchTemplate(
             search_image,
             scaled_template,
             cv2.TM_CCOEFF_NORMED,
         )
-        _, max_score, _, max_location = cv2.minMaxLoc(match_result)
-        match_left = search_region.left + max_location[0]
-        match_top = search_region.top + max_location[1]
+        _, ccoeff_score, _, ccoeff_location = cv2.minMaxLoc(
+            ccoeff_match_result,
+        )
+        sqdiff_match_result = cv2.matchTemplate(
+            search_image,
+            scaled_template,
+            cv2.TM_SQDIFF_NORMED,
+        )
+        sqdiff_min_score, _, sqdiff_location, _ = cv2.minMaxLoc(
+            sqdiff_match_result,
+        )
+        sqdiff_score = 1.0 - sqdiff_min_score
+
+        if ccoeff_score >= sqdiff_score:
+            score = ccoeff_score
+            location = ccoeff_location
+        else:
+            score = sqdiff_score
+            location = sqdiff_location
+
+        match_left = search_region.left + location[0]
+        match_top = search_region.top + location[1]
 
         return TemplateMatchResult(
-            score=max_score,
+            score=score,
             region=Region(
                 left=match_left,
                 top=match_top,
