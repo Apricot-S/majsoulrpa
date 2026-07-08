@@ -156,7 +156,7 @@ def test_login_screen_before_callback_clicks_matched_region(
     [(x, y)] = browser.clicked_points
     assert 1310 < x < 1680
     assert 435 < y < 500
-    assert sleeps == [1.0]
+    assert sleeps == [1.0, 0.5]
     assert browser.input_texts == []
 
 
@@ -167,7 +167,7 @@ def test_login_screen_before_callback_raises_without_login_button() -> None:
     with pytest.raises(ScreenDetectionError, match="login button") as exc_info:
         asyncio.run(screen.before_callback())
 
-    assert exc_info.value.screenshot() == browser.screenshot_bytes
+    assert exc_info.value.screenshot == browser.screenshot_bytes
     assert browser.clicked_points == []
 
 
@@ -188,7 +188,7 @@ def test_login_screen_before_callback_raises_when_yostar_logo_is_missing(
     with pytest.raises(ScreenDetectionError, match="Yostar logo") as exc_info:
         asyncio.run(screen.before_callback())
 
-    assert exc_info.value.screenshot() == yostar_missing_screenshot
+    assert exc_info.value.screenshot == yostar_missing_screenshot
     assert browser.clicked_points
 
 

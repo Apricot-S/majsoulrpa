@@ -277,6 +277,7 @@ def test_template_matcher_uses_scale_one_for_1920x1080_screenshot() -> None:
         score=1.0,
         region=Region(left=100, top=200, width=4, height=3),
     )
+    assert matcher.find(screenshot) == result
     assert matcher.matches(screenshot) is True
 
 
@@ -521,6 +522,7 @@ def test_template_matcher_returns_false_below_threshold() -> None:
 
     matcher = TemplateMatcher(template, settings)
 
+    assert matcher.find(screenshot) is None
     assert matcher.matches(screenshot) is False
 
 
@@ -626,6 +628,10 @@ def test_load_png_template_matcher_from_files(tmp_path: Path) -> None:
     )
 
     assert matcher.matches(screenshot_png.tobytes()) is True
+    assert matcher.find(screenshot_png.tobytes()) == TemplateMatchResult(
+        score=1.0,
+        region=Region(left=100, top=200, width=2, height=2),
+    )
     assert matcher.match(screenshot_png.tobytes()).region == Region(
         left=100,
         top=200,

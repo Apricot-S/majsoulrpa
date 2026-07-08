@@ -10,7 +10,6 @@ from majsoulrpa.assets.templates.login import (
 from majsoulrpa.presentation.region import Region
 from majsoulrpa.presentation.template import load_png_template_matcher
 from majsoulrpa.screens.base import Screen, ScreenDetectionSpec
-from majsoulrpa.screens.errors import ScreenDetectionError
 
 LOGIN_1_TEMPLATE = load_png_template_matcher(
     template_path=LOGIN_1_TEMPLATE_PATH,
@@ -34,20 +33,17 @@ class LoginScreen(Screen):
 
     @override
     async def before_callback(self) -> None:
-        screenshot = await self.screenshot()
-        if not LOGIN_1_TEMPLATE.matches(screenshot):
-            msg = "Failed to find login button."
-            raise ScreenDetectionError(msg, screenshot)
-
-        result = LOGIN_1_TEMPLATE.match(screenshot)
-        await self._click_region(result.region)
+        await self.click_template(
+            LOGIN_1_TEMPLATE,
+            message="Failed to find login button.",
+        )
 
         await asyncio.sleep(1.0)
 
-        screenshot = await self.screenshot()
-        if not YOSTAR_LOGO_TEMPLATE.matches(screenshot):
-            msg = "Failed to find Yostar logo after login button click."
-            raise ScreenDetectionError(msg, screenshot)
+        await self.require_template(
+            YOSTAR_LOGO_TEMPLATE,
+            message="Failed to find Yostar logo after login button click.",
+        )
 
         await asyncio.sleep(0.5)
 

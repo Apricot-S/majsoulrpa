@@ -13,7 +13,10 @@ from majsoulrpa.config import AppConfig
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
 from majsoulrpa.screens.base import TemplateMatchResult
-from majsoulrpa.screens.errors import ScreenDetectionTimeoutError
+from majsoulrpa.screens.errors import (
+    ScreenDetectionError,
+    ScreenDetectionTimeoutError,
+)
 from majsoulrpa.types import Callback
 
 
@@ -80,6 +83,7 @@ class TemplateSpy:
         self.matches_result = matches
         self.region = region or Region(left=0, top=0, width=10, height=10)
         self.screenshots_for_matches: list[object] = []
+        self.screenshots_for_find: list[object] = []
         self.screenshots_for_match: list[object] = []
 
     def matches(self, screenshot: object) -> bool:
@@ -88,6 +92,12 @@ class TemplateSpy:
 
     def match(self, screenshot: object) -> TemplateMatchResult:
         self.screenshots_for_match.append(screenshot)
+        return TemplateMatchResultSpy(region=self.region)
+
+    def find(self, screenshot: object) -> TemplateMatchResult | None:
+        self.screenshots_for_find.append(screenshot)
+        if not self.matches_result:
+            return None
         return TemplateMatchResultSpy(region=self.region)
 
 
@@ -206,7 +216,7 @@ def test_false_screen_detection_does_not_call_callback() -> None:
     with pytest.raises(ScreenDetectionTimeoutError) as exc_info:
         asyncio.run(app.run(AppConfig(), object(), detection_timeout=0.001))
 
-    assert exc_info.value.screenshot() == fake_screenshot
+    assert exc_info.value.screenshot == fake_screenshot
     assert called is False
 
 
@@ -438,7 +448,8 @@ def test_screen_matches_uses_detection_spec() -> None:
 
     assert asyncio.run(screen.matches(template)) is True
     assert browser.events == ["screenshot"]
-    assert template.screenshots_for_matches == [b"match"]
+    assert template.screenshots_for_find == [b"match"]
+    assert template.screenshots_for_matches == []
 
 
 def test_screen_matches_returns_false_for_mismatch() -> None:
@@ -451,10 +462,11 @@ def test_screen_matches_returns_false_for_mismatch() -> None:
 
     assert asyncio.run(screen.matches(template)) is False
     assert browser.events == ["screenshot"]
-    assert template.screenshots_for_matches == [b"miss"]
+    assert template.screenshots_for_find == [b"miss"]
+    assert template.screenshots_for_matches == []
 
 
-def test_screen_clicks_matched_region_without_scaling() -> None:
+def test_screen_clicks_required_template_without_scaling() -> None:
     browser = BrowserControllerSpy()
     browser.screenshot_bytes = b"match"
     template = TemplateSpy(
@@ -470,18 +482,21 @@ def test_screen_clicks_matched_region_without_scaling() -> None:
         ),
     )
 
-    result = asyncio.run(screen.click_if_match(template))
+    result = asyncio.run(
+        screen.click_template(template, message="missing template"),
+    )
 
-    assert result is True
+    assert result.region == Region(left=300, top=150, width=6, height=3)
     assert browser.events == ["screenshot", "click"]
-    assert template.screenshots_for_matches == [b"match"]
-    assert template.screenshots_for_match == [b"match"]
+    assert template.screenshots_for_find == [b"match"]
+    assert template.screenshots_for_matches == []
+    assert template.screenshots_for_match == []
     [(x, y)] = browser.clicked_points
     assert 300 < x < 306
     assert 150 < y < 153
 
 
-def test_screen_does_not_click_if_current_screenshot_does_not_match() -> None:
+def test_screen_raises_when_required_template_does_not_match() -> None:
     browser = BrowserControllerSpy()
     browser.screenshot_bytes = b"miss"
     template = TemplateSpy(matches=False)
@@ -489,11 +504,33 @@ def test_screen_does_not_click_if_current_screenshot_does_not_match() -> None:
         context=ScreenContext(browser=browser, rng=Random(0)),
     )
 
-    result = asyncio.run(screen.click_if_match(template))
+    with pytest.raises(
+        ScreenDetectionError, match="missing template"
+    ) as exc_info:
+        asyncio.run(
+            screen.click_template(template, message="missing template")
+        )
+
+    assert exc_info.value.screenshot == b"miss"
+    assert browser.events == ["screenshot"]
+    assert template.screenshots_for_find == [b"miss"]
+    assert template.screenshots_for_match == []
+    assert browser.clicked_points == []
+
+
+def test_screen_does_not_click_if_optional_template_does_not_match() -> None:
+    browser = BrowserControllerSpy()
+    browser.screenshot_bytes = b"miss"
+    template = TemplateSpy(matches=False)
+    screen = LoginScreen(
+        context=ScreenContext(browser=browser, rng=Random(0)),
+    )
+
+    result = asyncio.run(screen.click_template_if_present(template))
 
     assert result is False
     assert browser.events == ["screenshot"]
-    assert template.screenshots_for_matches == [b"miss"]
+    assert template.screenshots_for_find == [b"miss"]
     assert template.screenshots_for_match == []
     assert browser.clicked_points == []
 

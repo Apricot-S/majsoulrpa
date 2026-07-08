@@ -7,6 +7,7 @@ from typing import Protocol
 
 from majsoulrpa.constants import BASE_VIEWPORT_WIDTH, DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.presentation import Region
+from majsoulrpa.screens.errors import ScreenDetectionError
 
 SCREEN_ACTION_INTERVAL_SECONDS = 0.5
 LOG_URL_PREFIX = "https://game.mahjongsoul.com/?paipu="
@@ -29,6 +30,7 @@ class TemplateMatchResult(Protocol):
 
 class TemplateMatcher(Protocol):
     def match(self, screenshot: object) -> TemplateMatchResult: ...
+    def find(self, screenshot: object) -> TemplateMatchResult | None: ...
     def matches(self, screenshot: object) -> bool: ...
 
 
@@ -125,15 +127,45 @@ class Screen(ABC):
         await self.context.browser.input_text(value)
 
     async def matches(self, template: TemplateMatcher) -> bool:
-        screenshot = await self.context.browser.screenshot()
-        return template.matches(screenshot)
+        return await self.find_template(template) is not None
 
-    async def click_if_match(self, template: TemplateMatcher) -> bool:
+    async def find_template(
+        self,
+        template: TemplateMatcher,
+    ) -> TemplateMatchResult | None:
         screenshot = await self.context.browser.screenshot()
-        if not template.matches(screenshot):
+        return template.find(screenshot)
+
+    async def require_template(
+        self,
+        template: TemplateMatcher,
+        *,
+        message: str,
+    ) -> TemplateMatchResult:
+        screenshot = await self.context.browser.screenshot()
+        result = template.find(screenshot)
+        if result is None:
+            raise ScreenDetectionError(message, screenshot)
+        return result
+
+    async def click_template(
+        self,
+        template: TemplateMatcher,
+        *,
+        message: str,
+    ) -> TemplateMatchResult:
+        result = await self.require_template(template, message=message)
+        await self._click_region(result.region)
+        return result
+
+    async def click_template_if_present(
+        self,
+        template: TemplateMatcher,
+    ) -> bool:
+        result = await self.find_template(template)
+        if result is None:
             return False
 
-        result = template.match(screenshot)
         await self._click_region(result.region)
         return True
 
