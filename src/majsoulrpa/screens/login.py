@@ -15,15 +15,6 @@ from majsoulrpa.presentation.template import load_png_template_matcher
 from majsoulrpa.screens.base import Screen, ScreenDetectionSpec
 from majsoulrpa.screens.errors import ScreenInvalidArgumentError
 
-LOGIN_1_TEMPLATE = load_png_template_matcher(
-    template_path=LOGIN_1_TEMPLATE_PATH,
-    settings_path=LOGIN_1_SETTINGS_PATH,
-)
-YOSTAR_LOGO_TEMPLATE = load_png_template_matcher(
-    template_path=YOSTAR_LOGO_TEMPLATE_PATH,
-    settings_path=YOSTAR_LOGO_SETTINGS_PATH,
-)
-
 EMAIL_ADDRESS_PATTERN = re.compile(
     "[\\w!#$%&'*+/=?^_`{|}~-]+(?:\\.[\\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\\w](?:[\\w-]*[\\w])?\\.)+[\\w](?:[\\w-]*[\\w])?",
     re.ASCII,
@@ -41,22 +32,31 @@ class LoginScreen(Screen):
     SEND_REGION = Region(left=1102, top=508, width=40, height=22)
     VERIFICATION_CODE_REGION = Region(left=768, top=508, width=100, height=20)
 
+    LOGIN_1_TEMPLATE = load_png_template_matcher(
+        template_path=LOGIN_1_TEMPLATE_PATH,
+        settings_path=LOGIN_1_SETTINGS_PATH,
+    )
+    YOSTAR_LOGO_TEMPLATE = load_png_template_matcher(
+        template_path=YOSTAR_LOGO_TEMPLATE_PATH,
+        settings_path=YOSTAR_LOGO_SETTINGS_PATH,
+    )
+
     @classmethod
     @override
     def detection_spec(cls) -> ScreenDetectionSpec:
-        return ScreenDetectionSpec(predicate=LOGIN_1_TEMPLATE.matches)
+        return ScreenDetectionSpec(predicate=cls.LOGIN_1_TEMPLATE.matches)
 
     @override
     async def before_callback(self) -> None:
         await self.click_template(
-            LOGIN_1_TEMPLATE,
+            self.LOGIN_1_TEMPLATE,
             message="Failed to find login button.",
         )
 
         await asyncio.sleep(1.0)
 
         await self.require_template(
-            YOSTAR_LOGO_TEMPLATE,
+            self.YOSTAR_LOGO_TEMPLATE,
             message="Failed to find Yostar logo after login button click.",
         )
 

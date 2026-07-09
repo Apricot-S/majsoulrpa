@@ -19,11 +19,7 @@ from majsoulrpa.screens.errors import (
     ScreenDetectionError,
     ScreenInvalidArgumentError,
 )
-from majsoulrpa.screens.login import (
-    EMAIL_ADDRESS_PATTERN,
-    YOSTAR_LOGO_TEMPLATE,
-    LoginScreen,
-)
+from majsoulrpa.screens.login import EMAIL_ADDRESS_PATTERN, LoginScreen
 
 
 class BrowserControllerSpy:
@@ -139,7 +135,9 @@ def test_yostar_logo_template_assets_exist() -> None:
 
 
 def test_yostar_logo_template_matches_synthetic_screenshot() -> None:
-    assert YOSTAR_LOGO_TEMPLATE.matches(_synthetic_yostar_logo_screenshot())
+    assert LoginScreen.YOSTAR_LOGO_TEMPLATE.matches(
+        _synthetic_yostar_logo_screenshot(),
+    )
 
 
 def test_login_button_template_matches_synthetic_screenshot() -> None:
