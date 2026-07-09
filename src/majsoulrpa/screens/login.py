@@ -1,5 +1,6 @@
 import asyncio
 import re
+from time import monotonic
 from typing import override
 
 from pydantic import EmailStr, TypeAdapter, ValidationError
@@ -12,8 +13,11 @@ from majsoulrpa.assets.templates.login import (
 )
 from majsoulrpa.presentation.region import Region
 from majsoulrpa.presentation.template import load_png_template_matcher
-from majsoulrpa.screens.base import Screen, ScreenDetectionSpec
-from majsoulrpa.screens.errors import ScreenInvalidArgumentError
+from majsoulrpa.screens.base import Screen, ScreenContext, ScreenDetectionSpec
+from majsoulrpa.screens.errors import (
+    ScreenInvalidArgumentError,
+    ScreenInvalidOperationError,
+)
 
 EMAIL_ADDRESS_PATTERN = re.compile(
     "[\\w!#$%&'*+/=?^_`{|}~-]+(?:\\.[\\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\\w](?:[\\w-]*[\\w])?\\.)+[\\w](?:[\\w-]*[\\w])?",
@@ -25,6 +29,7 @@ Some RFC-valid email addresses are rejected by this frontend validation.
 """
 
 EMAIL_ADDRESS_ADAPTER = TypeAdapter(EmailStr)
+EMAIL_ADDRESS_REENTRY_INTERVAL_SECONDS = 60.0
 
 
 class LoginScreen(Screen):
@@ -40,6 +45,10 @@ class LoginScreen(Screen):
         template_path=YOSTAR_LOGO_TEMPLATE_PATH,
         settings_path=YOSTAR_LOGO_SETTINGS_PATH,
     )
+
+    def __init__(self, context: ScreenContext | None = None) -> None:
+        super().__init__(context=context)
+        self._email_address_entered_at: float | None = None
 
     @classmethod
     @override
@@ -63,6 +72,15 @@ class LoginScreen(Screen):
         await asyncio.sleep(0.5)
 
     async def enter_email_address(self, email_address: str) -> None:
+        if (
+            self._email_address_entered_at is not None
+            and monotonic() - self._email_address_entered_at
+            < EMAIL_ADDRESS_REENTRY_INTERVAL_SECONDS
+        ):
+            msg = "Email address has already been entered."
+            screenshot = await self.screenshot()
+            raise ScreenInvalidOperationError(msg, screenshot)
+
         if not email_address:
             msg = "Email address cannot be empty."
             screenshot = await self.screenshot()
@@ -87,3 +105,4 @@ class LoginScreen(Screen):
         )
         await asyncio.sleep(0.5)
         await self.click_region(self.SEND_REGION)
+        self._email_address_entered_at = monotonic()

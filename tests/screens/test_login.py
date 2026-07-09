@@ -18,6 +18,7 @@ from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
     ScreenInvalidArgumentError,
+    ScreenInvalidOperationError,
 )
 from majsoulrpa.screens.login import EMAIL_ADDRESS_PATTERN, LoginScreen
 
@@ -248,6 +249,78 @@ def test_login_screen_enter_email_address_records_browser_operation(
         "click",
     ]
     assert isinstance(LoginScreen.EMAIL_ADDRESS_REGION, Region)
+
+
+def test_login_screen_enter_email_address_rejects_reentry_before_60_seconds(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    browser = BrowserControllerSpy()
+    current_time = 100.0
+
+    async def sleep(seconds: float) -> None:
+        browser.events.append(f"sleep:{seconds}")
+
+    def monotonic() -> float:
+        return current_time
+
+    monkeypatch.setattr(
+        login_module,
+        "EMAIL_ADDRESS_ADAPTER",
+        EmailAddressAdapterStub(),
+    )
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
+    monkeypatch.setattr(login_module, "monotonic", monotonic)
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+
+    asyncio.run(screen.enter_email_address("player@example.invalid"))
+    browser.clicked_points.clear()
+    browser.input_texts.clear()
+    browser.events.clear()
+
+    current_time = 159.9
+    with pytest.raises(
+        ScreenInvalidOperationError,
+        match="Email address has already been entered",
+    ) as exc_info:
+        asyncio.run(screen.enter_email_address("player@example.invalid"))
+
+    assert exc_info.value.screenshot == browser.screenshot_bytes
+    assert browser.clicked_points == []
+    assert browser.input_texts == []
+    assert browser.events == []
+
+
+def test_login_screen_enter_email_address_allows_reentry_after_60_seconds(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    browser = BrowserControllerSpy()
+    current_time = 100.0
+
+    async def sleep(seconds: float) -> None:
+        browser.events.append(f"sleep:{seconds}")
+
+    def monotonic() -> float:
+        return current_time
+
+    monkeypatch.setattr(
+        login_module,
+        "EMAIL_ADDRESS_ADAPTER",
+        EmailAddressAdapterStub(),
+    )
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
+    monkeypatch.setattr(login_module, "monotonic", monotonic)
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+
+    asyncio.run(screen.enter_email_address("player@example.invalid"))
+    browser.clicked_points.clear()
+    browser.input_texts.clear()
+    browser.events.clear()
+
+    current_time = 160.0
+    asyncio.run(screen.enter_email_address("player@example.invalid"))
+
+    assert len(browser.clicked_points) == 2
+    assert browser.input_texts == ["player@example.invalid"]
 
 
 def test_email_address_pattern_rejects_some_rfc_valid_addresses() -> None:

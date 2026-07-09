@@ -67,6 +67,7 @@ def test_screens_import_does_not_load_login_screen_module() -> None:
         "ScreenDetectionTimeoutError",
         "ScreenError",
         "ScreenInvalidArgumentError",
+        "ScreenInvalidOperationError",
     ]
     assert "majsoulrpa.screens.login" not in sys.modules
 

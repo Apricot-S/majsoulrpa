@@ -178,6 +178,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `EMAIL_ADDRESS_PATTERN` が RFC 上は有効でも雀魂フロントエンドでは reject される例を固定する
 - [x] `LoginScreen.enter_email_address()` がフロントエンド regex を通る不正メールを `EmailStr` で reject する
 - [x] `LoginScreen.enter_email_address()` がメール入力後 0.5 秒待機して送信ボタンをクリックする
+- [x] `LoginScreen.enter_email_address()` が成功後 60 秒未満の再入力を不正操作として reject する
 - [ ] `LoginScreen.enter_verification_code()` が認証コード欄へ入力する
 
 どちらを選ぶ場合も、先に fake browser operation のテストを書きます。

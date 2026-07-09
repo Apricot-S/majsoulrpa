@@ -4,6 +4,7 @@ from majsoulrpa.screens.errors import (
     ScreenDetectionTimeoutError,
     ScreenError,
     ScreenInvalidArgumentError,
+    ScreenInvalidOperationError,
 )
 
 __all__ = [
@@ -14,4 +15,5 @@ __all__ = [
     "ScreenDetectionTimeoutError",
     "ScreenError",
     "ScreenInvalidArgumentError",
+    "ScreenInvalidOperationError",
 ]

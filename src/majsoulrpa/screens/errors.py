@@ -43,3 +43,7 @@ class ScreenDetectionTimeoutError(ScreenError, TimeoutError):
 
 class ScreenInvalidArgumentError(ScreenError, ValueError):
     pass
+
+
+class ScreenInvalidOperationError(ScreenError):
+    pass

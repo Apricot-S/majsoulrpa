@@ -6,6 +6,7 @@ from majsoulrpa.screens.errors import (
     ScreenDetectionTimeoutError,
     ScreenError,
     ScreenInvalidArgumentError,
+    ScreenInvalidOperationError,
 )
 
 
@@ -30,6 +31,17 @@ def test_screen_invalid_argument_error_is_screen_value_error() -> None:
     assert error.screenshot == b"png-bytes"
     assert isinstance(error, ScreenError)
     assert isinstance(error, ValueError)
+
+
+def test_screen_invalid_operation_error_is_screen_error() -> None:
+    error = ScreenInvalidOperationError(
+        "invalid screen API operation",
+        b"png-bytes",
+    )
+
+    assert str(error) == "invalid screen API operation"
+    assert error.screenshot == b"png-bytes"
+    assert isinstance(error, ScreenError)
 
 
 def test_screen_detection_timeout_error_is_timeout_error() -> None:
@@ -102,5 +114,22 @@ def test_screen_invalid_argument_error_saves_screenshot_to_directory(
 
     assert saved_path == (
         tmp_path / "20260708T010203Z-ScreenInvalidArgumentError.png"
+    )
+    assert saved_path.read_bytes() == b"png-bytes"
+
+
+def test_screen_invalid_operation_error_saves_screenshot_to_directory(
+    tmp_path: Path,
+) -> None:
+    error = ScreenInvalidOperationError(
+        "invalid screen API operation",
+        b"png-bytes",
+        created_at=datetime(2026, 7, 8, 1, 2, 3, tzinfo=UTC),
+    )
+
+    saved_path = error.save_screenshot(tmp_path)
+
+    assert saved_path == (
+        tmp_path / "20260708T010203Z-ScreenInvalidOperationError.png"
     )
     assert saved_path.read_bytes() == b"png-bytes"
