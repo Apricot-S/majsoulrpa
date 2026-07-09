@@ -126,3 +126,5 @@ class LoginScreen(Screen):
             verification_code,
             clear=True,
         )
+        await asyncio.sleep(0.5)
+        await self.click_region(self.LOGIN_2_REGION)

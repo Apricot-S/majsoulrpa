@@ -464,12 +464,19 @@ def test_login_screen_enter_verification_code_records_browser_operation(
 
     asyncio.run(screen.enter_verification_code("123456"))
 
-    region = LoginScreen.VERIFICATION_CODE_REGION
-    [(x, y)] = browser.clicked_points
-    assert region.left < x < region.right
-    assert region.top < y < region.bottom
+    verification_code_region = LoginScreen.VERIFICATION_CODE_REGION
+    login_2_region = LoginScreen.LOGIN_2_REGION
+    [(verification_x, verification_y), (login_2_x, login_2_y)] = (
+        browser.clicked_points
+    )
+    assert verification_code_region.left < verification_x
+    assert verification_x < verification_code_region.right
+    assert verification_code_region.top < verification_y
+    assert verification_y < verification_code_region.bottom
+    assert login_2_region.left < login_2_x < login_2_region.right
+    assert login_2_region.top < login_2_y < login_2_region.bottom
     assert browser.input_texts == ["123456"]
-    assert sleeps == [0.5, 0.5, 0.5]
+    assert sleeps == [0.5, 0.5, 0.5, 0.5]
     assert browser.events == [
         "click",
         "sleep:0.5",
@@ -478,6 +485,8 @@ def test_login_screen_enter_verification_code_records_browser_operation(
         "press_key:Backspace",
         "sleep:0.5",
         "input_text",
+        "sleep:0.5",
+        "click",
     ]
 
 
