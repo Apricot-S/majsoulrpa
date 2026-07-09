@@ -85,3 +85,5 @@ class LoginScreen(Screen):
             email_address,
             clear=True,
         )
+        await asyncio.sleep(0.5)
+        await self.click_region(self.SEND_REGION)

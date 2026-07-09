@@ -29,11 +29,13 @@ class BrowserControllerSpy:
         *screenshots: bytes,
     ) -> None:
         self.clicked_points: list[tuple[float, float]] = []
+        self.events: list[str] = []
         self.input_texts: list[str] = []
         self.screenshot_bytes = screenshot
         self.screenshot_queue = [screenshot, *screenshots]
 
     async def click(self, x: float, y: float) -> None:
+        self.events.append("click")
         self.clicked_points.append((x, y))
 
     async def move_mouse(self, x: float, y: float) -> None:
@@ -49,9 +51,11 @@ class BrowserControllerSpy:
         pass
 
     async def input_text(self, text: str) -> None:
+        self.events.append("input_text")
         self.input_texts.append(text)
 
     async def press_key(self, key: str) -> None:
+        self.events.append(f"press_key:{key}")
         _ = key
 
     async def screenshot(self) -> bytes:
@@ -206,21 +210,43 @@ def test_login_screen_enter_email_address_records_browser_operation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     browser = BrowserControllerSpy()
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+        browser.events.append(f"sleep:{seconds}")
+
     monkeypatch.setattr(
         login_module,
         "EMAIL_ADDRESS_ADAPTER",
         EmailAddressAdapterStub(),
     )
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
 
     screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
 
     asyncio.run(screen.enter_email_address("player@example.invalid"))
 
-    region = LoginScreen.EMAIL_ADDRESS_REGION
-    [(x, y)] = browser.clicked_points
-    assert region.left < x < region.right
-    assert region.top < y < region.bottom
+    email_region = LoginScreen.EMAIL_ADDRESS_REGION
+    send_region = LoginScreen.SEND_REGION
+    [(email_x, email_y), (send_x, send_y)] = browser.clicked_points
+    assert email_region.left < email_x < email_region.right
+    assert email_region.top < email_y < email_region.bottom
+    assert send_region.left < send_x < send_region.right
+    assert send_region.top < send_y < send_region.bottom
     assert browser.input_texts == ["player@example.invalid"]
+    assert sleeps == [0.5, 0.5, 0.5, 0.5]
+    assert browser.events == [
+        "click",
+        "sleep:0.5",
+        "press_key:ControlOrMeta+A",
+        "sleep:0.5",
+        "press_key:Backspace",
+        "sleep:0.5",
+        "input_text",
+        "sleep:0.5",
+        "click",
+    ]
     assert isinstance(LoginScreen.EMAIL_ADDRESS_REGION, Region)
 
 
@@ -301,9 +327,11 @@ def test_login_screen_enter_email_address_scales_region_to_viewport(
     finally:
         LoginScreen.EMAIL_ADDRESS_REGION = base_region
 
-    [(x, y)] = browser.clicked_points
-    assert 200 < x < 204
-    assert 100 < y < 102
+    [(email_x, email_y), (send_x, send_y)] = browser.clicked_points
+    assert 200 < email_x < 204
+    assert 100 < email_y < 102
+    assert 734 < send_x < 762
+    assert 338 < send_y < 354
     assert browser.input_texts == ["player@example.invalid"]
 
 
