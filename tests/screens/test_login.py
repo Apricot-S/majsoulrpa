@@ -19,7 +19,11 @@ from majsoulrpa.screens.errors import (
     ScreenDetectionError,
     ScreenInvalidArgumentError,
 )
-from majsoulrpa.screens.login import YOSTAR_LOGO_TEMPLATE, LoginScreen
+from majsoulrpa.screens.login import (
+    EMAIL_ADDRESS_PATTERN,
+    YOSTAR_LOGO_TEMPLATE,
+    LoginScreen,
+)
 
 
 class BrowserControllerSpy:
@@ -58,6 +62,11 @@ class BrowserControllerSpy:
         if self.screenshot_queue:
             return self.screenshot_queue.pop(0)
         return self.screenshot_bytes
+
+
+class EmailAddressAdapterStub:
+    def validate_python(self, email_address: str) -> str:
+        return email_address
 
 
 def _synthetic_template_screenshot(
@@ -195,8 +204,15 @@ def test_login_screen_before_callback_raises_when_yostar_logo_is_missing(
     assert browser.clicked_points
 
 
-def test_login_screen_enter_email_address_records_browser_operation() -> None:
+def test_login_screen_enter_email_address_records_browser_operation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     browser = BrowserControllerSpy()
+    monkeypatch.setattr(
+        login_module,
+        "EMAIL_ADDRESS_ADAPTER",
+        EmailAddressAdapterStub(),
+    )
 
     screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
 
@@ -208,6 +224,13 @@ def test_login_screen_enter_email_address_records_browser_operation() -> None:
     assert region.top < y < region.bottom
     assert browser.input_texts == ["player@example.invalid"]
     assert isinstance(LoginScreen.EMAIL_ADDRESS_REGION, Region)
+
+
+def test_email_address_pattern_rejects_some_rfc_valid_addresses() -> None:
+    assert (
+        EMAIL_ADDRESS_PATTERN.fullmatch('"player name"@example.invalid')
+        is None
+    )
 
 
 def test_login_screen_enter_email_address_rejects_invalid_address() -> None:
@@ -226,9 +249,39 @@ def test_login_screen_enter_email_address_rejects_invalid_address() -> None:
     assert browser.input_texts == []
 
 
-def test_login_screen_enter_email_address_scales_region_to_viewport() -> None:
+def test_login_screen_rejects_pattern_only_valid_address() -> None:
+    screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(screenshot)
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+
+    assert (
+        EMAIL_ADDRESS_PATTERN.fullmatch("player@sub_domain.example.invalid")
+        is not None
+    )
+
+    with pytest.raises(
+        ScreenInvalidArgumentError,
+        match="Email address is invalid",
+    ) as exc_info:
+        asyncio.run(
+            screen.enter_email_address("player@sub_domain.example.invalid"),
+        )
+
+    assert exc_info.value.screenshot == screenshot
+    assert browser.clicked_points == []
+    assert browser.input_texts == []
+
+
+def test_login_screen_enter_email_address_scales_region_to_viewport(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     browser = BrowserControllerSpy()
     base_region = LoginScreen.EMAIL_ADDRESS_REGION
+    monkeypatch.setattr(
+        login_module,
+        "EMAIL_ADDRESS_ADAPTER",
+        EmailAddressAdapterStub(),
+    )
     LoginScreen.EMAIL_ADDRESS_REGION = Region(
         left=300,
         top=150,

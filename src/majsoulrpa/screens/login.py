@@ -2,6 +2,8 @@ import asyncio
 import re
 from typing import override
 
+from pydantic import EmailStr, TypeAdapter, ValidationError
+
 from majsoulrpa.assets.templates.login import (
     LOGIN_1_SETTINGS_PATH,
     LOGIN_1_TEMPLATE_PATH,
@@ -26,6 +28,12 @@ EMAIL_ADDRESS_PATTERN = re.compile(
     "[\\w!#$%&'*+/=?^_`{|}~-]+(?:\\.[\\w!#$%&'*+/=?^_`{|}~-]+)*@(?:[\\w](?:[\\w-]*[\\w])?\\.)+[\\w](?:[\\w-]*[\\w])?",
     re.ASCII,
 )
+"""Mahjong Soul frontend validation regex.
+
+Some RFC-valid email addresses are rejected by this frontend validation.
+"""
+
+EMAIL_ADDRESS_ADAPTER = TypeAdapter(EmailStr)
 
 
 class LoginScreen(Screen):
@@ -64,6 +72,13 @@ class LoginScreen(Screen):
             msg = "Email address is not available for Yostar login."
             screenshot = await self.screenshot()
             raise ScreenInvalidArgumentError(msg, screenshot)
+
+        try:
+            EMAIL_ADDRESS_ADAPTER.validate_python(email_address)
+        except ValidationError:
+            msg = "Email address is invalid."
+            screenshot = await self.screenshot()
+            raise ScreenInvalidArgumentError(msg, screenshot) from None
 
         await self.fill_region(
             self.EMAIL_ADDRESS_REGION,
