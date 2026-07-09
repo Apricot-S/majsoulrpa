@@ -5,6 +5,7 @@ from typing import Any, Protocol, cast
 
 import zmq.asyncio
 
+from majsoulrpa.browser.history import LoggingBrowserCommandExecutor
 from majsoulrpa.browser.server import (
     BrowserCommandExecutor,
     BrowserRequestServer,
@@ -67,7 +68,9 @@ async def run_browser_host(
             await sniffer_backend.start(page)
             stack.push_async_callback(sniffer_backend.stop)
 
-        command_executor = executor_factory(page)
+        command_executor = LoggingBrowserCommandExecutor(
+            executor_factory(page),
+        )
         request_server = server_factory(command_executor)
         await request_server.bind()
         stack.push_async_callback(request_server.stop)

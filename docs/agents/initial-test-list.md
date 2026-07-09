@@ -100,6 +100,7 @@
 - [x] stop browser host command は response 送信後に request loop を停止する
 - [x] browser controller は screenshot command の base64 response を PNG bytes として返す
 - [x] response は click、text input、error を別型にする
+- [x] browser 操作履歴を client / host 側の debug log に redaction 済み summary として出す
 
 ## Phase 5.6: Controller runtime wiring
 

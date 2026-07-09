@@ -7,6 +7,7 @@ import zmq
 import zmq.asyncio
 
 from majsoulrpa.browser.controller import RemoteBrowserController
+from majsoulrpa.browser.history import LoggingBrowserClientTransport
 from majsoulrpa.browser.zmq import BrowserZmqClientTransport
 from majsoulrpa.client.runtime import RPARuntime, ScreenshotScreenDetector
 from majsoulrpa.config import AppConfig
@@ -76,7 +77,9 @@ class ControllerRuntimeFactory:
         endpoint = make_browser_host_tcp_endpoint(config)
         socket.connect(endpoint)
 
-        transport = BrowserZmqClientTransport(socket)
+        transport = LoggingBrowserClientTransport(
+            BrowserZmqClientTransport(socket),
+        )
         controller = RemoteBrowserController(transport)
         stop_flag = StopFlag()
         screen_context = ScreenContext(

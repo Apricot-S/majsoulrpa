@@ -3,6 +3,7 @@ import asyncio
 import pytest
 import zmq.asyncio
 
+from majsoulrpa.browser.history import LoggingBrowserCommandExecutor
 from majsoulrpa.browser.messages import BrowserCommand, BrowserResponse
 from majsoulrpa.browser.runner import (
     _make_zmq_request_server_factory,
@@ -117,7 +118,8 @@ def test_run_browser_host_binds_and_serves_request_server() -> None:
         return executor
 
     def request_server_factory(executor: object) -> RequestServerSpy:
-        assert executor is executor_calls[0]
+        assert isinstance(executor, LoggingBrowserCommandExecutor)
+        assert executor._executor is executor_calls[0]
         return server
 
     asyncio.run(

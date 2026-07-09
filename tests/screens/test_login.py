@@ -236,7 +236,7 @@ def test_login_screen_enter_email_address_records_browser_operation(
     assert send_region.left < send_x < send_region.right
     assert send_region.top < send_y < send_region.bottom
     assert browser.input_texts == ["player@example.invalid"]
-    assert sleeps == [0.5, 0.5, 0.5, 0.5]
+    assert sleeps == [0.5, 0.5, 0.5, 0.5, 3.0]
     assert browser.events == [
         "click",
         "sleep:0.5",
@@ -247,6 +247,7 @@ def test_login_screen_enter_email_address_records_browser_operation(
         "input_text",
         "sleep:0.5",
         "click",
+        "sleep:3.0",
     ]
     assert isinstance(LoginScreen.EMAIL_ADDRESS_REGION, Region)
 
