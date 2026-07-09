@@ -106,3 +106,4 @@ class LoginScreen(Screen):
         await asyncio.sleep(0.5)
         await self.click_region(self.SEND_REGION)
         self._email_address_entered_at = monotonic()
+        await asyncio.sleep(3.0)
