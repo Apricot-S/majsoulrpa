@@ -30,6 +30,7 @@ browser = [
     "playwright>=1.61.0",
 ]
 rpa = [
+    "email-validator>=2.3.0",
     "numpy>=2.5.1",
     "opencv-python>=5.0.0.93",
 ]
