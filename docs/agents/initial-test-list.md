@@ -180,7 +180,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `LoginScreen.enter_email_address()` がフロントエンド regex を通る不正メールを `EmailStr` で reject する
 - [x] `LoginScreen.enter_email_address()` がメール入力後 0.5 秒待機して送信ボタンをクリックする
 - [x] `LoginScreen.enter_email_address()` が成功後 60 秒未満の再入力を不正操作として reject する
-- [ ] `LoginScreen.enter_verification_code()` が認証コード欄へ入力する
+- [x] `LoginScreen.enter_verification_code()` がメールアドレス入力未完了なら不正操作エラーにする
+- [x] `LoginScreen.enter_verification_code()` が半角数字 6 桁以外を不正引数エラーにする
+- [x] `LoginScreen.enter_verification_code()` が認証コード欄へ `clear=True` で入力する
 
 どちらを選ぶ場合も、先に fake browser operation のテストを書きます。
 実ゲーム確認が終わるまで、もう片方には進みません。

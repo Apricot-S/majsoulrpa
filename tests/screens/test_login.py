@@ -409,6 +409,78 @@ def test_login_screen_enter_email_address_scales_region_to_viewport(
     assert browser.input_texts == ["player@example.invalid"]
 
 
+def test_login_screen_enter_verification_code_requires_email_address() -> None:
+    screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(screenshot)
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+
+    with pytest.raises(
+        ScreenInvalidOperationError,
+        match="Email address must be entered before verification code",
+    ) as exc_info:
+        asyncio.run(screen.enter_verification_code("123456"))
+
+    assert exc_info.value.screenshot == screenshot
+    assert browser.clicked_points == []
+    assert browser.input_texts == []
+
+
+@pytest.mark.parametrize(
+    "verification_code",
+    ["", "12345", "1234567", "12345a", "１２３４５６"],  # noqa: RUF001
+)
+def test_login_screen_enter_verification_code_rejects_invalid_code(
+    verification_code: str,
+) -> None:
+    screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(screenshot)
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+    screen._email_address_entered_at = 100.0
+
+    with pytest.raises(
+        ScreenInvalidArgumentError,
+        match="Verification code must be 6 ASCII digits",
+    ) as exc_info:
+        asyncio.run(screen.enter_verification_code(verification_code))
+
+    assert exc_info.value.screenshot == screenshot
+    assert browser.clicked_points == []
+    assert browser.input_texts == []
+
+
+def test_login_screen_enter_verification_code_records_browser_operation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    browser = BrowserControllerSpy()
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+        browser.events.append(f"sleep:{seconds}")
+
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+    screen._email_address_entered_at = 100.0
+
+    asyncio.run(screen.enter_verification_code("123456"))
+
+    region = LoginScreen.VERIFICATION_CODE_REGION
+    [(x, y)] = browser.clicked_points
+    assert region.left < x < region.right
+    assert region.top < y < region.bottom
+    assert browser.input_texts == ["123456"]
+    assert sleeps == [0.5, 0.5, 0.5]
+    assert browser.events == [
+        "click",
+        "sleep:0.5",
+        "press_key:ControlOrMeta+A",
+        "sleep:0.5",
+        "press_key:Backspace",
+        "sleep:0.5",
+        "input_text",
+    ]
+
+
 def test_login_screen_rejects_non_png_screenshot() -> None:
     with pytest.raises(ValueError, match="PNG image"):
         LoginScreen.detection_spec().matches(b"not png")

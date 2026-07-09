@@ -30,6 +30,7 @@ Some RFC-valid email addresses are rejected by this frontend validation.
 
 EMAIL_ADDRESS_ADAPTER = TypeAdapter(EmailStr)
 EMAIL_ADDRESS_REENTRY_INTERVAL_SECONDS = 60.0
+VERIFICATION_CODE_PATTERN = re.compile(r"[0-9]{6}", re.ASCII)
 
 
 class LoginScreen(Screen):
@@ -107,3 +108,20 @@ class LoginScreen(Screen):
         await self.click_region(self.SEND_REGION)
         self._email_address_entered_at = monotonic()
         await asyncio.sleep(3.0)
+
+    async def enter_verification_code(self, verification_code: str) -> None:
+        if self._email_address_entered_at is None:
+            msg = "Email address must be entered before verification code."
+            screenshot = await self.screenshot()
+            raise ScreenInvalidOperationError(msg, screenshot)
+
+        if VERIFICATION_CODE_PATTERN.fullmatch(verification_code) is None:
+            msg = "Verification code must be 6 ASCII digits."
+            screenshot = await self.screenshot()
+            raise ScreenInvalidArgumentError(msg, screenshot)
+
+        await self.fill_region(
+            self.VERIFICATION_CODE_REGION,
+            verification_code,
+            clear=True,
+        )
