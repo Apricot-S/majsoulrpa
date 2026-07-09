@@ -37,6 +37,7 @@ class LoginScreen(Screen):
     EMAIL_ADDRESS_REGION = Region(left=770, top=430, width=138, height=20)
     SEND_REGION = Region(left=1102, top=508, width=40, height=22)
     VERIFICATION_CODE_REGION = Region(left=768, top=508, width=100, height=20)
+    LOGIN_2_REGION = Region(left=900, top=576, width=120, height=40)
 
     LOGIN_1_TEMPLATE = load_png_template_matcher(
         template_path=LOGIN_1_TEMPLATE_PATH,
