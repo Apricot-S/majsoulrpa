@@ -185,6 +185,50 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `LoginScreen.enter_verification_code()` が認証コード欄へ `clear=True` で入力する
 - [x] `LoginScreen.enter_verification_code()` が認証コード入力後 0.5 秒待機してログインボタンをクリックする
 
+認証コード後のログインフローは、まず
+[認証コード後のログインフロー計画](login-verification-flow-plan.md) の spike を行い、
+通信判定と画面 template の可否を確認してから実装する。
+
+### 認証コード誤りの通信判定 spike
+
+- [ ] fake HTTP response event を observer へ投入できる
+- [ ] observer が URL、method、status、content type などの metadata だけを受け取る
+- [ ] observer が候補外 response を無視する
+- [ ] observer が認証コード誤りと成功を異なる結果として通知できる
+- [ ] observer の timeout は認証コード誤りとして扱わない
+- [ ] observer の開始、停止、page lifecycle cleanup を固定する
+- [ ] Playwright の response event を fake page で購読できる
+- [ ] observer のログにメールアドレス、認証コード、response body を出さない
+- [ ] 自動テストは synthetic metadata のみを使う
+- [ ] 実際の雀魂で response metadata による誤り・成功判定が可能かをユーザーが手動確認する
+
+### 正しい認証コード後の同意画面
+
+- [ ] 同意画面用 template の必要性と、個人情報を含まない template 候補を確認する
+- [ ] template 画像と settings はユーザーがコミットする
+- [ ] 認証コード成功後に同意画面 template の出現を timeout 付きで待機する
+- [ ] 同意画面が検出できない timeout を成功扱いにしない
+- [ ] checkbox の template match region をクリックする
+- [ ] checkbox が既に選択済みの場合の扱いを手動確認結果に基づき固定する
+- [ ] 正しい認証コードから checkbox 操作までをユーザーが実際の雀魂で手動確認する
+
+### 同意後の遷移と stale Screen
+
+- [ ] 同意ボタンの操作対象を template match region または確定した `Region` として定義する
+- [ ] 遷移先画面の非個人情報 template と settings はユーザーがコミットする
+- [ ] 同意ボタン後に遷移先 Screen を timeout 付きで検出する
+- [ ] 通信成功だけでは同意後の画面遷移完了として扱わない
+- [ ] `Screen` が active / stale 状態を保持する
+- [ ] stale Screen の public API は screenshot 付き `ScreenInvalidOperationError` を送出する
+- [ ] stale 判定で screenshot 取得に失敗した場合、その失敗を隠さない
+- [ ] 基底クラスの `@requires_active` decorator が Screen の共通 public helper を保護する
+- [ ] `@requires_active` decorator が `LoginScreen` の public 操作 API を保護する
+- [ ] private helper、constructor、`detection_spec()` は stale 判定の対象外である
+- [ ] 同意後の遷移先確認が成功した時点でのみ `LoginScreen` を stale にする
+- [ ] 同意後の遷移 timeout、通信失敗、操作失敗では `LoginScreen` を stale にしない
+- [ ] stale にした `LoginScreen` ではメールアドレス、認証コード、同意操作を再実行できない
+- [ ] 同意後の遷移と stale 化をユーザーが実際の雀魂で手動確認する
+
 どちらを選ぶ場合も、先に fake browser operation のテストを書きます。
 実ゲーム確認が終わるまで、もう片方には進みません。
 
