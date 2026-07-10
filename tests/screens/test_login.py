@@ -482,17 +482,32 @@ def test_login_screen_enter_verification_code_records_browser_operation(
 
     verification_code_region = LoginScreen.VERIFICATION_CODE_REGION
     login_2_region = LoginScreen.LOGIN_2_REGION
-    [(verification_x, verification_y), (login_2_x, login_2_y)] = (
-        browser.clicked_points
-    )
+    checkbox_1_region = LoginScreen.AGREEMENT_CHECKBOX_1_REGION
+    checkbox_2_region = LoginScreen.AGREEMENT_CHECKBOX_2_REGION
+    agreement_button_region = LoginScreen.AGREEMENT_BUTTON_REGION
+    [
+        (verification_x, verification_y),
+        (login_2_x, login_2_y),
+        (checkbox_1_x, checkbox_1_y),
+        (checkbox_2_x, checkbox_2_y),
+        (agreement_button_x, agreement_button_y),
+    ] = browser.clicked_points
     assert verification_code_region.left < verification_x
     assert verification_x < verification_code_region.right
     assert verification_code_region.top < verification_y
     assert verification_y < verification_code_region.bottom
     assert login_2_region.left < login_2_x < login_2_region.right
     assert login_2_region.top < login_2_y < login_2_region.bottom
+    assert checkbox_1_region.left < checkbox_1_x < checkbox_1_region.right
+    assert checkbox_1_region.top < checkbox_1_y < checkbox_1_region.bottom
+    assert checkbox_2_region.left < checkbox_2_x < checkbox_2_region.right
+    assert checkbox_2_region.top < checkbox_2_y < checkbox_2_region.bottom
+    assert agreement_button_region.left < agreement_button_x
+    assert agreement_button_x < agreement_button_region.right
+    assert agreement_button_region.top < agreement_button_y
+    assert agreement_button_y < agreement_button_region.bottom
     assert browser.input_texts == ["123456"]
-    assert sleeps == [0.5, 0.5, 0.5, 0.5]
+    assert sleeps == [0.5, 0.5, 0.5, 0.5, 5.0, 0.5, 1.0]
     assert browser.events == [
         "click",
         "sleep:0.5",
@@ -502,6 +517,12 @@ def test_login_screen_enter_verification_code_records_browser_operation(
         "sleep:0.5",
         "input_text",
         "sleep:0.5",
+        "click",
+        "sleep:5.0",
+        "click",
+        "sleep:0.5",
+        "click",
+        "sleep:1.0",
         "click",
     ]
 

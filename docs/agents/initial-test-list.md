@@ -215,7 +215,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] template 画像と settings はユーザーがコミットする
 - [ ] 認証コード成功後に同意画面 template の出現を timeout 付きで待機する
 - [ ] 同意画面が検出できない timeout を成功扱いにしない
-- [ ] checkbox の template match region をクリックする
+- [x] 仮の checkbox region を順番にクリックする
 - [ ] checkbox が既に選択済みの場合の扱いを手動確認結果に基づき固定する
 - [ ] 正しい認証コードから checkbox 操作までをユーザーが実際の雀魂で手動確認する
 

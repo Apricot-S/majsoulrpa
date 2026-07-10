@@ -39,6 +39,24 @@ class LoginScreen(Screen):
     SEND_REGION = Region(left=1102, top=508, width=40, height=22)
     VERIFICATION_CODE_REGION = Region(left=768, top=508, width=100, height=20)
     LOGIN_2_REGION = Region(left=900, top=576, width=120, height=40)
+    AGREEMENT_CHECKBOX_1_REGION = Region(
+        left=685,
+        top=467,
+        width=18,
+        height=18,
+    )
+    AGREEMENT_CHECKBOX_2_REGION = Region(
+        left=685,
+        top=511,
+        width=18,
+        height=18,
+    )
+    AGREEMENT_BUTTON_REGION = Region(
+        left=990,
+        top=713,
+        width=77,
+        height=30,
+    )
 
     LOGIN_1_TEMPLATE = load_png_template_matcher(
         template_path=LOGIN_1_TEMPLATE_PATH,
@@ -133,6 +151,13 @@ class LoginScreen(Screen):
             msg = "Verification code was rejected."
             screenshot = await self.screenshot()
             raise ScreenInvalidArgumentError(msg, screenshot)
+
+        await asyncio.sleep(5.0)
+        await self.click_region(self.AGREEMENT_CHECKBOX_1_REGION)
+        await asyncio.sleep(0.5)
+        await self.click_region(self.AGREEMENT_CHECKBOX_2_REGION)
+        await asyncio.sleep(1.0)
+        await self.click_region(self.AGREEMENT_BUTTON_REGION)
 
     async def _click_login_2_and_wait_for_yostar_auth(self) -> object:
         region = self.context.scale_region(self.LOGIN_2_REGION)
