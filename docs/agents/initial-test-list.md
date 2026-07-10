@@ -191,16 +191,23 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### 認証コード誤りの通信判定 spike
 
-- [ ] fake HTTP response event を observer へ投入できる
-- [ ] observer が URL、method、status、content type などの metadata だけを受け取る
-- [ ] observer が候補外 response を無視する
-- [ ] observer が認証コード誤りと成功を異なる結果として通知できる
-- [ ] observer の timeout は認証コード誤りとして扱わない
-- [ ] observer の開始、停止、page lifecycle cleanup を固定する
-- [ ] Playwright の response event を fake page で購読できる
-- [ ] observer のログにメールアドレス、認証コード、response body を出さない
-- [ ] 自動テストは synthetic metadata のみを使う
-- [ ] 実際の雀魂で response metadata による誤り・成功判定が可能かをユーザーが手動確認する
+- [x] `POST https://jp-sdk-api.yostarplat.com/yostar/get-auth` を Playwright で観測できる
+- [x] accepted / rejected の両方が HTTP status 200 であることを手動確認する
+- [x] JSON `Code` と `Data.Token` の存在で accepted / rejected を区別できることを確認する
+- [ ] atomic browser command が response 待機を login click より先に開始する
+- [ ] 対象 URL と POST method が一致する response だけを待つ
+- [ ] accepted response は token を含まない accepted result を返す
+- [ ] `Code != 200` は application code だけを含む rejected result を返す
+- [ ] HTTP status 異常を browser operation error にする
+- [ ] JSON decode 失敗と schema 異常を browser operation error にする
+- [ ] `Code == 200` でも token が空または文字列でなければ browser operation error にする
+- [ ] response timeout を認証拒否や成功として扱わない
+- [ ] command / response の log にメールアドレス、認証コード、token、raw JSON を出さない
+- [ ] command / response の serialization に token、メールアドレス、raw JSON を含めない
+- [ ] `LoginScreen` が rejected result を screenshot 付き不正引数エラーへ変換する
+- [ ] `LoginScreen` が protocol error を不正引数エラーへ変換しない
+- [ ] 自動テストは synthetic response だけを使う
+- [ ] 実際の雀魂で accepted / rejected の結果をユーザーが手動確認する
 
 ### 正しい認証コード後の同意画面
 

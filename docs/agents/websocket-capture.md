@@ -15,6 +15,19 @@ v3 では、examples の牌譜バイナリ保存のように、ユーザーが�
 - browser host と client を分離した構成でも使える
 - 自動テストでは synthetic frame だけで検証できる
 
+## HTTP response との境界
+
+WebSocket Sniffer は、継続的な frame 観測とユーザー hook を責務とする。画面操作の
+成否確認に使う、一度限りの HTTP response 待機は責務に含めない。
+
+特に Yostar 認証 response は token やメールアドレスを含み、raw payload を hook や
+RPA client へ渡す必要がない。ログインボタンの click と response 待機を browser host の
+request-scoped な操作として実行し、secret を除いた結果だけを返す。これを理由に Sniffer を
+HTTP 全般へ拡張したり、汎用 HTTP capture hook を公開したりしない。
+
+将来、認証以外に複数の HTTP 観測用途が現れた場合は、共通部分が確認できた時点で
+`NetworkObserver` のような上位概念を改めて検討する。今回だけを根拠に先行抽象化しない。
+
 ## Playwright 案
 
 利点:

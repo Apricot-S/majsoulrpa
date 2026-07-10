@@ -13,30 +13,69 @@
 
 ## 1. 認証コード誤りの判定
 
-画面上のエラー表示は安定して検出できるか未確認である。そのため最初に
-Playwright の HTTP response event で、認証コード送信に対応する response を
-観測できるか spike する。
+手動調査により、認証コード送信時に次の HTTP request が発生し、Playwright の
+`response` event で観測できることを確認した。
 
-spike の判定基準:
+```text
+POST https://jp-sdk-api.yostarplat.com/yostar/get-auth
+```
 
-- 認証コード送信後の候補 response を、URL、HTTP method、status、content type などの
-  secret を含まない metadata で識別できる。
-- response が認証コード誤りと成功を区別できる情報を持つ。
-- browser host の page lifecycle とともに observer を開始・停止できる。
-- fake response event だけで自動テストできる狭い境界を設計できる。
-- 実 response body や認証コードを保存・出力せずに手動確認できる。
+成功時と拒否時はいずれも HTTP status 200 であるため、status だけでは判定しない。
+JSON response の `Code` と、成功時の `Data.Token` の存在を browser host 内で確認する。
+観測内容の詳細は
+[雀魂ログイン認証コード処理の調査結果](majsoulrpa_yostar_auth_investigation.md) を参照する。
 
-Playwright で必要な情報が得られない、または候補 request を安定して識別できない場合は、
-HTTP 傍受を本実装に採用しない。その場合は画面テンプレートによる検出を再検討し、
-mitmproxy の導入はこの spike の失敗だけを理由に決めない。
+### Sniffer との分離
 
-採用できた場合の API 方針:
+既存の Sniffer は、長時間流れる WebSocket frame を観測し、raw payload や metadata を
+ユーザー hook へ渡すための仕組みである。今回の HTTP response は次の性質が異なる。
 
-- 誤りを示す response を受けたとき、`enter_verification_code()` は
-  `ScreenInvalidArgumentError` を送出する。
-- 例外 message、ログ、response summary に認証コード、メールアドレス、response body を
-  含めない。
-- observer timeout と通信失敗は認証コード誤りとして扱わず、別の明示的な失敗にする。
+- ログインボタンの click と 1 対 1 に対応する、一度限りの内部制御結果である。
+- click より前に待機を開始しなければ response を取り逃がす可能性がある。
+- response にメールアドレスと token が含まれ、raw payload を外部へ渡す必要がない。
+- LoginScreen API の成否へ同期的に反映する必要がある。
+
+このため、HTTP method を既存 Sniffer に追加しない。WebSocket Sniffer は従来の責務に
+限定し、認証 HTTP は browser command の request-scoped な待機処理として実装する。
+汎用 HTTP capture hook や別の常設 event transport も、この API のためには追加しない。
+
+### browser host 側の処理
+
+現在の browser transport は REQ/REP で command を逐次処理する。response 待機と click を
+別 command にすると、待機開始前に response が返る race が生じる。そのため、次の処理を
+1 つの内部 command として browser host で不可分に実行する。
+
+1. `POST` と完全一致 URL を条件に `page.expect_response()` を開始する。
+2. LoginScreen が指定した座標を click する。
+3. 上限時間内に対象 response を待つ。
+4. HTTP status と JSON schema を検証する。
+5. secret を除いた認証結果だけを RPA client へ返す。
+
+内部 command の候補名は `ClickAndWaitForYostarAuthCommand` とする。汎用 command に見せる
+ための JSON path 指定や raw body response は導入しない。雀魂固有であることを型名に出し、
+用途を認証フローに限定する。
+
+response は次の判別可能な型に分ける。
+
+- accepted: HTTP 200、`Code == 200`、`Data.Token` が非空文字列
+- rejected: HTTP 200、`Code != 200`
+- browser error: timeout、HTTP status 異常、JSON decode 失敗、schema 異常、
+  `Code == 200` だが有効な token がない
+
+accepted response に token 自体を含めず、token が有効だったという結果だけを返す。
+rejected response は必要なら数値の application code を含めてよいが、`Msg`、メールアドレス、
+request payload、response JSON は transport、例外、ログへ出さない。
+
+### LoginScreen 側の扱い
+
+`enter_verification_code()` は認証コード欄への入力と 0.5 秒待機までは現在どおり行い、
+最後の login click を新しい atomic browser operation に置き換える。
+
+- accepted は正常終了し、次の同意画面処理へ進める。
+- rejected は screenshot 付き `ScreenInvalidArgumentError` に変換する。message は
+  「認証コードが拒否された」ことを表し、単純な入力間違いと断定しない。
+- timeout と protocol error は不正引数扱いにせず、browser operation error を伝播する。
+- response を受け取れなかった場合を成功扱いにしない。
 
 ## 2. 正しい認証コード後の同意画面
 
@@ -62,9 +101,8 @@ checkbox と同意ボタンをクリックした後の完了判定は、画面�
 遷移先として `HomeScreen` を検出できるテンプレートが取得できれば、runtime が次の
 callback を dispatch でき、ログイン固有の通信に依存しない。
 
-HTTP response が明確にログイン完了を表し、かつ 1 の spike で observer 境界が有効と
-確認できた場合だけ、画面検出の補助として通信判定を使う。通信成功だけで画面操作の
-完了扱いにはしない。
+認証 HTTP の accepted は認証コードの受理だけを表す。同意後の画面遷移完了には使わず、
+通信成功だけで画面操作の完了扱いにはしない。
 
 必要な資産と確認:
 
@@ -97,11 +135,11 @@ decorator は重複を減らすための内部実装であり、Screen の publi
 
 ## 実装順序
 
-1. HTTP response observer の fake による境界テストを書き、Playwright API で実現可能かを
-   spike する。結果をこの文書へ追記する。
-2. ユーザーによる手動確認で、誤り response と成功 response を metadata のみで
-   区別できるか検証する。実データは保存しない。
-3. 同意画面と遷移先画面の template 候補を選定し、必要な資産のコミットをユーザーに依頼する。
-4. `Screen` の stale 共通基盤を、対象 API の実装前に TDD で追加する。
-5. 認証コード誤りの例外化、checkbox 操作、同意後遷移をそれぞれ別の高レベル API 単位で
+1. atomic browser command と response 型を synthetic data だけで TDD 実装する。
+2. Playwright executor が response 待機を click より先に開始することを fake page で固定する。
+3. `LoginScreen` が rejected result を不正引数エラーへ変換する。
+4. ユーザーに実際の雀魂で accepted / rejected の両方を手動確認してもらう。
+5. 同意画面と遷移先画面の template 候補を選定し、必要な資産のコミットをユーザーに依頼する。
+6. `Screen` の stale 共通基盤を、対象 API の実装前に TDD で追加する。
+7. checkbox 操作、同意後遷移をそれぞれ別の高レベル API 単位で
    実装し、品質ゲート後に毎回手動確認する。

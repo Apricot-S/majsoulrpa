@@ -14,7 +14,8 @@ v3 は、過剰な抽象化や定型的な「クリーンアーキテクチャ�
 - Browser runtime: Playwright 起動、browser context、page lifecycle
 - Client runtime: Presentation 検出、callback dispatch、data 受け渡し
 - Presentation: 画面検出と画面操作
-- Sniffer: WebSocket message の観測、decode、ユーザー hook
+- Sniffer: WebSocket message の継続観測、decode、ユーザー hook
+- Browser HTTP wait: 画面操作に対応する一度限りの HTTP response 待機
 - Login support: Yostar login code provider などの optional 機能
 - Test support: fake browser、fake screen、synthetic capture
 
@@ -99,6 +100,19 @@ Presentation 検出は、画面状態を「できるだけ決定的に」扱い�
 `ScreenContext` は browser 操作層そのものではありません。runtime から Screen へ
 実行時依存を渡すための context です。実際の遠隔操作プロトコルや send/recv は
 browser package 側に閉じ込めます。
+
+## Browser HTTP response 待機
+
+画面操作の成否が HTTP response でのみ確実に判定できる場合、response 待機は
+browser host の command execution に置く。RPA client から click した後に別 command で
+response を待つ構成は、待機開始前に response を取り逃がすため採用しない。
+
+Yostar 認証では `page.expect_response()` の開始、login click、response 検証を 1 command
+として実行する。認証 response の raw JSON は browser host の外へ出さず、application code
+と token の存在確認から得た secret を含まない結果だけを transport response にする。
+
+この処理は WebSocket Sniffer へ追加しない。Sniffer は継続観測とユーザー hook、HTTP wait は
+単一画面操作の同期的な完了確認であり、lifecycle と公開範囲が異なるためである。
 
 ## 画像・テンプレート資産
 
