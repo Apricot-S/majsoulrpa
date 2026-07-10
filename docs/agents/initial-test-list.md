@@ -260,6 +260,13 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 画像と settings はユーザーが追加する。エージェントは実ゲーム由来の画像を
 生成、複製、コミットしない。
 
+## Phase 6.2: HomeScreen 告知画面を閉じる
+
+- [x] `notification-close` template が存在する場合は一致領域をクリックする
+- [x] `notification-close` template が存在しない場合はクリックしない
+- [x] 告知画面をクリックして閉じた場合は 1.0 秒待機する
+- [x] 告知画面が存在しない場合は待機しない
+
 ## Phase 7: WebSocket sniffer
 
 - [x] sniffer backend の start に失敗した場合に browser を閉じる
