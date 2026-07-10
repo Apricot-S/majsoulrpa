@@ -125,6 +125,10 @@ class ScreenContext:
     def rng(self) -> Random | None:
         return self._rng
 
+    @property
+    def viewport_height(self) -> int:
+        return self._viewport_height
+
 
 def _never_matches(_screenshot: object) -> bool:
     return False

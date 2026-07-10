@@ -63,6 +63,26 @@ class LoginScreen(Screen):
         width=77,
         height=30,
     )
+    # Only these controls have different relative positions at 720p.
+    # Their values are pixel coordinates in the 720p viewport.
+    AGREEMENT_CHECKBOX_1_720P_REGION = Region(
+        left=457,
+        top=316,
+        width=12,
+        height=12,
+    )
+    AGREEMENT_CHECKBOX_2_720P_REGION = Region(
+        left=457,
+        top=350,
+        width=12,
+        height=12,
+    )
+    AGREEMENT_BUTTON_720P_REGION = Region(
+        left=669,
+        top=470,
+        width=69,
+        height=21,
+    )
 
     LOGIN_1_TEMPLATE = load_png_template_matcher(
         template_path=LOGIN_1_TEMPLATE_PATH,
@@ -163,12 +183,31 @@ class LoginScreen(Screen):
             raise ScreenInvalidArgumentError(msg, screenshot)
 
         await asyncio.sleep(5.0)
-        await self.click_region(self.AGREEMENT_CHECKBOX_1_REGION)
+        await self._click_agreement_region(
+            self.AGREEMENT_CHECKBOX_1_REGION,
+            self.AGREEMENT_CHECKBOX_1_720P_REGION,
+        )
         await asyncio.sleep(0.5)
-        await self.click_region(self.AGREEMENT_CHECKBOX_2_REGION)
+        await self._click_agreement_region(
+            self.AGREEMENT_CHECKBOX_2_REGION,
+            self.AGREEMENT_CHECKBOX_2_720P_REGION,
+        )
         await asyncio.sleep(1.0)
-        await self.click_region(self.AGREEMENT_BUTTON_REGION)
+        await self._click_agreement_region(
+            self.AGREEMENT_BUTTON_REGION,
+            self.AGREEMENT_BUTTON_720P_REGION,
+        )
         self._mark_stale()
+
+    async def _click_agreement_region(
+        self,
+        region: Region,
+        region_720p: Region,
+    ) -> None:
+        if self.context.viewport_height == 720:  # noqa: PLR2004
+            await self._click_region(region_720p)
+            return
+        await self.click_region(region)
 
     async def _click_login_2_and_wait_for_yostar_auth(self) -> object:
         region = self.context.scale_region(self.LOGIN_2_REGION)

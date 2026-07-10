@@ -563,6 +563,76 @@ def test_login_screen_enter_verification_code_records_browser_operation(
         asyncio.run(screen.enter_email_address("player@example.invalid"))
 
 
+def test_login_screen_uses_720p_agreement_regions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    browser = BrowserControllerSpy()
+
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
+    screen = LoginScreen(
+        context=ScreenContext(
+            browser=browser,
+            viewport_width=1280,
+            viewport_height=720,
+            rng=Random(0),
+        ),
+    )
+    screen._email_address_entered_at = 100.0
+
+    asyncio.run(screen.enter_verification_code("123456"))
+
+    agreement_regions = (
+        LoginScreen.AGREEMENT_CHECKBOX_1_720P_REGION,
+        LoginScreen.AGREEMENT_CHECKBOX_2_720P_REGION,
+        LoginScreen.AGREEMENT_BUTTON_720P_REGION,
+    )
+    for (x, y), region in zip(
+        browser.clicked_points[-3:],
+        agreement_regions,
+        strict=True,
+    ):
+        assert region.left < x < region.right
+        assert region.top < y < region.bottom
+
+
+def test_login_screen_scales_standard_agreement_regions_at_1440p(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    browser = BrowserControllerSpy()
+
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
+    context = ScreenContext(
+        browser=browser,
+        viewport_width=2560,
+        viewport_height=1440,
+        rng=Random(0),
+    )
+    screen = LoginScreen(context=context)
+    screen._email_address_entered_at = 100.0
+
+    asyncio.run(screen.enter_verification_code("123456"))
+
+    agreement_regions = (
+        LoginScreen.AGREEMENT_CHECKBOX_1_REGION,
+        LoginScreen.AGREEMENT_CHECKBOX_2_REGION,
+        LoginScreen.AGREEMENT_BUTTON_REGION,
+    )
+    for (x, y), region in zip(
+        browser.clicked_points[-3:],
+        agreement_regions,
+        strict=True,
+    ):
+        scaled_region = context.scale_region(region)
+        assert scaled_region.left < x < scaled_region.right
+        assert scaled_region.top < y < scaled_region.bottom
+
+
 def test_login_screen_rejects_rejected_yostar_authentication() -> None:
     screenshot = _synthetic_blank_screenshot()
     browser = BrowserControllerSpy(screenshot)
