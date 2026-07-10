@@ -244,10 +244,21 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 認証拒否では `LoginScreen` を stale にしない
 - [x] 遷移操作失敗では `LoginScreen` を stale にしない
 - [x] stale にした `LoginScreen` ではメールアドレス、認証コード、同意操作を再実行できない
-- [ ] 同意後の遷移と stale 化をユーザーが実際の雀魂で手動確認する
+- [x] 同意後の遷移と stale 化をユーザーが実際の雀魂で手動確認する
 
 どちらを選ぶ場合も、先に fake browser operation のテストを書きます。
 実ゲーム確認が終わるまで、もう片方には進みません。
+
+## Phase 6.1: HomeScreen 画面検出
+
+- [x] `HomeScreen` が `Screen` を継承する
+- [x] Home 画面用 template の名前を `summon` とする
+- [x] `HomeScreen.detection_spec()` が summon template predicate を返す
+- [x] synthetic screenshot 内の summon template で Home 画面を検出できる
+- [x] threshold 未満の screenshot では Home 画面を検出しない
+
+画像と settings はユーザーが追加する。エージェントは実ゲーム由来の画像を
+生成、複製、コミットしない。
 
 ## Phase 7: WebSocket sniffer
 
