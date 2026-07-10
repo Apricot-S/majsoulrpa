@@ -614,7 +614,10 @@ def test_stale_screen_rejects_public_api_with_screenshot() -> None:
     screen = LoginScreen(context=ScreenContext(browser=browser))
     screen._mark_stale()
 
-    with pytest.raises(ScreenStaleError, match="stale") as exc_info:
+    with pytest.raises(
+        ScreenStaleError,
+        match="LoginScreen is stale",
+    ) as exc_info:
         asyncio.run(screen.screenshot())
 
     assert exc_info.value.screenshot == browser.screenshot_bytes

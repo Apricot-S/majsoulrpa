@@ -119,7 +119,7 @@ class Screen(ABC):
         if not self._stale:
             return
         screenshot = await self.context.browser.screenshot()
-        msg = "Screen is stale."
+        msg = f"{type(self).__name__} is stale."
         raise ScreenStaleError(msg, screenshot)
 
     @property
