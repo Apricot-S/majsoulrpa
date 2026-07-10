@@ -39,7 +39,8 @@ class BrowserController(Protocol):
 
 
 class TemplateMatchResult(Protocol):
-    region: Region
+    @property
+    def region(self) -> Region: ...
 
 
 class TemplateMatcher(Protocol):

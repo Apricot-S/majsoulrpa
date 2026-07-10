@@ -61,13 +61,19 @@ class KeyboardLike(Protocol):
 
 
 class HttpRequestLike(Protocol):
-    method: str
+    @property
+    def method(self) -> str: ...
 
 
 class HttpResponseLike(Protocol):
-    url: str
-    status: int
-    request: HttpRequestLike
+    @property
+    def url(self) -> str: ...
+
+    @property
+    def status(self) -> int: ...
+
+    @property
+    def request(self) -> HttpRequestLike: ...
 
     async def json(self) -> object: ...
 
