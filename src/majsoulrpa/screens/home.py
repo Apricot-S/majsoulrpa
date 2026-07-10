@@ -18,3 +18,7 @@ class HomeScreen(Screen):
     @override
     def detection_spec(cls) -> ScreenDetectionSpec:
         return ScreenDetectionSpec(predicate=cls.SUMMON_TEMPLATE.matches)
+
+    @override
+    async def before_callback(self) -> None:
+        pass
