@@ -14,7 +14,12 @@ from majsoulrpa.assets.templates.login import (
 from majsoulrpa.browser.messages import YostarAuthRejectedResponse
 from majsoulrpa.presentation.region import Region
 from majsoulrpa.presentation.template import load_png_template_matcher
-from majsoulrpa.screens.base import Screen, ScreenContext, ScreenDetectionSpec
+from majsoulrpa.screens.base import (
+    Screen,
+    ScreenContext,
+    ScreenDetectionSpec,
+    _requires_active,
+)
 from majsoulrpa.screens.errors import (
     ScreenInvalidArgumentError,
     ScreenInvalidOperationError,
@@ -92,6 +97,7 @@ class LoginScreen(Screen):
 
         await asyncio.sleep(0.5)
 
+    @_requires_active
     async def enter_email_address(self, email_address: str) -> None:
         if (
             self._email_address_entered_at is not None
@@ -129,6 +135,7 @@ class LoginScreen(Screen):
         self._email_address_entered_at = monotonic()
         await asyncio.sleep(3.0)
 
+    @_requires_active
     async def enter_verification_code(self, verification_code: str) -> None:
         if self._email_address_entered_at is None:
             msg = "Email address must be entered before verification code."
@@ -158,6 +165,7 @@ class LoginScreen(Screen):
         await self.click_region(self.AGREEMENT_CHECKBOX_2_REGION)
         await asyncio.sleep(1.0)
         await self.click_region(self.AGREEMENT_BUTTON_REGION)
+        self._mark_stale()
 
     async def _click_login_2_and_wait_for_yostar_auth(self) -> object:
         region = self.context.scale_region(self.LOGIN_2_REGION)

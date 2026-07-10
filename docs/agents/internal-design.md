@@ -64,6 +64,19 @@ Presentation 検出は、画面状態を「できるだけ決定的に」扱い�
 - 未登録 Presentation は dispatch しない
 - 同時に複数 Presentation が成立する場合の優先順位を明示する
 
+## Screen の stale 状態
+
+検出済みの `Screen` instance が画面遷移後も利用されることを防ぐため、`Screen` 基底
+class が active / stale 状態を保持する。public async Screen API は共通 decorator で
+実行前に状態を検証し、stale の場合は screenshot 付き `ScreenStaleError` を送出する。
+
+`ScreenStaleError` は `ScreenInvalidOperationError` の派生とし、stale を個別に処理する
+利用者と、不正操作をまとめて処理する利用者の両方を許容する。
+
+画面遷移を起こす API は、必要な操作がすべて正常に完了した時点でだけ instance を stale
+にする。操作失敗、timeout、通信拒否などの例外経路では stale にしない。stale 判定用の
+screenshot 取得に失敗した場合も、その失敗を握りつぶさない。
+
 ## Browser 操作
 
 ブラウザ操作は、通信層と操作 API 層を分けます。

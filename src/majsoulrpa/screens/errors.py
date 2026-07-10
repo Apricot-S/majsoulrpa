@@ -47,3 +47,7 @@ class ScreenInvalidArgumentError(ScreenError, ValueError):
 
 class ScreenInvalidOperationError(ScreenError):
     pass
+
+
+class ScreenStaleError(ScreenInvalidOperationError):
+    pass

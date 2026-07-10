@@ -16,6 +16,7 @@ from majsoulrpa.screens.base import TemplateMatchResult
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
     ScreenDetectionTimeoutError,
+    ScreenStaleError,
 )
 from majsoulrpa.types import Callback
 
@@ -605,6 +606,18 @@ def test_screen_can_take_screenshot() -> None:
     screenshot = asyncio.run(screen.screenshot())
 
     assert screenshot == b"\x89PNG\r\n\x1a\n"
+    assert browser.events == ["screenshot"]
+
+
+def test_stale_screen_rejects_public_api_with_screenshot() -> None:
+    browser = BrowserControllerSpy()
+    screen = LoginScreen(context=ScreenContext(browser=browser))
+    screen._mark_stale()
+
+    with pytest.raises(ScreenStaleError, match="stale") as exc_info:
+        asyncio.run(screen.screenshot())
+
+    assert exc_info.value.screenshot == browser.screenshot_bytes
     assert browser.events == ["screenshot"]
 
 

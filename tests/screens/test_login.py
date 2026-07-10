@@ -23,6 +23,7 @@ from majsoulrpa.screens.errors import (
     ScreenDetectionError,
     ScreenInvalidArgumentError,
     ScreenInvalidOperationError,
+    ScreenStaleError,
 )
 from majsoulrpa.screens.login import EMAIL_ADDRESS_PATTERN, LoginScreen
 
@@ -41,8 +42,12 @@ class BrowserControllerSpy:
         self.yostar_auth_response: (
             YostarAuthAcceptedResponse | YostarAuthRejectedResponse
         ) = YostarAuthAcceptedResponse()
+        self.fail_click_number: int | None = None
 
     async def click(self, x: float, y: float) -> None:
+        if self.fail_click_number == len(self.clicked_points) + 1:
+            msg = "click failed"
+            raise RuntimeError(msg)
         self.events.append("click")
         self.clicked_points.append((x, y))
 
@@ -437,6 +442,8 @@ def test_login_screen_enter_verification_code_requires_email_address() -> None:
         asyncio.run(screen.enter_verification_code("123456"))
 
     assert exc_info.value.screenshot == screenshot
+
+    assert exc_info.value.screenshot == screenshot
     assert browser.clicked_points == []
     assert browser.input_texts == []
 
@@ -526,6 +533,9 @@ def test_login_screen_enter_verification_code_records_browser_operation(
         "click",
     ]
 
+    with pytest.raises(ScreenStaleError):
+        asyncio.run(screen.enter_email_address("player@example.invalid"))
+
 
 def test_login_screen_rejects_rejected_yostar_authentication() -> None:
     screenshot = _synthetic_blank_screenshot()
@@ -543,6 +553,24 @@ def test_login_screen_rejects_rejected_yostar_authentication() -> None:
         asyncio.run(screen.enter_verification_code("123456"))
 
     assert exc_info.value.screenshot == screenshot
+
+    with pytest.raises(
+        ScreenInvalidArgumentError,
+        match="Verification code was rejected",
+    ):
+        asyncio.run(screen.enter_verification_code("123456"))
+
+
+def test_login_screen_remains_active_when_transition_click_fails() -> None:
+    browser = BrowserControllerSpy()
+    browser.fail_click_number = 5
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+    screen._email_address_entered_at = 100.0
+
+    with pytest.raises(RuntimeError, match="click failed"):
+        asyncio.run(screen.enter_verification_code("123456"))
+
+    assert asyncio.run(screen.screenshot()) == browser.screenshot_bytes
 
 
 def test_login_screen_rejects_non_png_screenshot() -> None:

@@ -1,13 +1,14 @@
 import asyncio
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Coroutine
 from dataclasses import dataclass, field
+from functools import wraps
 from random import Random
-from typing import Protocol
+from typing import Concatenate, Protocol
 
 from majsoulrpa.constants import BASE_VIEWPORT_WIDTH, DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.presentation import Region
-from majsoulrpa.screens.errors import ScreenDetectionError
+from majsoulrpa.screens.errors import ScreenDetectionError, ScreenStaleError
 
 SCREEN_ACTION_INTERVAL_SECONDS = 0.5
 LOG_URL_PREFIX = "https://game.mahjongsoul.com/?paipu="
@@ -40,6 +41,21 @@ class TemplateMatcher(Protocol):
 
 
 type StopRequester = Callable[[], Awaitable[None]]
+
+
+class _StaleAware(Protocol):
+    async def _ensure_active(self) -> None: ...
+
+
+def _requires_active[S: _StaleAware, R, **P](
+    method: Callable[Concatenate[S, P], Coroutine[object, object, R]],
+) -> Callable[Concatenate[S, P], Coroutine[object, object, R]]:
+    @wraps(method)
+    async def wrapper(self: S, *args: P.args, **kwargs: P.kwargs) -> R:
+        await self._ensure_active()
+        return await method(self, *args, **kwargs)
+
+    return wrapper
 
 
 async def _ignore_stop_request() -> None:
@@ -94,6 +110,17 @@ class ScreenDetectionSpec:
 class Screen(ABC):
     def __init__(self, context: ScreenContext | None = None) -> None:
         self._context = context
+        self._stale = False
+
+    def _mark_stale(self) -> None:
+        self._stale = True
+
+    async def _ensure_active(self) -> None:
+        if not self._stale:
+            return
+        screenshot = await self.context.browser.screenshot()
+        msg = "Screen is stale."
+        raise ScreenStaleError(msg, screenshot)
 
     @property
     def context(self) -> ScreenContext:
@@ -102,6 +129,7 @@ class Screen(ABC):
             raise RuntimeError(msg)
         return self._context
 
+    @_requires_active
     async def click_region(self, region: Region) -> None:
         scaled_region = self.context.scale_region(region)
         await self._click_region(scaled_region)
@@ -110,11 +138,13 @@ class Screen(ABC):
         x, y = scaled_region.random_point(rng=self.context.rng)
         await self.context.browser.click(x, y)
 
+    @_requires_active
     async def move_region(self, region: Region) -> None:
         scaled_region = self.context.scale_region(region)
         x, y = scaled_region.random_point(rng=self.context.rng)
         await self.context.browser.move_mouse(x, y)
 
+    @_requires_active
     async def fill_region(
         self,
         region: Region,
@@ -131,6 +161,7 @@ class Screen(ABC):
             await asyncio.sleep(SCREEN_ACTION_INTERVAL_SECONDS)
         await self.context.browser.input_text(value)
 
+    @_requires_active
     async def find_template(
         self,
         template: TemplateMatcher,
@@ -138,6 +169,7 @@ class Screen(ABC):
         screenshot = await self.context.browser.screenshot()
         return template.find(screenshot)
 
+    @_requires_active
     async def require_template(
         self,
         template: TemplateMatcher,
@@ -150,6 +182,7 @@ class Screen(ABC):
             raise ScreenDetectionError(message, screenshot)
         return result
 
+    @_requires_active
     async def click_template(
         self,
         template: TemplateMatcher,
@@ -160,6 +193,7 @@ class Screen(ABC):
         await self._click_region(result.region)
         return result
 
+    @_requires_active
     async def click_template_if_present(
         self,
         template: TemplateMatcher,
@@ -171,18 +205,23 @@ class Screen(ABC):
         await self._click_region(result.region)
         return True
 
+    @_requires_active
     async def screenshot(self) -> bytes:
         return await self.context.browser.screenshot()
 
+    @_requires_active
     async def reload(self) -> None:
         await self.context.browser.reload()
 
+    @_requires_active
     async def goto_log(self, log_id: str) -> None:
         await self.context.browser.goto_url(f"{LOG_URL_PREFIX}{log_id}")
 
+    @_requires_active
     async def stop_browser_host(self) -> None:
         await self.context.browser.stop_browser_host()
 
+    @_requires_active
     async def stop_rpa(self) -> None:
         await self.context.request_stop()
 

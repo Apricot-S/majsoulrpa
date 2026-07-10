@@ -117,17 +117,20 @@ callback を dispatch でき、ログイン固有の通信に依存しない。
 画面遷移が完了した `LoginScreen` は、以後その画面で意味を持つ操作を受け付けない。
 この状態は `LoginScreen` 固有の一時フラグではなく、`Screen` 基底クラスで一貫して扱う。
 
-候補設計:
+設計:
 
 - `Screen` に `_stale: bool`、`_mark_stale()`、`_ensure_active()` を置く。
 - `_ensure_active()` は stale の場合、現在の screenshot を添えた
-  `ScreenInvalidOperationError` を送出する。screenshot 取得失敗は握りつぶさない。
+  `ScreenStaleError` を送出する。`ScreenStaleError` は
+  `ScreenInvalidOperationError` の派生とし、既存の不正操作 catch と互換にする。
+  screenshot 取得失敗は握りつぶさない。
 - 基底クラスに `@requires_active` decorator を置き、public async Screen API の先頭で
   `_ensure_active()` を await する。
 - `Screen` 自身の public helper と各 Screen subclass の public 操作 API に decorator を
   明示的に適用する。private helper、`detection_spec()`、constructor には適用しない。
-- 同意ボタン後に遷移先が確認できた時点でだけ `_mark_stale()` を呼ぶ。通信送信直後や
-  timeout 時には stale にしない。
+- 画面遷移を起こす API が正常完了した時点で `_mark_stale()` を呼ぶ。現在の
+  `enter_verification_code()` では、認証、checkbox 1、checkbox 2、同意ボタンの操作が
+  すべて成功した直後に stale とする。途中の例外や認証拒否では stale にしない。
 
 decorator は重複を減らすための内部実装であり、Screen の public API 契約を曖昧にしない。
 新しい public 操作を追加する際に decorator の適用漏れを防ぐため、基底 helper と

@@ -217,7 +217,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] 同意画面が検出できない timeout を成功扱いにしない
 - [x] 仮の checkbox region を順番にクリックする
 - [ ] checkbox が既に選択済みの場合の扱いを手動確認結果に基づき固定する
-- [ ] 正しい認証コードから checkbox 操作までをユーザーが実際の雀魂で手動確認する
+- [x] 正しい認証コードから checkbox 操作までをユーザーが実際の雀魂で手動確認する
 
 ### 同意後の遷移と stale Screen
 
@@ -225,15 +225,17 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] 遷移先画面の非個人情報 template と settings はユーザーがコミットする
 - [ ] 同意ボタン後に遷移先 Screen を timeout 付きで検出する
 - [ ] 通信成功だけでは同意後の画面遷移完了として扱わない
-- [ ] `Screen` が active / stale 状態を保持する
-- [ ] stale Screen の public API は screenshot 付き `ScreenInvalidOperationError` を送出する
+- [x] `Screen` が active / stale 状態を保持する
+- [x] stale Screen の public API は screenshot 付き `ScreenStaleError` を送出する
+- [x] `ScreenStaleError` は `ScreenInvalidOperationError` としても捕捉できる
 - [ ] stale 判定で screenshot 取得に失敗した場合、その失敗を隠さない
-- [ ] 基底クラスの `@requires_active` decorator が Screen の共通 public helper を保護する
-- [ ] `@requires_active` decorator が `LoginScreen` の public 操作 API を保護する
+- [x] 基底クラスの `@requires_active` decorator が Screen の共通 public helper を保護する
+- [x] `@requires_active` decorator が `LoginScreen` の public 操作 API を保護する
 - [ ] private helper、constructor、`detection_spec()` は stale 判定の対象外である
-- [ ] 同意後の遷移先確認が成功した時点でのみ `LoginScreen` を stale にする
-- [ ] 同意後の遷移 timeout、通信失敗、操作失敗では `LoginScreen` を stale にしない
-- [ ] stale にした `LoginScreen` ではメールアドレス、認証コード、同意操作を再実行できない
+- [x] 遷移 API の全操作が正常完了した時点でのみ `LoginScreen` を stale にする
+- [x] 認証拒否では `LoginScreen` を stale にしない
+- [x] 遷移操作失敗では `LoginScreen` を stale にしない
+- [x] stale にした `LoginScreen` ではメールアドレス、認証コード、同意操作を再実行できない
 - [ ] 同意後の遷移と stale 化をユーザーが実際の雀魂で手動確認する
 
 どちらを選ぶ場合も、先に fake browser operation のテストを書きます。

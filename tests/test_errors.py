@@ -7,6 +7,7 @@ from majsoulrpa.screens.errors import (
     ScreenError,
     ScreenInvalidArgumentError,
     ScreenInvalidOperationError,
+    ScreenStaleError,
 )
 
 
@@ -42,6 +43,13 @@ def test_screen_invalid_operation_error_is_screen_error() -> None:
     assert str(error) == "invalid screen API operation"
     assert error.screenshot == b"png-bytes"
     assert isinstance(error, ScreenError)
+
+
+def test_screen_stale_error_is_invalid_operation_error() -> None:
+    error = ScreenStaleError("screen is stale", b"png-bytes")
+
+    assert error.screenshot == b"png-bytes"
+    assert isinstance(error, ScreenInvalidOperationError)
 
 
 def test_screen_detection_timeout_error_is_timeout_error() -> None:
