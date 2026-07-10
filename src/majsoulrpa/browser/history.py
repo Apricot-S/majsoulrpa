@@ -28,8 +28,8 @@ from majsoulrpa.browser.messages import (
 from majsoulrpa.browser.server import BrowserCommandExecutor
 from majsoulrpa.browser.transport import BrowserClientTransport
 
-CLIENT_LOGGER = getLogger("majsoulrpa.browser.client")
-HOST_LOGGER = getLogger("majsoulrpa.browser.host")
+_client_logger = getLogger("majsoulrpa.browser.client")
+_host_logger = getLogger("majsoulrpa.browser.host")
 
 
 class LoggingBrowserClientTransport:
@@ -37,7 +37,7 @@ class LoggingBrowserClientTransport:
         self._transport = transport
 
     async def send_command(self, command: BrowserCommand) -> None:
-        CLIENT_LOGGER.debug(
+        _client_logger.debug(
             "browser client command: %s",
             summarize_browser_command(command),
         )
@@ -45,7 +45,7 @@ class LoggingBrowserClientTransport:
 
     async def recv_response(self) -> BrowserResponse:
         response = await self._transport.recv_response()
-        CLIENT_LOGGER.debug(
+        _client_logger.debug(
             "browser client response: %s",
             summarize_browser_response(response),
         )
@@ -57,12 +57,12 @@ class LoggingBrowserCommandExecutor:
         self._executor = executor
 
     async def execute(self, command: BrowserCommand) -> BrowserResponse:
-        HOST_LOGGER.debug(
+        _host_logger.debug(
             "browser host command: %s",
             summarize_browser_command(command),
         )
         response = await self._executor.execute(command)
-        HOST_LOGGER.debug(
+        _host_logger.debug(
             "browser host response: %s",
             summarize_browser_response(response),
         )

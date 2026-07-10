@@ -15,8 +15,8 @@ from majsoulrpa.screens.errors import ScreenDetectionError, ScreenStaleError
 SCREEN_ACTION_INTERVAL_SECONDS = 0.5
 LOG_URL_PREFIX = "https://game.mahjongsoul.com/?paipu="
 
-SCREEN_API_LOGGER = getLogger("majsoulrpa.screens.api")
-_SCREEN_API_DEPTH: ContextVar[int] = ContextVar(
+_screen_api_logger = getLogger("majsoulrpa.screens.api")
+_screen_api_depth: ContextVar[int] = ContextVar(
     "majsoulrpa_screen_api_depth",
     default=0,
 )
@@ -73,18 +73,18 @@ def _screen_api[S, R, **P](
 
     @wraps(method)
     async def wrapper(self: S, *args: P.args, **kwargs: P.kwargs) -> R:
-        depth = _SCREEN_API_DEPTH.get()
-        token = _SCREEN_API_DEPTH.set(depth + 1)
+        depth = _screen_api_depth.get()
+        token = _screen_api_depth.set(depth + 1)
         try:
             if depth == 0:
-                SCREEN_API_LOGGER.info(
+                _screen_api_logger.info(
                     "screen API called: screen=%s api=%s",
                     type(self).__name__,
                     api_name,
                 )
             return await method(self, *args, **kwargs)
         finally:
-            _SCREEN_API_DEPTH.reset(token)
+            _screen_api_depth.reset(token)
 
     return wrapper
 
