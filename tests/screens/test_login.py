@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from importlib.resources.abc import Traversable
 from random import Random
 
@@ -366,6 +367,31 @@ def test_login_screen_enter_email_address_rejects_invalid_address() -> None:
     assert exc_info.value.screenshot == screenshot
     assert browser.clicked_points == []
     assert browser.input_texts == []
+
+
+def test_login_screen_high_level_api_logs_only_outer_call(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(screenshot)
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+
+    with (
+        caplog.at_level(logging.INFO, logger="majsoulrpa.screens.api"),
+        pytest.raises(ScreenInvalidArgumentError),
+    ):
+        asyncio.run(screen.enter_email_address("secret@example.invalid"))
+
+    messages = [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "majsoulrpa.screens.api"
+    ]
+    assert messages == [
+        "screen API called: screen=LoginScreen api=enter_email_address",
+    ]
+    assert "screenshot" not in caplog.text
+    assert "secret@example.invalid" not in caplog.text
 
 
 def test_login_screen_rejects_pattern_only_valid_address() -> None:

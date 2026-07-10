@@ -1,8 +1,10 @@
 import asyncio
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Coroutine
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from functools import wraps
+from logging import getLogger
 from random import Random
 from typing import Concatenate, Protocol
 
@@ -12,6 +14,12 @@ from majsoulrpa.screens.errors import ScreenDetectionError, ScreenStaleError
 
 SCREEN_ACTION_INTERVAL_SECONDS = 0.5
 LOG_URL_PREFIX = "https://game.mahjongsoul.com/?paipu="
+
+SCREEN_API_LOGGER = getLogger("majsoulrpa.screens.api")
+_SCREEN_API_DEPTH: ContextVar[int] = ContextVar(
+    "majsoulrpa_screen_api_depth",
+    default=0,
+)
 
 
 class BrowserController(Protocol):
@@ -54,6 +62,29 @@ def _requires_active[S: _StaleAware, R, **P](
     async def wrapper(self: S, *args: P.args, **kwargs: P.kwargs) -> R:
         await self._ensure_active()
         return await method(self, *args, **kwargs)
+
+    return wrapper
+
+
+def _screen_api[S, R, **P](
+    method: Callable[Concatenate[S, P], Coroutine[object, object, R]],
+) -> Callable[Concatenate[S, P], Coroutine[object, object, R]]:
+    api_name = getattr(method, "__name__", type(method).__name__)
+
+    @wraps(method)
+    async def wrapper(self: S, *args: P.args, **kwargs: P.kwargs) -> R:
+        depth = _SCREEN_API_DEPTH.get()
+        token = _SCREEN_API_DEPTH.set(depth + 1)
+        try:
+            if depth == 0:
+                SCREEN_API_LOGGER.info(
+                    "screen API called: screen=%s api=%s",
+                    type(self).__name__,
+                    api_name,
+                )
+            return await method(self, *args, **kwargs)
+        finally:
+            _SCREEN_API_DEPTH.reset(token)
 
     return wrapper
 
@@ -205,22 +236,27 @@ class Screen(ABC):
         await self._click_region(result.region)
         return True
 
+    @_screen_api
     @_requires_active
     async def screenshot(self) -> bytes:
         return await self.context.browser.screenshot()
 
+    @_screen_api
     @_requires_active
     async def reload(self) -> None:
         await self.context.browser.reload()
 
+    @_screen_api
     @_requires_active
     async def goto_log(self, log_id: str) -> None:
         await self.context.browser.goto_url(f"{LOG_URL_PREFIX}{log_id}")
 
+    @_screen_api
     @_requires_active
     async def stop_browser_host(self) -> None:
         await self.context.browser.stop_browser_host()
 
+    @_screen_api
     @_requires_active
     async def stop_rpa(self) -> None:
         await self.context.request_stop()

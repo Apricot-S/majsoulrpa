@@ -81,6 +81,12 @@
 - [x] ScreenContext から stop 要求を出せる
 - [x] 検出された Screen に ScreenContext を注入できる
 - [x] ScreenContext 未設定の Screen 操作は例外になる
+- [x] `Screen` の高レベル API 呼び出しを Screen 名と API 名だけで info log に出す
+- [x] `LoginScreen` で追加された高レベル API 呼び出しを info log に出す
+- [x] 高レベル API の引数、戻り値、user data を log に出さない
+- [x] 高レベル API が内部で別の高レベル API を呼んでも最外周だけ log に出す
+- [x] stale や不正引数で失敗する高レベル API 呼び出しも log に出す
+- [x] region / template helper、framework hook、private helper は高レベル API log に出さない
 
 ## Phase 5.5: Browser 操作層
 

@@ -19,6 +19,7 @@ from majsoulrpa.screens.base import (
     ScreenContext,
     ScreenDetectionSpec,
     _requires_active,
+    _screen_api,
 )
 from majsoulrpa.screens.errors import (
     ScreenInvalidArgumentError,
@@ -97,6 +98,7 @@ class LoginScreen(Screen):
 
         await asyncio.sleep(0.5)
 
+    @_screen_api
     @_requires_active
     async def enter_email_address(self, email_address: str) -> None:
         if (
@@ -135,6 +137,7 @@ class LoginScreen(Screen):
         self._email_address_entered_at = monotonic()
         await asyncio.sleep(3.0)
 
+    @_screen_api
     @_requires_active
     async def enter_verification_code(self, verification_code: str) -> None:
         if self._email_address_entered_at is None:

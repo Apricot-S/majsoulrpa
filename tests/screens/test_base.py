@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from collections.abc import Mapping
 from dataclasses import dataclass
 from random import Random
@@ -402,7 +403,9 @@ def test_screen_can_clear_region_before_filling(
     assert browser.input_texts == ["player@example.invalid"]
 
 
-def test_screen_clicks_scaled_region() -> None:
+def test_screen_clicks_scaled_region(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     browser = BrowserControllerSpy()
     screen = LoginScreen(
         context=ScreenContext(
@@ -413,14 +416,20 @@ def test_screen_clicks_scaled_region() -> None:
         ),
     )
 
-    asyncio.run(
-        screen.click_region(Region(left=300, top=150, width=6, height=3)),
-    )
+    with caplog.at_level(logging.INFO, logger="majsoulrpa.screens.api"):
+        asyncio.run(
+            screen.click_region(Region(left=300, top=150, width=6, height=3)),
+        )
 
     [(x, y)] = browser.clicked_points
     assert 200 < x < 204
     assert 100 < y < 102
     assert browser.events == ["click"]
+    assert not [
+        record
+        for record in caplog.records
+        if record.name == "majsoulrpa.screens.api"
+    ]
 
 
 def test_screen_moves_to_scaled_region() -> None:
@@ -609,19 +618,56 @@ def test_screen_can_take_screenshot() -> None:
     assert browser.events == ["screenshot"]
 
 
-def test_stale_screen_rejects_public_api_with_screenshot() -> None:
+def test_screen_high_level_apis_log_outer_calls(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    browser = BrowserControllerSpy()
+    screen = LoginScreen(context=ScreenContext(browser=browser))
+
+    async def call_apis() -> None:
+        await screen.screenshot()
+        await screen.reload()
+        await screen.goto_log("synthetic-log-id")
+        await screen.stop_browser_host()
+        await screen.stop_rpa()
+
+    with caplog.at_level(logging.INFO, logger="majsoulrpa.screens.api"):
+        asyncio.run(call_apis())
+
+    messages = [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "majsoulrpa.screens.api"
+    ]
+    assert messages == [
+        "screen API called: screen=LoginScreen api=screenshot",
+        "screen API called: screen=LoginScreen api=reload",
+        "screen API called: screen=LoginScreen api=goto_log",
+        "screen API called: screen=LoginScreen api=stop_browser_host",
+        "screen API called: screen=LoginScreen api=stop_rpa",
+    ]
+    assert "synthetic-log-id" not in caplog.text
+
+
+def test_stale_screen_rejects_public_api_with_screenshot(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     browser = BrowserControllerSpy()
     screen = LoginScreen(context=ScreenContext(browser=browser))
     screen._mark_stale()
 
-    with pytest.raises(
-        ScreenStaleError,
-        match="LoginScreen is stale",
-    ) as exc_info:
+    with (
+        caplog.at_level(logging.INFO, logger="majsoulrpa.screens.api"),
+        pytest.raises(
+            ScreenStaleError,
+            match="LoginScreen is stale",
+        ) as exc_info,
+    ):
         asyncio.run(screen.screenshot())
 
     assert exc_info.value.screenshot == browser.screenshot_bytes
     assert browser.events == ["screenshot"]
+    assert "screen=LoginScreen api=screenshot" in caplog.text
 
 
 def test_screen_can_reload_current_page() -> None:

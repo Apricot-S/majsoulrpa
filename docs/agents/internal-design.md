@@ -77,6 +77,20 @@ class が active / stale 状態を保持する。public async Screen API は共�
 にする。操作失敗、timeout、通信拒否などの例外経路では stale にしない。stale 判定用の
 screenshot 取得に失敗した場合も、その失敗を握りつぶさない。
 
+## 高レベル Screen API のログ
+
+通常ユーザーが callback から直接利用する高レベル Screen API は、呼び出し時に
+`majsoulrpa.screens.api` logger の info log を出す。Screen 名と API 名だけを記録し、
+引数、戻り値、user data は記録しない。
+
+高レベル API は共通 decorator で明示する。`ContextVar` で async task ごとの呼び出し
+深度を管理し、高レベル API 内部から別の高レベル API を呼んだ場合は最外周だけを
+記録する。stale や validation error で失敗する呼び出しも、呼び出された事実は記録する。
+
+`Screen` では `screenshot`、`reload`、`goto_log`、`stop_browser_host`、`stop_rpa` を対象とする。
+継承先では、callback 利用者向けに追加された一連の操作 API を対象とする。region 操作、
+template 操作、framework hook、private helper は対象外とする。
+
 ## Browser 操作
 
 ブラウザ操作は、通信層と操作 API 層を分けます。
