@@ -5,6 +5,7 @@ from random import Random
 from majsoulrpa.browser.messages import (
     BrowserErrorResponse,
     BrowserResponse,
+    ClickAndWaitForYostarAuthCommand,
     ClickCommand,
     ClickResponse,
     GotoUrlCommand,
@@ -21,6 +22,8 @@ from majsoulrpa.browser.messages import (
     StopBrowserHostResponse,
     TextInputCommand,
     TextInputResponse,
+    YostarAuthAcceptedResponse,
+    YostarAuthRejectedResponse,
 )
 from majsoulrpa.browser.transport import BrowserClientTransport
 from majsoulrpa.timing import get_random_delay
@@ -28,6 +31,7 @@ from majsoulrpa.timing import get_random_delay
 DEFAULT_CLICK_MOUSE_DOWN_UP_DELAY_SECONDS = 0.1
 DEFAULT_TEXT_INPUT_CHARACTER_DELAY_SECONDS = 0.05
 DEFAULT_KEY_DOWN_UP_DELAY_SECONDS = 0.05
+DEFAULT_YOSTAR_AUTH_TIMEOUT_SECONDS = 1.0
 
 
 class BrowserOperationError(RuntimeError):
@@ -112,6 +116,23 @@ class RemoteBrowserController:
     async def stop_browser_host(self) -> StopBrowserHostResponse:
         return await self._request_stop_browser_host(StopBrowserHostCommand())
 
+    async def click_and_wait_for_yostar_auth(
+        self,
+        x: float,
+        y: float,
+    ) -> YostarAuthAcceptedResponse | YostarAuthRejectedResponse:
+        return await self._request_click_and_wait_for_yostar_auth(
+            ClickAndWaitForYostarAuthCommand(
+                x=x,
+                y=y,
+                mouse_down_up_delay_seconds=get_random_delay(
+                    self._click_mouse_down_up_delay_seconds,
+                    rng=self._rng,
+                ),
+                timeout_seconds=DEFAULT_YOSTAR_AUTH_TIMEOUT_SECONDS,
+            ),
+        )
+
     async def _request_click(self, command: ClickCommand) -> ClickResponse:
         await self._transport.send_command(command)
         response = await self._transport.recv_response()
@@ -186,6 +207,19 @@ class RemoteBrowserController:
         await self._transport.send_command(command)
         response = await self._transport.recv_response()
         if isinstance(response, StopBrowserHostResponse):
+            return response
+        raise self._response_error(response)
+
+    async def _request_click_and_wait_for_yostar_auth(
+        self,
+        command: ClickAndWaitForYostarAuthCommand,
+    ) -> YostarAuthAcceptedResponse | YostarAuthRejectedResponse:
+        await self._transport.send_command(command)
+        response = await self._transport.recv_response()
+        if isinstance(
+            response,
+            YostarAuthAcceptedResponse | YostarAuthRejectedResponse,
+        ):
             return response
         raise self._response_error(response)
 

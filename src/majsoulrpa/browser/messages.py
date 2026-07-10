@@ -65,6 +65,18 @@ class StopBrowserHostCommand(BaseModel):
     type: Literal["stop_browser_host"] = "stop_browser_host"
 
 
+class ClickAndWaitForYostarAuthCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["click_and_wait_for_yostar_auth"] = (
+        "click_and_wait_for_yostar_auth"
+    )
+    x: float
+    y: float
+    mouse_down_up_delay_seconds: PositiveDelay
+    timeout_seconds: PositiveDelay
+
+
 BrowserCommand = Annotated[
     ClickCommand
     | MoveMouseCommand
@@ -73,7 +85,8 @@ BrowserCommand = Annotated[
     | ScreenshotCommand
     | GotoUrlCommand
     | ReloadCommand
-    | StopBrowserHostCommand,
+    | StopBrowserHostCommand
+    | ClickAndWaitForYostarAuthCommand,
     Field(discriminator="type"),
 ]
 
@@ -134,6 +147,19 @@ class StopBrowserHostResponse(BaseModel):
     type: Literal["stop_browser_host"] = "stop_browser_host"
 
 
+class YostarAuthAcceptedResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["yostar_auth_accepted"] = "yostar_auth_accepted"
+
+
+class YostarAuthRejectedResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["yostar_auth_rejected"] = "yostar_auth_rejected"
+    application_code: int
+
+
 class BrowserErrorResponse(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -150,6 +176,8 @@ BrowserResponse = Annotated[
     | GotoUrlResponse
     | ReloadResponse
     | StopBrowserHostResponse
+    | YostarAuthAcceptedResponse
+    | YostarAuthRejectedResponse
     | BrowserErrorResponse,
     Field(discriminator="type"),
 ]

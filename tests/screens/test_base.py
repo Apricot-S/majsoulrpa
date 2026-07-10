@@ -65,6 +65,14 @@ class BrowserControllerSpy:
         self.browser_host_stops += 1
         self.events.append("stop_browser_host")
 
+    async def click_and_wait_for_yostar_auth(
+        self,
+        x: float,
+        y: float,
+    ) -> object:
+        await self.click(x, y)
+        return object()
+
     async def input_text(self, text: str) -> None:
         self.input_texts.append(text)
         self.events.append("input_text")

@@ -11,6 +11,7 @@ from majsoulrpa.assets.templates.login import (
     YOSTAR_LOGO_SETTINGS_PATH,
     YOSTAR_LOGO_TEMPLATE_PATH,
 )
+from majsoulrpa.browser.messages import YostarAuthRejectedResponse
 from majsoulrpa.presentation.region import Region
 from majsoulrpa.presentation.template import load_png_template_matcher
 from majsoulrpa.screens.base import Screen, ScreenContext, ScreenDetectionSpec
@@ -127,4 +128,13 @@ class LoginScreen(Screen):
             clear=True,
         )
         await asyncio.sleep(0.5)
-        await self.click_region(self.LOGIN_2_REGION)
+        response = await self._click_login_2_and_wait_for_yostar_auth()
+        if isinstance(response, YostarAuthRejectedResponse):
+            msg = "Verification code was rejected."
+            screenshot = await self.screenshot()
+            raise ScreenInvalidArgumentError(msg, screenshot)
+
+    async def _click_login_2_and_wait_for_yostar_auth(self) -> object:
+        region = self.context.scale_region(self.LOGIN_2_REGION)
+        x, y = region.random_point(rng=self.context.rng)
+        return await self.context.browser.click_and_wait_for_yostar_auth(x, y)

@@ -13,6 +13,10 @@ from majsoulrpa.assets.templates.login import (
     YOSTAR_LOGO_SETTINGS_PATH,
     YOSTAR_LOGO_TEMPLATE_PATH,
 )
+from majsoulrpa.browser.messages import (
+    YostarAuthAcceptedResponse,
+    YostarAuthRejectedResponse,
+)
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
 from majsoulrpa.screens.errors import (
@@ -34,6 +38,9 @@ class BrowserControllerSpy:
         self.input_texts: list[str] = []
         self.screenshot_bytes = screenshot
         self.screenshot_queue = [screenshot, *screenshots]
+        self.yostar_auth_response: (
+            YostarAuthAcceptedResponse | YostarAuthRejectedResponse
+        ) = YostarAuthAcceptedResponse()
 
     async def click(self, x: float, y: float) -> None:
         self.events.append("click")
@@ -50,6 +57,15 @@ class BrowserControllerSpy:
 
     async def stop_browser_host(self) -> None:
         pass
+
+    async def click_and_wait_for_yostar_auth(
+        self,
+        x: float,
+        y: float,
+    ) -> YostarAuthAcceptedResponse | YostarAuthRejectedResponse:
+        self.events.append("click")
+        self.clicked_points.append((x, y))
+        return self.yostar_auth_response
 
     async def input_text(self, text: str) -> None:
         self.events.append("input_text")
@@ -488,6 +504,24 @@ def test_login_screen_enter_verification_code_records_browser_operation(
         "sleep:0.5",
         "click",
     ]
+
+
+def test_login_screen_rejects_rejected_yostar_authentication() -> None:
+    screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(screenshot)
+    browser.yostar_auth_response = YostarAuthRejectedResponse(
+        application_code=100303,
+    )
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+    screen._email_address_entered_at = 100.0
+
+    with pytest.raises(
+        ScreenInvalidArgumentError,
+        match="Verification code was rejected",
+    ) as exc_info:
+        asyncio.run(screen.enter_verification_code("123456"))
+
+    assert exc_info.value.screenshot == screenshot
 
 
 def test_login_screen_rejects_non_png_screenshot() -> None:

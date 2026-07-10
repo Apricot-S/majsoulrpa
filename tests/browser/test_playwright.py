@@ -1,5 +1,6 @@
 import asyncio
 import base64
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Self, override
 
@@ -8,6 +9,7 @@ import pytest
 import majsoulrpa.browser.playwright as browser_playwright
 from majsoulrpa.browser.messages import (
     BrowserErrorResponse,
+    ClickAndWaitForYostarAuthCommand,
     ClickCommand,
     ClickResponse,
     GotoUrlCommand,
@@ -24,6 +26,8 @@ from majsoulrpa.browser.messages import (
     StopBrowserHostResponse,
     TextInputCommand,
     TextInputResponse,
+    YostarAuthAcceptedResponse,
+    YostarAuthRejectedResponse,
 )
 from majsoulrpa.browser.playwright import (
     PlaywrightBrowserBackend,
@@ -39,12 +43,15 @@ from majsoulrpa.constants import (
 
 
 class MouseSpy:
-    def __init__(self) -> None:
+    def __init__(self, events: list[str] | None = None) -> None:
         self.clicks: list[tuple[float, float, float]] = []
         self.moves: list[tuple[float, float]] = []
+        self._events = events
 
     async def click(self, x: float, y: float, *, delay: float) -> None:
         self.clicks.append((x, y, delay))
+        if self._events is not None:
+            self._events.append("click")
 
     async def move(self, x: float, y: float) -> None:
         self.moves.append((x, y))
@@ -62,9 +69,85 @@ class KeyboardSpy:
         self.pressed.append((key, delay))
 
 
+class HttpRequestSpy:
+    def __init__(self, method: str) -> None:
+        self._method = method
+
+    @property
+    def method(self) -> str:
+        return self._method
+
+
+class HttpResponseSpy:
+    def __init__(self, *, status: int, payload: object) -> None:
+        self._url = browser_playwright.YOSTAR_AUTH_URL
+        self._request = HttpRequestSpy("POST")
+        self._status = status
+        self._payload = payload
+
+    @property
+    def url(self) -> str:
+        return self._url
+
+    @property
+    def request(self) -> browser_playwright.HttpRequestLike:
+        return self._request
+
+    @property
+    def status(self) -> int:
+        return self._status
+
+    async def json(self) -> object:
+        return self._payload
+
+
+class ResponseValueSpy:
+    def __init__(self, response: HttpResponseSpy) -> None:
+        self._response = response
+
+    def __await__(self):  # noqa: ANN204
+        async def get_response() -> HttpResponseSpy:
+            return self._response
+
+        return get_response().__await__()
+
+
+class ResponseInfoSpy:
+    def __init__(self, response: HttpResponseSpy) -> None:
+        self.value: Awaitable[browser_playwright.HttpResponseLike] = (
+            ResponseValueSpy(response)
+        )
+
+
+class ResponseExpectationSpy:
+    def __init__(
+        self,
+        events: list[str],
+        predicate: Callable[[browser_playwright.HttpResponseLike], bool],
+        response: HttpResponseSpy,
+    ) -> None:
+        self._events = events
+        self._predicate = predicate
+        self._response = response
+
+    async def __aenter__(self) -> browser_playwright.ResponseInfoLike:
+        self._events.append("expect_response")
+        assert self._predicate(self._response)
+        return ResponseInfoSpy(self._response)
+
+    async def __aexit__(
+        self,
+        exc_type: object,
+        exc_value: object,
+        traceback: object,
+    ) -> None:
+        _ = (exc_type, exc_value, traceback)
+
+
 class PageSpy:
     def __init__(self) -> None:
-        self.mouse_spy = MouseSpy()
+        self.events: list[str] = []
+        self.mouse_spy = MouseSpy(self.events)
         self.keyboard_spy = KeyboardSpy()
         self.mouse: browser_playwright.MouseLike = self.mouse_spy
         self.keyboard: browser_playwright.KeyboardLike = self.keyboard_spy
@@ -75,6 +158,10 @@ class PageSpy:
         self.waited_selectors: list[tuple[str, float]] = []
         self.evaluated_expressions: list[str] = []
         self.user_agent = "Mozilla/5.0 HeadlessChrome/120.0.0.0 Safari/537.36"
+        self.yostar_response = HttpResponseSpy(
+            status=200,
+            payload={"Code": 200, "Data": {"Token": "synthetic-token"}},
+        )
 
     async def goto(self, url: str) -> None:
         self.visited_urls.append(url)
@@ -98,6 +185,19 @@ class PageSpy:
         timeout = kwargs["timeout"]
         self.waited_selectors.append((selector, timeout))
 
+    def expect_response(
+        self,
+        predicate: Callable[[browser_playwright.HttpResponseLike], bool],
+        *,
+        timeout: float,
+    ) -> browser_playwright.ResponseExpectationLike:
+        self.events.append(f"expect_response_timeout:{timeout}")
+        return ResponseExpectationSpy(
+            self.events,
+            predicate,
+            self.yostar_response,
+        )
+
 
 def test_playwright_command_executor_clicks_with_mouse_delay() -> None:
     page = PageSpy()
@@ -115,6 +215,89 @@ def test_playwright_command_executor_clicks_with_mouse_delay() -> None:
 
     assert response == ClickResponse(x=25, y=40)
     assert page.mouse_spy.clicks == [(25, 40, 100)]
+
+
+def test_playwright_executor_waits_for_yostar_auth_before_click() -> None:
+    page = PageSpy()
+    executor = PlaywrightCommandExecutor(page)
+
+    response = asyncio.run(
+        executor.execute(
+            ClickAndWaitForYostarAuthCommand(
+                x=25,
+                y=40,
+                mouse_down_up_delay_seconds=0.1,
+                timeout_seconds=15,
+            ),
+        ),
+    )
+
+    assert response == YostarAuthAcceptedResponse()
+    assert page.events == [
+        "expect_response_timeout:15000.0",
+        "expect_response",
+        "click",
+    ]
+
+
+def test_playwright_command_executor_returns_yostar_auth_rejection() -> None:
+    page = PageSpy()
+    page.yostar_response = HttpResponseSpy(
+        status=200,
+        payload={"Code": 100303, "Data": {}},
+    )
+    executor = PlaywrightCommandExecutor(page)
+
+    response = asyncio.run(
+        executor.execute(
+            ClickAndWaitForYostarAuthCommand(
+                x=25,
+                y=40,
+                mouse_down_up_delay_seconds=0.1,
+                timeout_seconds=15,
+            ),
+        ),
+    )
+
+    assert response == YostarAuthRejectedResponse(application_code=100303)
+
+
+@pytest.mark.parametrize(
+    ("status", "payload", "expected_message"),
+    [
+        (
+            500,
+            {"Code": 200, "Data": {"Token": "synthetic-token"}},
+            "Yostar authentication returned an unexpected HTTP status.",
+        ),
+        (
+            200,
+            {"Code": 200, "Data": {}},
+            "Yostar authentication success response does not contain a token.",
+        ),
+    ],
+)
+def test_playwright_command_executor_returns_error_for_invalid_yostar_auth(
+    status: int,
+    payload: object,
+    expected_message: str,
+) -> None:
+    page = PageSpy()
+    page.yostar_response = HttpResponseSpy(status=status, payload=payload)
+    executor = PlaywrightCommandExecutor(page)
+
+    response = asyncio.run(
+        executor.execute(
+            ClickAndWaitForYostarAuthCommand(
+                x=25,
+                y=40,
+                mouse_down_up_delay_seconds=0.1,
+                timeout_seconds=15,
+            ),
+        ),
+    )
+
+    assert response == BrowserErrorResponse(message=expected_message)
 
 
 def test_playwright_command_executor_moves_mouse() -> None:

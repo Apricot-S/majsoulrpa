@@ -10,6 +10,7 @@ from majsoulrpa.browser.controller import (
 from majsoulrpa.browser.messages import (
     BrowserCommand,
     BrowserErrorResponse,
+    ClickAndWaitForYostarAuthCommand,
     ClickCommand,
     ClickResponse,
     GotoUrlCommand,
@@ -26,6 +27,7 @@ from majsoulrpa.browser.messages import (
     StopBrowserHostResponse,
     TextInputCommand,
     TextInputResponse,
+    YostarAuthAcceptedResponse,
 )
 
 
@@ -42,6 +44,7 @@ class BrowserClientTransportSpy:
             | ScreenshotResponse
             | StopBrowserHostResponse
             | BrowserErrorResponse
+            | YostarAuthAcceptedResponse
         ),
     ) -> None:
         self.sent_commands: list[BrowserCommand] = []
@@ -62,6 +65,7 @@ class BrowserClientTransportSpy:
         | ScreenshotResponse
         | StopBrowserHostResponse
         | BrowserErrorResponse
+        | YostarAuthAcceptedResponse
     ):
         return self._responses.pop(0)
 
@@ -90,6 +94,20 @@ def test_remote_browser_controller_sends_click_and_text_input() -> None:
         character_delay_seconds=text_command.character_delay_seconds,
     )
     assert text_command.character_delay_seconds > 0
+
+
+def test_remote_browser_controller_clicks_and_waits_for_yostar_auth() -> None:
+    transport = BrowserClientTransportSpy(YostarAuthAcceptedResponse())
+    controller = RemoteBrowserController(transport, rng=Random(0))
+
+    response = asyncio.run(controller.click_and_wait_for_yostar_auth(25, 40))
+
+    assert response == YostarAuthAcceptedResponse()
+    [command] = transport.sent_commands
+    assert isinstance(command, ClickAndWaitForYostarAuthCommand)
+    assert command.x == 25
+    assert command.y == 40
+    assert command.timeout_seconds == 1.0
 
 
 def test_remote_browser_controller_sends_move_mouse() -> None:

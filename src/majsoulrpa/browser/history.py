@@ -5,6 +5,7 @@ from majsoulrpa.browser.messages import (
     BrowserCommand,
     BrowserErrorResponse,
     BrowserResponse,
+    ClickAndWaitForYostarAuthCommand,
     ClickCommand,
     ClickResponse,
     GotoUrlCommand,
@@ -21,6 +22,8 @@ from majsoulrpa.browser.messages import (
     StopBrowserHostResponse,
     TextInputCommand,
     TextInputResponse,
+    YostarAuthAcceptedResponse,
+    YostarAuthRejectedResponse,
 )
 from majsoulrpa.browser.server import BrowserCommandExecutor
 from majsoulrpa.browser.transport import BrowserClientTransport
@@ -108,6 +111,16 @@ def summarize_browser_command(command: BrowserCommand) -> Mapping[str, object]:
             return {"type": command.type}
         case StopBrowserHostCommand():
             return {"type": command.type}
+        case ClickAndWaitForYostarAuthCommand():
+            return {
+                "type": command.type,
+                "x": command.x,
+                "y": command.y,
+                "mouse_down_up_delay_seconds": (
+                    command.mouse_down_up_delay_seconds
+                ),
+                "timeout_seconds": command.timeout_seconds,
+            }
 
 
 def summarize_browser_response(
@@ -150,6 +163,13 @@ def summarize_browser_response(
             return {"type": response.type}
         case StopBrowserHostResponse():
             return {"type": response.type}
+        case YostarAuthAcceptedResponse():
+            return {"type": response.type}
+        case YostarAuthRejectedResponse():
+            return {
+                "type": response.type,
+                "application_code": response.application_code,
+            }
         case BrowserErrorResponse():
             return {
                 "type": response.type,

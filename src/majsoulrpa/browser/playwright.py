@@ -1,4 +1,5 @@
 import base64
+from collections.abc import Awaitable, Callable
 from contextlib import AsyncExitStack
 from pathlib import Path
 from typing import Protocol
@@ -16,6 +17,7 @@ from majsoulrpa.browser.messages import (
     BrowserCommand,
     BrowserErrorResponse,
     BrowserResponse,
+    ClickAndWaitForYostarAuthCommand,
     ClickCommand,
     ClickResponse,
     GotoUrlCommand,
@@ -32,6 +34,8 @@ from majsoulrpa.browser.messages import (
     StopBrowserHostResponse,
     TextInputCommand,
     TextInputResponse,
+    YostarAuthAcceptedResponse,
+    YostarAuthRejectedResponse,
 )
 from majsoulrpa.config import AppConfig
 from majsoulrpa.constants import (
@@ -42,6 +46,9 @@ from majsoulrpa.constants import (
 )
 from majsoulrpa.viewport import viewport_width_for_height
 
+YOSTAR_AUTH_URL = "https://jp-sdk-api.yostarplat.com/yostar/get-auth"
+HTTP_OK_STATUS = 200
+
 
 class MouseLike(Protocol):
     async def click(self, x: float, y: float, *, delay: float) -> None: ...
@@ -51,6 +58,32 @@ class MouseLike(Protocol):
 class KeyboardLike(Protocol):
     async def press(self, key: str, *, delay: float) -> None: ...
     async def type(self, text: str, *, delay: float) -> None: ...
+
+
+class HttpRequestLike(Protocol):
+    method: str
+
+
+class HttpResponseLike(Protocol):
+    url: str
+    status: int
+    request: HttpRequestLike
+
+    async def json(self) -> object: ...
+
+
+class ResponseInfoLike(Protocol):
+    value: Awaitable[HttpResponseLike]
+
+
+class ResponseExpectationLike(Protocol):
+    async def __aenter__(self) -> ResponseInfoLike: ...
+    async def __aexit__(
+        self,
+        exc_type: object,
+        exc_value: object,
+        traceback: object,
+    ) -> None: ...
 
 
 class PageLike(Protocol):
@@ -66,6 +99,12 @@ class PageLike(Protocol):
         selector: str,
         **kwargs: float,
     ) -> object: ...
+    def expect_response(
+        self,
+        predicate: Callable[[HttpResponseLike], bool],
+        *,
+        timeout: float,
+    ) -> ResponseExpectationLike: ...
 
 
 class PlaywrightCommandExecutor:
@@ -91,6 +130,8 @@ class PlaywrightCommandExecutor:
                     return await self._reload()
                 case StopBrowserHostCommand():
                     return StopBrowserHostResponse()
+                case ClickAndWaitForYostarAuthCommand():
+                    return await self._click_and_wait_for_yostar_auth(command)
         except Exception as error:  # noqa: BLE001
             return BrowserErrorResponse(message=str(error))
 
@@ -145,6 +186,69 @@ class PlaywrightCommandExecutor:
     async def _reload(self) -> ReloadResponse:
         await self._page.reload()
         return ReloadResponse()
+
+    async def _click_and_wait_for_yostar_auth(
+        self,
+        command: ClickAndWaitForYostarAuthCommand,
+    ) -> YostarAuthAcceptedResponse | YostarAuthRejectedResponse:
+        async with self._page.expect_response(
+            _is_yostar_auth_response,
+            timeout=command.timeout_seconds * 1000,
+        ) as response_info:
+            await self._page.mouse.click(
+                command.x,
+                command.y,
+                delay=command.mouse_down_up_delay_seconds * 1000,
+            )
+
+        response = await response_info.value
+        if response.status != HTTP_OK_STATUS:
+            msg = "Yostar authentication returned an unexpected HTTP status."
+            raise TypeError(msg)
+
+        try:
+            payload = await response.json()
+        except Exception as error:
+            msg = "Yostar authentication returned invalid JSON."
+            raise RuntimeError(msg) from error
+
+        if not isinstance(payload, dict):
+            msg = "Yostar authentication returned an unexpected JSON value."
+            raise TypeError(msg)
+
+        application_code = payload.get("Code")
+        if not isinstance(application_code, int):
+            msg = (
+                "Yostar authentication response does not contain a valid code."
+            )
+            raise TypeError(msg)
+        if application_code != HTTP_OK_STATUS:
+            return YostarAuthRejectedResponse(
+                application_code=application_code,
+            )
+
+        data = payload.get("Data")
+        if not isinstance(data, dict):
+            msg = (
+                "Yostar authentication success response does not contain data."
+            )
+            raise TypeError(msg)
+
+        token = data.get("Token")
+        if not isinstance(token, str) or not token:
+            msg = (
+                "Yostar authentication success response does not contain "
+                "a token."
+            )
+            raise RuntimeError(msg)
+
+        return YostarAuthAcceptedResponse()
+
+
+def _is_yostar_auth_response(response: HttpResponseLike) -> bool:
+    return (
+        response.url == YOSTAR_AUTH_URL and response.request.method == "POST"
+    )
 
 
 class PlaywrightBrowserBackend:

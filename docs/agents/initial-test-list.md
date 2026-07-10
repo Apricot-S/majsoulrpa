@@ -194,17 +194,17 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `POST https://jp-sdk-api.yostarplat.com/yostar/get-auth` を Playwright で観測できる
 - [x] accepted / rejected の両方が HTTP status 200 であることを手動確認する
 - [x] JSON `Code` と `Data.Token` の存在で accepted / rejected を区別できることを確認する
-- [ ] atomic browser command が response 待機を login click より先に開始する
-- [ ] 対象 URL と POST method が一致する response だけを待つ
-- [ ] accepted response は token を含まない accepted result を返す
-- [ ] `Code != 200` は application code だけを含む rejected result を返す
-- [ ] HTTP status 異常を browser operation error にする
+- [x] atomic browser command が response 待機を login click より先に開始する
+- [x] 対象 URL と POST method が一致する response だけを待つ
+- [x] accepted response は token を含まない accepted result を返す
+- [x] `Code != 200` は application code だけを含む rejected result を返す
+- [x] HTTP status 異常を browser operation error にする
 - [ ] JSON decode 失敗と schema 異常を browser operation error にする
-- [ ] `Code == 200` でも token が空または文字列でなければ browser operation error にする
+- [x] `Code == 200` でも token が空または文字列でなければ browser operation error にする
 - [ ] response timeout を認証拒否や成功として扱わない
 - [ ] command / response の log にメールアドレス、認証コード、token、raw JSON を出さない
 - [ ] command / response の serialization に token、メールアドレス、raw JSON を含めない
-- [ ] `LoginScreen` が rejected result を screenshot 付き不正引数エラーへ変換する
+- [x] `LoginScreen` が rejected result を screenshot 付き不正引数エラーへ変換する
 - [ ] `LoginScreen` が protocol error を不正引数エラーへ変換しない
 - [ ] 自動テストは synthetic response だけを使う
 - [ ] 実際の雀魂で accepted / rejected の結果をユーザーが手動確認する
