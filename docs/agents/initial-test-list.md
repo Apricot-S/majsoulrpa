@@ -241,6 +241,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `@requires_active` decorator が `LoginScreen` の public 操作 API を保護する
 - [ ] private helper、constructor、`detection_spec()` は stale 判定の対象外である
 - [x] 遷移 API の全操作が正常完了した時点でのみ `LoginScreen` を stale にする
+- [x] 同意ボタンのクリック後は再検出を避けるため 1.0 秒待機する
 - [x] 認証拒否では `LoginScreen` を stale にしない
 - [x] 遷移操作失敗では `LoginScreen` を stale にしない
 - [x] stale にした `LoginScreen` ではメールアドレス、認証コード、同意操作を再実行できない
