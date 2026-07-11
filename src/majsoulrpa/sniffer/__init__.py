@@ -1,3 +1,16 @@
+from majsoulrpa.sniffer.correlator import (
+    CorrelatedMessage,
+    CorrelatedNotice,
+    CorrelatedRequestResponse,
+    Direction,
+    DuplicateRequestError,
+    IncompleteExchangeError,
+    ObservedEnvelope,
+    RequestResponseCorrelator,
+    ResponseDirectionMismatchError,
+    SnifferCorrelationError,
+    UnmatchedResponseError,
+)
 from majsoulrpa.sniffer.envelope import (
     LiqiEnvelope,
     NoticeEnvelope,
@@ -8,10 +21,21 @@ from majsoulrpa.sniffer.envelope import (
 )
 
 __all__ = [
+    "CorrelatedMessage",
+    "CorrelatedNotice",
+    "CorrelatedRequestResponse",
+    "Direction",
+    "DuplicateRequestError",
+    "IncompleteExchangeError",
     "LiqiEnvelope",
     "NoticeEnvelope",
+    "ObservedEnvelope",
     "RequestEnvelope",
+    "RequestResponseCorrelator",
+    "ResponseDirectionMismatchError",
     "ResponseEnvelope",
+    "SnifferCorrelationError",
     "SnifferDecodeError",
+    "UnmatchedResponseError",
     "parse_liqi_envelope",
 ]

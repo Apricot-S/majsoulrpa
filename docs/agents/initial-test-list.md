@@ -320,16 +320,16 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Request / Response 対応
 
-- [ ] pending key が connection、request direction、2 byte 番号を含む
-- [ ] Request は Response 到着まで publish しない
-- [ ] Response 到着時に反対方向の Request と 1 event にまとめる
-- [ ] 同じ番号でも connection が違えば独立して対応付ける
-- [ ] 同じ番号でも Request の方向が違えば独立して対応付ける
-- [ ] 未完了 key の再利用を duplicate request error にする
-- [ ] 対応 Request のない Response を unmatched response error にする
-- [ ] Req/Res が同方向なら direction mismatch error にする
-- [ ] WebSocket close 時に pending Request が残れば incomplete exchange error にする
-- [ ] sniffer stop 時に pending Request が残れば成功終了にしない
+- [x] pending key が connection、request direction、2 byte 番号を含む
+- [x] Request は Response 到着まで publish しない
+- [x] Response 到着時に反対方向の Request と 1 event にまとめる
+- [x] 同じ番号でも connection が違えば独立して対応付ける
+- [x] 同じ番号でも Request の方向が違えば独立して対応付ける
+- [x] 未完了 key の再利用を duplicate request error にする
+- [x] 対応 Request のない Response を unmatched response error にする
+- [x] Req/Res が同方向なら direction mismatch error にする
+- [x] WebSocket close 時に pending Request が残れば incomplete exchange error にする
+- [x] sniffer stop 時に pending Request が残れば成功終了にしない
 
 ### Publication / PUB-SUB
 
