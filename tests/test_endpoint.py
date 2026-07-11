@@ -3,6 +3,8 @@ from majsoulrpa.endpoint import (
     format_tcp_host,
     make_browser_host_tcp_endpoint,
     make_client_tcp_endpoint,
+    make_sniffer_publisher_tcp_endpoint,
+    make_sniffer_subscriber_tcp_endpoint,
     make_tcp_endpoint,
 )
 
@@ -27,6 +29,33 @@ def test_make_client_tcp_endpoint_uses_client_host() -> None:
     )
 
     assert make_client_tcp_endpoint(config) == "tcp://192.0.2.20:12000"
+
+
+def test_make_sniffer_publisher_endpoint_uses_client_host() -> None:
+    config = AppConfig(
+        endpoint=EndpointConfig(
+            client_host="192.0.2.20",
+            sniffer_port=12001,
+        ),
+    )
+
+    assert (
+        make_sniffer_publisher_tcp_endpoint(config) == "tcp://192.0.2.20:12001"
+    )
+
+
+def test_make_sniffer_subscriber_endpoint_uses_browser_host() -> None:
+    config = AppConfig(
+        endpoint=EndpointConfig(
+            browser_host="192.0.2.10",
+            sniffer_port=12001,
+        ),
+    )
+
+    assert (
+        make_sniffer_subscriber_tcp_endpoint(config)
+        == "tcp://192.0.2.10:12001"
+    )
 
 
 def test_make_tcp_endpoint_brackets_ipv6_literal() -> None:

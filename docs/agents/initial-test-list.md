@@ -336,15 +336,17 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] raw Notice publication を schema version 付き JSON にできる
 - [x] 対応済み Req/Res publication を schema version 付き JSON にできる
 - [x] raw payload は publication 内で base64 として round trip する
-- [ ] publication は Sniffer topic と JSON の 2-part ZMQ message にする
-- [ ] publisher は `client_host` と `sniffer_port` の endpoint に bind する
-- [ ] subscriber は `browser_host` と `sniffer_port` の endpoint へ connect する
-- [ ] subscriber は Sniffer topic だけを購読する
+- [x] publication は Sniffer topic と JSON の 2-part ZMQ message にする
+- [x] publisher は `client_host` と `sniffer_port` の endpoint に bind する
+- [x] subscriber は `browser_host` と `sniffer_port` の endpoint へ connect する
+- [x] publisher の bind address が IPv6 literal なら ZMQ IPv6 を有効にする
+- [x] subscriber の接続先が IPv6 literal なら ZMQ IPv6 を有効にする
+- [x] subscriber は Sniffer topic だけを購読する
 - [x] unknown field と未対応 schema version を reject する
 - [ ] `stream_id` の変更を再起動として検出する
 - [ ] `publication_sequence` の gap と巻き戻りを検出する
 - [ ] 最初の sequence が 1 より大きければ途中参加として扱う
-- [ ] fake PUB/SUB socket だけで自動テストできる
+- [x] fake PUB/SUB socket だけで自動テストできる
 
 ### Playwright capture / lifecycle
 

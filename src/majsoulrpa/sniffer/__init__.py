@@ -29,6 +29,11 @@ from majsoulrpa.sniffer.publication import (
     make_publication,
     parse_publication_json,
 )
+from majsoulrpa.sniffer.zmq import (
+    SnifferTransportError,
+    ZmqSnifferPublisher,
+    ZmqSnifferSubscriber,
+)
 
 __all__ = [
     "SCHEMA_VERSION",
@@ -51,7 +56,10 @@ __all__ = [
     "SnifferCorrelationError",
     "SnifferDecodeError",
     "SnifferPublication",
+    "SnifferTransportError",
     "UnmatchedResponseError",
+    "ZmqSnifferPublisher",
+    "ZmqSnifferSubscriber",
     "dump_publication_json",
     "make_publication",
     "parse_liqi_envelope",
