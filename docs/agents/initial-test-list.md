@@ -308,11 +308,12 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Envelope decode
 
-- [ ] synthetic Notice を分類し、`Wrapper` の API 名と本文を取り出す
-- [ ] synthetic Request を分類し、2 byte little endian の番号を取り出す
-- [ ] synthetic Response を分類し、2 byte little endian の番号を取り出す
-- [ ] Response の `Wrapper.name` が空でない場合はエラーにする
-- [ ] 空 payload、不明な種別、壊れた `Wrapper` を decode error にする
+- [x] synthetic Notice を分類し、`Wrapper` の API 名と本文を取り出す
+- [x] synthetic Request を分類し、2 byte little endian の番号を取り出す
+- [x] synthetic Response を分類し、2 byte little endian の番号を取り出す
+- [x] Response の明示的な空 API 名 `0A 00` を decode できる
+- [x] Response の `Wrapper.name` が空でない場合はエラーにする
+- [x] 空 payload、不明な種別、壊れた `Wrapper` を decode error にする
 - [ ] text frame を対応済み binary frame として扱わない
 - [ ] 既知 heartbeat を除外する場合は byte 単位の条件を synthetic data で固定する
 - [ ] decode できない frame を heartbeat として無視しない
