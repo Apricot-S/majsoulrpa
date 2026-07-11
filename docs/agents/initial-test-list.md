@@ -305,13 +305,70 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 ## Phase 7: WebSocket sniffer
 
 - [x] sniffer backend の start に失敗した場合に browser を閉じる
-- [ ] fake sniffer backend が synthetic payload を発行できる
+
+### Envelope decode
+
+- [ ] synthetic Notice を分類し、`Wrapper` の API 名と本文を取り出す
+- [ ] synthetic Request を分類し、2 byte little endian の番号を取り出す
+- [ ] synthetic Response を分類し、2 byte little endian の番号を取り出す
+- [ ] Response の `Wrapper.name` が空でない場合はエラーにする
+- [ ] 空 payload、不明な種別、壊れた `Wrapper` を decode error にする
+- [ ] text frame を対応済み binary frame として扱わない
+- [ ] 既知 heartbeat を除外する場合は byte 単位の条件を synthetic data で固定する
+- [ ] decode できない frame を heartbeat として無視しない
+
+### Request / Response 対応
+
+- [ ] pending key が connection、request direction、2 byte 番号を含む
+- [ ] Request は Response 到着まで publish しない
+- [ ] Response 到着時に反対方向の Request と 1 event にまとめる
+- [ ] 同じ番号でも connection が違えば独立して対応付ける
+- [ ] 同じ番号でも Request の方向が違えば独立して対応付ける
+- [ ] 未完了 key の再利用を duplicate request error にする
+- [ ] 対応 Request のない Response を unmatched response error にする
+- [ ] Req/Res が同方向なら direction mismatch error にする
+- [ ] WebSocket close 時に pending Request が残れば incomplete exchange error にする
+- [ ] sniffer stop 時に pending Request が残れば成功終了にしない
+
+### Publication / PUB-SUB
+
+- [ ] raw Notice publication を schema version 付き JSON にできる
+- [ ] 対応済み Req/Res publication を schema version 付き JSON にできる
+- [ ] raw payload は publication 内で base64 として round trip する
+- [ ] publication は Sniffer topic と JSON の 2-part ZMQ message にする
+- [ ] publisher は `client_host` と `sniffer_port` の endpoint に bind する
+- [ ] subscriber は `browser_host` と `sniffer_port` の endpoint へ connect する
+- [ ] subscriber は Sniffer topic だけを購読する
+- [ ] unknown field と未対応 schema version を reject する
+- [ ] `stream_id` の変更を再起動として検出する
+- [ ] `publication_sequence` の gap と巻き戻りを検出する
+- [ ] 最初の sequence が 1 より大きければ途中参加として扱う
+- [ ] fake PUB/SUB socket だけで自動テストできる
+
+### Playwright capture / lifecycle
+
+- [ ] fake WebSocket の sent / received binary frame を direction 付きで capture する
+- [ ] WebSocket ごとに異なる connection id を割り当てる
+- [ ] frame に capture 順の単調増加番号を付ける
+- [ ] Playwright callback は bounded queue への投入だけを行う
+- [ ] capture queue overflow で frame を黙って捨てない
+- [ ] page navigation より前に PUB bind と listener 登録を完了する
+- [ ] sniffer worker failure を browser host から伝播する
+- [ ] sniffer stop で listener、worker、PUB socket、context を cleanup する
+- [ ] request server failure と cancellation でも sniffer stop が呼ばれる
+
+### Client decode / hook
+
+- [ ] descriptor から API 名と request / response 型の map を作る
+- [ ] Notice / Request の本文を対応する protobuf 型へ decode する
+- [ ] Response を対になった Request の API 名に対応する型へ decode する
+- [ ] unknown API と protobuf body decode failure を明示的なエラーにする
 - [ ] raw payload を hook に渡せる
+- [ ] decode 済み event を hook に渡せる
+- [ ] hook 例外を RPA runtime から伝播する
 - [ ] raw payload をデバッグ用ログに出せる
 - [ ] raw payload ログのテストは synthetic payload だけを使う
-- [ ] decode 失敗を成功扱いにしない
-- [ ] hook が例外を投げた場合の扱いを固定する
-- [ ] sniffer stop が呼ばれる
+- [ ] RPA runtime 終了と cancellation で SUB socket / context を cleanup する
 
 ## examples / docs
 

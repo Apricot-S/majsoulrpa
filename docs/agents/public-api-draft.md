@@ -195,16 +195,21 @@ WebSocket sniffer は、raw payload をユーザーが確認できる形にし�
 
 ```python
 class SnifferHook:
-    async def on_websocket_payload(self, payload: bytes, metadata: MessageMetadata) -> None:
+    async def on_websocket_event(self, event: RawSnifferEvent) -> None:
         ...
 ```
 
 方針:
 
+- browser host で対応検証済みの Notice または Req/Res event を渡す
+- raw event と decode 済み event のどちらを購読するかは登録時に明示する
 - raw payload はデバッグ用ログへ出してよい
 - tests、examples、docs、fixtures、commits に実 payload を入れない
 - synthetic payload で自動テストする
 - decode 失敗を成功扱いにしない
+
+Req/Res 対応検証と二段階 decode の詳細は
+[WebSocket Sniffer 設計](sniffer-design.md) を参照します。
 
 ## Optional integration
 

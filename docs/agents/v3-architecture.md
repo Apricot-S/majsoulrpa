@@ -192,6 +192,11 @@ Playwright sniffer を最初に spike し、要件を満たせない場合に mi
 `SnifferConfig` は初期 config には置きません。sniffer backend の spike 後に、
 ユーザーが実際に設定すべき値が明確になってから追加します。
 
+初期実装では Playwright で frame を capture し、browser host 内で最小 envelope
+decode と Request / Response 対応検証を行ってから、pyzmq PUB/SUB で RPA client
+へ配信する。具体的な protobuf 本文は client 側で decode する。詳細は
+[WebSocket Sniffer 設計](sniffer-design.md) を参照する。
+
 ## `testing/`
 
 testing package は、実ブラウザや実通信なしで TDD を進めるために用意します。

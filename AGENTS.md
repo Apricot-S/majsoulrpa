@@ -14,6 +14,7 @@ MajsoulRPA v3 は、v2 の README と examples にある利用感を出発点に
 - [v3 アーキテクチャ草案](docs/agents/v3-architecture.md)
 - [カスタマイズ方針](docs/agents/customization.md)
 - [WebSocket キャプチャ方針](docs/agents/websocket-capture.md)
+- [WebSocket Sniffer 設計](docs/agents/sniffer-design.md)
 - [テストと品質基準](docs/agents/testing-quality.md)
 - [初回テストリスト](docs/agents/initial-test-list.md)
 - [安全性と秘密情報](docs/agents/safety-secrets.md)

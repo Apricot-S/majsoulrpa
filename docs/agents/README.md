@@ -14,6 +14,7 @@
 - [テンプレート照合設計メモ](template-matching.md)
 - [カスタマイズ方針](customization.md)
 - [WebSocket キャプチャ方針](websocket-capture.md)
+- [WebSocket Sniffer 設計](sniffer-design.md)
 - [テストと品質基準](testing-quality.md)
 - [初回テストリスト](initial-test-list.md)
 - [安全性と秘密情報](safety-secrets.md)
@@ -30,3 +31,7 @@ API や内部構造を変更する作業では、[API 設計方針](api-guidelin
 
 画面到達判定や固定領域クリックを扱う作業では、
 [テンプレート照合設計メモ](template-matching.md) も確認してください。
+
+WebSocket capture、通信依存の画面状態、Sniffer hook を扱う作業では、
+[WebSocket キャプチャ方針](websocket-capture.md) と
+[WebSocket Sniffer 設計](sniffer-design.md) も確認してください。

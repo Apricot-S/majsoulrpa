@@ -87,6 +87,10 @@ Playwright 案は、次を満たせる場合に採用候補とします。
 
 満たせない場合は、mitmproxy 案を採用候補にします。
 
+Playwright と pyzmq PUB/SUB を使う初期実装の責務分割、Req/Res 対応検証、
+二段階 decode、配送保証、lifecycle の詳細は
+[WebSocket Sniffer 設計](sniffer-design.md) に定めます。
+
 ## テスト方針
 
 自動テスト:
