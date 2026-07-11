@@ -2,6 +2,8 @@ import asyncio
 from typing import override
 
 from majsoulrpa.assets.templates.home import (
+    EVENT_CLOSE_SETTINGS_PATH,
+    EVENT_CLOSE_TEMPLATE_PATH,
     NOTIFICATION_CLOSE_SETTINGS_PATH,
     NOTIFICATION_CLOSE_TEMPLATE_PATH,
     SUMMON_SETTINGS_PATH,
@@ -9,6 +11,7 @@ from majsoulrpa.assets.templates.home import (
 )
 from majsoulrpa.presentation.template import load_png_template_matcher
 from majsoulrpa.screens.base import Screen, ScreenDetectionSpec
+from majsoulrpa.screens.errors import ScreenUnexpectedStateError
 
 
 class HomeScreen(Screen):
@@ -20,6 +23,10 @@ class HomeScreen(Screen):
         template_path=NOTIFICATION_CLOSE_TEMPLATE_PATH,
         settings_path=NOTIFICATION_CLOSE_SETTINGS_PATH,
     )
+    EVENT_CLOSE_TEMPLATE = load_png_template_matcher(
+        template_path=EVENT_CLOSE_TEMPLATE_PATH,
+        settings_path=EVENT_CLOSE_SETTINGS_PATH,
+    )
 
     @classmethod
     @override
@@ -28,7 +35,25 @@ class HomeScreen(Screen):
 
     @override
     async def before_callback(self) -> None:
-        if await self.click_template_if_present(
-            self.NOTIFICATION_CLOSE_TEMPLATE,
-        ):
-            await asyncio.sleep(1.0)
+        close_templates = {
+            "notification-close": self.NOTIFICATION_CLOSE_TEMPLATE,
+            "event-close": self.EVENT_CLOSE_TEMPLATE,
+        }
+        processed_templates: set[str] = set()
+        while len(processed_templates) < len(close_templates):
+            screenshot = await self.context.browser.screenshot()
+            for name, template in close_templates.items():
+                result = template.find(screenshot)
+                if result is None:
+                    continue
+
+                if name in processed_templates:
+                    msg = f"{name} was detected more than once."
+                    raise ScreenUnexpectedStateError(msg, screenshot)
+
+                await self._click_region(result.region)
+                processed_templates.add(name)
+                await asyncio.sleep(1.0)
+                break
+            else:
+                return

@@ -49,5 +49,9 @@ class ScreenInvalidOperationError(ScreenError):
     pass
 
 
+class ScreenUnexpectedStateError(ScreenError):
+    pass
+
+
 class ScreenStaleError(ScreenInvalidOperationError):
     pass

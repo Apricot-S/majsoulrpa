@@ -8,6 +8,7 @@ from majsoulrpa.screens.errors import (
     ScreenInvalidArgumentError,
     ScreenInvalidOperationError,
     ScreenStaleError,
+    ScreenUnexpectedStateError,
 )
 
 
@@ -41,6 +42,17 @@ def test_screen_invalid_operation_error_is_screen_error() -> None:
     )
 
     assert str(error) == "invalid screen API operation"
+    assert error.screenshot == b"png-bytes"
+    assert isinstance(error, ScreenError)
+
+
+def test_screen_unexpected_state_error_is_screen_error() -> None:
+    error = ScreenUnexpectedStateError(
+        "unexpected screen state",
+        b"png-bytes",
+    )
+
+    assert str(error) == "unexpected screen state"
     assert error.screenshot == b"png-bytes"
     assert isinstance(error, ScreenError)
 

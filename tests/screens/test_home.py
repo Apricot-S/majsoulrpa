@@ -8,6 +8,8 @@ import pytest
 
 import majsoulrpa.screens.home as home_module
 from majsoulrpa.assets.templates.home import (
+    EVENT_CLOSE_SETTINGS_PATH,
+    EVENT_CLOSE_TEMPLATE_PATH,
     NOTIFICATION_CLOSE_SETTINGS_PATH,
     NOTIFICATION_CLOSE_TEMPLATE_PATH,
     SUMMON_SETTINGS_PATH,
@@ -15,13 +17,16 @@ from majsoulrpa.assets.templates.home import (
 )
 from majsoulrpa.presentation.template import TemplateMatchSettings
 from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
+from majsoulrpa.screens.errors import ScreenUnexpectedStateError
 from majsoulrpa.screens.home import HomeScreen
 
 
 class BrowserControllerSpy:
-    def __init__(self, screenshot: bytes) -> None:
+    def __init__(self, screenshot: bytes, *screenshots: bytes) -> None:
         self.clicked_points: list[tuple[float, float]] = []
         self.screenshot_bytes = screenshot
+        self.screenshot_queue = [screenshot, *screenshots]
+        self.screenshot_count = 0
 
     async def click(self, x: float, y: float) -> None:
         self.clicked_points.append((x, y))
@@ -53,6 +58,9 @@ class BrowserControllerSpy:
         _ = key
 
     async def screenshot(self) -> bytes:
+        self.screenshot_count += 1
+        if self.screenshot_queue:
+            return self.screenshot_queue.pop(0)
         return self.screenshot_bytes
 
 
@@ -102,6 +110,13 @@ def test_notification_close_template_assets_exist() -> None:
     assert NOTIFICATION_CLOSE_SETTINGS_PATH.is_file()
 
 
+def test_event_close_template_assets_exist() -> None:
+    assert EVENT_CLOSE_TEMPLATE_PATH.name == "event-close.png"
+    assert EVENT_CLOSE_TEMPLATE_PATH.is_file()
+    assert EVENT_CLOSE_SETTINGS_PATH.name == "event-close.toml"
+    assert EVENT_CLOSE_SETTINGS_PATH.is_file()
+
+
 def test_home_screen_detection_spec_uses_summon_template() -> None:
     spec = HomeScreen.detection_spec()
 
@@ -133,6 +148,7 @@ def test_home_screen_before_callback_closes_notification(
             template_path=NOTIFICATION_CLOSE_TEMPLATE_PATH,
             settings_path=NOTIFICATION_CLOSE_SETTINGS_PATH,
         ),
+        _synthetic_blank_screenshot(),
     )
     screen = HomeScreen(
         context=ScreenContext(browser=browser, rng=Random(0)),
@@ -165,3 +181,92 @@ def test_home_screen_before_callback_does_nothing_without_notification(
 
     assert browser.clicked_points == []
     assert sleeps == []
+
+
+@pytest.mark.parametrize(
+    (
+        "first_template_path",
+        "first_settings_path",
+        "second_template_path",
+        "second_settings_path",
+    ),
+    [
+        (
+            NOTIFICATION_CLOSE_TEMPLATE_PATH,
+            NOTIFICATION_CLOSE_SETTINGS_PATH,
+            EVENT_CLOSE_TEMPLATE_PATH,
+            EVENT_CLOSE_SETTINGS_PATH,
+        ),
+        (
+            EVENT_CLOSE_TEMPLATE_PATH,
+            EVENT_CLOSE_SETTINGS_PATH,
+            NOTIFICATION_CLOSE_TEMPLATE_PATH,
+            NOTIFICATION_CLOSE_SETTINGS_PATH,
+        ),
+    ],
+)
+def test_home_screen_closes_notification_and_event_in_either_order(
+    monkeypatch: pytest.MonkeyPatch,
+    first_template_path: Traversable,
+    first_settings_path: Traversable,
+    second_template_path: Traversable,
+    second_settings_path: Traversable,
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=first_template_path,
+            settings_path=first_settings_path,
+        ),
+        _synthetic_template_screenshot(
+            template_path=second_template_path,
+            settings_path=second_settings_path,
+        ),
+    )
+    screen = HomeScreen(
+        context=ScreenContext(browser=browser, rng=Random(0)),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    asyncio.run(screen.before_callback())
+
+    assert len(browser.clicked_points) == 2
+    assert sleeps == [1.0, 1.0]
+    assert browser.screenshot_count == 2
+
+
+def test_home_screen_raises_when_same_close_template_is_detected_twice(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    notification_screenshot = _synthetic_template_screenshot(
+        template_path=NOTIFICATION_CLOSE_TEMPLATE_PATH,
+        settings_path=NOTIFICATION_CLOSE_SETTINGS_PATH,
+    )
+    browser = BrowserControllerSpy(
+        notification_screenshot,
+        notification_screenshot,
+    )
+    screen = HomeScreen(
+        context=ScreenContext(browser=browser, rng=Random(0)),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenUnexpectedStateError,
+        match=r"notification-close.*more than once",
+    ) as exc_info:
+        asyncio.run(screen.before_callback())
+
+    assert len(browser.clicked_points) == 1
+    assert sleeps == [1.0]
+    assert browser.screenshot_count == 2
+    assert exc_info.value.screenshot == notification_screenshot

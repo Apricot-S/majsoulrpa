@@ -267,6 +267,16 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 告知画面をクリックして閉じた場合は 1.0 秒待機する
 - [x] 告知画面が存在しない場合は待機しない
 
+## Phase 6.3: HomeScreen event 画面を閉じる
+
+- [x] `event-close` template が存在する場合は一致領域をクリックする
+- [x] notification の後に event が表示されても両方を閉じる
+- [x] event の後に notification が表示されても両方を閉じる
+- [x] 各画面をクリックして閉じるたびに 1.0 秒待機する
+- [x] 1 枚の screenshot を残りの複数 template と照合する
+- [x] 同じ close template が再検出されたら予期しない状態のエラーにする
+- [x] 予期しない状態のエラーに再検出時の screenshot を添付する
+
 ## Phase 7: WebSocket sniffer
 
 - [x] sniffer backend の start に失敗した場合に browser を閉じる
