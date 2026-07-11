@@ -10,6 +10,8 @@ import majsoulrpa.screens.home as home_module
 from majsoulrpa.assets.templates.home import (
     EVENT_CLOSE_SETTINGS_PATH,
     EVENT_CLOSE_TEMPLATE_PATH,
+    MAIL_CLOSE_SETTINGS_PATH,
+    MAIL_CLOSE_TEMPLATE_PATH,
     NOTIFICATION_CLOSE_SETTINGS_PATH,
     NOTIFICATION_CLOSE_TEMPLATE_PATH,
     SUMMON_SETTINGS_PATH,
@@ -115,6 +117,13 @@ def test_event_close_template_assets_exist() -> None:
     assert EVENT_CLOSE_TEMPLATE_PATH.is_file()
     assert EVENT_CLOSE_SETTINGS_PATH.name == "event-close.toml"
     assert EVENT_CLOSE_SETTINGS_PATH.is_file()
+
+
+def test_mail_close_template_assets_exist() -> None:
+    assert MAIL_CLOSE_TEMPLATE_PATH.name == "mail-close.png"
+    assert MAIL_CLOSE_TEMPLATE_PATH.is_file()
+    assert MAIL_CLOSE_SETTINGS_PATH.name == "mail-close.toml"
+    assert MAIL_CLOSE_SETTINGS_PATH.is_file()
 
 
 def test_home_screen_detection_spec_uses_summon_template() -> None:
@@ -226,6 +235,7 @@ def test_home_screen_closes_notification_and_event_in_either_order(
             template_path=second_template_path,
             settings_path=second_settings_path,
         ),
+        _synthetic_blank_screenshot(),
     )
     screen = HomeScreen(
         context=ScreenContext(browser=browser, rng=Random(0)),
@@ -236,7 +246,57 @@ def test_home_screen_closes_notification_and_event_in_either_order(
 
     assert len(browser.clicked_points) == 2
     assert sleeps == [1.0, 1.0]
-    assert browser.screenshot_count == 2
+    assert browser.screenshot_count == 3
+
+
+@pytest.mark.parametrize(
+    ("ordered_assets"),
+    [
+        (
+            (MAIL_CLOSE_TEMPLATE_PATH, MAIL_CLOSE_SETTINGS_PATH),
+            (
+                NOTIFICATION_CLOSE_TEMPLATE_PATH,
+                NOTIFICATION_CLOSE_SETTINGS_PATH,
+            ),
+            (EVENT_CLOSE_TEMPLATE_PATH, EVENT_CLOSE_SETTINGS_PATH),
+        ),
+        (
+            (EVENT_CLOSE_TEMPLATE_PATH, EVENT_CLOSE_SETTINGS_PATH),
+            (
+                NOTIFICATION_CLOSE_TEMPLATE_PATH,
+                NOTIFICATION_CLOSE_SETTINGS_PATH,
+            ),
+            (MAIL_CLOSE_TEMPLATE_PATH, MAIL_CLOSE_SETTINGS_PATH),
+        ),
+    ],
+)
+def test_home_screen_closes_mail_with_other_screens_in_either_order(
+    monkeypatch: pytest.MonkeyPatch,
+    ordered_assets: tuple[tuple[Traversable, Traversable], ...],
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    screenshots = [
+        _synthetic_template_screenshot(
+            template_path=template_path,
+            settings_path=settings_path,
+        )
+        for template_path, settings_path in ordered_assets
+    ]
+    browser = BrowserControllerSpy(screenshots[0], *screenshots[1:])
+    screen = HomeScreen(
+        context=ScreenContext(browser=browser, rng=Random(0)),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    asyncio.run(screen.before_callback())
+
+    assert len(browser.clicked_points) == 3
+    assert sleeps == [1.0, 1.0, 1.0]
+    assert browser.screenshot_count == 3
 
 
 def test_home_screen_raises_when_same_close_template_is_detected_twice(
@@ -270,3 +330,33 @@ def test_home_screen_raises_when_same_close_template_is_detected_twice(
     assert sleeps == [1.0]
     assert browser.screenshot_count == 2
     assert exc_info.value.screenshot == notification_screenshot
+
+
+def test_home_screen_raises_when_mail_close_is_detected_twice(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    mail_screenshot = _synthetic_template_screenshot(
+        template_path=MAIL_CLOSE_TEMPLATE_PATH,
+        settings_path=MAIL_CLOSE_SETTINGS_PATH,
+    )
+    browser = BrowserControllerSpy(mail_screenshot, mail_screenshot)
+    screen = HomeScreen(
+        context=ScreenContext(browser=browser, rng=Random(0)),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenUnexpectedStateError,
+        match=r"mail-close.*more than once",
+    ) as exc_info:
+        asyncio.run(screen.before_callback())
+
+    assert len(browser.clicked_points) == 1
+    assert sleeps == [1.0]
+    assert browser.screenshot_count == 2
+    assert exc_info.value.screenshot == mail_screenshot

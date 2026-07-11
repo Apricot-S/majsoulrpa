@@ -278,6 +278,13 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 同じ close template が再検出されたら予期しない状態のエラーにする
 - [x] 予期しない状態のエラーに再検出時の screenshot を添付する
 
+## Phase 6.4: HomeScreen mail 画面を閉じる
+
+- [x] `mail-close` template が存在する場合は一致領域をクリックする
+- [x] notification、event、mail の表示順にかかわらずすべて閉じる
+- [x] mail をクリックして閉じた場合も 1.0 秒待機する
+- [x] `mail-close` が再検出されたら予期しない状態のエラーにする
+
 ## Phase 7: WebSocket sniffer
 
 - [x] sniffer backend の start に失敗した場合に browser を閉じる

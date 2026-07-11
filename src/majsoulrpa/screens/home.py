@@ -4,6 +4,8 @@ from typing import override
 from majsoulrpa.assets.templates.home import (
     EVENT_CLOSE_SETTINGS_PATH,
     EVENT_CLOSE_TEMPLATE_PATH,
+    MAIL_CLOSE_SETTINGS_PATH,
+    MAIL_CLOSE_TEMPLATE_PATH,
     NOTIFICATION_CLOSE_SETTINGS_PATH,
     NOTIFICATION_CLOSE_TEMPLATE_PATH,
     SUMMON_SETTINGS_PATH,
@@ -27,6 +29,10 @@ class HomeScreen(Screen):
         template_path=EVENT_CLOSE_TEMPLATE_PATH,
         settings_path=EVENT_CLOSE_SETTINGS_PATH,
     )
+    MAIL_CLOSE_TEMPLATE = load_png_template_matcher(
+        template_path=MAIL_CLOSE_TEMPLATE_PATH,
+        settings_path=MAIL_CLOSE_SETTINGS_PATH,
+    )
 
     @classmethod
     @override
@@ -38,6 +44,7 @@ class HomeScreen(Screen):
         close_templates = {
             "notification-close": self.NOTIFICATION_CLOSE_TEMPLATE,
             "event-close": self.EVENT_CLOSE_TEMPLATE,
+            "mail-close": self.MAIL_CLOSE_TEMPLATE,
         }
         processed_templates: set[str] = set()
         while len(processed_templates) < len(close_templates):
