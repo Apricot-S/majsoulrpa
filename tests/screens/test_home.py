@@ -40,6 +40,7 @@ class BrowserControllerSpy:
         self.screenshot_bytes = screenshot
         self.screenshot_queue = [screenshot, *screenshots]
         self.screenshot_count = 0
+        self.events: list[str] = []
 
     async def click(self, x: float, y: float) -> None:
         self.clicked_points.append((x, y))
@@ -71,6 +72,7 @@ class BrowserControllerSpy:
         _ = key
 
     async def screenshot(self) -> bytes:
+        self.events.append("screenshot")
         self.screenshot_count += 1
         if self.screenshot_queue:
             return self.screenshot_queue.pop(0)
@@ -223,7 +225,7 @@ def test_home_screen_before_callback_closes_notification(
     [(x, y)] = browser.clicked_points
     assert 1612 < x < 1644
     assert 174 < y < 206
-    assert sleeps == [1.0]
+    assert sleeps == [1.0, 1.0]
 
 
 def test_home_screen_before_callback_does_nothing_without_notification(
@@ -233,6 +235,7 @@ def test_home_screen_before_callback_does_nothing_without_notification(
 
     async def sleep(seconds: float) -> None:
         sleeps.append(seconds)
+        browser.events.append(f"sleep:{seconds}")
 
     browser = BrowserControllerSpy(_synthetic_home_ready_screenshot())
     screen = HomeScreen(
@@ -243,7 +246,8 @@ def test_home_screen_before_callback_does_nothing_without_notification(
     asyncio.run(screen.before_callback())
 
     assert browser.clicked_points == []
-    assert sleeps == []
+    assert sleeps == [1.0]
+    assert browser.events == ["sleep:1.0", "screenshot"]
 
 
 @pytest.mark.parametrize(
@@ -339,7 +343,7 @@ def test_home_screen_closes_notification_and_event_in_either_order(
     asyncio.run(screen.before_callback())
 
     assert len(browser.clicked_points) == 2
-    assert sleeps == [1.0, 1.0]
+    assert sleeps == [1.0, 1.0, 1.0]
     assert browser.screenshot_count == 3
 
 
@@ -393,7 +397,7 @@ def test_home_screen_closes_mail_with_other_screens_in_either_order(
     asyncio.run(screen.before_callback())
 
     assert len(browser.clicked_points) == 3
-    assert sleeps == [1.0, 1.0, 1.0]
+    assert sleeps == [1.0, 1.0, 1.0, 1.0]
     assert browser.screenshot_count == 4
 
 
@@ -425,7 +429,7 @@ def test_home_screen_raises_when_same_close_template_is_detected_twice(
         asyncio.run(screen.before_callback())
 
     assert len(browser.clicked_points) == 1
-    assert sleeps == [1.0]
+    assert sleeps == [1.0, 1.0]
     assert browser.screenshot_count == 2
     assert exc_info.value.screenshot == notification_screenshot
 
@@ -455,7 +459,7 @@ def test_home_screen_raises_when_mail_close_is_detected_twice(
         asyncio.run(screen.before_callback())
 
     assert len(browser.clicked_points) == 1
-    assert sleeps == [1.0]
+    assert sleeps == [1.0, 1.0]
     assert browser.screenshot_count == 2
     assert exc_info.value.screenshot == mail_screenshot
 
@@ -463,8 +467,8 @@ def test_home_screen_raises_when_mail_close_is_detected_twice(
 @pytest.mark.parametrize(
     ("rewards_first", "expected_sleeps"),
     [
-        (True, [2.0, 0.5, 1.0]),
-        (False, [1.0, 2.0, 0.5]),
+        (True, [1.0, 2.0, 0.5, 1.0]),
+        (False, [1.0, 1.0, 2.0, 0.5]),
     ],
 )
 def test_home_screen_processes_rewards_and_close_in_either_order(
@@ -540,6 +544,6 @@ def test_home_screen_raises_when_rewards_confirm_is_missing(
         asyncio.run(screen.before_callback())
 
     assert len(browser.clicked_points) == 1
-    assert sleeps == [2.0]
+    assert sleeps == [1.0, 2.0]
     assert browser.screenshot_count == 2
     assert exc_info.value.screenshot == missing_confirm_screenshot

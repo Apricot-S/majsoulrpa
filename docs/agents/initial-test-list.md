@@ -300,6 +300,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 告知処理後に `friendly-match` が表示されていることを確認する
 - [x] どちらかがなければ画面検出エラーにする
 - [x] 両 template を告知検出に使った最後の screenshot と照合する
+- [x] Home 画面検出後は最初の screenshot より前に 1.0 秒待機する
 
 ## Phase 7: WebSocket sniffer
 

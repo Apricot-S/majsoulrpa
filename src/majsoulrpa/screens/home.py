@@ -68,6 +68,10 @@ class HomeScreen(Screen):
 
     @override
     async def before_callback(self) -> None:
+        # Wait for Home screen controls and announcements to finish
+        # their entrance animations before taking the first screenshot.
+        await asyncio.sleep(1.0)
+
         close_templates = {
             "notification-close": self.NOTIFICATION_CLOSE_TEMPLATE,
             "event-close": self.EVENT_CLOSE_TEMPLATE,
