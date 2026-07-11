@@ -343,9 +343,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] subscriber の接続先が IPv6 literal なら ZMQ IPv6 を有効にする
 - [x] subscriber は Sniffer topic だけを購読する
 - [x] unknown field と未対応 schema version を reject する
-- [ ] `stream_id` の変更を再起動として検出する
-- [ ] `publication_sequence` の gap と巻き戻りを検出する
-- [ ] 最初の sequence が 1 より大きければ途中参加として扱う
+- [x] `stream_id` の変更を再起動として検出する
+- [x] `publication_sequence` の gap と巻き戻りを検出する
+- [x] 最初の sequence が 1 より大きければ途中参加として扱う
 - [x] fake PUB/SUB socket だけで自動テストできる
 
 ### Playwright capture / lifecycle

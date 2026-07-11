@@ -12,7 +12,12 @@ from majsoulrpa.sniffer.correlator import (
     ObservedEnvelope,
 )
 from majsoulrpa.sniffer.envelope import NoticeEnvelope
-from majsoulrpa.sniffer.publication import SNIFFER_TOPIC, NoticePublication
+from majsoulrpa.sniffer.publication import (
+    SNIFFER_TOPIC,
+    NoticePublication,
+    dump_publication_json,
+)
+from majsoulrpa.sniffer.stream import PublicationSequenceGapError
 from majsoulrpa.sniffer.zmq import (
     SnifferTransportError,
     ZmqSnifferPublisher,
@@ -197,6 +202,68 @@ def test_subscriber_enables_ipv6_for_ipv6_connection_address() -> None:
             (zmq.SUBSCRIBE, SNIFFER_TOPIC),
         ]
         assert socket.connected_endpoints == ["tcp://[::1]:12001"]
+
+    asyncio.run(run())
+
+
+def test_subscriber_records_when_first_publication_starts_midstream() -> None:
+    async def run() -> None:
+        publisher_socket = FakeSocket()
+        publisher = ZmqSnifferPublisher(
+            context=FakeContext(publisher_socket),
+            config=_config(),
+            stream_id=STREAM_ID,
+        )
+        await publisher.bind()
+        publication = await publisher.publish(_notice())
+        publication = publication.model_copy(
+            update={"publication_sequence": 4},
+        )
+
+        socket = FakeSocket()
+        socket.to_receive.append(
+            [SNIFFER_TOPIC, dump_publication_json(publication)],
+        )
+        subscriber = ZmqSnifferSubscriber(
+            context=FakeContext(socket),
+            config=_config(),
+        )
+        await subscriber.connect()
+
+        assert await subscriber.receive() == publication
+        assert subscriber.started_midstream is True
+
+    asyncio.run(run())
+
+
+def test_subscriber_rejects_publication_sequence_gap() -> None:
+    async def run() -> None:
+        publisher_socket = FakeSocket()
+        publisher = ZmqSnifferPublisher(
+            context=FakeContext(publisher_socket),
+            config=_config(),
+            stream_id=STREAM_ID,
+        )
+        await publisher.bind()
+        first = await publisher.publish(_notice())
+        third = first.model_copy(update={"publication_sequence": 3})
+
+        socket = FakeSocket()
+        socket.to_receive.extend(
+            [
+                [SNIFFER_TOPIC, dump_publication_json(first)],
+                [SNIFFER_TOPIC, dump_publication_json(third)],
+            ],
+        )
+        subscriber = ZmqSnifferSubscriber(
+            context=FakeContext(socket),
+            config=_config(),
+        )
+        await subscriber.connect()
+
+        assert await subscriber.receive() == first
+        with pytest.raises(PublicationSequenceGapError):
+            await subscriber.receive()
 
     asyncio.run(run())
 

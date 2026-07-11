@@ -17,6 +17,7 @@ from majsoulrpa.sniffer.publication import (
     make_publication,
     parse_publication_json,
 )
+from majsoulrpa.sniffer.stream import PublicationStreamTracker
 
 
 class SnifferTransportError(RuntimeError):
@@ -103,7 +104,12 @@ class ZmqSnifferSubscriber:
         self._context = context
         self._endpoint = make_sniffer_subscriber_tcp_endpoint(config)
         self._is_ipv6 = _is_ipv6_literal(config.endpoint.browser_host)
+        self._stream_tracker = PublicationStreamTracker()
         self._socket: AsyncZmqSocketLike | None = None
+
+    @property
+    def started_midstream(self) -> bool | None:
+        return self._stream_tracker.started_midstream
 
     async def connect(self) -> None:
         if self._socket is not None:
@@ -134,7 +140,9 @@ class ZmqSnifferSubscriber:
         if topic != SNIFFER_TOPIC:
             msg = "Sniffer publication has an unexpected topic."
             raise SnifferTransportError(msg)
-        return parse_publication_json(payload)
+        publication = parse_publication_json(payload)
+        self._stream_tracker.observe(publication)
+        return publication
 
     async def stop(self) -> None:
         if self._socket is None:

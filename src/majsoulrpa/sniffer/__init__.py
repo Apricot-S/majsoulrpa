@@ -29,6 +29,13 @@ from majsoulrpa.sniffer.publication import (
     make_publication,
     parse_publication_json,
 )
+from majsoulrpa.sniffer.stream import (
+    PublicationSequenceGapError,
+    PublicationSequenceRollbackError,
+    PublicationStreamError,
+    PublicationStreamRestartError,
+    PublicationStreamTracker,
+)
 from majsoulrpa.sniffer.zmq import (
     SnifferTransportError,
     ZmqSnifferPublisher,
@@ -48,6 +55,11 @@ __all__ = [
     "NoticeEnvelope",
     "NoticePublication",
     "ObservedEnvelope",
+    "PublicationSequenceGapError",
+    "PublicationSequenceRollbackError",
+    "PublicationStreamError",
+    "PublicationStreamRestartError",
+    "PublicationStreamTracker",
     "RequestEnvelope",
     "RequestResponseCorrelator",
     "RequestResponsePublication",
