@@ -10,6 +10,8 @@ import majsoulrpa.screens.home as home_module
 from majsoulrpa.assets.templates.home import (
     EVENT_CLOSE_SETTINGS_PATH,
     EVENT_CLOSE_TEMPLATE_PATH,
+    FRIENDLY_MATCH_SETTINGS_PATH,
+    FRIENDLY_MATCH_TEMPLATE_PATH,
     MAIL_CLOSE_SETTINGS_PATH,
     MAIL_CLOSE_TEMPLATE_PATH,
     NOTIFICATION_CLOSE_SETTINGS_PATH,
@@ -20,6 +22,8 @@ from majsoulrpa.assets.templates.home import (
     REWARDS_SIGN_IN_TEMPLATE_PATH,
     SUMMON_SETTINGS_PATH,
     SUMMON_TEMPLATE_PATH,
+    TOURNAMENT_MATCH_SETTINGS_PATH,
+    TOURNAMENT_MATCH_TEMPLATE_PATH,
 )
 from majsoulrpa.presentation.template import TemplateMatchSettings
 from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
@@ -78,17 +82,26 @@ def _synthetic_template_screenshot(
     template_path: Traversable,
     settings_path: Traversable,
 ) -> bytes:
-    encoded = np.frombuffer(template_path.read_bytes(), dtype=np.uint8)
-    template = cv2.imdecode(encoded, cv2.IMREAD_GRAYSCALE)
-    assert template is not None
-    settings = TemplateMatchSettings.from_toml_file(settings_path)
-    region = settings.region
+    return _synthetic_templates_screenshot(
+        ((template_path, settings_path),),
+    )
+
+
+def _synthetic_templates_screenshot(
+    assets: tuple[tuple[Traversable, Traversable], ...],
+) -> bytes:
     screenshot = np.zeros((1080, 1920), dtype=np.uint8)
-    left = round(region.left)
-    top = round(region.top)
-    width = round(region.width)
-    height = round(region.height)
-    screenshot[top : top + height, left : left + width] = template
+    for template_path, settings_path in assets:
+        encoded = np.frombuffer(template_path.read_bytes(), dtype=np.uint8)
+        template = cv2.imdecode(encoded, cv2.IMREAD_GRAYSCALE)
+        assert template is not None
+        settings = TemplateMatchSettings.from_toml_file(settings_path)
+        region = settings.region
+        left = round(region.left)
+        top = round(region.top)
+        width = round(region.width)
+        height = round(region.height)
+        screenshot[top : top + height, left : left + width] = template
     success, screenshot_png = cv2.imencode(".png", screenshot)
     assert success
     return screenshot_png.tobytes()
@@ -99,6 +112,18 @@ def _synthetic_blank_screenshot() -> bytes:
     success, screenshot_png = cv2.imencode(".png", screenshot)
     assert success
     return screenshot_png.tobytes()
+
+
+def _synthetic_home_ready_screenshot() -> bytes:
+    return _synthetic_templates_screenshot(
+        (
+            (
+                TOURNAMENT_MATCH_TEMPLATE_PATH,
+                TOURNAMENT_MATCH_SETTINGS_PATH,
+            ),
+            (FRIENDLY_MATCH_TEMPLATE_PATH, FRIENDLY_MATCH_SETTINGS_PATH),
+        ),
+    )
 
 
 def test_home_screen_is_screen() -> None:
@@ -144,6 +169,17 @@ def test_rewards_template_assets_exist() -> None:
     assert REWARDS_CONFIRM_SETTINGS_PATH.is_file()
 
 
+def test_match_button_template_assets_exist() -> None:
+    assert TOURNAMENT_MATCH_TEMPLATE_PATH.name == "tournament-match.png"
+    assert TOURNAMENT_MATCH_TEMPLATE_PATH.is_file()
+    assert TOURNAMENT_MATCH_SETTINGS_PATH.name == "tournament-match.toml"
+    assert TOURNAMENT_MATCH_SETTINGS_PATH.is_file()
+    assert FRIENDLY_MATCH_TEMPLATE_PATH.name == "friendly-match.png"
+    assert FRIENDLY_MATCH_TEMPLATE_PATH.is_file()
+    assert FRIENDLY_MATCH_SETTINGS_PATH.name == "friendly-match.toml"
+    assert FRIENDLY_MATCH_SETTINGS_PATH.is_file()
+
+
 def test_home_screen_detection_spec_uses_summon_template() -> None:
     spec = HomeScreen.detection_spec()
 
@@ -175,7 +211,7 @@ def test_home_screen_before_callback_closes_notification(
             template_path=NOTIFICATION_CLOSE_TEMPLATE_PATH,
             settings_path=NOTIFICATION_CLOSE_SETTINGS_PATH,
         ),
-        _synthetic_blank_screenshot(),
+        _synthetic_home_ready_screenshot(),
     )
     screen = HomeScreen(
         context=ScreenContext(browser=browser, rng=Random(0)),
@@ -198,7 +234,7 @@ def test_home_screen_before_callback_does_nothing_without_notification(
     async def sleep(seconds: float) -> None:
         sleeps.append(seconds)
 
-    browser = BrowserControllerSpy(_synthetic_blank_screenshot())
+    browser = BrowserControllerSpy(_synthetic_home_ready_screenshot())
     screen = HomeScreen(
         context=ScreenContext(browser=browser, rng=Random(0)),
     )
@@ -208,6 +244,46 @@ def test_home_screen_before_callback_does_nothing_without_notification(
 
     assert browser.clicked_points == []
     assert sleeps == []
+
+
+@pytest.mark.parametrize(
+    ("present_template_path", "present_settings_path", "missing_name"),
+    [
+        (
+            FRIENDLY_MATCH_TEMPLATE_PATH,
+            FRIENDLY_MATCH_SETTINGS_PATH,
+            "tournament-match",
+        ),
+        (
+            TOURNAMENT_MATCH_TEMPLATE_PATH,
+            TOURNAMENT_MATCH_SETTINGS_PATH,
+            "friendly-match",
+        ),
+    ],
+)
+def test_home_screen_raises_when_match_button_is_missing(
+    present_template_path: Traversable,
+    present_settings_path: Traversable,
+    missing_name: str,
+) -> None:
+    screenshot = _synthetic_template_screenshot(
+        template_path=present_template_path,
+        settings_path=present_settings_path,
+    )
+    browser = BrowserControllerSpy(screenshot)
+    screen = HomeScreen(
+        context=ScreenContext(browser=browser, rng=Random(0)),
+    )
+
+    with pytest.raises(
+        ScreenDetectionError,
+        match=f"{missing_name} was not found",
+    ) as exc_info:
+        asyncio.run(screen.before_callback())
+
+    assert exc_info.value.screenshot == screenshot
+    assert browser.clicked_points == []
+    assert browser.screenshot_count == 1
 
 
 @pytest.mark.parametrize(
@@ -253,7 +329,7 @@ def test_home_screen_closes_notification_and_event_in_either_order(
             template_path=second_template_path,
             settings_path=second_settings_path,
         ),
-        _synthetic_blank_screenshot(),
+        _synthetic_home_ready_screenshot(),
     )
     screen = HomeScreen(
         context=ScreenContext(browser=browser, rng=Random(0)),
@@ -307,7 +383,7 @@ def test_home_screen_closes_mail_with_other_screens_in_either_order(
     browser = BrowserControllerSpy(
         screenshots[0],
         *screenshots[1:],
-        _synthetic_blank_screenshot(),
+        _synthetic_home_ready_screenshot(),
     )
     screen = HomeScreen(
         context=ScreenContext(browser=browser, rng=Random(0)),
@@ -422,7 +498,7 @@ def test_home_screen_processes_rewards_and_close_in_either_order(
     browser = BrowserControllerSpy(
         screenshots[0],
         *screenshots[1:],
-        _synthetic_blank_screenshot(),
+        _synthetic_home_ready_screenshot(),
     )
     screen = HomeScreen(
         context=ScreenContext(browser=browser, rng=Random(0)),

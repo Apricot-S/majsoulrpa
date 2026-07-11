@@ -4,6 +4,8 @@ from typing import override
 from majsoulrpa.assets.templates.home import (
     EVENT_CLOSE_SETTINGS_PATH,
     EVENT_CLOSE_TEMPLATE_PATH,
+    FRIENDLY_MATCH_SETTINGS_PATH,
+    FRIENDLY_MATCH_TEMPLATE_PATH,
     MAIL_CLOSE_SETTINGS_PATH,
     MAIL_CLOSE_TEMPLATE_PATH,
     NOTIFICATION_CLOSE_SETTINGS_PATH,
@@ -14,10 +16,15 @@ from majsoulrpa.assets.templates.home import (
     REWARDS_SIGN_IN_TEMPLATE_PATH,
     SUMMON_SETTINGS_PATH,
     SUMMON_TEMPLATE_PATH,
+    TOURNAMENT_MATCH_SETTINGS_PATH,
+    TOURNAMENT_MATCH_TEMPLATE_PATH,
 )
 from majsoulrpa.presentation.template import load_png_template_matcher
 from majsoulrpa.screens.base import Screen, ScreenDetectionSpec
-from majsoulrpa.screens.errors import ScreenUnexpectedStateError
+from majsoulrpa.screens.errors import (
+    ScreenDetectionError,
+    ScreenUnexpectedStateError,
+)
 
 
 class HomeScreen(Screen):
@@ -44,6 +51,14 @@ class HomeScreen(Screen):
     REWARDS_CONFIRM_TEMPLATE = load_png_template_matcher(
         template_path=REWARDS_CONFIRM_TEMPLATE_PATH,
         settings_path=REWARDS_CONFIRM_SETTINGS_PATH,
+    )
+    TOURNAMENT_MATCH_TEMPLATE = load_png_template_matcher(
+        template_path=TOURNAMENT_MATCH_TEMPLATE_PATH,
+        settings_path=TOURNAMENT_MATCH_SETTINGS_PATH,
+    )
+    FRIENDLY_MATCH_TEMPLATE = load_png_template_matcher(
+        template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+        settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
     )
 
     @classmethod
@@ -80,7 +95,10 @@ class HomeScreen(Screen):
                     screenshot,
                 )
                 if sign_in_result is None:
+                    # All announcements have been closed at this point.
+                    self._require_match_buttons(screenshot)
                     return
+
                 if rewards_processed:
                     msg = "rewards-sign-in was detected more than once."
                     raise ScreenUnexpectedStateError(msg, screenshot)
@@ -93,3 +111,13 @@ class HomeScreen(Screen):
                 )
                 await asyncio.sleep(0.5)
                 rewards_processed = True
+
+    def _require_match_buttons(self, screenshot: bytes) -> None:
+        match_templates = {
+            "tournament-match": self.TOURNAMENT_MATCH_TEMPLATE,
+            "friendly-match": self.FRIENDLY_MATCH_TEMPLATE,
+        }
+        for name, template in match_templates.items():
+            if template.find(screenshot) is None:
+                msg = f"{name} was not found after closing announcements."
+                raise ScreenDetectionError(msg, screenshot)

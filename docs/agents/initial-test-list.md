@@ -294,6 +294,13 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] confirm 不在エラーに確認時の screenshot を添付する
 - [x] rewards と通常 close のどちらが先でも両方を処理する
 
+## Phase 6.6: HomeScreen 告知処理後の確認
+
+- [x] 告知処理後に `tournament-match` が表示されていることを確認する
+- [x] 告知処理後に `friendly-match` が表示されていることを確認する
+- [x] どちらかがなければ画面検出エラーにする
+- [x] 両 template を告知検出に使った最後の screenshot と照合する
+
 ## Phase 7: WebSocket sniffer
 
 - [x] sniffer backend の start に失敗した場合に browser を閉じる
