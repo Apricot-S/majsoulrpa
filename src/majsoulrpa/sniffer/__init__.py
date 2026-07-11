@@ -19,6 +19,15 @@ from majsoulrpa.sniffer.envelope import (
     SnifferDecodeError,
     parse_liqi_envelope,
 )
+from majsoulrpa.sniffer.playwright import (
+    CapturedConnectionClosed,
+    CapturedFrame,
+    CaptureEvent,
+    CaptureQueueOverflowError,
+    PlaywrightCaptureError,
+    PlaywrightFrameCapture,
+    UnsupportedWebSocketFrameError,
+)
 from majsoulrpa.sniffer.publication import (
     SCHEMA_VERSION,
     SNIFFER_TOPIC,
@@ -45,6 +54,10 @@ from majsoulrpa.sniffer.zmq import (
 __all__ = [
     "SCHEMA_VERSION",
     "SNIFFER_TOPIC",
+    "CaptureEvent",
+    "CaptureQueueOverflowError",
+    "CapturedConnectionClosed",
+    "CapturedFrame",
     "CorrelatedMessage",
     "CorrelatedNotice",
     "CorrelatedRequestResponse",
@@ -55,6 +68,8 @@ __all__ = [
     "NoticeEnvelope",
     "NoticePublication",
     "ObservedEnvelope",
+    "PlaywrightCaptureError",
+    "PlaywrightFrameCapture",
     "PublicationSequenceGapError",
     "PublicationSequenceRollbackError",
     "PublicationStreamError",
@@ -70,6 +85,7 @@ __all__ = [
     "SnifferPublication",
     "SnifferTransportError",
     "UnmatchedResponseError",
+    "UnsupportedWebSocketFrameError",
     "ZmqSnifferPublisher",
     "ZmqSnifferSubscriber",
     "dump_publication_json",

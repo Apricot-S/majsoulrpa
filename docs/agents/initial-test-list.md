@@ -314,7 +314,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] Response の明示的な空 API 名 `0A 00` を decode できる
 - [x] Response の `Wrapper.name` が空でない場合はエラーにする
 - [x] 空 payload、不明な種別、壊れた `Wrapper` を decode error にする
-- [ ] text frame を対応済み binary frame として扱わない
+- [x] text frame を対応済み binary frame として扱わない
 - [ ] 既知 heartbeat を除外する場合は byte 単位の条件を synthetic data で固定する
 - [ ] decode できない frame を heartbeat として無視しない
 
@@ -350,14 +350,18 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Playwright capture / lifecycle
 
-- [ ] fake WebSocket の sent / received binary frame を direction 付きで capture する
-- [ ] WebSocket ごとに異なる connection id を割り当てる
-- [ ] frame に capture 順の単調増加番号を付ける
-- [ ] Playwright callback は bounded queue への投入だけを行う
-- [ ] capture queue overflow で frame を黙って捨てない
+- [x] fake WebSocket の sent / received binary frame を direction 付きで capture する
+- [x] WebSocket ごとに異なる connection id を割り当てる
+- [x] frame に capture 順の単調増加番号を付ける
+- [x] Playwright callback は bounded queue への投入だけを行う
+- [x] capture queue overflow で frame を黙って捨てない
+- [x] WebSocket close を connection id 付きeventとしてcaptureする
+- [x] WebSocket close 時にそのsocketのlistenerと保持参照を解放する
+- [x] 同じWebSocketが重複通知されてもlistenerを二重登録しない
 - [ ] page navigation より前に PUB bind と listener 登録を完了する
 - [ ] sniffer worker failure を browser host から伝播する
-- [ ] sniffer stop で listener、worker、PUB socket、context を cleanup する
+- [x] sniffer stop でPlaywright listenerを解除する
+- [ ] sniffer stop でworker、PUB socket、contextをcleanupする
 - [ ] request server failure と cancellation でも sniffer stop が呼ばれる
 
 ### Client decode / hook
