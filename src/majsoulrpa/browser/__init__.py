@@ -1,10 +1,7 @@
 import importlib
 from typing import TYPE_CHECKING, Any
 
-from majsoulrpa.browser.controller import (
-    BrowserOperationError,
-    RemoteBrowserController,
-)
+from majsoulrpa.browser.controller import BrowserOperationError
 from majsoulrpa.browser.runner import run_browser_host
 
 _PLAYWRIGHT_EXPORTS = {
@@ -22,7 +19,6 @@ __all__ = [
     "BrowserOperationError",
     "PlaywrightBrowserBackend",
     "PlaywrightCommandExecutor",
-    "RemoteBrowserController",
     "run_browser_host",
 ]
 

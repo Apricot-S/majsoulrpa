@@ -81,7 +81,6 @@ def test_browser_public_exports_are_minimal() -> None:
         "BrowserOperationError",
         "PlaywrightBrowserBackend",
         "PlaywrightCommandExecutor",
-        "RemoteBrowserController",
         "run_browser_host",
     ]
 
