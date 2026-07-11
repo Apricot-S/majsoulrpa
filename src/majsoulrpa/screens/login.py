@@ -201,7 +201,7 @@ class LoginScreen(Screen):
         # starts. Returning immediately can detect LoginScreen again.
         # Its pre-hook then fails because the Yostar dialog no longer
         # opens.
-        await asyncio.sleep(1.0)
+        await asyncio.sleep(2.0)
         self._mark_stale()
 
     async def _click_agreement_region(
