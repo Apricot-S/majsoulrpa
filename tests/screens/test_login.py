@@ -540,7 +540,7 @@ def test_login_screen_enter_verification_code_records_browser_operation(
     assert agreement_button_region.top < agreement_button_y
     assert agreement_button_y < agreement_button_region.bottom
     assert browser.input_texts == ["123456"]
-    assert sleeps == [0.5, 0.5, 0.5, 0.5, 5.0, 0.5, 1.0, 1.0]
+    assert sleeps == [0.5, 0.5, 0.5, 0.5, 5.0, 0.5, 1.0, 2.0]
     assert browser.events == [
         "click",
         "sleep:0.5",
@@ -557,7 +557,7 @@ def test_login_screen_enter_verification_code_records_browser_operation(
         "click",
         "sleep:1.0",
         "click",
-        "sleep:1.0",
+        "sleep:2.0",
     ]
 
     with pytest.raises(ScreenStaleError):
