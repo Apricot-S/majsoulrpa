@@ -285,6 +285,15 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] mail をクリックして閉じた場合も 1.0 秒待機する
 - [x] `mail-close` が再検出されたら予期しない状態のエラーにする
 
+## Phase 6.5: HomeScreen rewards 画面を閉じる
+
+- [x] `rewards-sign-in` がなければ rewards 操作を行わない
+- [x] `rewards-sign-in` をクリックしたら 2.0 秒待機する
+- [x] 続く `rewards-confirm` をクリックして 0.5 秒待機する
+- [x] sign-in 後に confirm がなければ画面検出エラーにする
+- [x] confirm 不在エラーに確認時の screenshot を添付する
+- [x] rewards と通常 close のどちらが先でも両方を処理する
+
 ## Phase 7: WebSocket sniffer
 
 - [x] sniffer backend の start に失敗した場合に browser を閉じる

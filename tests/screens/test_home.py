@@ -14,12 +14,19 @@ from majsoulrpa.assets.templates.home import (
     MAIL_CLOSE_TEMPLATE_PATH,
     NOTIFICATION_CLOSE_SETTINGS_PATH,
     NOTIFICATION_CLOSE_TEMPLATE_PATH,
+    REWARDS_CONFIRM_SETTINGS_PATH,
+    REWARDS_CONFIRM_TEMPLATE_PATH,
+    REWARDS_SIGN_IN_SETTINGS_PATH,
+    REWARDS_SIGN_IN_TEMPLATE_PATH,
     SUMMON_SETTINGS_PATH,
     SUMMON_TEMPLATE_PATH,
 )
 from majsoulrpa.presentation.template import TemplateMatchSettings
 from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
-from majsoulrpa.screens.errors import ScreenUnexpectedStateError
+from majsoulrpa.screens.errors import (
+    ScreenDetectionError,
+    ScreenUnexpectedStateError,
+)
 from majsoulrpa.screens.home import HomeScreen
 
 
@@ -124,6 +131,17 @@ def test_mail_close_template_assets_exist() -> None:
     assert MAIL_CLOSE_TEMPLATE_PATH.is_file()
     assert MAIL_CLOSE_SETTINGS_PATH.name == "mail-close.toml"
     assert MAIL_CLOSE_SETTINGS_PATH.is_file()
+
+
+def test_rewards_template_assets_exist() -> None:
+    assert REWARDS_SIGN_IN_TEMPLATE_PATH.name == "rewards-sign-in.png"
+    assert REWARDS_SIGN_IN_TEMPLATE_PATH.is_file()
+    assert REWARDS_SIGN_IN_SETTINGS_PATH.name == "rewards-sign-in.toml"
+    assert REWARDS_SIGN_IN_SETTINGS_PATH.is_file()
+    assert REWARDS_CONFIRM_TEMPLATE_PATH.name == "rewards-confirm.png"
+    assert REWARDS_CONFIRM_TEMPLATE_PATH.is_file()
+    assert REWARDS_CONFIRM_SETTINGS_PATH.name == "rewards-confirm.toml"
+    assert REWARDS_CONFIRM_SETTINGS_PATH.is_file()
 
 
 def test_home_screen_detection_spec_uses_summon_template() -> None:
@@ -286,7 +304,11 @@ def test_home_screen_closes_mail_with_other_screens_in_either_order(
         )
         for template_path, settings_path in ordered_assets
     ]
-    browser = BrowserControllerSpy(screenshots[0], *screenshots[1:])
+    browser = BrowserControllerSpy(
+        screenshots[0],
+        *screenshots[1:],
+        _synthetic_blank_screenshot(),
+    )
     screen = HomeScreen(
         context=ScreenContext(browser=browser, rng=Random(0)),
     )
@@ -296,7 +318,7 @@ def test_home_screen_closes_mail_with_other_screens_in_either_order(
 
     assert len(browser.clicked_points) == 3
     assert sleeps == [1.0, 1.0, 1.0]
-    assert browser.screenshot_count == 3
+    assert browser.screenshot_count == 4
 
 
 def test_home_screen_raises_when_same_close_template_is_detected_twice(
@@ -360,3 +382,88 @@ def test_home_screen_raises_when_mail_close_is_detected_twice(
     assert sleeps == [1.0]
     assert browser.screenshot_count == 2
     assert exc_info.value.screenshot == mail_screenshot
+
+
+@pytest.mark.parametrize(
+    ("rewards_first", "expected_sleeps"),
+    [
+        (True, [2.0, 0.5, 1.0]),
+        (False, [1.0, 2.0, 0.5]),
+    ],
+)
+def test_home_screen_processes_rewards_and_close_in_either_order(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    rewards_first: bool,
+    expected_sleeps: list[float],
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    rewards_sign_in = _synthetic_template_screenshot(
+        template_path=REWARDS_SIGN_IN_TEMPLATE_PATH,
+        settings_path=REWARDS_SIGN_IN_SETTINGS_PATH,
+    )
+    rewards_confirm = _synthetic_template_screenshot(
+        template_path=REWARDS_CONFIRM_TEMPLATE_PATH,
+        settings_path=REWARDS_CONFIRM_SETTINGS_PATH,
+    )
+    notification = _synthetic_template_screenshot(
+        template_path=NOTIFICATION_CLOSE_TEMPLATE_PATH,
+        settings_path=NOTIFICATION_CLOSE_SETTINGS_PATH,
+    )
+    screenshots = (
+        [rewards_sign_in, rewards_confirm, notification]
+        if rewards_first
+        else [notification, rewards_sign_in, rewards_confirm]
+    )
+    browser = BrowserControllerSpy(
+        screenshots[0],
+        *screenshots[1:],
+        _synthetic_blank_screenshot(),
+    )
+    screen = HomeScreen(
+        context=ScreenContext(browser=browser, rng=Random(0)),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    asyncio.run(screen.before_callback())
+
+    assert len(browser.clicked_points) == 3
+    assert sleeps == expected_sleeps
+    assert browser.screenshot_count == 4
+
+
+def test_home_screen_raises_when_rewards_confirm_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    missing_confirm_screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=REWARDS_SIGN_IN_TEMPLATE_PATH,
+            settings_path=REWARDS_SIGN_IN_SETTINGS_PATH,
+        ),
+        missing_confirm_screenshot,
+    )
+    screen = HomeScreen(
+        context=ScreenContext(browser=browser, rng=Random(0)),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenDetectionError,
+        match="rewards-confirm was not found",
+    ) as exc_info:
+        asyncio.run(screen.before_callback())
+
+    assert len(browser.clicked_points) == 1
+    assert sleeps == [2.0]
+    assert browser.screenshot_count == 2
+    assert exc_info.value.screenshot == missing_confirm_screenshot

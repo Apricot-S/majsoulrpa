@@ -8,6 +8,10 @@ from majsoulrpa.assets.templates.home import (
     MAIL_CLOSE_TEMPLATE_PATH,
     NOTIFICATION_CLOSE_SETTINGS_PATH,
     NOTIFICATION_CLOSE_TEMPLATE_PATH,
+    REWARDS_CONFIRM_SETTINGS_PATH,
+    REWARDS_CONFIRM_TEMPLATE_PATH,
+    REWARDS_SIGN_IN_SETTINGS_PATH,
+    REWARDS_SIGN_IN_TEMPLATE_PATH,
     SUMMON_SETTINGS_PATH,
     SUMMON_TEMPLATE_PATH,
 )
@@ -33,6 +37,14 @@ class HomeScreen(Screen):
         template_path=MAIL_CLOSE_TEMPLATE_PATH,
         settings_path=MAIL_CLOSE_SETTINGS_PATH,
     )
+    REWARDS_SIGN_IN_TEMPLATE = load_png_template_matcher(
+        template_path=REWARDS_SIGN_IN_TEMPLATE_PATH,
+        settings_path=REWARDS_SIGN_IN_SETTINGS_PATH,
+    )
+    REWARDS_CONFIRM_TEMPLATE = load_png_template_matcher(
+        template_path=REWARDS_CONFIRM_TEMPLATE_PATH,
+        settings_path=REWARDS_CONFIRM_SETTINGS_PATH,
+    )
 
     @classmethod
     @override
@@ -47,7 +59,8 @@ class HomeScreen(Screen):
             "mail-close": self.MAIL_CLOSE_TEMPLATE,
         }
         processed_templates: set[str] = set()
-        while len(processed_templates) < len(close_templates):
+        rewards_processed = False
+        while True:
             screenshot = await self.context.browser.screenshot()
             for name, template in close_templates.items():
                 result = template.find(screenshot)
@@ -63,4 +76,20 @@ class HomeScreen(Screen):
                 await asyncio.sleep(1.0)
                 break
             else:
-                return
+                sign_in_result = self.REWARDS_SIGN_IN_TEMPLATE.find(
+                    screenshot,
+                )
+                if sign_in_result is None:
+                    return
+                if rewards_processed:
+                    msg = "rewards-sign-in was detected more than once."
+                    raise ScreenUnexpectedStateError(msg, screenshot)
+
+                await self._click_region(sign_in_result.region)
+                await asyncio.sleep(2.0)
+                await self.click_template(
+                    self.REWARDS_CONFIRM_TEMPLATE,
+                    message="rewards-confirm was not found after sign-in.",
+                )
+                await asyncio.sleep(0.5)
+                rewards_processed = True

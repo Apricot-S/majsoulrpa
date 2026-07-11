@@ -10,5 +10,5 @@ right = 10
 top = 10
 bottom = 10
 
-[settings]
+[match]
 threshold = 0.87
