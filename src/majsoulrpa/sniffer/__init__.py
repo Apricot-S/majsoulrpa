@@ -19,8 +19,20 @@ from majsoulrpa.sniffer.envelope import (
     SnifferDecodeError,
     parse_liqi_envelope,
 )
+from majsoulrpa.sniffer.publication import (
+    SCHEMA_VERSION,
+    SNIFFER_TOPIC,
+    NoticePublication,
+    RequestResponsePublication,
+    SnifferPublication,
+    dump_publication_json,
+    make_publication,
+    parse_publication_json,
+)
 
 __all__ = [
+    "SCHEMA_VERSION",
+    "SNIFFER_TOPIC",
     "CorrelatedMessage",
     "CorrelatedNotice",
     "CorrelatedRequestResponse",
@@ -29,13 +41,19 @@ __all__ = [
     "IncompleteExchangeError",
     "LiqiEnvelope",
     "NoticeEnvelope",
+    "NoticePublication",
     "ObservedEnvelope",
     "RequestEnvelope",
     "RequestResponseCorrelator",
+    "RequestResponsePublication",
     "ResponseDirectionMismatchError",
     "ResponseEnvelope",
     "SnifferCorrelationError",
     "SnifferDecodeError",
+    "SnifferPublication",
     "UnmatchedResponseError",
+    "dump_publication_json",
+    "make_publication",
     "parse_liqi_envelope",
+    "parse_publication_json",
 ]

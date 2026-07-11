@@ -333,14 +333,14 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Publication / PUB-SUB
 
-- [ ] raw Notice publication を schema version 付き JSON にできる
-- [ ] 対応済み Req/Res publication を schema version 付き JSON にできる
-- [ ] raw payload は publication 内で base64 として round trip する
+- [x] raw Notice publication を schema version 付き JSON にできる
+- [x] 対応済み Req/Res publication を schema version 付き JSON にできる
+- [x] raw payload は publication 内で base64 として round trip する
 - [ ] publication は Sniffer topic と JSON の 2-part ZMQ message にする
 - [ ] publisher は `client_host` と `sniffer_port` の endpoint に bind する
 - [ ] subscriber は `browser_host` と `sniffer_port` の endpoint へ connect する
 - [ ] subscriber は Sniffer topic だけを購読する
-- [ ] unknown field と未対応 schema version を reject する
+- [x] unknown field と未対応 schema version を reject する
 - [ ] `stream_id` の変更を再起動として検出する
 - [ ] `publication_sequence` の gap と巻き戻りを検出する
 - [ ] 最初の sequence が 1 より大きければ途中参加として扱う
