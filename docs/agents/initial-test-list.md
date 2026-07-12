@@ -361,8 +361,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] page navigation より前に PUB bind と listener 登録を完了する
 - [x] sniffer worker failure を browser host から伝播する
 - [x] sniffer stop でPlaywright listenerを解除する
-- [ ] sniffer stop でworker、PUB socket、contextをcleanupする
+- [x] sniffer stop でworker、PUB socket、contextをcleanupする
 - [x] request server failure と cancellation でも sniffer stop が呼ばれる
+- [x] 標準Playwright browser hostは既定の実Sniffer backendを起動する
 
 ### Sniffer worker
 

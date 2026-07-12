@@ -259,8 +259,11 @@ XPUB handshake、永続 queue、再送 protocol は導入しない。
 5. browser command の REP server を開始する
 
 browser backend 全体を不必要に抽象化せず、page 作成と初回 navigation の境界だけを
-明示する。Sniffer start、navigation、request server start のいずれかが失敗したら、
-開始済みの resource を逆順に cleanup する。
+内部 `page_ready` hook として明示する。標準 Playwright browser host は、専用の
+`zmq.asyncio.Context`、Playwright capture、PUB publisher、worker を束ねた既定の
+Sniffer backend をこの hook で起動する。custom browser backend をテスト等で注入する
+場合は、Sniffer backend も必要に応じて明示注入する。Sniffer start、navigation、
+request server start のいずれかが失敗したら、開始済みの resource を逆順に cleanup する。
 
 Sniffer worker の予期しない終了は background task に放置しない。browser host は
 request server と Sniffer failure を同時に監視し、Sniffer failure を host の失敗として

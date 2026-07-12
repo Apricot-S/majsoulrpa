@@ -4,6 +4,7 @@ from collections.abc import Awaitable, Callable
 import pytest
 import zmq.asyncio
 
+from majsoulrpa.browser import runner as browser_runner
 from majsoulrpa.browser.history import LoggingBrowserCommandExecutor
 from majsoulrpa.browser.messages import BrowserCommand, BrowserResponse
 from majsoulrpa.browser.runner import (
@@ -200,6 +201,42 @@ def test_run_browser_host_binds_and_serves_request_server() -> None:
     assert server.served
     assert server.stopped
     assert backend.stopped
+
+
+def test_run_browser_host_uses_sniffer_with_default_browser_backend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    backend = BackendSpy()
+    sniffer = SnifferBackendSpy()
+    server = RequestServerSpy()
+
+    class PlaywrightModule:
+        @staticmethod
+        def PlaywrightBrowserBackend() -> BackendSpy:  # noqa: N802
+            return backend
+
+    monkeypatch.setattr(
+        browser_runner.importlib,
+        "import_module",
+        lambda _name: PlaywrightModule,
+    )
+    monkeypatch.setattr(
+        browser_runner,
+        "_make_default_sniffer_backend",
+        lambda _config: sniffer,
+    )
+
+    asyncio.run(
+        run_browser_host(
+            AppConfig(),
+            command_executor_factory=ExecutorSpy,
+            request_server_factory=lambda _executor: server,
+        ),
+    )
+
+    assert sniffer.started_pages == [backend.page]
+    assert sniffer.run_started
+    assert sniffer.stopped
 
 
 def test_run_browser_host_starts_and_stops_sniffer_backend() -> None:

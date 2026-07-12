@@ -44,9 +44,12 @@ async def run_browser_host(
     command_executor_factory: CommandExecutorFactory | None = None,
     request_server_factory: RequestServerFactory | None = None,
 ) -> None:
+    use_default_sniffer = backend is None and sniffer_backend is None
     if backend is None:
         playwright = importlib.import_module("majsoulrpa.browser.playwright")
         backend = playwright.PlaywrightBrowserBackend()
+    if use_default_sniffer:
+        sniffer_backend = _make_default_sniffer_backend(config)
 
     executor_factory = (
         _make_playwright_command_executor
@@ -127,6 +130,11 @@ async def _serve_with_sniffer(
 def _make_playwright_command_executor(page: object) -> BrowserCommandExecutor:
     playwright = importlib.import_module("majsoulrpa.browser.playwright")
     return playwright.PlaywrightCommandExecutor(cast("Any", page))
+
+
+def _make_default_sniffer_backend(config: AppConfig) -> SnifferBackend:
+    runtime = importlib.import_module("majsoulrpa.sniffer.runtime")
+    return runtime.BrowserHostSnifferBackend(config)
 
 
 def _make_zmq_request_server_factory(

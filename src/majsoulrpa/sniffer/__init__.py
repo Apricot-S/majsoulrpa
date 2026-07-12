@@ -38,6 +38,7 @@ from majsoulrpa.sniffer.publication import (
     make_publication,
     parse_publication_json,
 )
+from majsoulrpa.sniffer.runtime import BrowserHostSnifferBackend
 from majsoulrpa.sniffer.stream import (
     PublicationSequenceGapError,
     PublicationSequenceRollbackError,
@@ -55,6 +56,7 @@ from majsoulrpa.sniffer.zmq import (
 __all__ = [
     "SCHEMA_VERSION",
     "SNIFFER_TOPIC",
+    "BrowserHostSnifferBackend",
     "CaptureEvent",
     "CaptureQueueOverflowError",
     "CapturedConnectionClosed",
