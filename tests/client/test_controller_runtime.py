@@ -3,6 +3,7 @@ import base64
 from typing import override
 
 import pytest
+import zmq
 
 from majsoulrpa.browser.controller import BrowserOperationError
 from majsoulrpa.browser.messages import (
@@ -76,6 +77,7 @@ class ZmqSocketSpy:
         self._responses = list(responses)
         self._last_response = responses[-1] if responses else None
         self.closed = False
+        self.options: list[tuple[int, bytes | int]] = []
 
     def connect(self, endpoint: str) -> None:
         self.connected_endpoints.append(endpoint)
@@ -97,15 +99,34 @@ class ZmqSocketSpy:
             raise AssertionError(msg)
         return dump_browser_response_json(response)
 
+    def setsockopt(self, option: int, value: bytes | int) -> None:
+        self.options.append((option, value))
+
+    async def recv_multipart(self) -> list[bytes]:
+        future: asyncio.Future[list[bytes]] = (
+            asyncio.get_running_loop().create_future()
+        )
+        return await future
+
+    async def send_multipart(self, parts: list[bytes]) -> object:
+        _ = parts
+        return None
+
+    def bind(self, endpoint: str) -> None:
+        _ = endpoint
+
 
 class ZmqContextSpy:
     def __init__(self, *responses: BrowserResponse) -> None:
         self.socket_spy = ZmqSocketSpy(*responses)
+        self.sniffer_socket_spy = ZmqSocketSpy()
         self.socket_types: list[int] = []
         self.terminated = False
 
     def socket(self, socket_type: int) -> ZmqSocketSpy:
         self.socket_types.append(socket_type)
+        if socket_type == zmq.SUB:
+            return self.sniffer_socket_spy
         return self.socket_spy
 
     def term(self) -> None:
@@ -138,7 +159,15 @@ def test_controller_runtime_connects_screenshot_and_cleans_up() -> None:
     assert context.socket_spy.connected_endpoints == [
         "tcp://192.0.2.10:12000",
     ]
+    assert context.sniffer_socket_spy.connected_endpoints == [
+        f"tcp://192.0.2.10:{config.endpoint.sniffer_port}",
+    ]
+    assert context.sniffer_socket_spy.options == [
+        (zmq.SUBSCRIBE, b"majsoulrpa.sniffer.v1"),
+    ]
+    assert context.socket_types == [zmq.REQ, zmq.SUB]
     assert context.socket_spy.closed
+    assert context.sniffer_socket_spy.closed
     assert context.terminated
     assert context.socket_spy.sent_payloads
     assert [

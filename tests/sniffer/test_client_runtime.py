@@ -148,7 +148,7 @@ def test_client_runtime_stops_subscriber_when_cancelled() -> None:
             queue=QueueSpy(),
         )
         task = asyncio.create_task(runtime.run())
-        await asyncio.sleep(0)
+        await runtime.wait_until_ready()
         task.cancel()
         with pytest.raises(asyncio.CancelledError):
             await task

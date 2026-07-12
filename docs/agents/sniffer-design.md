@@ -326,7 +326,9 @@ subscriberをcloseする。
 RPA runtimeは画面検出・callbackのmain loopとSniffer受信loopを兄弟taskとして監視する。
 一方が終了したら他方をcancelしてから共通cleanupを行う。Sniffer受信loopの例外はRPA
 runtimeから伝播し、例外なしで終了した場合も常駐serviceの予期しない停止としてerrorに
-する。
+する。標準Controller runtimeはREQ socketとは別にSUB socket、client decoder、内部
+message queueを組み立てる。SUBのconnect完了をready境界とし、その後に画面検出main
+loopを開始する。
 
 たとえば牌譜取得は、`goto_log()`後にqueueを順に読み、
 `.lq.Lobby.fetchGameRecord`のReq/Resを取得する。走査中に別のframework処理で必要なmessageを

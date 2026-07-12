@@ -409,5 +409,27 @@ def test_rpa_runtime_rejects_background_service_normal_exit() -> None:
         asyncio.run(runtime.run(AppConfig(), None))
 
 
+def test_rpa_runtime_waits_for_background_ready_before_main_loop() -> None:
+    ready = asyncio.Event()
+    detector = SequenceScreenDetector(LoginScreen())
+
+    async def background() -> None:
+        assert detector.detected_count == 0
+        ready.set()
+        await asyncio.Future()
+
+    runtime = RPARuntime(
+        {LoginScreen: _return_data},
+        detector,
+        should_stop=lambda: True,
+        background_service=background,
+        background_ready=ready.wait,
+    )
+
+    result = asyncio.run(runtime.run(AppConfig(), "done"))
+
+    assert result == "done"
+
+
 async def _return_data(_screen: LoginScreen, data: object) -> object:
     return data

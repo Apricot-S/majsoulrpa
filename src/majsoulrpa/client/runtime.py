@@ -12,6 +12,7 @@ type Cleanup = Callable[[], Awaitable[None]]
 type StopPredicate = Callable[[], bool]
 type ScreenshotProvider = Callable[[], Awaitable[bytes]]
 type BackgroundService = Callable[[], Awaitable[None]]
+type BackgroundReady = Callable[[], Awaitable[object]]
 
 SCREEN_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
 
@@ -49,12 +50,14 @@ class RPARuntime:
         cleanup: Cleanup | None = None,
         should_stop: StopPredicate | None = None,
         background_service: BackgroundService | None = None,
+        background_ready: BackgroundReady | None = None,
     ) -> None:
         self._callbacks = callbacks
         self._detector = detector
         self._cleanup = cleanup
         self._should_stop = should_stop or _keep_running
         self._background_service = background_service
+        self._background_ready = background_ready
 
     async def run(
         self,
@@ -100,7 +103,7 @@ class RPARuntime:
             msg = "Background service is not configured."
             raise RuntimeError(msg)
         main_task = asyncio.create_task(
-            self._run_loop(data, detection_timeout),
+            self._run_main_when_ready(data, detection_timeout),
         )
         background_task = asyncio.ensure_future(self._background_service())
         tasks = (main_task, background_task)
@@ -125,6 +128,15 @@ class RPARuntime:
                 if not task.done():
                     task.cancel()
             await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def _run_main_when_ready(
+        self,
+        data: Any,  # noqa: ANN401
+        detection_timeout: float | None,
+    ) -> Any:  # noqa: ANN401
+        if self._background_ready is not None:
+            await self._background_ready()
+        return await self._run_loop(data, detection_timeout)
 
     async def _detect(
         self,

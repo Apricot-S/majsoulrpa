@@ -1,3 +1,4 @@
+import asyncio
 from typing import Protocol
 
 from majsoulrpa.sniffer.events import DecodedSnifferMessage
@@ -32,10 +33,15 @@ class SnifferClientRuntime:
         self._subscriber = subscriber
         self._decoder = decoder
         self._queue = queue
+        self._connected = asyncio.Event()
+
+    async def wait_until_ready(self) -> None:
+        await self._connected.wait()
 
     async def run(self) -> None:
         try:
             await self._subscriber.connect()
+            self._connected.set()
             while True:
                 publication = await self._subscriber.receive()
                 message = self._decoder.decode(publication)

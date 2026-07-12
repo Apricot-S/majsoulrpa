@@ -1,7 +1,7 @@
 import warnings
 from collections.abc import Callable, Mapping
 from contextlib import AsyncExitStack
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 import zmq
 import zmq.asyncio
@@ -13,6 +13,13 @@ from majsoulrpa.client.runtime import RPARuntime, ScreenshotScreenDetector
 from majsoulrpa.config import AppConfig
 from majsoulrpa.endpoint import make_browser_host_tcp_endpoint
 from majsoulrpa.screens import Screen, ScreenContext
+from majsoulrpa.sniffer.client_runtime import SnifferClientRuntime
+from majsoulrpa.sniffer.decoder import SnifferMessageDecoder
+from majsoulrpa.sniffer.message_queue import SnifferMessageQueue
+from majsoulrpa.sniffer.zmq import (
+    AsyncZmqContextLike,
+    ZmqSnifferSubscriber,
+)
 from majsoulrpa.types import Callback
 from majsoulrpa.viewport import viewport_width_for_height
 
@@ -30,6 +37,9 @@ class ZmqContextLike(Protocol):
 
 
 type ZmqContextFactory = Callable[[], ZmqContextLike]
+
+SNIFFER_QUEUE_CAPACITY = 1024
+SNIFFER_QUEUE_MAX_PAYLOAD_BYTES = 64 * 1024 * 1024
 
 
 class StopFlag:
@@ -94,6 +104,19 @@ class ControllerRuntimeFactory:
             controller.screenshot,
             context=screen_context,
         )
+        sniffer_queue = SnifferMessageQueue(
+            capacity=SNIFFER_QUEUE_CAPACITY,
+            max_payload_bytes=SNIFFER_QUEUE_MAX_PAYLOAD_BYTES,
+        )
+        sniffer_subscriber = ZmqSnifferSubscriber(
+            context=cast("AsyncZmqContextLike", context),
+            config=config,
+        )
+        sniffer_runtime = SnifferClientRuntime(
+            subscriber=sniffer_subscriber,
+            decoder=SnifferMessageDecoder(),
+            queue=sniffer_queue,
+        )
 
         async def cleanup() -> None:
             async with AsyncExitStack() as stack:
@@ -105,4 +128,6 @@ class ControllerRuntimeFactory:
             detector,
             cleanup=cleanup,
             should_stop=stop_flag.is_requested,
+            background_service=sniffer_runtime.run,
+            background_ready=sniffer_runtime.wait_until_ready,
         )
