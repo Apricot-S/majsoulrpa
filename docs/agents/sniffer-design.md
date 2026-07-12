@@ -323,6 +323,11 @@ messageを内部queueへ投入する。transport、decode、queue overflowのい
 受信loopの失敗として伝播し、connect途中の失敗やcancellationを含むすべての終了経路で
 subscriberをcloseする。
 
+RPA runtimeは画面検出・callbackのmain loopとSniffer受信loopを兄弟taskとして監視する。
+一方が終了したら他方をcancelしてから共通cleanupを行う。Sniffer受信loopの例外はRPA
+runtimeから伝播し、例外なしで終了した場合も常駐serviceの予期しない停止としてerrorに
+する。
+
 たとえば牌譜取得は、`goto_log()`後にqueueを順に読み、
 `.lq.Lobby.fetchGameRecord`のReq/Resを取得する。走査中に別のframework処理で必要なmessageを
 見つけた場合は差し戻せる。ファイル保存は返された公開raw eventの`response` bytesを

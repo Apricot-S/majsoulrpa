@@ -349,3 +349,65 @@ def test_rpa_app_run_cleans_up_when_callback_is_cancelled() -> None:
         asyncio.run(app.run(AppConfig(), None))
 
     assert cleanup.called == 1
+
+
+def test_rpa_runtime_propagates_background_service_failure() -> None:
+    cleanup = CleanupSpy()
+
+    async def fail() -> None:
+        await asyncio.sleep(0)
+        msg = "sniffer failed"
+        raise RuntimeError(msg)
+
+    runtime = RPARuntime(
+        {},
+        BlockingScreenDetector(),
+        cleanup=cleanup,
+        background_service=fail,
+    )
+
+    with pytest.raises(RuntimeError, match="sniffer failed"):
+        asyncio.run(runtime.run(AppConfig(), None))
+
+    assert cleanup.called == 1
+
+
+def test_rpa_runtime_cancels_background_service_after_normal_stop() -> None:
+    cancelled = False
+
+    async def run_until_cancelled() -> None:
+        nonlocal cancelled
+        try:
+            await asyncio.Future()
+        finally:
+            cancelled = True
+
+    runtime = RPARuntime(
+        {LoginScreen: _return_data},
+        SequenceScreenDetector(LoginScreen()),
+        should_stop=lambda: True,
+        background_service=run_until_cancelled,
+    )
+
+    result = asyncio.run(runtime.run(AppConfig(), "done"))
+
+    assert result == "done"
+    assert cancelled
+
+
+def test_rpa_runtime_rejects_background_service_normal_exit() -> None:
+    async def stop_unexpectedly() -> None:
+        await asyncio.sleep(0)
+
+    runtime = RPARuntime(
+        {},
+        BlockingScreenDetector(),
+        background_service=stop_unexpectedly,
+    )
+
+    with pytest.raises(RuntimeError, match="stopped unexpectedly"):
+        asyncio.run(runtime.run(AppConfig(), None))
+
+
+async def _return_data(_screen: LoginScreen, data: object) -> object:
+    return data

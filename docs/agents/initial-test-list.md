@@ -398,6 +398,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] client受信runtimeはSUB接続後のpublicationをすべてdecodeして内部queueへ入れる
 - [x] decodeとqueue投入の失敗を受信loopから伝播する
 - [x] connect失敗、受信失敗、cancellationでsubscriberをcleanupする
+- [x] RPA main loopとSniffer受信loopのどちらかが終了したら他方を停止する
+- [x] Sniffer受信loopの例外をRPA runtimeから伝播する
+- [x] Sniffer受信loopの予期しない正常終了を成功扱いにしない
+- [x] RPA main loopの正常終了時にSniffer受信loopをcancelする
 - [ ] raw payload を hook に渡せる
 - [ ] decode 済み event を hook に渡せる
 - [ ] hook 例外を RPA runtime から伝播する
