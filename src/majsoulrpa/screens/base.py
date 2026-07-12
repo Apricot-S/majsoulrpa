@@ -1,6 +1,6 @@
 import asyncio
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable, Callable, Coroutine
+from collections.abc import Awaitable, Callable, Collection, Coroutine
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from functools import wraps
@@ -183,6 +183,29 @@ class Screen(ABC):
         message: DecodedSnifferMessage,
     ) -> None:
         self.context.sniffer_messages.put_back(message)
+
+    async def _wait_for_sniffer_message(
+        self,
+        names: Collection[str],
+        *,
+        put_back_messages: bool = False,
+    ) -> DecodedSnifferMessage:
+        selected_names = frozenset(names)
+        if not selected_names:
+            msg = "Sniffer message names must not be empty."
+            raise ValueError(msg)
+
+        messages_to_put_back: list[DecodedSnifferMessage] = []
+        try:
+            while True:
+                message = await self._get_sniffer_message()
+                if put_back_messages:
+                    messages_to_put_back.append(message)
+                if message.raw.name in selected_names:
+                    return message
+        finally:
+            for message in messages_to_put_back:
+                self._put_back_sniffer_message(message)
 
     @property
     def context(self) -> ScreenContext:

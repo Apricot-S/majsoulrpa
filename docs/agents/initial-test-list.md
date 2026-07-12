@@ -407,9 +407,15 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] Controller runtimeは同じ内部message queueをScreenContextへ注入する
 - [x] Screen基底はmessageの待機取得、即時取得、差し戻しをprotected操作で委譲する
 - [x] ScreenContext構築時にSniffer message sourceを必須にする
-- [ ] raw payload を hook に渡せる
-- [ ] decode 済み event を hook に渡せる
-- [ ] hook 例外を RPA runtime から伝播する
+- [x] Screen helperは複数のAPI名のいずれかが来るまで待機できる
+- [x] Screen helperは読んだmessageの破棄と全差し戻しを選択できる
+- [x] 差し戻す場合は対象messageを含めて元の順序を保つ
+- [x] 待機のcancellationでも退避中messageを差し戻す
+- [x] 空のAPI名集合を拒否する
+
+利用者向けraw / decoded hookは、Screen経由のpayload取得では不足する具体的な
+ユースケースが出るまで追加しない。
+
 - [ ] raw payload をデバッグ用ログに出せる
 - [ ] raw payload ログのテストは synthetic payload だけを使う
 - [x] RPA runtime 終了と cancellation で SUB socket / context を cleanup する

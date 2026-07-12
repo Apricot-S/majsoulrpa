@@ -335,6 +335,20 @@ Sniffer messageを前提とするため、`ScreenContext`のmessage sourceはopt
 必須依存とする。contextが存在すればbrowser操作とmessage取得の両方が利用可能であることを
 不変条件にする。
 
+Screen基底の名前待機helperは複数API名を受け付ける。呼び出し側は、対象を見つけるまでに
+読んだmessageを破棄するか、対象messageを含めてすべて差し戻すかを選ぶ。差し戻す場合は
+対象が見つかるまで一時退避し、元の順序でまとめて戻す。即時に1件ずつ戻すと差し戻し
+queueが優先され、同じmessageを再取得し続けるためである。cancellationや例外でも退避済み
+messageを復元する。
+
+利用者向けraw / decoded hookは初期APIへ追加しない。framework利用者はScreen経由で
+decode済みmessageと対応するraw bytesを取得できるため、それでは不足する具体的な
+ユースケースが確認できた時点で再設計する。
+
+payload本文のログはSUB層では出さず、Screen APIが対象messageと意味を確定した時点で
+decode済みJSONをdebugへ出す。info / warningにはpayload本文ではなく、秘密情報を含まない
+状態遷移または異常の要約だけを出す。
+
 たとえば牌譜取得は、`goto_log()`後にqueueを順に読み、
 `.lq.Lobby.fetchGameRecord`のReq/Resを取得する。走査中に別のframework処理で必要なmessageを
 見つけた場合は差し戻せる。ファイル保存は返された公開raw eventの`response` bytesを

@@ -68,6 +68,19 @@ class LoginScreen(Screen):
     def put_back_sniffer_message(self, message: DecodedNotice) -> None:
         self._put_back_sniffer_message(message)
 
+    async def wait_for_sniffer_message(
+        self,
+        names: set[str],
+        *,
+        put_back_messages: bool = False,
+    ) -> DecodedNotice:
+        message = await self._wait_for_sniffer_message(
+            names,
+            put_back_messages=put_back_messages,
+        )
+        assert isinstance(message, DecodedNotice)
+        return message
+
 
 class BrowserControllerSpy:
     def __init__(self) -> None:
@@ -154,6 +167,11 @@ class SnifferMessageSourceSpy:
         self.put_back_messages: list[DecodedSnifferMessage] = []
 
     async def get(self) -> DecodedSnifferMessage:
+        if not self.messages:
+            future: asyncio.Future[DecodedSnifferMessage] = (
+                asyncio.get_running_loop().create_future()
+            )
+            return await future
         return self.messages.pop(0)
 
     def get_nowait(self) -> DecodedSnifferMessage | None:
@@ -273,6 +291,85 @@ def test_screen_gets_and_puts_back_messages_through_context() -> None:
     screen.put_back_sniffer_message(first)
 
     assert source.put_back_messages == [first]
+
+
+def test_screen_waits_for_any_selected_message_and_discards_others() -> None:
+    unrelated = _notice(".lq.Unrelated")
+    expected = _notice(".lq.Second")
+    source = SnifferMessageSourceSpy(unrelated, expected)
+    screen = LoginScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(),
+            sniffer_messages=source,
+        ),
+    )
+
+    actual = asyncio.run(
+        screen.wait_for_sniffer_message({".lq.First", ".lq.Second"}),
+    )
+
+    assert actual is expected
+    assert source.put_back_messages == []
+
+
+def test_screen_can_put_back_all_read_messages_in_original_order() -> None:
+    first = _notice(".lq.UnrelatedFirst")
+    second = _notice(".lq.UnrelatedSecond")
+    expected = _notice(".lq.Target")
+    source = SnifferMessageSourceSpy(first, second, expected)
+    screen = LoginScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(),
+            sniffer_messages=source,
+        ),
+    )
+
+    actual = asyncio.run(
+        screen.wait_for_sniffer_message(
+            {".lq.Target"},
+            put_back_messages=True,
+        ),
+    )
+
+    assert actual is expected
+    assert source.put_back_messages == [first, second, expected]
+
+
+def test_screen_restores_unmatched_messages_when_wait_is_cancelled() -> None:
+    async def exercise() -> None:
+        unrelated = _notice(".lq.Unrelated")
+        source = SnifferMessageSourceSpy(unrelated)
+        screen = LoginScreen(
+            context=ScreenContext(
+                browser=BrowserControllerSpy(),
+                sniffer_messages=source,
+            ),
+        )
+        task = asyncio.create_task(
+            screen.wait_for_sniffer_message(
+                {".lq.Target"},
+                put_back_messages=True,
+            ),
+        )
+        await asyncio.sleep(0)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+        assert source.put_back_messages == [unrelated]
+
+    asyncio.run(exercise())
+
+
+def test_screen_rejects_empty_sniffer_message_names() -> None:
+    screen = LoginScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(),
+        ),
+    )
+
+    with pytest.raises(ValueError, match="must not be empty"):
+        asyncio.run(screen.wait_for_sniffer_message(set()))
 
 
 def test_false_screen_detection_does_not_call_callback() -> None:
