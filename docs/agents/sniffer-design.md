@@ -294,9 +294,16 @@ client runtime 側で行い、例外は callback と同様に RPA runtime から
 
 ## public surface の初期方針
 
-最初から backend や decoder のすべてを公開 API にしない。初期の user hook は、
-対応検証済みの raw event と decode 済み event のどちらを受け取るかを登録時に
-明示できる形を候補とする。
+最初から backend や decoder のすべてを公開 API にしない。`majsoulrpa.sniffer` の
+package root は、`Direction`、raw bytes event、raw event を保持する decode 済み
+eventだけを公開する。wire publication、backend、capture、parser、correlator、decoder、
+transport、workerは公開しない。user hook は、対応検証済みの raw event と decode 済み
+eventのどちらを受け取るかを登録時に明示する。
+
+通常の user hook と牌譜バイナリ等のファイル保存処理は RPA client 側で実行する。
+browser host は capture、対応検証、配信に限定し、remote hostへユーザーコードや保存先
+policyを配置させない。PUB/SUBの欠落を許容できない保存用途が必要になった場合だけ、
+browser host側の専用`CaptureSink`またはreplay / ack付きtransportを別設計する。
 
 Screen state からは ZMQ socket や protobuf class を直接参照させず、client runtime が
 保持する event stream / state store の狭い API を `ScreenContext` へ渡す。具体的な

@@ -117,7 +117,8 @@ def test_decoder_decodes_notice_with_descriptor_message_type() -> None:
     decoded = SnifferMessageDecoder().decode(publication)
 
     assert isinstance(decoded, DecodedNotice)
-    assert decoded.publication == publication
+    assert decoded.raw.payload == base64.b64decode(publication.payload_base64)
+    assert decoded.raw.name == publication.api_name
     assert decoded.message["type"] == 2
     assert decoded.message["origin"] == {"id": 10101, "score": 1200}
     assert decoded.message["final"] == {"id": 10102, "score": 1300}
@@ -129,10 +130,17 @@ def test_decoder_decodes_request_and_response_from_service_method() -> None:
     decoded = SnifferMessageDecoder().decode(publication)
 
     assert isinstance(decoded, DecodedRequestResponse)
-    assert decoded.publication == publication
+    assert decoded.raw.request == base64.b64decode(
+        publication.request_payload_base64,
+    )
+    assert decoded.raw.response == base64.b64decode(
+        publication.response_payload_base64,
+    )
     assert decoded.request["no_operation_counter"] == 9
-    assert decoded.response["error"]["code"] == 7
-    assert decoded.response["error"]["message"] == "synthetic-error"
+    error = decoded.response["error"]
+    assert isinstance(error, dict)
+    assert error["code"] == 7
+    assert error["message"] == "synthetic-error"
 
 
 @pytest.mark.parametrize(

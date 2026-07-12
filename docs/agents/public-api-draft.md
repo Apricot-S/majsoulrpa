@@ -194,19 +194,40 @@ WebSocket sniffer は、raw payload をユーザーが確認できる形にし�
 候補:
 
 ```python
-class SnifferHook:
-    async def on_websocket_event(self, event: RawSnifferEvent) -> None:
-        ...
+@dataclass(frozen=True)
+class RawNotice:
+    direction: Direction
+    name: str
+    payload: bytes
+    observed_at: datetime
+
+
+@dataclass(frozen=True)
+class RawRequestResponse:
+    request_direction: Direction
+    name: str
+    request: bytes
+    response: bytes
+    request_observed_at: datetime
+    response_observed_at: datetime
 ```
 
 方針:
 
 - browser host で対応検証済みの Notice または Req/Res event を渡す
-- raw event と decode 済み event のどちらを購読するかは登録時に明示する
+- wire 用の base64 publication model は公開せず、RPA client で bytes に戻す
+- decode 済み event は対応する raw event を `raw` field に保持する
+- raw event と decode 済み event のどちらを購読するかは hook 登録時に明示する
+- user hook とファイル保存処理は RPA client 側で実行する
 - raw payload はデバッグ用ログへ出してよい
 - tests、examples、docs、fixtures、commits に実 payload を入れない
 - synthetic payload で自動テストする
 - decode 失敗を成功扱いにしない
+
+PUB/SUB は永続配送を保証しない。client hook は sequence gap を検出して失敗できるが、
+欠落 payload を再送できない。完全な保存保証が必要になった場合は browser host 側の
+専用 `CaptureSink` または replay / ack 付きtransportを別途設計し、通常hookへ暗黙の
+fallbackを追加しない。
 
 Req/Res 対応検証と二段階 decode の詳細は
 [WebSocket Sniffer 設計](sniffer-design.md) を参照します。

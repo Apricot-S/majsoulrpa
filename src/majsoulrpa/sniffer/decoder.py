@@ -1,11 +1,10 @@
-import base64
 from dataclasses import dataclass
-from typing import Any
 
 from google.protobuf.descriptor import FileDescriptor
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.message import DecodeError, Message
 from google.protobuf.message_factory import GetMessageClass
+from pydantic import JsonValue
 
 from majsoulrpa.assets.protocol import liqi_pb2
 from majsoulrpa.sniffer.envelope import (
@@ -13,6 +12,14 @@ from majsoulrpa.sniffer.envelope import (
     RequestEnvelope,
     ResponseEnvelope,
     parse_liqi_envelope,
+)
+from majsoulrpa.sniffer.event_adapter import raw_event_from_publication
+from majsoulrpa.sniffer.events import (
+    DecodedNotice,
+    DecodedRequestResponse,
+    DecodedSnifferMessage,
+    RawNotice,
+    RawRequestResponse,
 )
 from majsoulrpa.sniffer.publication import (
     NoticePublication,
@@ -42,22 +49,6 @@ class PublicationEnvelopeMismatchError(SnifferMessageDecodeError):
 
 
 @dataclass(frozen=True, slots=True)
-class DecodedNotice:
-    publication: NoticePublication
-    message: dict[str, Any]
-
-
-@dataclass(frozen=True, slots=True)
-class DecodedRequestResponse:
-    publication: RequestResponsePublication
-    request: dict[str, Any]
-    response: dict[str, Any]
-
-
-type DecodedSnifferMessage = DecodedNotice | DecodedRequestResponse
-
-
-@dataclass(frozen=True, slots=True)
 class _MessageTypes:
     request: type[Message]
     response: type[Message] | None
@@ -84,9 +75,11 @@ class SnifferMessageDecoder:
         self,
         publication: NoticePublication,
     ) -> DecodedNotice:
-        envelope = parse_liqi_envelope(
-            _decoded_payload(publication.payload_base64),
-        )
+        raw = raw_event_from_publication(publication)
+        if not isinstance(raw, RawNotice):
+            msg = "Notice publication did not produce a raw Notice event."
+            raise PublicationEnvelopeMismatchError(msg)
+        envelope = parse_liqi_envelope(raw.payload)
         if not isinstance(envelope, NoticeEnvelope):
             msg = "Notice publication does not contain a Notice envelope."
             raise PublicationEnvelopeMismatchError(msg)
@@ -94,18 +87,18 @@ class SnifferMessageDecoder:
 
         message_types = self._get_message_types(publication.api_name)
         message = _decode_body(message_types.request, envelope.body)
-        return DecodedNotice(publication=publication, message=message)
+        return DecodedNotice(raw=raw, message=message)
 
     def _decode_request_response(
         self,
         publication: RequestResponsePublication,
     ) -> DecodedRequestResponse:
-        request_envelope = parse_liqi_envelope(
-            _decoded_payload(publication.request_payload_base64),
-        )
-        response_envelope = parse_liqi_envelope(
-            _decoded_payload(publication.response_payload_base64),
-        )
+        raw = raw_event_from_publication(publication)
+        if not isinstance(raw, RawRequestResponse):
+            msg = "Req/Res publication did not produce a raw Req/Res event."
+            raise PublicationEnvelopeMismatchError(msg)
+        request_envelope = parse_liqi_envelope(raw.request)
+        response_envelope = parse_liqi_envelope(raw.response)
         if not isinstance(request_envelope, RequestEnvelope):
             msg = "Req/Res publication does not contain a Request envelope."
             raise PublicationEnvelopeMismatchError(msg)
@@ -135,7 +128,7 @@ class SnifferMessageDecoder:
             response_envelope.body,
         )
         return DecodedRequestResponse(
-            publication=publication,
+            raw=raw,
             request=request,
             response=response,
         )
@@ -169,7 +162,7 @@ def _build_message_type_map(
 def _decode_body(
     message_type: type[Message],
     body: bytes,
-) -> dict[str, Any]:
+) -> dict[str, JsonValue]:
     message = message_type()
     try:
         message.ParseFromString(body)
@@ -181,10 +174,6 @@ def _decode_body(
         always_print_fields_with_no_presence=True,
         preserving_proto_field_name=True,
     )
-
-
-def _decoded_payload(payload_base64: str) -> bytes:
-    return base64.b64decode(payload_base64, validate=True)
 
 
 def _require_api_name(publication_name: str, envelope_name: str) -> None:

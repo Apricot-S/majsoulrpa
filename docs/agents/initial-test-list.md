@@ -376,6 +376,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Client decode / hook
 
+- [x] wire publicationを利用者向けraw bytes eventへ変換する
+- [x] decode済みeventが対応するraw bytes eventを保持する
+- [x] `majsoulrpa.sniffer`のexportを利用者向けevent型に限定する
 - [x] descriptor から API 名と request / response 型の map を作る
 - [x] Notice / Request の本文を対応する protobuf 型へ decode する
 - [x] Response を対になった Request の API 名に対応する型へ decode する

@@ -1,6 +1,5 @@
 import datetime
 from dataclasses import dataclass
-from enum import StrEnum
 
 from majsoulrpa.sniffer.envelope import (
     LiqiEnvelope,
@@ -8,16 +7,7 @@ from majsoulrpa.sniffer.envelope import (
     RequestEnvelope,
     ResponseEnvelope,
 )
-
-
-class Direction(StrEnum):
-    INBOUND = "inbound"
-    OUTBOUND = "outbound"
-
-    def opposite(self) -> "Direction":
-        if self is Direction.INBOUND:
-            return Direction.OUTBOUND
-        return Direction.INBOUND
+from majsoulrpa.sniffer.events import Direction
 
 
 @dataclass(frozen=True, slots=True)
