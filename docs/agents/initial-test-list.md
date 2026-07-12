@@ -395,6 +395,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] Notice / Request の本文を対応する protobuf 型へ decode する
 - [x] Response を対になった Request の API 名に対応する型へ decode する
 - [x] unknown API と protobuf body decode failure を明示的なエラーにする
+- [x] client受信runtimeはSUB接続後のpublicationをすべてdecodeして内部queueへ入れる
+- [x] decodeとqueue投入の失敗を受信loopから伝播する
+- [x] connect失敗、受信失敗、cancellationでsubscriberをcleanupする
 - [ ] raw payload を hook に渡せる
 - [ ] decode 済み event を hook に渡せる
 - [ ] hook 例外を RPA runtime から伝播する

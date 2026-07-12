@@ -318,6 +318,11 @@ client runtime の内部message queueは、API名で選別せず、受信してd
 暗黙にevictせず、Sniffer runtimeの致命的errorにする。通常はframework処理がqueueを
 継続的に消費するため、長時間運転でも処理済みmessageは残らない。
 
+client受信runtimeはSUB接続後、publicationを1件ずつclient decoderへ渡し、decode済み
+messageを内部queueへ投入する。transport、decode、queue overflowのいずれの失敗も
+受信loopの失敗として伝播し、connect途中の失敗やcancellationを含むすべての終了経路で
+subscriberをcloseする。
+
 たとえば牌譜取得は、`goto_log()`後にqueueを順に読み、
 `.lq.Lobby.fetchGameRecord`のReq/Resを取得する。走査中に別のframework処理で必要なmessageを
 見つけた場合は差し戻せる。ファイル保存は返された公開raw eventの`response` bytesを
