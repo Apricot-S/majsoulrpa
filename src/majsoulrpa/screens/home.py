@@ -154,6 +154,7 @@ class HomeScreen(Screen):
             screenshot = await self.context.browser.screenshot()
             msg = "jade was not found within 5 seconds."
             raise ScreenDetectionError(msg, screenshot) from error
+
         await asyncio.sleep(0.5)
 
     def _discard_sniffer_messages(self) -> None:
