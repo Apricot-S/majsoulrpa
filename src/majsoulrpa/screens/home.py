@@ -6,6 +6,8 @@ from majsoulrpa.assets.templates.home import (
     EVENT_CLOSE_TEMPLATE_PATH,
     FRIENDLY_MATCH_SETTINGS_PATH,
     FRIENDLY_MATCH_TEMPLATE_PATH,
+    JADE_SETTINGS_PATH,
+    JADE_TEMPLATE_PATH,
     MAIL_CLOSE_SETTINGS_PATH,
     MAIL_CLOSE_TEMPLATE_PATH,
     NOTIFICATION_CLOSE_SETTINGS_PATH,
@@ -26,11 +28,18 @@ from majsoulrpa.screens.errors import (
     ScreenUnexpectedStateError,
 )
 
+MONTH_TICKET_API_NAME = ".lq.Lobby.payMonthTicket"
+JADE_WAIT_TIMEOUT_SECONDS = 5.0
+
 
 class HomeScreen(Screen):
     SUMMON_TEMPLATE = load_png_template_matcher(
         template_path=SUMMON_TEMPLATE_PATH,
         settings_path=SUMMON_SETTINGS_PATH,
+    )
+    JADE_TEMPLATE = load_png_template_matcher(
+        template_path=JADE_TEMPLATE_PATH,
+        settings_path=JADE_SETTINGS_PATH,
     )
     NOTIFICATION_CLOSE_TEMPLATE = load_png_template_matcher(
         template_path=NOTIFICATION_CLOSE_TEMPLATE_PATH,
@@ -68,6 +77,8 @@ class HomeScreen(Screen):
 
     @override
     async def before_callback(self) -> None:
+        await self._process_month_ticket()
+
         # Wait for Home screen controls and announcements to finish
         # their entrance animations before taking the first screenshot.
         await asyncio.sleep(1.0)
@@ -101,6 +112,7 @@ class HomeScreen(Screen):
                 if sign_in_result is None:
                     # All announcements have been closed at this point.
                     self._require_match_buttons(screenshot)
+                    self._discard_sniffer_messages()
                     return
 
                 if rewards_processed:
@@ -115,6 +127,38 @@ class HomeScreen(Screen):
                 )
                 await asyncio.sleep(0.5)
                 rewards_processed = True
+
+    async def _process_month_ticket(self) -> None:
+        has_month_ticket = False
+        messages = []
+        try:
+            while True:
+                message = self._get_sniffer_message_nowait()
+                if message is None:
+                    break
+                messages.append(message)
+                if message.raw.name == MONTH_TICKET_API_NAME:
+                    has_month_ticket = True
+                    break
+        finally:
+            for message in messages:
+                self._put_back_sniffer_message(message)
+
+        if not has_month_ticket:
+            return
+
+        try:
+            async with asyncio.timeout(JADE_WAIT_TIMEOUT_SECONDS):
+                await self.wait_and_click_template(self.JADE_TEMPLATE)
+        except TimeoutError as error:
+            screenshot = await self.context.browser.screenshot()
+            msg = "jade was not found within 5 seconds."
+            raise ScreenDetectionError(msg, screenshot) from error
+        await asyncio.sleep(0.5)
+
+    def _discard_sniffer_messages(self) -> None:
+        while self._get_sniffer_message_nowait() is not None:
+            pass
 
     def _require_match_buttons(self, screenshot: bytes) -> None:
         match_templates = {

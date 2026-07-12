@@ -156,6 +156,19 @@ class TemplateSpy:
         return self.find(screenshot) is not None
 
 
+class EventuallyMatchingTemplateSpy(TemplateSpy):
+    def __init__(self, matching_screenshot: object) -> None:
+        super().__init__(matches=False)
+        self._matching_screenshot = matching_screenshot
+
+    @override
+    def find(self, screenshot: object) -> TemplateMatchResult | None:
+        self.screenshots_for_find.append(screenshot)
+        if screenshot != self._matching_screenshot:
+            return None
+        return TemplateMatchResultSpy(region=self.region)
+
+
 @dataclass(frozen=True)
 class TemplateMatchResultSpy:
     region: Region
@@ -370,6 +383,50 @@ def test_screen_rejects_empty_sniffer_message_names() -> None:
 
     with pytest.raises(ValueError, match="must not be empty"):
         asyncio.run(screen.wait_for_sniffer_message(set()))
+
+
+def test_screen_retries_screenshot_until_template_can_be_clicked(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    class SequencedScreenshotBrowserSpy(BrowserControllerSpy):
+        def __init__(self) -> None:
+            super().__init__()
+            self._screenshots = iter((b"first", b"second", b"matched"))
+
+        @override
+        async def screenshot(self) -> bytes:
+            return next(self._screenshots)
+
+    browser = SequencedScreenshotBrowserSpy()
+    template = EventuallyMatchingTemplateSpy(b"matched")
+    screen = LoginScreen(
+        context=ScreenContext(browser=browser, rng=Random(0)),
+    )
+    monkeypatch.setattr(screens_base.asyncio, "sleep", sleep)
+
+    result = asyncio.run(screen.wait_and_click_template(template))
+
+    assert result.region == template.region
+    assert template.screenshots_for_find == [b"first", b"second", b"matched"]
+    assert sleeps == [0.5, 0.5]
+    assert len(browser.clicked_points) == 1
+
+
+def test_screen_template_retry_timeout_is_controlled_by_caller() -> None:
+    async def exercise() -> None:
+        screen = LoginScreen(
+            context=ScreenContext(browser=BrowserControllerSpy()),
+        )
+        async with asyncio.timeout(0.001):
+            await screen.wait_and_click_template(TemplateSpy(matches=False))
+
+    with pytest.raises(TimeoutError):
+        asyncio.run(exercise())
 
 
 def test_false_screen_detection_does_not_call_callback() -> None:

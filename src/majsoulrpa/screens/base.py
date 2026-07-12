@@ -14,6 +14,7 @@ from majsoulrpa.screens.errors import ScreenDetectionError, ScreenStaleError
 from majsoulrpa.sniffer.events import DecodedSnifferMessage
 
 SCREEN_ACTION_INTERVAL_SECONDS = 0.5
+TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
 LOG_URL_PREFIX = "https://game.mahjongsoul.com/?paipu="
 
 _screen_api_logger = getLogger("majsoulrpa.screens.api")
@@ -289,6 +290,19 @@ class Screen(ABC):
 
         await self._click_region(result.region)
         return True
+
+    @_requires_active
+    async def wait_and_click_template(
+        self,
+        template: TemplateMatcher,
+    ) -> TemplateMatchResult:
+        while True:
+            screenshot = await self.context.browser.screenshot()
+            result = template.find(screenshot)
+            if result is not None:
+                await self._click_region(result.region)
+                return result
+            await asyncio.sleep(TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS)
 
     @_screen_api
     @_requires_active

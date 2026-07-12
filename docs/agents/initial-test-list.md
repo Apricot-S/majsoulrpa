@@ -420,6 +420,18 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] raw payload ログのテストは synthetic payload だけを使う
 - [x] RPA runtime 終了と cancellation で SUB socket / context を cleanup する
 
+### HomeScreen month ticket
+
+- [ ] `before_callback()`先頭の月間チケット判定は全messageを元の順序で戻す
+- [x] `.lq.Lobby.payMonthTicket`がなければjade処理を行わない
+- [ ] Screen基底helperがtemplate検出まで0.5秒間隔でscreenshotを繰り返す
+- [ ] timeoutはhelper引数ではなく呼び出し側の`asyncio.timeout()`で指定する
+- [ ] 対象messageがあればjade templateを最大5秒間繰り返し検出する
+- [x] jadeを検出したらクリックして0.5秒待機する
+- [x] 5秒以内にjadeを検出できなければscreenshot付き検出エラーにする
+- [ ] 告知・報酬クリックとHome画面確認が完了した後にqueueをすべて読み捨てる
+- [x] 自動テストではsynthetic messageとsynthetic screenshotだけを使う
+
 ## examples / docs
 
 - [ ] examples に実メールアドレスが含まれない

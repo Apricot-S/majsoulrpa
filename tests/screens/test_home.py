@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 from importlib.resources.abc import Traversable
 from random import Random
 from typing import Any
@@ -13,6 +14,8 @@ from majsoulrpa.assets.templates.home import (
     EVENT_CLOSE_TEMPLATE_PATH,
     FRIENDLY_MATCH_SETTINGS_PATH,
     FRIENDLY_MATCH_TEMPLATE_PATH,
+    JADE_SETTINGS_PATH,
+    JADE_TEMPLATE_PATH,
     MAIL_CLOSE_SETTINGS_PATH,
     MAIL_CLOSE_TEMPLATE_PATH,
     NOTIFICATION_CLOSE_SETTINGS_PATH,
@@ -39,14 +42,16 @@ from majsoulrpa.screens.errors import (
     ScreenUnexpectedStateError,
 )
 from majsoulrpa.screens.home import HomeScreen
+from majsoulrpa.sniffer.events import DecodedNotice, Direction, RawNotice
+from majsoulrpa.sniffer.message_queue import SnifferMessageQueue
 from tests.sniffer.fakes import EMPTY_SNIFFER_MESSAGES
 
 
 def ScreenContext(  # noqa: N802
     **kwargs: Any,  # noqa: ANN401
 ) -> FrameworkScreenContext:
+    kwargs.setdefault("sniffer_messages", EMPTY_SNIFFER_MESSAGES)
     return FrameworkScreenContext(
-        sniffer_messages=EMPTY_SNIFFER_MESSAGES,
         **kwargs,
     )
 
@@ -145,6 +150,28 @@ def _synthetic_home_ready_screenshot() -> bytes:
     )
 
 
+def _message_queue(*names: str) -> SnifferMessageQueue:
+    queue = SnifferMessageQueue(capacity=10, max_payload_bytes=1024)
+    for name in names:
+        queue.enqueue(
+            DecodedNotice(
+                raw=RawNotice(
+                    direction=Direction.INBOUND,
+                    name=name,
+                    payload=b"synthetic",
+                    observed_at=datetime.datetime(
+                        2026,
+                        1,
+                        2,
+                        tzinfo=datetime.UTC,
+                    ),
+                ),
+                message={},
+            ),
+        )
+    return queue
+
+
 def test_home_screen_is_screen() -> None:
     assert issubclass(HomeScreen, Screen)
 
@@ -186,6 +213,129 @@ def test_rewards_template_assets_exist() -> None:
     assert REWARDS_CONFIRM_TEMPLATE_PATH.is_file()
     assert REWARDS_CONFIRM_SETTINGS_PATH.name == "rewards-confirm.toml"
     assert REWARDS_CONFIRM_SETTINGS_PATH.is_file()
+
+
+def test_jade_template_assets_exist() -> None:
+    assert JADE_TEMPLATE_PATH.name == "jade.png"
+    assert JADE_TEMPLATE_PATH.is_file()
+    assert JADE_SETTINGS_PATH.name == "jade.toml"
+    assert JADE_SETTINGS_PATH.is_file()
+
+
+def test_home_before_callback_skips_jade_without_month_ticket_message(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    browser = BrowserControllerSpy(_synthetic_home_ready_screenshot())
+    queue = _message_queue(".lq.Unrelated")
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=queue,
+            rng=Random(0),
+        ),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    asyncio.run(screen.before_callback())
+
+    assert browser.clicked_points == []
+    assert sleeps == [1.0]
+    assert queue.get_nowait() is None
+
+
+def test_home_before_callback_retries_and_clicks_jade_for_month_ticket(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    blank = _synthetic_blank_screenshot()
+    jade = _synthetic_template_screenshot(
+        template_path=JADE_TEMPLATE_PATH,
+        settings_path=JADE_SETTINGS_PATH,
+    )
+    browser = BrowserControllerSpy(
+        blank,
+        jade,
+        _synthetic_home_ready_screenshot(),
+    )
+    queue = _message_queue(
+        ".lq.Unrelated",
+        ".lq.Lobby.payMonthTicket",
+    )
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=queue,
+            rng=Random(0),
+        ),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    asyncio.run(screen.before_callback())
+
+    assert len(browser.clicked_points) == 1
+    assert sleeps == [0.5, 0.5, 1.0]
+    assert queue.get_nowait() is None
+
+
+def test_month_ticket_check_puts_back_all_messages() -> None:
+    jade = _synthetic_template_screenshot(
+        template_path=JADE_TEMPLATE_PATH,
+        settings_path=JADE_SETTINGS_PATH,
+    )
+    queue = _message_queue(
+        ".lq.Unrelated",
+        ".lq.Lobby.payMonthTicket",
+    )
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(jade),
+            sniffer_messages=queue,
+            rng=Random(0),
+        ),
+    )
+
+    asyncio.run(screen._process_month_ticket())
+
+    first = queue.get_nowait()
+    second = queue.get_nowait()
+    assert first is not None
+    assert second is not None
+    assert first.raw.name == ".lq.Unrelated"
+    assert second.raw.name == ".lq.Lobby.payMonthTicket"
+
+
+def test_home_before_callback_raises_if_jade_is_not_found_in_time(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    blank = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(blank)
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=_message_queue(
+                ".lq.Lobby.payMonthTicket",
+            ),
+            rng=Random(0),
+        ),
+    )
+    monkeypatch.setattr(home_module, "JADE_WAIT_TIMEOUT_SECONDS", 0.001)
+
+    with pytest.raises(
+        ScreenDetectionError,
+        match="jade was not found within 5 seconds",
+    ) as exc_info:
+        asyncio.run(screen.before_callback())
+
+    assert exc_info.value.screenshot == blank
 
 
 def test_match_button_template_assets_exist() -> None:

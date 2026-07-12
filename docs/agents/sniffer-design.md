@@ -349,6 +349,16 @@ payload本文のログはSUB層では出さず、Screen APIが対象messageと�
 decode済みJSONをdebugへ出す。info / warningにはpayload本文ではなく、秘密情報を含まない
 状態遷移または異常の要約だけを出す。
 
+HomeScreenは`before_callback()`の先頭で、その時点の内部queueを非破壊で走査する。読んだ
+messageは対象を含めて元の順序で差し戻す。その中に`.lq.Lobby.payMonthTicket`が含まれる
+場合だけjade templateを最大5秒繰り返し検出し、クリック後0.5秒待ってから既存の告知処理へ
+進む。対象messageがなければjade処理だけを省略する。queueを読み捨てるのは、告知・報酬の
+クリックとHome画面の最終確認がすべて完了した後とする。
+
+templateが現れるまでscreenshot、照合、クリックを繰り返す処理はScreen基底のprotected
+helperに置く。検出間隔は画面検出と同じ0.5秒の固定定数とし、timeout引数は持たせない。
+期限は呼び出し側が`asyncio.timeout()`で指定する。
+
 たとえば牌譜取得は、`goto_log()`後にqueueを順に読み、
 `.lq.Lobby.fetchGameRecord`のReq/Resを取得する。走査中に別のframework処理で必要なmessageを
 見つけた場合は差し戻せる。ファイル保存は返された公開raw eventの`response` bytesを
