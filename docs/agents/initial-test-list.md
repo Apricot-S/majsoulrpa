@@ -25,6 +25,8 @@
 - [x] port が範囲外の場合にエラーにする
 - [x] viewport height が許可値外の場合にエラーにする
 - [x] `user_data_dir` が未指定の場合の意味が明確である
+- [x] `config.example.toml` が全設定の意味とdefaultをコメントで説明する
+- [x] `config.example.toml` を読むと`AppConfig()`と同じ値になる
 - [ ] secret に相当する値を config repr に出さない
 - [ ] secret に相当する値を validation error に出さない
 

@@ -42,6 +42,14 @@ def test_browser_user_data_dir_accepts_path() -> None:
     assert config.user_data_dir == Path("user-data")
 
 
+def test_config_example_uses_all_default_values() -> None:
+    config_path = (
+        Path(__file__).parents[1] / "examples" / "config.example.toml"
+    )
+
+    assert AppConfig.from_toml_file(config_path) == AppConfig()
+
+
 def test_app_config_can_be_loaded_from_toml_text() -> None:
     config = AppConfig.from_toml_text(
         dedent(

@@ -1,5 +1,7 @@
 # Examples
 
+A configuration file template is available at `config.example.toml`. Copy it as needed and load it from both the browser host and the client.
+
 ## fetch_log.py
 
 Repeatedly prompts for a game record ID, navigates to the corresponding Mahjong Soul game record URL, and saves the response from `.lq.Lobby.fetchGameRecord` to `game-records/<game-record-id>.bin`.
