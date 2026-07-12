@@ -309,22 +309,19 @@ Screen state からは ZMQ socket や protobuf class を直接参照させず、
 保持する event stream / state store の狭い API を `ScreenContext` へ渡す。具体的な
 Screen 状態機械は Sniffer transport が安定した後、1 画面ずつ設計・実装する。
 
-client runtime の decode 済みevent storeは、有限capacityの`deque`と単調増加する
-local sequenceを持つ。Screen状態機械が必要と宣言したAPI名だけを格納し、その他の
-eventはuser hookへdispatchした後にstoreへ残さない。件数に加えて保持するraw payload
-bytes合計にも上限を設ける。
+client runtime の内部message queueは、API名で選別せず、受信してdecodeできたmessageを
+すべて到着順に保持する。通常の未読messageにはasync queue、読み取った後の差し戻しには
+`deque`を使う。`get()` / `get_nowait()`は差し戻しを優先し、取得したmessageをqueueから
+消費する。複数messageを差し戻した場合は差し戻した順序を保つ。
 
-Screen操作は、browser操作の直前にcursorを取得し、そのcursorより後の対象API eventを
-待つ。これにより、以前に受信済みの同名eventを新しい操作の完了と誤認しない。
-履歴参照は非破壊で再読できる一方、名前待機で返したeventは通常一度しか使わないため
-dequeから消費する。cursorがcapacityまたはbyte上限によってevict済みの範囲を指す場合は
-gap errorとし、見つからなかったように見せない。単一eventだけでbyte上限を越える場合も
-保持せず明示的なerrorにする。
+未処理messageの件数とraw payload bytes合計には上限を設ける。上限到達時は古いmessageを
+暗黙にevictせず、Sniffer runtimeの致命的errorにする。通常はframework処理がqueueを
+継続的に消費するため、長時間運転でも処理済みmessageは残らない。
 
-たとえば牌譜取得は、`goto_log()`直前のcursorを基準に
-`.lq.Lobby.fetchGameRecord`のReq/Resを待つ。ファイル保存は返された公開raw eventの
-`response` bytesをRPA client側のuser callbackで行い、Screenやevent store自身には
-保存先policyを持たせない。
+たとえば牌譜取得は、`goto_log()`後にqueueを順に読み、
+`.lq.Lobby.fetchGameRecord`のReq/Resを取得する。走査中に別のframework処理で必要なmessageを
+見つけた場合は差し戻せる。ファイル保存は返された公開raw eventの`response` bytesを
+RPA client側のuser callbackで行い、Screenやmessage queue自身には保存先policyを持たせない。
 
 ## 初期実装の分割
 

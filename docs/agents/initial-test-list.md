@@ -127,17 +127,17 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] remote browser error を成功扱いにしない
 - [x] 自動テストでは実ブラウザ、実 ZMQ network、実雀魂にアクセスしない
 
-### Sniffer client event store
+### Sniffer client message queue
 
-- [x] cursor より後の decode 済み event を到着順に非破壊で再読できる
-- [x] API 名を指定して cursor より後の event 到着を待てる
-- [x] cursor より前の同名 event を待機結果に使わない
-- [x] deque の保持範囲を越えた cursor は gap error にする
-- [x] capacity が 0 以下なら拒否する
-- [x] framework が選択した API 名以外は event store に保持しない
-- [x] 名前待機で返した event は store から消費する
-- [x] raw payload bytes 合計が上限を越える場合は古い event を evict する
-- [x] 単一 event が byte 上限を越える場合は明示的に拒否する
+- [x] 全 decode 済み message を到着順に保持する
+- [x] `get()` は次の message が来るまで待機して消費する
+- [x] `get_nowait()` は未読 message がなければ `None` を返す
+- [x] 差し戻した message は通常の未読 message より先に取得する
+- [x] 複数の差し戻しは差し戻した順序を保つ
+- [x] 件数上限を越えた message を黙って破棄しない
+- [x] raw payload bytes 合計の上限超過を黙って破棄しない
+- [x] 単一 message が byte 上限を越える場合は明示的に拒否する
+- [x] capacity と byte 上限が 0 以下なら拒否する
 
 テスト:
 
