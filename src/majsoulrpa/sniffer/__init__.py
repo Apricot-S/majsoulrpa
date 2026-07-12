@@ -45,6 +45,7 @@ from majsoulrpa.sniffer.stream import (
     PublicationStreamRestartError,
     PublicationStreamTracker,
 )
+from majsoulrpa.sniffer.worker import SnifferWorker
 from majsoulrpa.sniffer.zmq import (
     SnifferTransportError,
     ZmqSnifferPublisher,
@@ -84,6 +85,7 @@ __all__ = [
     "SnifferDecodeError",
     "SnifferPublication",
     "SnifferTransportError",
+    "SnifferWorker",
     "UnmatchedResponseError",
     "UnsupportedWebSocketFrameError",
     "ZmqSnifferPublisher",

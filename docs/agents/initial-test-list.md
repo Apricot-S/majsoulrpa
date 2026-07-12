@@ -364,6 +364,15 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] sniffer stop でworker、PUB socket、contextをcleanupする
 - [ ] request server failure と cancellation でも sniffer stop が呼ばれる
 
+### Sniffer worker
+
+- [x] captureしたframeをenvelope decodeしてcorrelatorへ渡す
+- [x] Noticeをpublisherへ即時送信する
+- [x] Requestを保留し、Response到着後に対応済みeventを送信する
+- [x] WebSocket closeをcorrelatorへ渡して未完了Requestを検出する
+- [x] capture、decode、correlation、publishの失敗を隠さず伝播する
+- [x] worker stop時にpending Requestがあれば成功扱いにしない
+
 ### Client decode / hook
 
 - [ ] descriptor から API 名と request / response 型の map を作る
