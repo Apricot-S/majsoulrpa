@@ -421,6 +421,17 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] raw payload ログのテストは synthetic payload だけを使う
 - [x] RPA runtime 終了と cancellation で SUB socket / context を cleanup する
 
+### Client session account ID
+
+- [x] account IDの初期値は`None`にする
+- [x] `.lq.Lobby.oauth2Login` responseの`account_id`を取得する
+- [x] `.lq.Lobby.createRoom` responseの`room.owner_id`を取得する
+- [x] decode直後かつ内部queue投入前に全messageをsession stateへ観測させる
+- [x] account IDが欠けているか0なら未取得のままにする
+- [x] 同じaccount IDの再観測を許容する
+- [x] 同一sessionで異なるaccount IDを観測したら整合性エラーにする
+- [x] ScreenContextから最新の`int | None`を読み取り専用で参照できる
+
 ### HomeScreen month ticket
 
 - [ ] `before_callback()`先頭の月間チケット判定は全messageを元の順序で戻す

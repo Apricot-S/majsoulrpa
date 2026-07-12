@@ -200,6 +200,7 @@ def test_controller_runtime_injects_screen_context() -> None:
         exc_info.value.context.sniffer_messages,
         SnifferMessageQueue,
     )
+    assert exc_info.value.context.account_id is None
     assert context.socket_spy.closed
     assert context.terminated
 

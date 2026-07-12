@@ -60,11 +60,19 @@ class DecoderStub:
 
 
 class QueueSpy:
-    def __init__(self, *, stop_after: int | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        stop_after: int | None = None,
+        events: list[str] | None = None,
+    ) -> None:
         self.messages: list[DecodedSnifferMessage] = []
         self._stop_after = stop_after
+        self._events = events
 
     def enqueue(self, message: DecodedSnifferMessage) -> None:
+        if self._events is not None:
+            self._events.append("enqueue")
         self.messages.append(message)
         if self._stop_after == len(self.messages):
             raise StopRuntimeError
@@ -72,6 +80,17 @@ class QueueSpy:
 
 class StopRuntimeError(RuntimeError):
     pass
+
+
+class ObserverSpy:
+    def __init__(self, events: list[str] | None = None) -> None:
+        self.messages: list[DecodedSnifferMessage] = []
+        self._events = events
+
+    def observe(self, message: DecodedSnifferMessage) -> None:
+        if self._events is not None:
+            self._events.append("observe")
+        self.messages.append(message)
 
 
 def _publication(sequence: int) -> NoticePublication:
@@ -108,10 +127,13 @@ def test_client_runtime_connects_decodes_and_enqueues_every_publication() -> (
     decoder = DecoderStub(
         dict(zip(map(id, publications), messages, strict=True)),
     )
-    queue = QueueSpy(stop_after=2)
+    events: list[str] = []
+    observer = ObserverSpy(events)
+    queue = QueueSpy(stop_after=2, events=events)
     runtime = SnifferClientRuntime(
         subscriber=subscriber,
         decoder=decoder,
+        observer=observer,
         queue=queue,
     )
 
@@ -119,7 +141,9 @@ def test_client_runtime_connects_decodes_and_enqueues_every_publication() -> (
         asyncio.run(runtime.run())
 
     assert subscriber.connected
+    assert observer.messages == messages
     assert queue.messages == messages
+    assert events == ["observe", "enqueue", "observe", "enqueue"]
     assert subscriber.stopped
 
 
@@ -130,6 +154,7 @@ def test_client_runtime_propagates_decode_error_and_stops_subscriber() -> None:
     runtime = SnifferClientRuntime(
         subscriber=subscriber,
         decoder=DecoderStub({}, error),
+        observer=ObserverSpy(),
         queue=QueueSpy(),
     )
 
@@ -145,6 +170,7 @@ def test_client_runtime_stops_subscriber_when_cancelled() -> None:
         runtime = SnifferClientRuntime(
             subscriber=subscriber,
             decoder=DecoderStub({}),
+            observer=ObserverSpy(),
             queue=QueueSpy(),
         )
         task = asyncio.create_task(runtime.run())
@@ -170,6 +196,7 @@ def test_client_runtime_stops_subscriber_when_connect_fails() -> None:
     runtime = SnifferClientRuntime(
         subscriber=subscriber,
         decoder=DecoderStub({}),
+        observer=ObserverSpy(),
         queue=QueueSpy(),
     )
 

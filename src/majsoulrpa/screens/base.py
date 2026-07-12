@@ -57,6 +57,20 @@ class SnifferMessageSource(Protocol):
     def put_back(self, message: DecodedSnifferMessage) -> None: ...
 
 
+class AccountState(Protocol):
+    @property
+    def account_id(self) -> int | None: ...
+
+
+class _EmptyAccountState:
+    @property
+    def account_id(self) -> int | None:
+        return None
+
+
+_EMPTY_ACCOUNT_STATE = _EmptyAccountState()
+
+
 type StopRequester = Callable[[], Awaitable[None]]
 
 
@@ -111,6 +125,7 @@ class ScreenContext:
         viewport_width: int = BASE_VIEWPORT_WIDTH,
         viewport_height: int = DEFAULT_VIEWPORT_HEIGHT,
         rng: Random | None = None,
+        account_state: AccountState = _EMPTY_ACCOUNT_STATE,
     ) -> None:
         self._browser = browser
         self._sniffer_messages = sniffer_messages
@@ -118,6 +133,7 @@ class ScreenContext:
         self._viewport_width = viewport_width
         self._viewport_height = viewport_height
         self._rng = rng
+        self._account_state = account_state
 
     async def request_stop(self) -> None:
         await self._request_stop()
@@ -139,6 +155,10 @@ class ScreenContext:
     @property
     def rng(self) -> Random | None:
         return self._rng
+
+    @property
+    def account_id(self) -> int | None:
+        return self._account_state.account_id
 
     @property
     def viewport_height(self) -> int:

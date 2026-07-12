@@ -286,6 +286,23 @@ def test_screen_context_requires_sniffer_message_source() -> None:
         )
 
 
+def test_screen_context_exposes_current_account_id() -> None:
+    class AccountStateStub:
+        account_id: int | None = None
+
+    account_state = AccountStateStub()
+    context = ScreenContext(
+        browser=BrowserControllerSpy(),
+        account_state=account_state,
+    )
+
+    assert context.account_id is None
+
+    account_state.account_id = 123456
+
+    assert context.account_id == 123456
+
+
 def test_screen_gets_and_puts_back_messages_through_context() -> None:
     first = _notice(".lq.First")
     second = _notice(".lq.Second")

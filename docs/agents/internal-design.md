@@ -80,6 +80,18 @@ screenshot 取得に失敗した場合も、その失敗を握りつぶさない
 `Screen.reload()` はbrowser reloadが正常完了した直後に現在のinstanceをstaleにする。
 reload後に同じ種類の画面へ戻った場合も、runtimeが新しく検出したScreen instanceを使う。
 
+## Client session state
+
+account IDはmessage queueや個別Screenではなく、RPA client runtimeが所有するsession stateで
+管理する。Sniffer publicationをdecodeした直後、内部queueへ投入する前にsession stateへ
+messageを観測させる。これによりScreenがmessageを読む前や、後続処理がqueueを読み捨てた
+場合でも取得済みaccount IDを保持できる。
+
+初期値は`None`とし、`.lq.Lobby.oauth2Login`の`response.account_id`または
+`.lq.Lobby.createRoom`の`response.room.owner_id`から正の`int`を取得する。同じ値の再観測は
+許容し、異なる値はsession整合性エラーにする。`ScreenContext.account_id`はsession stateの
+現在値を読み取り専用で公開する。
+
 ## 高レベル Screen API のログ
 
 通常ユーザーが callback から直接利用する高レベル Screen API は、呼び出し時に

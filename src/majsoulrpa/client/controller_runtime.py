@@ -10,6 +10,7 @@ from majsoulrpa.browser.controller import RemoteBrowserController
 from majsoulrpa.browser.history import LoggingBrowserClientTransport
 from majsoulrpa.browser.zmq import BrowserZmqClientTransport
 from majsoulrpa.client.runtime import RPARuntime, ScreenshotScreenDetector
+from majsoulrpa.client.session import SessionState
 from majsoulrpa.config import AppConfig
 from majsoulrpa.endpoint import make_browser_host_tcp_endpoint
 from majsoulrpa.screens import Screen, ScreenContext
@@ -96,9 +97,11 @@ class ControllerRuntimeFactory:
             capacity=SNIFFER_QUEUE_CAPACITY,
             max_payload_bytes=SNIFFER_QUEUE_MAX_PAYLOAD_BYTES,
         )
+        session_state = SessionState()
         screen_context = ScreenContext(
             browser=controller,
             sniffer_messages=sniffer_queue,
+            account_state=session_state,
             request_stop=stop_flag.request_stop,
             viewport_width=viewport_width_for_height(
                 config.browser.viewport_height,
@@ -116,6 +119,7 @@ class ControllerRuntimeFactory:
         sniffer_runtime = SnifferClientRuntime(
             subscriber=sniffer_subscriber,
             decoder=SnifferMessageDecoder(),
+            observer=session_state,
             queue=sniffer_queue,
         )
 

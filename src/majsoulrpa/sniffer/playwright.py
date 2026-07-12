@@ -49,7 +49,7 @@ class EventEmitterLike(Protocol):
 
 
 type Clock = Callable[[], datetime.datetime]
-type ConnectionIdFactory = Callable[[], str]
+type ConnectionIDFactory = Callable[[], str]
 type _QueueItem = CaptureEvent | PlaywrightCaptureError
 type _WebSocketListeners = tuple[
     EventEmitterLike,
@@ -65,7 +65,7 @@ class PlaywrightFrameCapture:
         *,
         queue_size: int = 1024,
         clock: Clock | None = None,
-        connection_id_factory: ConnectionIdFactory | None = None,
+        connection_id_factory: ConnectionIDFactory | None = None,
     ) -> None:
         if queue_size <= 0:
             msg = "queue_size must be greater than zero."
