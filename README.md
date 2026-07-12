@@ -95,8 +95,6 @@ from majsoulrpa.browser import run_browser_host
 asyncio.run(run_browser_host(AppConfig()))
 ```
 
-See [examples/](examples/) for detailed configurations and scenarios.
-
 ### 🤖 RPA client
 
 The RPA client is used from Python code. A typical flow looks like this:
