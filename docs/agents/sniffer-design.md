@@ -349,6 +349,11 @@ payload本文のログはSUB層では出さず、Screen APIが対象messageと�
 decode済みJSONをdebugへ出す。info / warningにはpayload本文ではなく、秘密情報を含まない
 状態遷移または異常の要約だけを出す。
 
+大会ロビーで交換される既知heartbeatは、reference実装と同じ
+`b"<= heartbeat -"` markerからpayloadが始まる場合だけliqi envelope decode前に除外する。
+markerの大小文字や記号が異なるframe、その他のdecode不能frameをheartbeatとして
+握りつぶさない。
+
 HomeScreenは`before_callback()`の先頭で、その時点の内部queueを非破壊で走査する。読んだ
 messageは対象を含めて元の順序で差し戻す。その中に`.lq.Lobby.payMonthTicket`が含まれる
 場合だけjade templateを最大5秒繰り返し検出し、クリック後0.5秒待ってから既存の告知処理へ

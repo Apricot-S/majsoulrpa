@@ -195,6 +195,62 @@ def test_worker_propagates_decode_failure() -> None:
     asyncio.run(run())
 
 
+@pytest.mark.parametrize(
+    "direction",
+    [Direction.INBOUND, Direction.OUTBOUND],
+)
+def test_worker_ignores_tournament_heartbeat(direction: Direction) -> None:
+    async def run() -> None:
+        heartbeat = _frame(
+            b"<= heartbeat - synthetic payload",
+            direction=direction,
+            frame_sequence=1,
+        )
+        publisher = FakePublisher()
+        worker = SnifferWorker(
+            capture=FakeCapture([heartbeat]),
+            publisher=publisher,
+        )
+
+        assert await worker.process_once() is None
+        assert publisher.messages == []
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        b"<= heartbeat",
+        b"<= HEARTBEAT -",
+        b"< heartbeat -",
+        b"synthetic <= heartbeat - payload",
+        b"malformed",
+    ],
+)
+def test_worker_does_not_treat_other_malformed_frames_as_heartbeat(
+    payload: bytes,
+) -> None:
+    async def run() -> None:
+        worker = SnifferWorker(
+            capture=FakeCapture(
+                [
+                    _frame(
+                        payload,
+                        direction=Direction.INBOUND,
+                        frame_sequence=1,
+                    ),
+                ],
+            ),
+            publisher=FakePublisher(),
+        )
+
+        with pytest.raises(SnifferDecodeError):
+            await worker.process_once()
+
+    asyncio.run(run())
+
+
 def test_worker_propagates_publisher_failure() -> None:
     async def run() -> None:
         frame = _frame(

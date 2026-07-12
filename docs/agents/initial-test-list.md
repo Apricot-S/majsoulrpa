@@ -330,8 +330,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] Response の `Wrapper.name` が空でない場合はエラーにする
 - [x] 空 payload、不明な種別、壊れた `Wrapper` を decode error にする
 - [x] text frame を対応済み binary frame として扱わない
-- [ ] 既知 heartbeat を除外する場合は byte 単位の条件を synthetic data で固定する
-- [ ] decode できない frame を heartbeat として無視しない
+- [x] 既知 heartbeat を除外する場合は byte 単位の条件を synthetic data で固定する
+- [x] decode できない frame を heartbeat として無視しない
 
 ### Request / Response 対応
 

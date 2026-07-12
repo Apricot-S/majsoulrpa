@@ -12,6 +12,8 @@ from majsoulrpa.sniffer.playwright import (
     CaptureEvent,
 )
 
+TOURNAMENT_HEARTBEAT_MARKER = b"<= heartbeat -"
+
 
 class CaptureSource(Protocol):
     async def receive(self) -> CaptureEvent: ...
@@ -41,6 +43,9 @@ class SnifferWorker:
         event = await self._capture.receive()
         match event:
             case CapturedFrame():
+                if event.payload.startswith(TOURNAMENT_HEARTBEAT_MARKER):
+                    return None
+
                 observation = ObservedEnvelope(
                     connection_id=event.connection_id,
                     direction=event.direction,
