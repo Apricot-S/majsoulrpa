@@ -268,7 +268,12 @@ class PlaywrightBrowserBackend:
     def page(self) -> Page | None:
         return self._page
 
-    async def start(self, config: AppConfig) -> None:
+    async def start(
+        self,
+        config: AppConfig,
+        *,
+        page_ready: Callable[[object], Awaitable[None]] | None = None,
+    ) -> None:
         self._playwright = await async_playwright().start()
         viewport_width = viewport_width_for_height(
             config.browser.viewport_height,
@@ -307,6 +312,9 @@ class PlaywrightBrowserBackend:
                     ignore_default_args=ignore_default_args,
                     user_agent=user_agent,
                 )
+            page = self._require_page()
+            if page_ready is not None:
+                await page_ready(page)
             await self._open_majsoul_page()
         except Exception:
             await self.stop()
@@ -367,15 +375,18 @@ class PlaywrightBrowserBackend:
         )
 
     async def _open_majsoul_page(self) -> None:
-        if self._page is None:
-            msg = "Playwright page is not created."
-            raise RuntimeError(msg)
-
-        await self._page.goto(MAJSOUL_URL)
-        await self._page.wait_for_selector(
+        page = self._require_page()
+        await page.goto(MAJSOUL_URL)
+        await page.wait_for_selector(
             CANVAS_SELECTOR,
             timeout=CANVAS_WAIT_TIMEOUT_SECONDS * 1000,
         )
+
+    def _require_page(self) -> Page:
+        if self._page is None:
+            msg = "Playwright page is not created."
+            raise RuntimeError(msg)
+        return self._page
 
     async def stop(self) -> None:
         context = self._context

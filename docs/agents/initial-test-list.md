@@ -358,11 +358,11 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] WebSocket close を connection id 付きeventとしてcaptureする
 - [x] WebSocket close 時にそのsocketのlistenerと保持参照を解放する
 - [x] 同じWebSocketが重複通知されてもlistenerを二重登録しない
-- [ ] page navigation より前に PUB bind と listener 登録を完了する
-- [ ] sniffer worker failure を browser host から伝播する
+- [x] page navigation より前に PUB bind と listener 登録を完了する
+- [x] sniffer worker failure を browser host から伝播する
 - [x] sniffer stop でPlaywright listenerを解除する
 - [ ] sniffer stop でworker、PUB socket、contextをcleanupする
-- [ ] request server failure と cancellation でも sniffer stop が呼ばれる
+- [x] request server failure と cancellation でも sniffer stop が呼ばれる
 
 ### Sniffer worker
 

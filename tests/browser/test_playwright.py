@@ -577,6 +577,30 @@ def test_playwright_browser_backend_starts_ephemeral_browser(
     assert playwright.stopped == 1
 
 
+def test_playwright_browser_backend_calls_page_ready_before_navigation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    playwright = FakePlaywright()
+    starter = FakePlaywrightStarter(playwright)
+    monkeypatch.setattr(
+        browser_playwright,
+        "async_playwright",
+        lambda: starter,
+    )
+    backend = PlaywrightBrowserBackend()
+    ready_pages: list[FakePage] = []
+
+    async def page_ready(page: object) -> None:
+        assert isinstance(page, FakePage)
+        assert page.visited_urls == []
+        ready_pages.append(page)
+
+    asyncio.run(backend.start(AppConfig(), page_ready=page_ready))
+
+    assert ready_pages == [backend.page]
+    assert ready_pages[0].visited_urls == [MAJSOUL_URL]
+
+
 def test_playwright_browser_backend_starts_persistent_context(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

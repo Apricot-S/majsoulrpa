@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Awaitable, Callable
 
 import pytest
 import zmq.asyncio
@@ -13,25 +14,52 @@ from majsoulrpa.config import AppConfig
 
 
 class BackendSpy:
-    def __init__(self) -> None:
+    def __init__(self, events: list[str] | None = None) -> None:
         self.page = object()
         self.started_configs: list[AppConfig] = []
         self.stopped = False
+        self.events = events
 
-    async def start(self, config: AppConfig) -> None:
+    async def start(
+        self,
+        config: AppConfig,
+        *,
+        page_ready: Callable[[object], Awaitable[None]] | None = None,
+    ) -> None:
         self.started_configs.append(config)
+        if self.events is not None:
+            self.events.append("page_created")
+        if page_ready is not None:
+            await page_ready(self.page)
+        if self.events is not None:
+            self.events.append("navigated")
 
     async def stop(self) -> None:
         self.stopped = True
 
 
 class SnifferBackendSpy:
-    def __init__(self) -> None:
+    def __init__(self, events: list[str] | None = None) -> None:
         self.started_pages: list[object] = []
         self.stopped = False
+        self.run_started = False
+        self.run_cancelled = False
+        self.run_started_event = asyncio.Event()
+        self.events = events
 
     async def start(self, page: object) -> None:
         self.started_pages.append(page)
+        if self.events is not None:
+            self.events.append("sniffer_started")
+
+    async def run(self) -> None:
+        self.run_started = True
+        self.run_started_event.set()
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            self.run_cancelled = True
+            raise
 
     async def stop(self) -> None:
         self.stopped = True
@@ -41,6 +69,13 @@ class FailingSnifferBackend(SnifferBackendSpy):
     async def start(self, page: object) -> None:
         await super().start(page)
         msg = "sniffer start failed"
+        raise RuntimeError(msg)
+
+
+class FailingRunningSnifferBackend(SnifferBackendSpy):
+    async def run(self) -> None:
+        self.run_started = True
+        msg = "sniffer worker failed"
         raise RuntimeError(msg)
 
 
@@ -58,6 +93,34 @@ class RequestServerSpy:
 
     async def stop(self) -> None:
         self.stopped = True
+
+
+class BlockingRequestServer(RequestServerSpy):
+    def __init__(self) -> None:
+        super().__init__()
+        self.serve_cancelled = False
+        self.serve_started_event = asyncio.Event()
+
+    async def serve_forever(self) -> None:
+        self.served = True
+        self.serve_started_event.set()
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            self.serve_cancelled = True
+            raise
+
+
+class NavigationFailingBackend(BackendSpy):
+    async def start(
+        self,
+        config: AppConfig,
+        *,
+        page_ready: Callable[[object], Awaitable[None]] | None = None,
+    ) -> None:
+        await super().start(config, page_ready=page_ready)
+        msg = "navigation failed"
+        raise RuntimeError(msg)
 
 
 class FailingRequestServer(RequestServerSpy):
@@ -160,6 +223,124 @@ def test_run_browser_host_starts_and_stops_sniffer_backend() -> None:
     assert server.stopped
     assert sniffer.stopped
     assert backend.stopped
+
+
+def test_run_browser_host_starts_sniffer_before_navigation() -> None:
+    events: list[str] = []
+    backend = BackendSpy(events)
+    sniffer = SnifferBackendSpy(events)
+    server = RequestServerSpy()
+
+    asyncio.run(
+        run_browser_host(
+            AppConfig(),
+            backend=backend,
+            sniffer_backend=sniffer,
+            command_executor_factory=ExecutorSpy,
+            request_server_factory=lambda _executor: server,
+        ),
+    )
+
+    assert events == ["page_created", "sniffer_started", "navigated"]
+    assert sniffer.run_started
+    assert sniffer.run_cancelled
+
+
+def test_run_browser_host_propagates_sniffer_worker_failure() -> None:
+    backend = BackendSpy()
+    sniffer = FailingRunningSnifferBackend()
+    server = BlockingRequestServer()
+
+    with pytest.raises(RuntimeError, match="sniffer worker failed"):
+        asyncio.run(
+            run_browser_host(
+                AppConfig(),
+                backend=backend,
+                sniffer_backend=sniffer,
+                command_executor_factory=ExecutorSpy,
+                request_server_factory=lambda _executor: server,
+            ),
+        )
+
+    assert server.serve_cancelled
+    assert server.stopped
+    assert sniffer.stopped
+    assert backend.stopped
+
+
+def test_run_browser_host_stops_sniffer_when_request_server_fails() -> None:
+    backend = BackendSpy()
+    sniffer = SnifferBackendSpy()
+    server = FailingRequestServer()
+
+    with pytest.raises(RuntimeError, match="serve failed"):
+        asyncio.run(
+            run_browser_host(
+                AppConfig(),
+                backend=backend,
+                sniffer_backend=sniffer,
+                command_executor_factory=ExecutorSpy,
+                request_server_factory=lambda _executor: server,
+            ),
+        )
+
+    assert sniffer.run_cancelled
+    assert server.stopped
+    assert sniffer.stopped
+    assert backend.stopped
+
+
+def test_run_browser_host_cleans_up_sniffer_when_navigation_fails() -> None:
+    backend = NavigationFailingBackend()
+    sniffer = SnifferBackendSpy()
+    server = RequestServerSpy()
+
+    with pytest.raises(RuntimeError, match="navigation failed"):
+        asyncio.run(
+            run_browser_host(
+                AppConfig(),
+                backend=backend,
+                sniffer_backend=sniffer,
+                command_executor_factory=ExecutorSpy,
+                request_server_factory=lambda _executor: server,
+            ),
+        )
+
+    assert sniffer.stopped
+    assert server.bound is False
+    assert backend.stopped
+
+
+def test_run_browser_host_cancellation_stops_server_and_sniffer() -> None:
+    async def run() -> None:
+        backend = BackendSpy()
+        sniffer = SnifferBackendSpy()
+        server = BlockingRequestServer()
+        task = asyncio.create_task(
+            run_browser_host(
+                AppConfig(),
+                backend=backend,
+                sniffer_backend=sniffer,
+                command_executor_factory=ExecutorSpy,
+                request_server_factory=lambda _executor: server,
+            ),
+        )
+        await asyncio.gather(
+            server.serve_started_event.wait(),
+            sniffer.run_started_event.wait(),
+        )
+
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+        assert server.serve_cancelled
+        assert sniffer.run_cancelled
+        assert server.stopped
+        assert sniffer.stopped
+        assert backend.stopped
+
+    asyncio.run(run())
 
 
 def test_run_browser_host_stops_backend_when_sniffer_start_fails() -> None:
