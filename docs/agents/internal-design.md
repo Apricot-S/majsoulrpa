@@ -77,6 +77,9 @@ class が active / stale 状態を保持する。public async Screen API は共�
 にする。操作失敗、timeout、通信拒否などの例外経路では stale にしない。stale 判定用の
 screenshot 取得に失敗した場合も、その失敗を握りつぶさない。
 
+`Screen.reload()` はbrowser reloadが正常完了した直後に現在のinstanceをstaleにする。
+reload後に同じ種類の画面へ戻った場合も、runtimeが新しく検出したScreen instanceを使う。
+
 ## 高レベル Screen API のログ
 
 通常ユーザーが callback から直接利用する高レベル Screen API は、呼び出し時に

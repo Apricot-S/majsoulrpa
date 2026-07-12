@@ -870,10 +870,10 @@ def test_screen_high_level_apis_log_outer_calls(
 
     async def call_apis() -> None:
         await screen.screenshot()
-        await screen.reload()
         await screen.goto_log("synthetic-log-id")
         await screen.stop_browser_host()
         await screen.stop_rpa()
+        await screen.reload()
 
     with caplog.at_level(logging.INFO, logger="majsoulrpa.screens.api"):
         asyncio.run(call_apis())
@@ -885,10 +885,10 @@ def test_screen_high_level_apis_log_outer_calls(
     ]
     assert messages == [
         "screen API called: screen=LoginScreen api=screenshot",
-        "screen API called: screen=LoginScreen api=reload",
         "screen API called: screen=LoginScreen api=goto_log",
         "screen API called: screen=LoginScreen api=stop_browser_host",
         "screen API called: screen=LoginScreen api=stop_rpa",
+        "screen API called: screen=LoginScreen api=reload",
     ]
     assert "synthetic-log-id" not in caplog.text
 
@@ -922,6 +922,17 @@ def test_screen_can_reload_current_page() -> None:
 
     assert browser.reloads == 1
     assert browser.events == ["reload"]
+
+
+def test_screen_becomes_stale_after_reload() -> None:
+    browser = BrowserControllerSpy()
+    screen = LoginScreen(context=ScreenContext(browser=browser))
+
+    asyncio.run(screen.reload())
+
+    with pytest.raises(ScreenStaleError, match="LoginScreen is stale"):
+        asyncio.run(screen.screenshot())
+    assert browser.events == ["reload", "screenshot"]
 
 
 def test_screen_can_go_to_log_url() -> None:

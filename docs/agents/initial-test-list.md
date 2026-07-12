@@ -70,6 +70,7 @@
 - [x] Screen から browser controller 経由で操作できる
 - [x] Screen から screenshot を利用者向け API として取得できる
 - [x] Screen から browser reload を利用者向け API として実行できる
+- [x] reload が正常完了したら現在の Screen instance を stale にする
 - [x] Screen から指定した牌譜 ID の URL へ移動できる
 - [x] Screen から RPAApp の実行ループ停止を利用者向け API として要求できる
 - [x] Screen から browser host の終了を利用者向け API として要求できる

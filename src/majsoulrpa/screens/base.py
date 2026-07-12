@@ -313,6 +313,7 @@ class Screen(ABC):
     @_requires_active
     async def reload(self) -> None:
         await self.context.browser.reload()
+        self._mark_stale()
 
     @_screen_api
     @_requires_active
