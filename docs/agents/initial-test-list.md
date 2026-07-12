@@ -376,10 +376,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Client decode / hook
 
-- [ ] descriptor から API 名と request / response 型の map を作る
-- [ ] Notice / Request の本文を対応する protobuf 型へ decode する
-- [ ] Response を対になった Request の API 名に対応する型へ decode する
-- [ ] unknown API と protobuf body decode failure を明示的なエラーにする
+- [x] descriptor から API 名と request / response 型の map を作る
+- [x] Notice / Request の本文を対応する protobuf 型へ decode する
+- [x] Response を対になった Request の API 名に対応する型へ decode する
+- [x] unknown API と protobuf body decode failure を明示的なエラーにする
 - [ ] raw payload を hook に渡せる
 - [ ] decode 済み event を hook に渡せる
 - [ ] hook 例外を RPA runtime から伝播する
