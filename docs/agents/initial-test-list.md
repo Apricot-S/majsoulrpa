@@ -446,6 +446,12 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ## examples / docs
 
+- [x] `fetch_log` exampleが入力された牌譜IDのURLへ遷移する
+- [x] 空入力まで複数の牌譜IDを順に取得する
+- [x] clientをbrowser hostより先に起動する手順を記載する
+- [x] `FetchLogScreen.before_callback()`はHomeの告知・報酬処理を省略する
+- [x] `fetch_log` exampleが`.lq.Lobby.fetchGameRecord`のReq/Resを待つ
+- [x] `fetch_log` exampleがraw response bytesを牌譜ID由来の安全な名前で保存する
 - [ ] examples に実メールアドレスが含まれない
 - [ ] examples に AWS credential が含まれない
 - [ ] examples に実 log id が含まれない
