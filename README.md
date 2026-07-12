@@ -3,7 +3,7 @@
 A Robotic Process Automation (RPA) framework for Mahjong Soul (雀魂)
 
 This project is a fork of **[Cryolite's majsoul-rpa](https://github.com/Cryolite/majsoul-rpa)**, but has been completely redesigned based on the proactor pattern.
-While some internal ideas and major class names were borrowed, the architecture and codebase are entirely new.
+While some API names and design ideas were borrowed, the architecture and codebase are entirely new.
 
 > [!NOTE]
 > This framework is intended to enable the participation of bots in friendly matches and tournaments where bot participation is agreed upon by all players involved.
@@ -15,20 +15,25 @@ While some internal ideas and major class names were borrowed, the architecture 
 
 > 🚧 **Work in Progress**
 >
-> MajsoulRPA is currently in active development and not usable yet.
+> MajsoulRPA is currently in active development. Most features are not yet
+> available, although a small subset, such as fetching game records, can be
+> used.
 
 ## Key differences from the original project
 
 - ✅ Requires **Python 3.12** or later
-- 🗑️ Removed dependencies on **Docker** and **Redis**
+- 🗑️ Removed dependencies on **Docker**, **Redis**, and **mitmproxy**
 - 🖥️ Supports moving browser window position after launch
 - 🖱️ Mouse can be used freely even while RPA is running
 - 📐 Supports browser viewport sizes other than **1920 × 1080**
 - 🀄 Supports **three-player mahjong**
 
+Because WebSocket capture no longer uses mitmproxy, installing a local CA
+certificate is no longer required.
+
 ## Implementation concept diagram
 
-![implementation-concept-diagram](docs/implementation-concept-diagram.png)
+![implementation-concept-diagram](docs/images/implementation-concept-diagram.png)
 
 ## Installation
 
@@ -43,13 +48,13 @@ majsoulrpa$ playwright install chromium --with-deps
 ### RPA client host (the machine running the RPA client which performs automation)
 
 ```sh
-majsoulrpa$ pip install .[client]
+majsoulrpa$ pip install .[rpa]
 ```
 
 ### Combined setup (browser and client on the same host)
 
 ```sh
-majsoulrpa$ pip install .[browser,client]
+majsoulrpa$ pip install .[browser,rpa]
 ```
 
 ### Optional: fetch verification emails from AWS S3
@@ -82,11 +87,12 @@ majsoulrpa-browser
 It can also be invoked from Python code:
 
 ```python
-from majsoulrpa.browser.server.runtime import run_browser_server
+import asyncio
 
-config = ...
-option = ...
-run_browser_server(config, option)
+from majsoulrpa import AppConfig
+from majsoulrpa.browser import run_browser_host
+
+asyncio.run(run_browser_host(AppConfig()))
 ```
 
 See [examples/](examples/) for detailed configurations and scenarios.
@@ -98,29 +104,29 @@ The RPA client is used from Python code. A typical flow looks like this:
 ```python
 import asyncio
 from typing import Any
-from majsoulrpa.presentation.home import HomePresentation
-from majsoulrpa.presentation.login import LoginPresentation
-from majsoulrpa.rpa_client import RPAClient
 
-rpa = RPAClient()
+from majsoulrpa import AppConfig, RPAApp
+from majsoulrpa.screens.home import HomeScreen
+from majsoulrpa.screens.login import LoginScreen
 
-@rpa.on(LoginPresentation)
-async def on_login(p: LoginPresentation, data: Any) -> Any:
+rpa = RPAApp()
+
+@rpa.on(LoginScreen)
+async def on_login(screen: LoginScreen, data: Any) -> Any:
     ...
-    return ...
+    return data
 
-@rpa.on(HomePresentation)
-async def on_home(p: HomePresentation, data: Any) -> Any:
+@rpa.on(HomeScreen)
+async def on_home(screen: HomeScreen, data: Any) -> Any:
     ...
-    return ...
+    return data
 
-config = ...
 data = ...  # You can set any value here; it will be carried through the client
-asyncio.run(rpa.run(config, data))
+asyncio.run(rpa.run(AppConfig(), data))
 ```
 
-- Register callbacks with `@rpa.on(Presentation)`
-- Only the registered Presentations are subject to detection; unregistered ones are ignored
+- Register callbacks with `@rpa.on(Screen)`
+- Only the registered Screens are subject to detection; unregistered ones are ignored
 - `data` can hold arbitrary values and is passed along within the client
 - Call `rpa.run(...)` to start execution
 
