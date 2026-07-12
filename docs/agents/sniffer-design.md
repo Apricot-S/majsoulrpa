@@ -328,7 +328,12 @@ RPA runtimeは画面検出・callbackのmain loopとSniffer受信loopを兄弟ta
 runtimeから伝播し、例外なしで終了した場合も常駐serviceの予期しない停止としてerrorに
 する。標準Controller runtimeはREQ socketとは別にSUB socket、client decoder、内部
 message queueを組み立てる。SUBのconnect完了をready境界とし、その後に画面検出main
-loopを開始する。
+loopを開始する。同じ内部queueを`ScreenContext`へmessage source protocolとして注入し、
+Screen基底は待機取得、即時取得、差し戻しのprotected操作だけを提供する。Screenから
+ZMQ socket、publication、decoder、queueの具体型は参照させない。今後のScreen状態管理は
+Sniffer messageを前提とするため、`ScreenContext`のmessage sourceはoptionalにせず構築時の
+必須依存とする。contextが存在すればbrowser操作とmessage取得の両方が利用可能であることを
+不変条件にする。
 
 たとえば牌譜取得は、`goto_log()`後にqueueを順に読み、
 `.lq.Lobby.fetchGameRecord`のReq/Resを取得する。走査中に別のframework処理で必要なmessageを

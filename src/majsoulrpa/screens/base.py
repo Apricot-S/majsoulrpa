@@ -11,6 +11,7 @@ from typing import Concatenate, Protocol
 from majsoulrpa.constants import BASE_VIEWPORT_WIDTH, DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens.errors import ScreenDetectionError, ScreenStaleError
+from majsoulrpa.sniffer.events import DecodedSnifferMessage
 
 SCREEN_ACTION_INTERVAL_SECONDS = 0.5
 LOG_URL_PREFIX = "https://game.mahjongsoul.com/?paipu="
@@ -47,6 +48,12 @@ class TemplateMatcher(Protocol):
     def match(self, screenshot: object) -> TemplateMatchResult: ...
     def find(self, screenshot: object) -> TemplateMatchResult | None: ...
     def matches(self, screenshot: object) -> bool: ...
+
+
+class SnifferMessageSource(Protocol):
+    async def get(self) -> DecodedSnifferMessage: ...
+    def get_nowait(self) -> DecodedSnifferMessage | None: ...
+    def put_back(self, message: DecodedSnifferMessage) -> None: ...
 
 
 type StopRequester = Callable[[], Awaitable[None]]
@@ -98,12 +105,14 @@ class ScreenContext:
     def __init__(
         self,
         browser: BrowserController,
+        sniffer_messages: SnifferMessageSource,
         request_stop: StopRequester | None = None,
         viewport_width: int = BASE_VIEWPORT_WIDTH,
         viewport_height: int = DEFAULT_VIEWPORT_HEIGHT,
         rng: Random | None = None,
     ) -> None:
         self._browser = browser
+        self._sniffer_messages = sniffer_messages
         self._request_stop = request_stop or _ignore_stop_request
         self._viewport_width = viewport_width
         self._viewport_height = viewport_height
@@ -121,6 +130,10 @@ class ScreenContext:
     @property
     def browser(self) -> BrowserController:
         return self._browser
+
+    @property
+    def sniffer_messages(self) -> SnifferMessageSource:
+        return self._sniffer_messages
 
     @property
     def rng(self) -> Random | None:
@@ -157,6 +170,19 @@ class Screen(ABC):
         screenshot = await self.context.browser.screenshot()
         msg = f"{type(self).__name__} is stale."
         raise ScreenStaleError(msg, screenshot)
+
+    async def _get_sniffer_message(self) -> DecodedSnifferMessage:
+        await self._ensure_active()
+        return await self.context.sniffer_messages.get()
+
+    def _get_sniffer_message_nowait(self) -> DecodedSnifferMessage | None:
+        return self.context.sniffer_messages.get_nowait()
+
+    def _put_back_sniffer_message(
+        self,
+        message: DecodedSnifferMessage,
+    ) -> None:
+        self.context.sniffer_messages.put_back(message)
 
     @property
     def context(self) -> ScreenContext:

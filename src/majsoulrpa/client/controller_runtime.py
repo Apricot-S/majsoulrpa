@@ -92,8 +92,13 @@ class ControllerRuntimeFactory:
         )
         controller = RemoteBrowserController(transport)
         stop_flag = StopFlag()
+        sniffer_queue = SnifferMessageQueue(
+            capacity=SNIFFER_QUEUE_CAPACITY,
+            max_payload_bytes=SNIFFER_QUEUE_MAX_PAYLOAD_BYTES,
+        )
         screen_context = ScreenContext(
             browser=controller,
+            sniffer_messages=sniffer_queue,
             request_stop=stop_flag.request_stop,
             viewport_width=viewport_width_for_height(
                 config.browser.viewport_height,
@@ -103,10 +108,6 @@ class ControllerRuntimeFactory:
         detector = ScreenshotScreenDetector(
             controller.screenshot,
             context=screen_context,
-        )
-        sniffer_queue = SnifferMessageQueue(
-            capacity=SNIFFER_QUEUE_CAPACITY,
-            max_payload_bytes=SNIFFER_QUEUE_MAX_PAYLOAD_BYTES,
         )
         sniffer_subscriber = ZmqSnifferSubscriber(
             context=cast("AsyncZmqContextLike", context),

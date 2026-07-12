@@ -404,6 +404,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] RPA main loopの正常終了時にSniffer受信loopをcancelする
 - [x] Controller runtimeはREQとは別のSUB socket、decoder、内部queueを組み立てる
 - [x] SUB接続完了後に画面検出main loopを開始する
+- [x] Controller runtimeは同じ内部message queueをScreenContextへ注入する
+- [x] Screen基底はmessageの待機取得、即時取得、差し戻しをprotected操作で委譲する
+- [x] ScreenContext構築時にSniffer message sourceを必須にする
 - [ ] raw payload を hook に渡せる
 - [ ] decode 済み event を hook に渡せる
 - [ ] hook 例外を RPA runtime から伝播する

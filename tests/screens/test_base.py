@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import logging
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -12,14 +13,34 @@ from majsoulrpa import RPAApp
 from majsoulrpa.client.runtime import RPARuntime, ScreenshotScreenDetector
 from majsoulrpa.config import AppConfig
 from majsoulrpa.presentation import Region
-from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
+from majsoulrpa.screens import (
+    Screen,
+    ScreenDetectionSpec,
+)
+from majsoulrpa.screens import (
+    ScreenContext as FrameworkScreenContext,
+)
 from majsoulrpa.screens.base import TemplateMatchResult
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
     ScreenDetectionTimeoutError,
     ScreenStaleError,
 )
+from majsoulrpa.sniffer.events import (
+    DecodedNotice,
+    DecodedSnifferMessage,
+    Direction,
+    RawNotice,
+)
 from majsoulrpa.types import Callback
+from tests.sniffer.fakes import EMPTY_SNIFFER_MESSAGES
+
+
+def ScreenContext(  # noqa: N802
+    **kwargs: Any,  # noqa: ANN401
+) -> FrameworkScreenContext:
+    kwargs.setdefault("sniffer_messages", EMPTY_SNIFFER_MESSAGES)
+    return FrameworkScreenContext(**kwargs)
 
 
 class LoginScreen(Screen):
@@ -33,6 +54,19 @@ class LoginScreen(Screen):
     @override
     def detection_spec(cls) -> ScreenDetectionSpec:
         return cls.spec
+
+    async def get_sniffer_message(self) -> DecodedNotice:
+        message = await self._get_sniffer_message()
+        assert isinstance(message, DecodedNotice)
+        return message
+
+    def get_sniffer_message_nowait(self) -> DecodedNotice | None:
+        message = self._get_sniffer_message_nowait()
+        assert message is None or isinstance(message, DecodedNotice)
+        return message
+
+    def put_back_sniffer_message(self, message: DecodedNotice) -> None:
+        self._put_back_sniffer_message(message)
 
 
 class BrowserControllerSpy:
@@ -114,6 +148,35 @@ class TemplateMatchResultSpy:
     region: Region
 
 
+class SnifferMessageSourceSpy:
+    def __init__(self, *messages: DecodedSnifferMessage) -> None:
+        self.messages = list(messages)
+        self.put_back_messages: list[DecodedSnifferMessage] = []
+
+    async def get(self) -> DecodedSnifferMessage:
+        return self.messages.pop(0)
+
+    def get_nowait(self) -> DecodedSnifferMessage | None:
+        if not self.messages:
+            return None
+        return self.messages.pop(0)
+
+    def put_back(self, message: DecodedSnifferMessage) -> None:
+        self.put_back_messages.append(message)
+
+
+def _notice(name: str) -> DecodedNotice:
+    return DecodedNotice(
+        raw=RawNotice(
+            direction=Direction.INBOUND,
+            name=name,
+            payload=b"synthetic",
+            observed_at=datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC),
+        ),
+        message={},
+    )
+
+
 def test_screen_exposes_detection_spec() -> None:
     assert LoginScreen.detection_spec() is LoginScreen.spec
 
@@ -183,6 +246,33 @@ def test_screen_context_is_required_before_screen_operation() -> None:
 
     with pytest.raises(RuntimeError, match="ScreenContext"):
         _ = screen.context
+
+
+def test_screen_context_requires_sniffer_message_source() -> None:
+    with pytest.raises(TypeError, match="sniffer_messages"):
+        FrameworkScreenContext(  # ty: ignore[missing-argument]
+            browser=BrowserControllerSpy(),
+        )
+
+
+def test_screen_gets_and_puts_back_messages_through_context() -> None:
+    first = _notice(".lq.First")
+    second = _notice(".lq.Second")
+    source = SnifferMessageSourceSpy(first, second)
+    screen = LoginScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(),
+            sniffer_messages=source,
+        ),
+    )
+
+    assert asyncio.run(screen.get_sniffer_message()) is first
+    assert screen.get_sniffer_message_nowait() is second
+    assert screen.get_sniffer_message_nowait() is None
+
+    screen.put_back_sniffer_message(first)
+
+    assert source.put_back_messages == [first]
 
 
 def test_false_screen_detection_does_not_call_callback() -> None:

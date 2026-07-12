@@ -1,6 +1,7 @@
 import asyncio
 from importlib.resources.abc import Traversable
 from random import Random
+from typing import Any
 
 import cv2
 import numpy as np
@@ -26,12 +27,28 @@ from majsoulrpa.assets.templates.home import (
     TOURNAMENT_MATCH_TEMPLATE_PATH,
 )
 from majsoulrpa.presentation.template import TemplateMatchSettings
-from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
+from majsoulrpa.screens import (
+    Screen,
+    ScreenDetectionSpec,
+)
+from majsoulrpa.screens import (
+    ScreenContext as FrameworkScreenContext,
+)
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
     ScreenUnexpectedStateError,
 )
 from majsoulrpa.screens.home import HomeScreen
+from tests.sniffer.fakes import EMPTY_SNIFFER_MESSAGES
+
+
+def ScreenContext(  # noqa: N802
+    **kwargs: Any,  # noqa: ANN401
+) -> FrameworkScreenContext:
+    return FrameworkScreenContext(
+        sniffer_messages=EMPTY_SNIFFER_MESSAGES,
+        **kwargs,
+    )
 
 
 class BrowserControllerSpy:

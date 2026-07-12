@@ -2,6 +2,7 @@ import asyncio
 import logging
 from importlib.resources.abc import Traversable
 from random import Random
+from typing import Any
 
 import cv2
 import numpy as np
@@ -19,7 +20,13 @@ from majsoulrpa.browser.messages import (
     YostarAuthRejectedResponse,
 )
 from majsoulrpa.presentation import Region
-from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
+from majsoulrpa.screens import (
+    Screen,
+    ScreenDetectionSpec,
+)
+from majsoulrpa.screens import (
+    ScreenContext as FrameworkScreenContext,
+)
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
     ScreenInvalidArgumentError,
@@ -27,6 +34,16 @@ from majsoulrpa.screens.errors import (
     ScreenStaleError,
 )
 from majsoulrpa.screens.login import EMAIL_ADDRESS_PATTERN, LoginScreen
+from tests.sniffer.fakes import EMPTY_SNIFFER_MESSAGES
+
+
+def ScreenContext(  # noqa: N802
+    **kwargs: Any,  # noqa: ANN401
+) -> FrameworkScreenContext:
+    return FrameworkScreenContext(
+        sniffer_messages=EMPTY_SNIFFER_MESSAGES,
+        **kwargs,
+    )
 
 
 class BrowserControllerSpy:

@@ -27,8 +27,9 @@ from majsoulrpa.browser.messages import (
 from majsoulrpa.client.controller_runtime import ControllerRuntimeFactory
 from majsoulrpa.config import AppConfig, BrowserConfig, EndpointConfig
 from majsoulrpa.presentation import Region
-from majsoulrpa.screens import Screen, ScreenDetectionSpec
+from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
 from majsoulrpa.screens.errors import ScreenDetectionTimeoutError
+from majsoulrpa.sniffer.message_queue import SnifferMessageQueue
 
 SYNTHETIC_PNG = b"\x89PNG\r\n\x1a\n"
 
@@ -194,7 +195,11 @@ def test_controller_runtime_injects_screen_context() -> None:
     with pytest.raises(ContextCapturedError) as exc_info:
         asyncio.run(runtime.run(config, None, detection_timeout=0.001))
 
-    assert exc_info.value.context is not None
+    assert isinstance(exc_info.value.context, ScreenContext)
+    assert isinstance(
+        exc_info.value.context.sniffer_messages,
+        SnifferMessageQueue,
+    )
     assert context.socket_spy.closed
     assert context.terminated
 
