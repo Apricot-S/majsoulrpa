@@ -13,6 +13,8 @@ from majsoulrpa.assets.templates.home import (
     FRIENDLY_MATCH_TEMPLATE_PATH,
     JADE_SETTINGS_PATH,
     JADE_TEMPLATE_PATH,
+    JOIN_ROOM_SETTINGS_PATH,
+    JOIN_ROOM_TEMPLATE_PATH,
     MAIL_CLOSE_SETTINGS_PATH,
     MAIL_CLOSE_TEMPLATE_PATH,
     NOTIFICATION_CLOSE_SETTINGS_PATH,
@@ -160,6 +162,10 @@ class HomeScreen(Screen):
         template_path=CREATE_TEMPLATE_PATH,
         settings_path=CREATE_SETTINGS_PATH,
     )
+    JOIN_ROOM_TEMPLATE = load_png_template_matcher(
+        template_path=JOIN_ROOM_TEMPLATE_PATH,
+        settings_path=JOIN_ROOM_SETTINGS_PATH,
+    )
 
     @classmethod
     @override
@@ -303,3 +309,13 @@ class HomeScreen(Screen):
             msg = "Room ID must be exactly 5 digits."
             screenshot = await self.screenshot()
             raise ScreenInvalidArgumentError(msg, screenshot)
+
+        await self.click_template(
+            self.FRIENDLY_MATCH_TEMPLATE,
+            message="friendly-match was not found.",
+        )
+        await asyncio.sleep(1.0)
+        await self.click_template(
+            self.JOIN_ROOM_TEMPLATE,
+            message="join-room was not found.",
+        )

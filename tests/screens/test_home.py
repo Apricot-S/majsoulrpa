@@ -20,6 +20,8 @@ from majsoulrpa.assets.templates.home import (
     FRIENDLY_MATCH_TEMPLATE_PATH,
     JADE_SETTINGS_PATH,
     JADE_TEMPLATE_PATH,
+    JOIN_ROOM_SETTINGS_PATH,
+    JOIN_ROOM_TEMPLATE_PATH,
     MAIL_CLOSE_SETTINGS_PATH,
     MAIL_CLOSE_TEMPLATE_PATH,
     NOTIFICATION_CLOSE_SETTINGS_PATH,
@@ -217,14 +219,120 @@ def test_room_id_pattern_matches_exactly_five_digits() -> None:
 
 def test_join_room_accepts_exactly_five_digits(
     caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    screen = HomeScreen()
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(
+                _synthetic_template_screenshot(
+                    template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+                    settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+                ),
+                _synthetic_template_screenshot(
+                    template_path=JOIN_ROOM_TEMPLATE_PATH,
+                    settings_path=JOIN_ROOM_SETTINGS_PATH,
+                ),
+            ),
+        ),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
 
     with caplog.at_level(logging.INFO, logger="majsoulrpa.screens.api"):
         result = asyncio.run(screen.join_room("12345"))
 
     assert result is None
     assert "screen API called: screen=HomeScreen api=join_room" in caplog.text
+
+
+def test_join_room_clicks_friendly_match_then_join_room(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    timeline: list[str] = []
+
+    class OrderedBrowserControllerSpy(BrowserControllerSpy):
+        async def click(self, x: float, y: float) -> None:
+            timeline.append("click")
+            await super().click(x, y)
+
+        async def screenshot(self) -> bytes:
+            timeline.append("screenshot")
+            return await super().screenshot()
+
+    async def sleep(seconds: float) -> None:
+        timeline.append(f"sleep:{seconds}")
+
+    browser = OrderedBrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+            settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=JOIN_ROOM_TEMPLATE_PATH,
+            settings_path=JOIN_ROOM_SETTINGS_PATH,
+        ),
+    )
+    screen = HomeScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    result = asyncio.run(screen.join_room("12345"))
+
+    assert result is None
+    assert len(browser.clicked_points) == 2
+    assert timeline == [
+        "screenshot",
+        "click",
+        "sleep:1.0",
+        "screenshot",
+        "click",
+    ]
+
+
+def test_join_room_raises_if_friendly_match_button_is_missing() -> None:
+    screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(screenshot)
+    screen = HomeScreen(context=ScreenContext(browser=browser))
+
+    with pytest.raises(
+        ScreenDetectionError,
+        match="friendly-match was not found",
+    ) as exc_info:
+        asyncio.run(screen.join_room("12345"))
+
+    assert browser.clicked_points == []
+    assert exc_info.value.screenshot == screenshot
+
+
+def test_join_room_raises_if_join_room_button_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    missing_join_room_screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+            settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+        ),
+        missing_join_room_screenshot,
+    )
+    screen = HomeScreen(context=ScreenContext(browser=browser))
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenDetectionError,
+        match="join-room was not found",
+    ) as exc_info:
+        asyncio.run(screen.join_room("12345"))
+
+    assert len(browser.clicked_points) == 1
+    assert sleeps == [1.0]
+    assert exc_info.value.screenshot == missing_join_room_screenshot
 
 
 @pytest.mark.parametrize("room_id", ["", "1234", "123456", "12a45"])
@@ -799,6 +907,13 @@ def test_create_room_template_assets_exist() -> None:
     assert CREATE_ROOM_TEMPLATE_PATH.is_file()
     assert CREATE_ROOM_SETTINGS_PATH.name == "create-room.toml"
     assert CREATE_ROOM_SETTINGS_PATH.is_file()
+
+
+def test_join_room_template_assets_exist() -> None:
+    assert JOIN_ROOM_TEMPLATE_PATH.name == "join-room.png"
+    assert JOIN_ROOM_TEMPLATE_PATH.is_file()
+    assert JOIN_ROOM_SETTINGS_PATH.name == "join-room.toml"
+    assert JOIN_ROOM_SETTINGS_PATH.is_file()
 
 
 def test_room_create_button_template_assets_exist() -> None:

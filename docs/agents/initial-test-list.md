@@ -347,6 +347,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 形式が一致する room ID は暫定 no-op で `None` を返す
 - [x] 形式が一致しない room ID は screenshot 付き不正引数エラーにする
 - [x] `HomeScreen.join_room()` を高レベル API のログ記録と stale 保護の対象にする
+- [x] `join-room` template と settings を HomeScreen から利用できる
+- [x] `friendly-match` のクリック後 1.0 秒待って `join-room` をクリックする
+- [x] `friendly-match` または `join-room` がなければ screenshot 付き画面検出エラーにする
 
 ## Phase 7: WebSocket sniffer
 
