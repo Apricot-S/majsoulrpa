@@ -327,6 +327,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `HomeScreen.create_room()` が高レベル API としてログ記録と stale 保護を行う
 - [x] `HomeScreen.create_room()` が `friendly-match` の一致領域をクリックする
 - [x] `friendly-match` が見つからなければ screenshot 付き画面検出エラーにする
+- [x] `create-room` template と settings を HomeScreen から利用できる
+- [x] `friendly-match` のクリック後 1.0 秒待って `create-room` をクリックする
+- [x] `create-room` が見つからなければ screenshot 付き画面検出エラーにする
 
 ## Phase 7: WebSocket sniffer
 

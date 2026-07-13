@@ -12,6 +12,8 @@ import pytest
 
 import majsoulrpa.screens.home as home_module
 from majsoulrpa.assets.templates.home import (
+    CREATE_ROOM_SETTINGS_PATH,
+    CREATE_ROOM_TEMPLATE_PATH,
     EVENT_CLOSE_SETTINGS_PATH,
     EVENT_CLOSE_TEMPLATE_PATH,
     FRIENDLY_MATCH_SETTINGS_PATH,
@@ -198,13 +200,21 @@ def test_room_creation_enums_have_expected_members() -> None:
 
 def test_create_room_defaults_to_four_player_two_wind_five_plus_twenty(
     caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
     screen = HomeScreen(
         context=ScreenContext(
             browser=BrowserControllerSpy(
                 _synthetic_template_screenshot(
                     template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
                     settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+                ),
+                _synthetic_template_screenshot(
+                    template_path=CREATE_ROOM_TEMPLATE_PATH,
+                    settings_path=CREATE_ROOM_SETTINGS_PATH,
                 ),
             ),
         ),
@@ -214,6 +224,7 @@ def test_create_room_defaults_to_four_player_two_wind_five_plus_twenty(
     assert parameters["mode"].default is Mode.FOUR_PLAYER
     assert parameters["length"].default is Length.TWO_WIND_MATCH
     assert parameters["thinking_time"].default is ThinkingTime.FIVE_PLUS_TWENTY
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
 
     with caplog.at_level(logging.INFO, logger="majsoulrpa.screens.api"):
         result = asyncio.run(screen.create_room())
@@ -224,51 +235,96 @@ def test_create_room_defaults_to_four_player_two_wind_five_plus_twenty(
     )
 
 
-def test_create_room_accepts_each_enum_value() -> None:
-    screen = HomeScreen(
-        context=ScreenContext(
-            browser=BrowserControllerSpy(
-                _synthetic_template_screenshot(
-                    template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
-                    settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+def test_create_room_accepts_each_enum_value(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    def create_screen() -> HomeScreen:
+        return HomeScreen(
+            context=ScreenContext(
+                browser=BrowserControllerSpy(
+                    _synthetic_template_screenshot(
+                        template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+                        settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+                    ),
+                    _synthetic_template_screenshot(
+                        template_path=CREATE_ROOM_TEMPLATE_PATH,
+                        settings_path=CREATE_ROOM_SETTINGS_PATH,
+                    ),
                 ),
             ),
-        ),
-    )
+        )
 
     async def create_rooms() -> list[None]:
-        results = [await screen.create_room(mode=mode) for mode in Mode]
+        results = [
+            await create_screen().create_room(mode=mode) for mode in Mode
+        ]
         results.extend(
-            [await screen.create_room(length=length) for length in Length],
+            [
+                await create_screen().create_room(length=length)
+                for length in Length
+            ],
         )
         results.extend(
             [
-                await screen.create_room(thinking_time=thinking_time)
+                await create_screen().create_room(thinking_time=thinking_time)
                 for thinking_time in ThinkingTime
             ],
         )
         return results
+
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
 
     assert asyncio.run(create_rooms()) == [None] * (
         len(Mode) + len(Length) + len(ThinkingTime)
     )
 
 
-def test_create_room_clicks_friendly_match_button() -> None:
-    browser = BrowserControllerSpy(
+def test_create_room_clicks_friendly_match_then_create_room(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    timeline: list[str] = []
+
+    class OrderedBrowserControllerSpy(BrowserControllerSpy):
+        async def click(self, x: float, y: float) -> None:
+            timeline.append("click")
+            await super().click(x, y)
+
+        async def screenshot(self) -> bytes:
+            timeline.append("screenshot")
+            return await super().screenshot()
+
+    async def sleep(seconds: float) -> None:
+        timeline.append(f"sleep:{seconds}")
+
+    browser = OrderedBrowserControllerSpy(
         _synthetic_template_screenshot(
             template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
             settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=CREATE_ROOM_TEMPLATE_PATH,
+            settings_path=CREATE_ROOM_SETTINGS_PATH,
         ),
     )
     screen = HomeScreen(
         context=ScreenContext(browser=browser, rng=Random(0)),
     )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
 
     result = asyncio.run(screen.create_room())
 
     assert result is None
-    assert len(browser.clicked_points) == 1
+    assert len(browser.clicked_points) == 2
+    assert timeline == [
+        "screenshot",
+        "click",
+        "sleep:1.0",
+        "screenshot",
+        "click",
+    ]
 
 
 def test_create_room_raises_if_friendly_match_button_is_missing() -> None:
@@ -284,6 +340,36 @@ def test_create_room_raises_if_friendly_match_button_is_missing() -> None:
 
     assert browser.clicked_points == []
     assert exc_info.value.screenshot == screenshot
+
+
+def test_create_room_raises_if_create_room_button_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    missing_create_room_screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+            settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+        ),
+        missing_create_room_screenshot,
+    )
+    screen = HomeScreen(context=ScreenContext(browser=browser))
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenDetectionError,
+        match="create-room was not found",
+    ) as exc_info:
+        asyncio.run(screen.create_room())
+
+    assert len(browser.clicked_points) == 1
+    assert sleeps == [1.0]
+    assert exc_info.value.screenshot == missing_create_room_screenshot
 
 
 def test_create_room_rejects_stale_home_screen() -> None:
@@ -509,6 +595,13 @@ def test_match_button_template_assets_exist() -> None:
     assert FRIENDLY_MATCH_TEMPLATE_PATH.is_file()
     assert FRIENDLY_MATCH_SETTINGS_PATH.name == "friendly-match.toml"
     assert FRIENDLY_MATCH_SETTINGS_PATH.is_file()
+
+
+def test_create_room_template_assets_exist() -> None:
+    assert CREATE_ROOM_TEMPLATE_PATH.name == "create-room.png"
+    assert CREATE_ROOM_TEMPLATE_PATH.is_file()
+    assert CREATE_ROOM_SETTINGS_PATH.name == "create-room.toml"
+    assert CREATE_ROOM_SETTINGS_PATH.is_file()
 
 
 def test_home_screen_detection_spec_uses_summon_template() -> None:

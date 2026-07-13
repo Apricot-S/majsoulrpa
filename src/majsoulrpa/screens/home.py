@@ -4,6 +4,8 @@ from logging import getLogger
 from typing import override
 
 from majsoulrpa.assets.templates.home import (
+    CREATE_ROOM_SETTINGS_PATH,
+    CREATE_ROOM_TEMPLATE_PATH,
     EVENT_CLOSE_SETTINGS_PATH,
     EVENT_CLOSE_TEMPLATE_PATH,
     FRIENDLY_MATCH_SETTINGS_PATH,
@@ -98,6 +100,10 @@ class HomeScreen(Screen):
     FRIENDLY_MATCH_TEMPLATE = load_png_template_matcher(
         template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
         settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+    )
+    CREATE_ROOM_TEMPLATE = load_png_template_matcher(
+        template_path=CREATE_ROOM_TEMPLATE_PATH,
+        settings_path=CREATE_ROOM_SETTINGS_PATH,
     )
 
     @classmethod
@@ -216,4 +222,9 @@ class HomeScreen(Screen):
         await self.click_template(
             self.FRIENDLY_MATCH_TEMPLATE,
             message="friendly-match was not found.",
+        )
+        await asyncio.sleep(1.0)
+        await self.click_template(
+            self.CREATE_ROOM_TEMPLATE,
+            message="create-room was not found.",
         )
