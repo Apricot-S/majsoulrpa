@@ -41,11 +41,23 @@ class S3VerificationCodeProvider:
         self._client = client
         self._clock = clock or _utc_now
 
-    async def fetch(self) -> str:
-        """Return the code from the newest current matching S3 email."""
-        return await asyncio.to_thread(self._fetch)
+    async def fetch(self, *, poll_interval: float = 5.0) -> str:
+        """Poll S3 until a current matching email is available."""
+        if poll_interval <= 0.0:
+            msg = "poll_interval must be greater than zero."
+            raise ValueError(msg)
 
-    def _fetch(self) -> str:
+        while True:
+            try:
+                return await self.fetch_nowait()
+            except VerificationEmailNotFoundError:
+                await asyncio.sleep(poll_interval)
+
+    async def fetch_nowait(self) -> str:
+        """Check S3 once and return a current matching email's code."""
+        return await asyncio.to_thread(self._fetch_once)
+
+    def _fetch_once(self) -> str:
         client = self._client or _create_s3_client(self._aws_profile)
         now = self._clock()
         objects = _list_objects(

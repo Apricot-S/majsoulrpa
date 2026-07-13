@@ -22,6 +22,10 @@ if TYPE_CHECKING:
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
 
+def _accepts_code_provider(_provider: VerificationCodeProvider) -> None:
+    pass
+
+
 def _message(*, sender: str = "info@passport.yostar.co.jp") -> bytes:
     message = EmailMessage()
     message["From"] = sender
@@ -49,6 +53,23 @@ class S3ClientFake:
         return {"Body": BytesIO(self.bodies[kwargs["Key"]])}
 
 
+class DelayedS3ClientFake(S3ClientFake):
+    def __init__(
+        self,
+        objects: list[dict[str, Any]],
+        bodies: dict[str, bytes],
+    ) -> None:
+        super().__init__(objects, bodies)
+        self.attempts = 0
+
+    def list_objects_v2(self, **kwargs: str) -> dict[str, Any]:
+        self.attempts += 1
+        if self.attempts == 1:
+            self.list_calls.append(kwargs)
+            return {"Contents": [], "IsTruncated": False}
+        return super().list_objects_v2(**kwargs)
+
+
 def test_fetches_latest_valid_email_below_prefix() -> None:
     client = S3ClientFake(
         [
@@ -64,15 +85,16 @@ def test_fetches_latest_valid_email_below_prefix() -> None:
             "mail/valid": _message(),
         },
     )
-    provider: VerificationCodeProvider = S3VerificationCodeProvider(
+    provider = S3VerificationCodeProvider(
         email_address="user@example.com",
         bucket_name="example-bucket",
         key_prefix="mail/",
         client=cast("S3Client", client),
         clock=lambda: NOW,
     )
+    _accepts_code_provider(provider)
 
-    assert asyncio.run(provider.fetch()) == "012345"
+    assert asyncio.run(provider.fetch_nowait()) == "012345"
     assert client.list_calls == [
         {"Bucket": "example-bucket", "Prefix": "mail/"},
     ]
@@ -93,7 +115,37 @@ def test_fetch_fails_when_no_valid_email_exists() -> None:
     )
 
     with pytest.raises(VerificationEmailNotFoundError):
-        asyncio.run(provider.fetch())
+        asyncio.run(provider.fetch_nowait())
+
+
+def test_fetch_retries_until_email_is_available() -> None:
+    client = DelayedS3ClientFake(
+        [
+            {"Key": "mail/valid", "LastModified": NOW},
+        ],
+        {"mail/valid": _message()},
+    )
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: NOW,
+    )
+
+    assert asyncio.run(provider.fetch(poll_interval=0.001)) == "012345"
+    assert client.attempts == 2
+
+
+def test_fetch_rejects_nonpositive_poll_interval() -> None:
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", S3ClientFake([], {})),
+        clock=lambda: NOW,
+    )
+
+    with pytest.raises(ValueError, match="poll_interval"):
+        asyncio.run(provider.fetch(poll_interval=0.0))
 
 
 def test_missing_boto3_names_required_extra(

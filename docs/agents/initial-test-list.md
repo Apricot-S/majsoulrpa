@@ -448,6 +448,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ## examples / docs
 
+- [x] S3 から Yostar 認証メールを取得する example が `config.toml` を読む
+- [x] S3 email example は Home 到達後 2 秒待って browser host と RPA を停止する
+- [x] `examples/.gitignore` が `config.toml` と `game-records/` を除外する
+- [x] examples README に S3 email example の準備と実行順を記載する
 - [x] `fetch_log` exampleが入力された牌譜IDのURLへ遷移する
 - [x] 空入力まで複数の牌譜IDを順に取得する
 - [x] clientをbrowser hostより先に起動する手順を記載する
@@ -477,6 +481,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 認証コード、メールアドレス、メール本文を例外や repr に含めない
 - [x] S3 provider は prefix 以下の最新候補から有効なメールを選ぶ
 - [x] S3 provider は不正な候補を無視し、有効な候補がなければ明示的に失敗する
+- [x] S3 provider の `fetch()` はメール未着だけを指定間隔で再試行する
+- [x] S3 provider の `fetch_nowait()` は S3 を一度だけ確認する
+- [x] S3 provider は正でない polling interval を拒否する
 - [x] S3 provider の AWS profile は optional とする
 - [x] S3 provider は boto3 がなければ必要な extra が分かるエラーにする
 - [x] 自動テストは fake S3 client と synthetic MIME message だけを使う
