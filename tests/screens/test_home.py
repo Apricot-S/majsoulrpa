@@ -321,7 +321,7 @@ def test_create_room_accepts_each_enum_value(
     )
 
 
-def test_create_room_clicks_friendly_match_then_create_room(
+def test_create_room_clicks_settings_then_create_at_half_second_intervals(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     timeline: list[str] = []
@@ -360,7 +360,20 @@ def test_create_room_clicks_friendly_match_then_create_room(
     result = asyncio.run(screen.create_room())
 
     assert result is None
-    assert len(browser.clicked_points) == 2
+    assert screen._stale
+    assert len(browser.clicked_points) == 6
+    for point, region in zip(
+        browser.clicked_points[2:5],
+        (
+            HomeScreen.MODE_REGIONS[Mode.FOUR_PLAYER],
+            HomeScreen.LENGTH_REGIONS[Length.TWO_WIND_MATCH],
+            HomeScreen.THINKING_TIME_REGIONS[ThinkingTime.FIVE_PLUS_TWENTY],
+        ),
+        strict=True,
+    ):
+        x, y = point
+        assert region.left < x < region.right
+        assert region.top < y < region.bottom
     assert timeline == [
         "screenshot",
         "click",
@@ -369,7 +382,57 @@ def test_create_room_clicks_friendly_match_then_create_room(
         "click",
         "sleep:1.0",
         "screenshot",
+        "click",
+        "sleep:0.5",
+        "click",
+        "sleep:0.5",
+        "click",
+        "sleep:0.5",
+        "click",
     ]
+
+
+@pytest.mark.parametrize("failing_click_number", [3, 6])
+def test_create_room_remains_active_when_setting_or_create_click_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    failing_click_number: int,
+) -> None:
+    class FailingBrowserControllerSpy(BrowserControllerSpy):
+        def __init__(self, screenshot: bytes, *screenshots: bytes) -> None:
+            super().__init__(screenshot, *screenshots)
+            self.click_count = 0
+
+        async def click(self, x: float, y: float) -> None:
+            self.click_count += 1
+            if self.click_count == failing_click_number:
+                msg = "synthetic click failure"
+                raise RuntimeError(msg)
+            await super().click(x, y)
+
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    browser = FailingBrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+            settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=CREATE_ROOM_TEMPLATE_PATH,
+            settings_path=CREATE_ROOM_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=CREATE_TEMPLATE_PATH,
+            settings_path=CREATE_SETTINGS_PATH,
+        ),
+    )
+    screen = HomeScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(RuntimeError, match="synthetic click failure"):
+        asyncio.run(screen.create_room())
+
+    assert not screen._stale
 
 
 def test_create_room_raises_if_friendly_match_button_is_missing() -> None:

@@ -336,6 +336,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `Mode` の全列挙値に仮のクリック用 `Region` を対応付ける
 - [x] `Length` の全列挙値に仮のクリック用 `Region` を対応付ける
 - [x] `ThinkingTime` の全列挙値に仮のクリック用 `Region` を対応付ける
+- [x] `mode`、`length`、`thinking_time` の指定領域を順に 0.5 秒間隔でクリックする
+- [x] 最後の設定クリックから 0.5 秒後に `create` の一致領域をクリックする
+- [x] `create` のクリック成功後だけ `HomeScreen` を stale にする
+- [x] 設定または `create` のクリック失敗では `HomeScreen` を stale にしない
 
 ## Phase 7: WebSocket sniffer
 

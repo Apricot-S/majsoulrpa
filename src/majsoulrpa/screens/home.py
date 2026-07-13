@@ -270,7 +270,6 @@ class HomeScreen(Screen):
         length: Length = Length.TWO_WIND_MATCH,
         thinking_time: ThinkingTime = ThinkingTime.FIVE_PLUS_TWENTY,
     ) -> None:
-        _ = mode, length, thinking_time
         await self.click_template(
             self.FRIENDLY_MATCH_TEMPLATE,
             message="friendly-match was not found.",
@@ -281,7 +280,15 @@ class HomeScreen(Screen):
             message="create-room was not found.",
         )
         await asyncio.sleep(1.0)
-        await self.require_template(
+        create_result = await self.require_template(
             self.CREATE_TEMPLATE,
             message="create was not found after opening room creation.",
         )
+        await self.click_region(self.MODE_REGIONS[mode])
+        await asyncio.sleep(0.5)
+        await self.click_region(self.LENGTH_REGIONS[length])
+        await asyncio.sleep(0.5)
+        await self.click_region(self.THINKING_TIME_REGIONS[thinking_time])
+        await asyncio.sleep(0.5)
+        await self._click_region(create_result.region)
+        self._mark_stale()
