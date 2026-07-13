@@ -341,6 +341,13 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `create` のクリック成功後だけ `HomeScreen` を stale にする
 - [x] 設定または `create` のクリック失敗では `HomeScreen` を stale にしない
 
+## Phase 6.8: HomeScreen 友人戦の部屋参加
+
+- [x] room ID の形式を `re.compile(r"\d{5}")` の完全一致で判定する
+- [x] 形式が一致する room ID は暫定 no-op で `None` を返す
+- [x] 形式が一致しない room ID は screenshot 付き不正引数エラーにする
+- [x] `HomeScreen.join_room()` を高レベル API のログ記録と stale 保護の対象にする
+
 ## Phase 7: WebSocket sniffer
 
 - [x] sniffer backend の start に失敗した場合に browser を閉じる

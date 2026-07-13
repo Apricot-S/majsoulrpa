@@ -48,10 +48,17 @@ from majsoulrpa.screens import (
 )
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
+    ScreenInvalidArgumentError,
     ScreenStaleError,
     ScreenUnexpectedStateError,
 )
-from majsoulrpa.screens.home import HomeScreen, Length, Mode, ThinkingTime
+from majsoulrpa.screens.home import (
+    ROOM_ID_PATTERN,
+    HomeScreen,
+    Length,
+    Mode,
+    ThinkingTime,
+)
 from majsoulrpa.sniffer.events import DecodedNotice, Direction, RawNotice
 from majsoulrpa.sniffer.message_queue import SnifferMessageQueue
 from tests.sniffer.fakes import EMPTY_SNIFFER_MESSAGES
@@ -201,6 +208,54 @@ def test_room_creation_enums_have_expected_members() -> None:
         ThinkingTime.SIXTY_PLUS_ZERO,
         ThinkingTime.THREE_HUNDRED_PLUS_ZERO,
     ]
+
+
+def test_room_id_pattern_matches_exactly_five_digits() -> None:
+    assert ROOM_ID_PATTERN.pattern == r"\d{5}"
+    assert ROOM_ID_PATTERN.fullmatch("12345") is not None
+
+
+def test_join_room_accepts_exactly_five_digits(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    screen = HomeScreen()
+
+    with caplog.at_level(logging.INFO, logger="majsoulrpa.screens.api"):
+        result = asyncio.run(screen.join_room("12345"))
+
+    assert result is None
+    assert "screen API called: screen=HomeScreen api=join_room" in caplog.text
+
+
+@pytest.mark.parametrize("room_id", ["", "1234", "123456", "12a45"])
+def test_join_room_rejects_room_id_not_matching_five_digits(
+    room_id: str,
+) -> None:
+    screenshot = _synthetic_blank_screenshot()
+    screen = HomeScreen(
+        context=ScreenContext(browser=BrowserControllerSpy(screenshot)),
+    )
+
+    with pytest.raises(
+        ScreenInvalidArgumentError,
+        match="Room ID must be exactly 5 digits",
+    ) as exc_info:
+        asyncio.run(screen.join_room(room_id))
+
+    assert exc_info.value.screenshot == screenshot
+
+
+def test_join_room_rejects_stale_home_screen() -> None:
+    screenshot = _synthetic_blank_screenshot()
+    screen = HomeScreen(
+        context=ScreenContext(browser=BrowserControllerSpy(screenshot)),
+    )
+    screen._mark_stale()
+
+    with pytest.raises(ScreenStaleError) as exc_info:
+        asyncio.run(screen.join_room("12345"))
+
+    assert exc_info.value.screenshot == screenshot
 
 
 def test_mode_regions_have_placeholder_for_each_mode() -> None:

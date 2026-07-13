@@ -1,4 +1,5 @@
 import asyncio
+import re
 from enum import Enum, auto
 from logging import getLogger
 from typing import ClassVar, override
@@ -40,11 +41,13 @@ from majsoulrpa.screens.base import (
 )
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
+    ScreenInvalidArgumentError,
     ScreenUnexpectedStateError,
 )
 
 MONTH_TICKET_API_NAME = ".lq.Lobby.payMonthTicket"
 JADE_WAIT_TIMEOUT_SECONDS = 5.0
+ROOM_ID_PATTERN = re.compile(r"\d{5}")
 
 _logger = getLogger(__name__)
 
@@ -292,3 +295,11 @@ class HomeScreen(Screen):
         await asyncio.sleep(0.5)
         await self._click_region(create_result.region)
         self._mark_stale()
+
+    @_screen_api
+    @_requires_active
+    async def join_room(self, room_id: str) -> None:
+        if ROOM_ID_PATTERN.fullmatch(room_id) is None:
+            msg = "Room ID must be exactly 5 digits."
+            screenshot = await self.screenshot()
+            raise ScreenInvalidArgumentError(msg, screenshot)
