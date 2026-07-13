@@ -460,3 +460,17 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] examples にライブ通信 payload が含まれない
 - [ ] docs に認証コードや token の例が含まれない
 - [ ] raw payload をログに出してよいことが docs に書かれている
+
+## Optional integration: Yostar verification email
+
+- [x] code provider は `async fetch()` の `Protocol` として差し替えられる
+- [x] MIME message の送信元が Yostar JP の完全一致でなければ拒否する
+- [x] 件名が既知の形式に完全一致した場合だけ 6 桁の認証コードを抽出する
+- [x] 宛先が要求されたメールアドレスと一致しなければ拒否する
+- [x] 受信から 30 分以上経過したメールを期限切れとして拒否する
+- [x] 認証コード、メールアドレス、メール本文を例外や repr に含めない
+- [x] S3 provider は prefix 以下の最新候補から有効なメールを選ぶ
+- [x] S3 provider は不正な候補を無視し、有効な候補がなければ明示的に失敗する
+- [x] S3 provider の AWS profile は optional とする
+- [x] S3 provider は boto3 がなければ必要な extra が分かるエラーにする
+- [x] 自動テストは fake S3 client と synthetic MIME message だけを使う

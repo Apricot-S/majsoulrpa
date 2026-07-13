@@ -26,6 +26,7 @@ def test_optional_dependency_extra_names_are_defined() -> None:
     assert set(pyproject["project"]["optional-dependencies"]) == {
         "browser",
         "rpa",
+        "s3",
     }
 
 
