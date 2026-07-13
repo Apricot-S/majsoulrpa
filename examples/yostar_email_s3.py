@@ -8,7 +8,8 @@ from majsoulrpa.yostar_email.s3 import (
     S3VerificationCodeProvider,
 )
 
-CONFIG_PATH = Path("config.toml")
+EXAMPLES_DIRECTORY = Path(__file__).resolve().parent
+CONFIG_PATH = EXAMPLES_DIRECTORY / "config.toml"
 EMAIL_WAIT_TIMEOUT_SECONDS = 10.0 * 60.0
 EMAIL_POLL_INTERVAL_SECONDS = 5.0
 
@@ -56,13 +57,13 @@ def create_rpa(config: AppConfig) -> RPAApp:
 
 
 async def main() -> None:
-    # Copy examples/config.example.toml to config.toml and configure the
-    # [yostar_email] and [yostar_email.s3] sections before running.
+    # Create examples/config.toml from examples/config.example.toml and
+    # configure the [yostar_email] and [yostar_email.s3] sections first.
     config = AppConfig.from_toml_file(CONFIG_PATH)
     rpa = create_rpa(config)
 
     # After this client starts waiting, run `majsoulrpa-browser --config
-    # config.toml` in another terminal.
+    # examples/config.toml` in another terminal.
     await rpa.run(config, None, detection_timeout=60.0)
 
 

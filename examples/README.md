@@ -1,24 +1,20 @@
 # Examples
 
-A configuration file template is available at `config.example.toml`. Copy it as needed and load it from both the browser host and the client.
+A configuration file template is available at `examples/config.example.toml`. Create `examples/config.toml` from it as needed and load it from both the browser host and the client.
 
-Local `config.toml` files and the `game-records` output directory are ignored by Git.
+Local configuration and generated game records must not be committed. `examples/.gitignore` excludes `examples/config.toml` and `examples/game-records/`.
 
 ## yostar_email_s3.py
 
-Retrieves a Yostar verification email stored in Amazon S3, extracts its verification code, and uses it to log in. After reaching the Home screen, the example waits for two seconds and stops both the browser host and the RPA client.
+Requests a Yostar verification email during login, waits for Amazon SES to receive and store it in Amazon S3, extracts its verification code, and uses it to log in. After reaching the Home screen, the example waits for two seconds and stops both the browser host and the RPA client.
 
 Install the S3 optional dependency:
 
 ```console
-pip install "majsoulrpa[s3]"
+pip install ".[s3]"
 ```
 
-Copy the configuration template to `config.toml` and configure the `[yostar_email]` and `[yostar_email.s3]` sections. Use placeholder-free local values only in `config.toml`; do not commit email addresses or AWS settings.
-
-```console
-copy examples\config.example.toml config.toml
-```
+Create `examples/config.toml` based on `examples/config.example.toml`, then configure the `[yostar_email]` and `[yostar_email.s3]` sections.
 
 AWS credentials are resolved through boto3's normal credential provider chain. Do not place AWS access keys in `config.toml`.
 
@@ -31,12 +27,12 @@ python examples/yostar_email_s3.py
 After the client begins waiting, start the browser host in another terminal with the same configuration:
 
 ```console
-majsoulrpa-browser --config config.toml
+majsoulrpa-browser --config examples/config.toml
 ```
 
 ## fetch_log.py
 
-Repeatedly prompts for a game record ID, navigates to the corresponding Mahjong Soul game record URL, and saves the response from `.lq.Lobby.fetchGameRecord` to `game-records/<game-record-id>.bin`.
+Repeatedly prompts for a game record ID, navigates to the corresponding Mahjong Soul game record URL, and saves the response from `.lq.Lobby.fetchGameRecord` to `examples/game-records/<game-record-id>.bin`.
 
 Enter a blank line to stop fetching records.
 

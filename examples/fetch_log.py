@@ -10,7 +10,7 @@ from majsoulrpa.sniffer import DecodedRequestResponse
 
 FETCH_GAME_RECORD_API_NAME = ".lq.Lobby.fetchGameRecord"
 LOG_ID_PATTERN = re.compile(r"[A-Za-z0-9_-]+")
-OUTPUT_DIRECTORY = Path("game-records")
+OUTPUT_DIRECTORY = Path(__file__).resolve().parent / "game-records"
 
 
 class FetchLogScreen(HomeScreen):
