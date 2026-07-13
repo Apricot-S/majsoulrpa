@@ -182,6 +182,17 @@ def test_remote_browser_controller_raises_response_error() -> None:
         asyncio.run(controller.click(10, 20))
 
 
+def test_remote_browser_controller_rejects_unexpected_response() -> None:
+    transport = BrowserClientTransportSpy(ReloadResponse())
+    controller = RemoteBrowserController(transport)
+
+    with pytest.raises(
+        BrowserOperationError,
+        match="unexpected browser response: reload",
+    ):
+        asyncio.run(controller.click(10, 20))
+
+
 def test_remote_browser_controller_returns_screenshot_png_bytes() -> None:
     transport = BrowserClientTransportSpy(
         ScreenshotResponse(screenshot_base64="iVBORw0KGgo="),
