@@ -5,8 +5,8 @@ import importlib
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from majsoulrpa.yostar.email import extract_verification_code
-from majsoulrpa.yostar.errors import (
+from majsoulrpa.yostar_email.email import extract_verification_code
+from majsoulrpa.yostar_email.errors import (
     InvalidYostarVerificationEmailError,
     YostarVerificationEmailError,
 )

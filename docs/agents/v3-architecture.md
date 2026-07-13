@@ -44,7 +44,7 @@ src/majsoulrpa/
     metadata.py
     playwright.py
     mitmproxy.py
-  yostar/
+  yostar_email/
     __init__.py
     code_provider.py
     s3_code_provider.py
@@ -80,7 +80,7 @@ screens
 ```
 
 `screens` は `RPAApp` に依存しません。`sniffer` は `screens` の具体 class に
-依存しません。`yostar` は core runtime から独立させ、ユーザー callback から
+依存しません。`yostar_email` は core runtime から独立させ、ユーザー callback から
 使う optional integration にします。
 
 ## `app.py`

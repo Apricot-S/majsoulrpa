@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
-import majsoulrpa.yostar.s3 as s3_module
-from majsoulrpa.yostar.s3 import (
+import majsoulrpa.yostar_email.s3 as s3_module
+from majsoulrpa.yostar_email.s3 import (
     S3VerificationCodeProvider,
     VerificationEmailNotFoundError,
 )
@@ -17,7 +17,7 @@ from majsoulrpa.yostar.s3 import (
 if TYPE_CHECKING:
     from types_boto3_s3.client import S3Client
 
-    from majsoulrpa.yostar import VerificationCodeProvider
+    from majsoulrpa.yostar_email import VerificationCodeProvider
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 

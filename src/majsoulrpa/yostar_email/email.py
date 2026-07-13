@@ -3,12 +3,14 @@ from email import policy
 from email.parser import BytesParser
 from email.utils import getaddresses
 
-from majsoulrpa.yostar.constants import (
+from majsoulrpa.yostar_email.constants import (
     VERIFICATION_EMAIL_EXPIRATION,
     YOSTAR_EMAIL_ADDRESS,
     YOSTAR_EMAIL_SUBJECT_PATTERN,
 )
-from majsoulrpa.yostar.errors import InvalidYostarVerificationEmailError
+from majsoulrpa.yostar_email.errors import (
+    InvalidYostarVerificationEmailError,
+)
 
 
 def extract_verification_code(

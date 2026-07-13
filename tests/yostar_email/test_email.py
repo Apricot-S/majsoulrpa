@@ -3,7 +3,7 @@ from email.message import EmailMessage
 
 import pytest
 
-from majsoulrpa.yostar import (
+from majsoulrpa.yostar_email import (
     InvalidYostarVerificationEmailError,
     extract_verification_code,
 )
