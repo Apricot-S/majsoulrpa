@@ -367,7 +367,7 @@ def test_rpa_runtime_propagates_background_service_failure() -> None:
     )
 
     with pytest.raises(RuntimeError, match="sniffer failed"):
-        asyncio.run(runtime.run(AppConfig(), None))
+        asyncio.run(runtime.run(None))
 
     assert cleanup.called == 1
 
@@ -389,7 +389,7 @@ def test_rpa_runtime_cancels_background_service_after_normal_stop() -> None:
         background_service=run_until_cancelled,
     )
 
-    result = asyncio.run(runtime.run(AppConfig(), "done"))
+    result = asyncio.run(runtime.run("done"))
 
     assert result == "done"
     assert cancelled
@@ -406,7 +406,7 @@ def test_rpa_runtime_rejects_background_service_normal_exit() -> None:
     )
 
     with pytest.raises(RuntimeError, match="stopped unexpectedly"):
-        asyncio.run(runtime.run(AppConfig(), None))
+        asyncio.run(runtime.run(None))
 
 
 def test_rpa_runtime_waits_for_background_ready_before_main_loop() -> None:
@@ -426,7 +426,7 @@ def test_rpa_runtime_waits_for_background_ready_before_main_loop() -> None:
         background_ready=ready.wait,
     )
 
-    result = asyncio.run(runtime.run(AppConfig(), "done"))
+    result = asyncio.run(runtime.run("done"))
 
     assert result == "done"
 

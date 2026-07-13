@@ -61,12 +61,10 @@ class RPARuntime:
 
     async def run(
         self,
-        config: AppConfig,
         data: Any,  # noqa: ANN401
         *,
         detection_timeout: float | None = None,
     ) -> Any:  # noqa: ANN401
-        _ = config
         try:
             if self._background_service is None:
                 return await self._run_loop(data, detection_timeout)

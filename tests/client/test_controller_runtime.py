@@ -154,7 +154,7 @@ def test_controller_runtime_connects_screenshot_and_cleans_up() -> None:
     data = object()
 
     with pytest.raises(ScreenDetectionTimeoutError) as exc_info:
-        asyncio.run(runtime.run(config, data, detection_timeout=0.001))
+        asyncio.run(runtime.run(data, detection_timeout=0.001))
 
     assert exc_info.value.screenshot == SYNTHETIC_PNG
     assert context.socket_spy.connected_endpoints == [
@@ -193,7 +193,7 @@ def test_controller_runtime_injects_screen_context() -> None:
     )
 
     with pytest.raises(ContextCapturedError) as exc_info:
-        asyncio.run(runtime.run(config, None, detection_timeout=0.001))
+        asyncio.run(runtime.run(None, detection_timeout=0.001))
 
     assert isinstance(exc_info.value.context, ScreenContext)
     assert isinstance(
@@ -223,7 +223,7 @@ def test_controller_runtime_screen_helper_sends_click_and_text_input() -> None:
     )
 
     with pytest.raises(RuntimeError, match="stop"):
-        asyncio.run(runtime.run(config, None, detection_timeout=0.001))
+        asyncio.run(runtime.run(None, detection_timeout=0.001))
 
     commands = [
         parse_browser_command_json(payload)
@@ -257,7 +257,7 @@ def test_controller_runtime_can_clear_before_text_input() -> None:
     )
 
     with pytest.raises(RuntimeError, match="stop"):
-        asyncio.run(runtime.run(config, None, detection_timeout=0.001))
+        asyncio.run(runtime.run(None, detection_timeout=0.001))
 
     commands = [
         parse_browser_command_json(payload)
@@ -292,7 +292,7 @@ def test_controller_runtime_screen_helper_sends_move_mouse() -> None:
     )
 
     with pytest.raises(RuntimeError, match="stop"):
-        asyncio.run(runtime.run(config, None, detection_timeout=0.001))
+        asyncio.run(runtime.run(None, detection_timeout=0.001))
 
     commands = [
         parse_browser_command_json(payload)
@@ -320,7 +320,7 @@ def test_controller_runtime_cleans_up_when_callback_is_cancelled() -> None:
     )
 
     with pytest.raises(asyncio.CancelledError):
-        asyncio.run(runtime.run(config, None, detection_timeout=0.001))
+        asyncio.run(runtime.run(None, detection_timeout=0.001))
 
     assert context.socket_spy.closed
     assert context.terminated
@@ -341,7 +341,7 @@ def test_controller_runtime_stops_when_screen_requests_stop() -> None:
         config,
     )
 
-    result = asyncio.run(runtime.run(config, "data", detection_timeout=0.001))
+    result = asyncio.run(runtime.run("data", detection_timeout=0.001))
 
     assert result == "stopped"
     assert len(context.socket_spy.sent_payloads) == 1
@@ -365,7 +365,7 @@ def test_controller_runtime_screen_helper_sends_stop_browser_host() -> None:
         config,
     )
 
-    result = asyncio.run(runtime.run(config, "data", detection_timeout=0.001))
+    result = asyncio.run(runtime.run("data", detection_timeout=0.001))
 
     assert result == "stopped"
     commands = [
@@ -390,7 +390,7 @@ def test_controller_runtime_propagates_remote_error_response() -> None:
     )
 
     with pytest.raises(BrowserOperationError, match="remote failed"):
-        asyncio.run(runtime.run(config, None, detection_timeout=0.001))
+        asyncio.run(runtime.run(None, detection_timeout=0.001))
 
     assert context.socket_spy.closed
     assert context.terminated

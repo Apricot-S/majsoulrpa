@@ -46,7 +46,6 @@ class RPAApp:
     ) -> Any:  # noqa: ANN401
         runtime = self._runtime_factory(self._callbacks, config)
         return await runtime.run(
-            config,
             data,
             detection_timeout=detection_timeout,
         )
