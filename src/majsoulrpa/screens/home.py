@@ -1,4 +1,5 @@
 import asyncio
+from logging import getLogger
 from typing import override
 
 from majsoulrpa.assets.templates.home import (
@@ -22,7 +23,11 @@ from majsoulrpa.assets.templates.home import (
     TOURNAMENT_MATCH_TEMPLATE_PATH,
 )
 from majsoulrpa.presentation.template import load_png_template_matcher
-from majsoulrpa.screens.base import Screen, ScreenDetectionSpec
+from majsoulrpa.screens.base import (
+    Screen,
+    ScreenDetectionSpec,
+    _format_sniffer_message,
+)
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
     ScreenUnexpectedStateError,
@@ -30,6 +35,8 @@ from majsoulrpa.screens.errors import (
 
 MONTH_TICKET_API_NAME = ".lq.Lobby.payMonthTicket"
 JADE_WAIT_TIMEOUT_SECONDS = 5.0
+
+_logger = getLogger(__name__)
 
 
 class HomeScreen(Screen):
@@ -158,8 +165,11 @@ class HomeScreen(Screen):
         await asyncio.sleep(0.5)
 
     def _discard_sniffer_messages(self) -> None:
-        while self._get_sniffer_message_nowait() is not None:
-            pass
+        while (message := self._get_sniffer_message_nowait()) is not None:
+            _logger.info(
+                "Sniffer message: %s",
+                _format_sniffer_message(message),
+            )
 
     def _require_match_buttons(self, screenshot: bytes) -> None:
         match_templates = {

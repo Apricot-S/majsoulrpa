@@ -28,9 +28,11 @@ from majsoulrpa.screens.errors import (
 )
 from majsoulrpa.sniffer.events import (
     DecodedNotice,
+    DecodedRequestResponse,
     DecodedSnifferMessage,
     Direction,
     RawNotice,
+    RawRequestResponse,
 )
 from majsoulrpa.types import Callback
 from tests.sniffer.fakes import EMPTY_SNIFFER_MESSAGES
@@ -206,6 +208,76 @@ def _notice(name: str) -> DecodedNotice:
         ),
         message={},
     )
+
+
+def test_screen_formats_decoded_notice_without_raw_payload_bytes() -> None:
+    message = DecodedNotice(
+        raw=RawNotice(
+            direction=Direction.INBOUND,
+            name=".lq.Test.notice",
+            payload=b"raw-notice-payload",
+            observed_at=datetime.datetime(
+                2026,
+                1,
+                2,
+                tzinfo=datetime.UTC,
+            ),
+        ),
+        message={"nested": {"value": 1}},
+    )
+
+    formatted = screens_base._format_sniffer_message(message)
+
+    assert formatted == (
+        '{"raw":{"direction":"inbound","name":".lq.Test.notice",'
+        '"observed_at":"2026-01-02T00:00:00+00:00"},'
+        '"message":{"nested":{"value":1}}}'
+    )
+    assert "raw-notice-payload" not in formatted
+
+
+def test_screen_formats_decoded_exchange_without_raw_payload_bytes() -> None:
+    message = DecodedRequestResponse(
+        raw=RawRequestResponse(
+            request_direction=Direction.OUTBOUND,
+            name=".lq.Test.exchange",
+            request=b"raw-request-payload",
+            response=b"raw-response-payload",
+            request_observed_at=datetime.datetime(
+                2026,
+                1,
+                2,
+                3,
+                4,
+                5,
+                tzinfo=datetime.UTC,
+            ),
+            response_observed_at=datetime.datetime(
+                2026,
+                1,
+                2,
+                3,
+                4,
+                6,
+                tzinfo=datetime.UTC,
+            ),
+        ),
+        request={"requestValue": "synthetic"},
+        response={"responseValue": 2},
+    )
+
+    formatted = screens_base._format_sniffer_message(message)
+
+    assert formatted == (
+        '{"raw":{"request_direction":"outbound",'
+        '"name":".lq.Test.exchange",'
+        '"request_observed_at":"2026-01-02T03:04:05+00:00",'
+        '"response_observed_at":"2026-01-02T03:04:06+00:00"},'
+        '"request":{"requestValue":"synthetic"},'
+        '"response":{"responseValue":2}}'
+    )
+    assert "raw-request-payload" not in formatted
+    assert "raw-response-payload" not in formatted
 
 
 def test_screen_exposes_detection_spec() -> None:

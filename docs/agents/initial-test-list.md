@@ -415,6 +415,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 差し戻す場合は対象messageを含めて元の順序を保つ
 - [x] 待機のcancellationでも退避中messageを差し戻す
 - [x] 空のAPI名集合を拒否する
+- [x] Screen共通helperがdecode済みmessageをraw payload bytes抜きでログ用に整形する
+- [x] `HomeScreen._discard_sniffer_messages()`が破棄直前に各messageをinfo logへ出す
 
 利用者向けraw / decoded hookは、Screen経由のpayload取得では不足する具体的な
 ユースケースが出るまで追加しない。

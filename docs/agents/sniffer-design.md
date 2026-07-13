@@ -345,9 +345,10 @@ messageを復元する。
 decode済みmessageと対応するraw bytesを取得できるため、それでは不足する具体的な
 ユースケースが確認できた時点で再設計する。
 
-payload本文のログはSUB層では出さず、Screen APIが対象messageと意味を確定した時点で
-decode済みJSONをdebugへ出す。info / warningにはpayload本文ではなく、秘密情報を含まない
-状態遷移または異常の要約だけを出す。
+payload本文のログはSUB層では出さず、Screenが対象messageと出力場面を確定した時点で
+levelを選んで出す。API調査用途のSnifferログは安全性方針の例外とし、decode済みJSONは
+認証情報を含めて出してよい。ただし、このログからはraw payload bytesを除外する。
+raw payload bytes自体は従来どおり別のdebugログへ出してよい。
 
 大会ロビーで交換される既知heartbeatは、reference実装と同じ
 `b"<= heartbeat -"` markerからpayloadが始まる場合だけliqi envelope decode前に除外する。

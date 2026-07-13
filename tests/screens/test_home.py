@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import logging
 from importlib.resources.abc import Traversable
 from random import Random
 from typing import Any
@@ -245,6 +246,45 @@ def test_home_before_callback_skips_jade_without_month_ticket_message(
 
     assert browser.clicked_points == []
     assert sleeps == [1.0]
+    assert queue.get_nowait() is None
+
+
+def test_discard_sniffer_messages_logs_each_message_at_info(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    queue = _message_queue(".lq.Test.first", ".lq.Test.second")
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(_synthetic_blank_screenshot()),
+            sniffer_messages=queue,
+        ),
+    )
+
+    with caplog.at_level(logging.INFO, logger="majsoulrpa.screens.home"):
+        screen._discard_sniffer_messages()
+
+    records = [
+        record
+        for record in caplog.records
+        if record.name == "majsoulrpa.screens.home"
+    ]
+    assert [record.levelno for record in records] == [
+        logging.INFO,
+        logging.INFO,
+    ]
+    assert [record.getMessage() for record in records] == [
+        (
+            'Sniffer message: {"raw":{"direction":"inbound",'
+            '"name":".lq.Test.first",'
+            '"observed_at":"2026-01-02T00:00:00+00:00"},"message":{}}'
+        ),
+        (
+            'Sniffer message: {"raw":{"direction":"inbound",'
+            '"name":".lq.Test.second",'
+            '"observed_at":"2026-01-02T00:00:00+00:00"},"message":{}}'
+        ),
+    ]
+    assert "synthetic" not in caplog.text
     assert queue.get_nowait() is None
 
 

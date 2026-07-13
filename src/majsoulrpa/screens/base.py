@@ -1,4 +1,5 @@
 import asyncio
+import json
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Collection, Coroutine
 from contextvars import ContextVar
@@ -11,7 +12,7 @@ from typing import Concatenate, Protocol
 from majsoulrpa.constants import BASE_VIEWPORT_WIDTH, DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens.errors import ScreenDetectionError, ScreenStaleError
-from majsoulrpa.sniffer.events import DecodedSnifferMessage
+from majsoulrpa.sniffer.events import DecodedNotice, DecodedSnifferMessage
 
 SCREEN_ACTION_INTERVAL_SECONDS = 0.5
 TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
@@ -114,6 +115,34 @@ def _screen_api[S, R, **P](
 
 async def _ignore_stop_request() -> None:
     pass
+
+
+def _format_sniffer_message(message: DecodedSnifferMessage) -> str:
+    if isinstance(message, DecodedNotice):
+        value = {
+            "raw": {
+                "direction": message.raw.direction,
+                "name": message.raw.name,
+                "observed_at": message.raw.observed_at.isoformat(),
+            },
+            "message": message.message,
+        }
+    else:
+        value = {
+            "raw": {
+                "request_direction": message.raw.request_direction,
+                "name": message.raw.name,
+                "request_observed_at": (
+                    message.raw.request_observed_at.isoformat()
+                ),
+                "response_observed_at": (
+                    message.raw.response_observed_at.isoformat()
+                ),
+            },
+            "request": message.request,
+            "response": message.response,
+        }
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
 
 class ScreenContext:
