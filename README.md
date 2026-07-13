@@ -60,7 +60,7 @@ majsoulrpa$ pip install .[browser,rpa]
 ### Optional: fetch verification emails from AWS S3
 
 ```sh
-majsoulrpa$ pip install .[email-s3]
+majsoulrpa$ pip install .[s3]
 ```
 
 Make AWS credentials available using one of the following methods:

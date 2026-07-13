@@ -35,6 +35,9 @@ rpa = [
     "numpy>=2.5.1",
     "opencv-python>=5.0.0.93",
 ]
+s3 = [
+    "boto3>=1.43.46,<2",
+]
 
 [project.scripts]
 majsoulrpa-browser = "majsoulrpa.cli:main"
@@ -48,7 +51,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "majsoulrpa[browser,rpa]",
+    "majsoulrpa[browser,rpa,s3]",
     { include-group = "lint" },
     { include-group = "test" },
     { include-group = "typing" },
@@ -62,6 +65,7 @@ test = [
 ]
 typing = [
     "ty>=0.0.56",
+    "types-boto3[s3]>=1.43.46,<2",
 ]
 docs = [
     "sphinx>=9.1.0",
