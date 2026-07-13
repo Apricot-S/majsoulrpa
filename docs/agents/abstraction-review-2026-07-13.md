@@ -95,6 +95,14 @@ runtime factory だけが消費する。`RPAApp.run(config, ...)` の公開 API 
 - 将来、runtime 側でも config を使うように見える誤解を避けられる
 - テスト用 `RPARuntime` の生成・実行が少し単純になる
 
+対応結果（2026-07-13）: 対応済み。
+
+- `RPAApp.run()` は config を runtime factory にだけ渡し、生成した runtime には data と
+  detection timeout だけを渡すように変更した。
+- `RPARuntime.run()` から未使用の `config` 引数と破棄処理を削除した。
+- `RPAApp.run(config, ...)` の公開 API は変更していない。
+- `RPARuntime` と controller runtime のテストを新しい呼び出し契約へ更新した。
+
 ## 改善候補 2: browser controller の型別 request helper を 1 つにまとめる
 
 優先度: 低。変更リスク: 低から中。公開 API への影響: なし。
@@ -118,6 +126,19 @@ Python の型注釈を成立させるためだけに複雑な generic hierarchy 
 - command 追加時の定型 private method を減らせる
 - send/receive/error handling の変更箇所を 1 箇所にできる
 - controller / transport という有用な境界はそのまま残せる
+
+対応結果（2026-07-13）: 対応済み。
+
+- command と期待 response 型を受け取る型付き `_request()` に private helper を集約した。
+- public method は引き続き command の構築と、screenshot bytes など公開戻り値への変換を
+  担当する。
+- Yostar 認証で許容する 2 種類の response も、複雑な generic hierarchy を追加せず同じ
+  helper で扱っている。
+- `BrowserErrorResponse` と unexpected response は既存の `_response_error()` で処理し、
+  unexpected success response の回帰テストを追加した。
+
+両改善後の検証結果は `pytest` 382 件成功、Ruff check、Ruff format check、ty check
+すべて成功である。
 
 ## 変更しない方がよい箇所
 
