@@ -37,6 +37,7 @@ from majsoulrpa.assets.templates.home.create_room import (
     CREATE_SETTINGS_PATH,
     CREATE_TEMPLATE_PATH,
 )
+from majsoulrpa.presentation import Region
 from majsoulrpa.presentation.template import TemplateMatchSettings
 from majsoulrpa.screens import (
     Screen,
@@ -200,6 +201,32 @@ def test_room_creation_enums_have_expected_members() -> None:
         ThinkingTime.SIXTY_PLUS_ZERO,
         ThinkingTime.THREE_HUNDRED_PLUS_ZERO,
     ]
+
+
+def test_mode_regions_have_placeholder_for_each_mode() -> None:
+    assert set(HomeScreen.MODE_REGIONS) == set(Mode)
+    assert all(
+        isinstance(region, Region)
+        for region in HomeScreen.MODE_REGIONS.values()
+    )
+
+
+def test_length_regions_have_placeholder_for_each_length() -> None:
+    assert set(HomeScreen.LENGTH_REGIONS) == set(Length)
+    assert all(
+        isinstance(region, Region)
+        for region in HomeScreen.LENGTH_REGIONS.values()
+    )
+
+
+def test_thinking_time_regions_have_placeholder_for_each_thinking_time() -> (
+    None
+):
+    assert set(HomeScreen.THINKING_TIME_REGIONS) == set(ThinkingTime)
+    assert all(
+        isinstance(region, Region)
+        for region in HomeScreen.THINKING_TIME_REGIONS.values()
+    )
 
 
 def test_create_room_defaults_to_four_player_two_wind_five_plus_twenty(

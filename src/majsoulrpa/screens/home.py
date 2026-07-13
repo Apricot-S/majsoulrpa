@@ -1,7 +1,7 @@
 import asyncio
 from enum import Enum, auto
 from logging import getLogger
-from typing import override
+from typing import ClassVar, override
 
 from majsoulrpa.assets.templates.home import (
     CREATE_ROOM_SETTINGS_PATH,
@@ -29,6 +29,7 @@ from majsoulrpa.assets.templates.home.create_room import (
     CREATE_SETTINGS_PATH,
     CREATE_TEMPLATE_PATH,
 )
+from majsoulrpa.presentation import Region
 from majsoulrpa.presentation.template import load_png_template_matcher
 from majsoulrpa.screens.base import (
     Screen,
@@ -69,6 +70,50 @@ class ThinkingTime(Enum):
 
 
 class HomeScreen(Screen):
+    # Replace these placeholders with confirmed coordinates before use.
+    MODE_REGIONS: ClassVar[dict[Mode, Region]] = {
+        Mode.FOUR_PLAYER: Region(left=0, top=0, width=1, height=1),
+        Mode.THREE_PLAYER: Region(left=0, top=0, width=1, height=1),
+    }
+    LENGTH_REGIONS: ClassVar[dict[Length, Region]] = {
+        Length.ONE_GAME: Region(left=0, top=0, width=1, height=1),
+        Length.EAST_ONLY: Region(left=0, top=0, width=1, height=1),
+        Length.TWO_WIND_MATCH: Region(left=0, top=0, width=1, height=1),
+        Length.VS_AI: Region(left=0, top=0, width=1, height=1),
+    }
+    THINKING_TIME_REGIONS: ClassVar[dict[ThinkingTime, Region]] = {
+        ThinkingTime.THREE_PLUS_FIVE: Region(
+            left=0,
+            top=0,
+            width=1,
+            height=1,
+        ),
+        ThinkingTime.FIVE_PLUS_TEN: Region(
+            left=0,
+            top=0,
+            width=1,
+            height=1,
+        ),
+        ThinkingTime.FIVE_PLUS_TWENTY: Region(
+            left=0,
+            top=0,
+            width=1,
+            height=1,
+        ),
+        ThinkingTime.SIXTY_PLUS_ZERO: Region(
+            left=0,
+            top=0,
+            width=1,
+            height=1,
+        ),
+        ThinkingTime.THREE_HUNDRED_PLUS_ZERO: Region(
+            left=0,
+            top=0,
+            width=1,
+            height=1,
+        ),
+    }
+
     SUMMON_TEMPLATE = load_png_template_matcher(
         template_path=SUMMON_TEMPLATE_PATH,
         settings_path=SUMMON_SETTINGS_PATH,
