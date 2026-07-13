@@ -199,7 +199,16 @@ def test_room_creation_enums_have_expected_members() -> None:
 def test_create_room_defaults_to_four_player_two_wind_five_plus_twenty(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    screen = HomeScreen()
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(
+                _synthetic_template_screenshot(
+                    template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+                    settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+                ),
+            ),
+        ),
+    )
     parameters = signature(HomeScreen.create_room).parameters
 
     assert parameters["mode"].default is Mode.FOUR_PLAYER
@@ -216,7 +225,16 @@ def test_create_room_defaults_to_four_player_two_wind_five_plus_twenty(
 
 
 def test_create_room_accepts_each_enum_value() -> None:
-    screen = HomeScreen()
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(
+                _synthetic_template_screenshot(
+                    template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+                    settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+                ),
+            ),
+        ),
+    )
 
     async def create_rooms() -> list[None]:
         results = [await screen.create_room(mode=mode) for mode in Mode]
@@ -234,6 +252,38 @@ def test_create_room_accepts_each_enum_value() -> None:
     assert asyncio.run(create_rooms()) == [None] * (
         len(Mode) + len(Length) + len(ThinkingTime)
     )
+
+
+def test_create_room_clicks_friendly_match_button() -> None:
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+            settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+        ),
+    )
+    screen = HomeScreen(
+        context=ScreenContext(browser=browser, rng=Random(0)),
+    )
+
+    result = asyncio.run(screen.create_room())
+
+    assert result is None
+    assert len(browser.clicked_points) == 1
+
+
+def test_create_room_raises_if_friendly_match_button_is_missing() -> None:
+    screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(screenshot)
+    screen = HomeScreen(context=ScreenContext(browser=browser))
+
+    with pytest.raises(
+        ScreenDetectionError,
+        match="friendly-match was not found",
+    ) as exc_info:
+        asyncio.run(screen.create_room())
+
+    assert browser.clicked_points == []
+    assert exc_info.value.screenshot == screenshot
 
 
 def test_create_room_rejects_stale_home_screen() -> None:

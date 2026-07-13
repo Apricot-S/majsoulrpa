@@ -212,4 +212,8 @@ class HomeScreen(Screen):
         length: Length = Length.TWO_WIND_MATCH,
         thinking_time: ThinkingTime = ThinkingTime.FIVE_PLUS_TWENTY,
     ) -> None:
-        pass
+        _ = mode, length, thinking_time
+        await self.click_template(
+            self.FRIENDLY_MATCH_TEMPLATE,
+            message="friendly-match was not found.",
+        )
