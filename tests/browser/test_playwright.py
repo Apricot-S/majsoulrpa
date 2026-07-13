@@ -30,16 +30,12 @@ from majsoulrpa.browser.messages import (
     YostarAuthRejectedResponse,
 )
 from majsoulrpa.browser.playwright import (
+    CANVAS_SELECTOR,
+    MAJSOUL_URL,
     PlaywrightBrowserBackend,
     PlaywrightCommandExecutor,
 )
 from majsoulrpa.config import AppConfig, BrowserConfig
-from majsoulrpa.constants import (
-    CANVAS_SELECTOR,
-    CANVAS_WAIT_TIMEOUT_SECONDS,
-    MAJSOUL_URL,
-    USER_AGENT_PROBE_URL,
-)
 
 
 class MouseSpy:
@@ -567,7 +563,7 @@ def test_playwright_browser_backend_starts_ephemeral_browser(
     assert isinstance(backend.page, FakePage)
     assert backend.page.visited_urls == [MAJSOUL_URL]
     assert backend.page.waited_selectors == [
-        (CANVAS_SELECTOR, CANVAS_WAIT_TIMEOUT_SECONDS * 1000),
+        (CANVAS_SELECTOR, 60_000),
     ]
 
     asyncio.run(backend.stop())
@@ -637,7 +633,7 @@ def test_playwright_browser_backend_starts_persistent_context(
     }
     [user_agent_browser] = playwright.chromium.launched_browsers
     assert user_agent_browser.context.pages[0].visited_urls == [
-        USER_AGENT_PROBE_URL,
+        "https://www.google.com/",
     ]
     assert user_agent_browser.context.pages[0].evaluated_expressions == [
         "navigator.userAgent",
@@ -647,7 +643,7 @@ def test_playwright_browser_backend_starts_persistent_context(
     assert isinstance(backend.page, FakePage)
     assert backend.page.visited_urls == [MAJSOUL_URL]
     assert backend.page.waited_selectors == [
-        (CANVAS_SELECTOR, CANVAS_WAIT_TIMEOUT_SECONDS * 1000),
+        (CANVAS_SELECTOR, 60_000),
     ]
 
     asyncio.run(backend.stop())

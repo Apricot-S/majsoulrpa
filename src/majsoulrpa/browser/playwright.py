@@ -38,13 +38,13 @@ from majsoulrpa.browser.messages import (
     YostarAuthRejectedResponse,
 )
 from majsoulrpa.config import AppConfig
-from majsoulrpa.constants import (
-    CANVAS_SELECTOR,
-    CANVAS_WAIT_TIMEOUT_SECONDS,
-    MAJSOUL_URL,
-    USER_AGENT_PROBE_URL,
-)
 from majsoulrpa.viewport import viewport_width_for_height
+
+MAJSOUL_URL = "https://game.mahjongsoul.com/"  # JP version
+CANVAS_SELECTOR = "#unity-canvas"
+
+_CANVAS_WAIT_TIMEOUT_SECONDS = 60
+_USER_AGENT_PROBE_URL = "https://www.google.com/"
 
 YOSTAR_AUTH_URL = "https://jp-sdk-api.yostarplat.com/yostar/get-auth"
 HTTP_OK_STATUS = 200
@@ -379,7 +379,7 @@ class PlaywrightBrowserBackend:
         await page.goto(MAJSOUL_URL)
         await page.wait_for_selector(
             CANVAS_SELECTOR,
-            timeout=CANVAS_WAIT_TIMEOUT_SECONDS * 1000,
+            timeout=_CANVAS_WAIT_TIMEOUT_SECONDS * 1000,
         )
 
     def _require_page(self) -> Page:
@@ -412,7 +412,7 @@ async def _get_spoofed_user_agent(playwright: Playwright) -> str:
         await browser.new_context() as context,
         await context.new_page() as page,
     ):
-        await page.goto(USER_AGENT_PROBE_URL)
+        await page.goto(_USER_AGENT_PROBE_URL)
         user_agent = await page.evaluate("navigator.userAgent")
 
     return str(user_agent).replace("HeadlessChrome", "Chrome")
