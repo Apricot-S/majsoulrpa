@@ -33,6 +33,10 @@ from majsoulrpa.assets.templates.home import (
     TOURNAMENT_MATCH_SETTINGS_PATH,
     TOURNAMENT_MATCH_TEMPLATE_PATH,
 )
+from majsoulrpa.assets.templates.home.create_room import (
+    CREATE_SETTINGS_PATH,
+    CREATE_TEMPLATE_PATH,
+)
 from majsoulrpa.presentation.template import TemplateMatchSettings
 from majsoulrpa.screens import (
     Screen,
@@ -216,6 +220,10 @@ def test_create_room_defaults_to_four_player_two_wind_five_plus_twenty(
                     template_path=CREATE_ROOM_TEMPLATE_PATH,
                     settings_path=CREATE_ROOM_SETTINGS_PATH,
                 ),
+                _synthetic_template_screenshot(
+                    template_path=CREATE_TEMPLATE_PATH,
+                    settings_path=CREATE_SETTINGS_PATH,
+                ),
             ),
         ),
     )
@@ -252,6 +260,10 @@ def test_create_room_accepts_each_enum_value(
                     _synthetic_template_screenshot(
                         template_path=CREATE_ROOM_TEMPLATE_PATH,
                         settings_path=CREATE_ROOM_SETTINGS_PATH,
+                    ),
+                    _synthetic_template_screenshot(
+                        template_path=CREATE_TEMPLATE_PATH,
+                        settings_path=CREATE_SETTINGS_PATH,
                     ),
                 ),
             ),
@@ -308,6 +320,10 @@ def test_create_room_clicks_friendly_match_then_create_room(
             template_path=CREATE_ROOM_TEMPLATE_PATH,
             settings_path=CREATE_ROOM_SETTINGS_PATH,
         ),
+        _synthetic_template_screenshot(
+            template_path=CREATE_TEMPLATE_PATH,
+            settings_path=CREATE_SETTINGS_PATH,
+        ),
     )
     screen = HomeScreen(
         context=ScreenContext(browser=browser, rng=Random(0)),
@@ -324,6 +340,8 @@ def test_create_room_clicks_friendly_match_then_create_room(
         "sleep:1.0",
         "screenshot",
         "click",
+        "sleep:1.0",
+        "screenshot",
     ]
 
 
@@ -370,6 +388,40 @@ def test_create_room_raises_if_create_room_button_is_missing(
     assert len(browser.clicked_points) == 1
     assert sleeps == [1.0]
     assert exc_info.value.screenshot == missing_create_room_screenshot
+
+
+def test_create_room_raises_if_create_button_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    missing_create_screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+            settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=CREATE_ROOM_TEMPLATE_PATH,
+            settings_path=CREATE_ROOM_SETTINGS_PATH,
+        ),
+        missing_create_screenshot,
+    )
+    screen = HomeScreen(context=ScreenContext(browser=browser))
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenDetectionError,
+        match="create was not found after opening room creation",
+    ) as exc_info:
+        asyncio.run(screen.create_room())
+
+    assert len(browser.clicked_points) == 2
+    assert sleeps == [1.0, 1.0]
+    assert exc_info.value.screenshot == missing_create_screenshot
 
 
 def test_create_room_rejects_stale_home_screen() -> None:
@@ -602,6 +654,13 @@ def test_create_room_template_assets_exist() -> None:
     assert CREATE_ROOM_TEMPLATE_PATH.is_file()
     assert CREATE_ROOM_SETTINGS_PATH.name == "create-room.toml"
     assert CREATE_ROOM_SETTINGS_PATH.is_file()
+
+
+def test_room_create_button_template_assets_exist() -> None:
+    assert CREATE_TEMPLATE_PATH.name == "create.png"
+    assert CREATE_TEMPLATE_PATH.is_file()
+    assert CREATE_SETTINGS_PATH.name == "create.toml"
+    assert CREATE_SETTINGS_PATH.is_file()
 
 
 def test_home_screen_detection_spec_uses_summon_template() -> None:

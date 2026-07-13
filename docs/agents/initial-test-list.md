@@ -330,6 +330,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `create-room` template と settings を HomeScreen から利用できる
 - [x] `friendly-match` のクリック後 1.0 秒待って `create-room` をクリックする
 - [x] `create-room` が見つからなければ screenshot 付き画面検出エラーにする
+- [x] room 作成画面の `create` template と settings を HomeScreen から利用できる
+- [x] `create-room` のクリック後 1.0 秒待って `create` の存在を必須確認する
+- [x] `create` が見つからなければ screenshot 付き画面検出エラーにする
 
 ## Phase 7: WebSocket sniffer
 
