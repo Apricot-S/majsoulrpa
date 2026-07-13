@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import logging
 from importlib.resources.abc import Traversable
+from inspect import signature
 from random import Random
 from typing import Any
 
@@ -40,9 +41,10 @@ from majsoulrpa.screens import (
 )
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
+    ScreenStaleError,
     ScreenUnexpectedStateError,
 )
-from majsoulrpa.screens.home import HomeScreen
+from majsoulrpa.screens.home import HomeScreen, Length, Mode, ThinkingTime
 from majsoulrpa.sniffer.events import DecodedNotice, Direction, RawNotice
 from majsoulrpa.sniffer.message_queue import SnifferMessageQueue
 from tests.sniffer.fakes import EMPTY_SNIFFER_MESSAGES
@@ -175,6 +177,76 @@ def _message_queue(*names: str) -> SnifferMessageQueue:
 
 def test_home_screen_is_screen() -> None:
     assert issubclass(HomeScreen, Screen)
+
+
+def test_room_creation_enums_have_expected_members() -> None:
+    assert list(Mode) == [Mode.FOUR_PLAYER, Mode.THREE_PLAYER]
+    assert list(Length) == [
+        Length.ONE_GAME,
+        Length.EAST_ONLY,
+        Length.TWO_WIND_MATCH,
+        Length.VS_AI,
+    ]
+    assert list(ThinkingTime) == [
+        ThinkingTime.THREE_PLUS_FIVE,
+        ThinkingTime.FIVE_PLUS_TEN,
+        ThinkingTime.FIVE_PLUS_TWENTY,
+        ThinkingTime.SIXTY_PLUS_ZERO,
+        ThinkingTime.THREE_HUNDRED_PLUS_ZERO,
+    ]
+
+
+def test_create_room_defaults_to_four_player_two_wind_five_plus_twenty(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    screen = HomeScreen()
+    parameters = signature(HomeScreen.create_room).parameters
+
+    assert parameters["mode"].default is Mode.FOUR_PLAYER
+    assert parameters["length"].default is Length.TWO_WIND_MATCH
+    assert parameters["thinking_time"].default is ThinkingTime.FIVE_PLUS_TWENTY
+
+    with caplog.at_level(logging.INFO, logger="majsoulrpa.screens.api"):
+        result = asyncio.run(screen.create_room())
+
+    assert result is None
+    assert (
+        "screen API called: screen=HomeScreen api=create_room" in caplog.text
+    )
+
+
+def test_create_room_accepts_each_enum_value() -> None:
+    screen = HomeScreen()
+
+    async def create_rooms() -> list[None]:
+        results = [await screen.create_room(mode=mode) for mode in Mode]
+        results.extend(
+            [await screen.create_room(length=length) for length in Length],
+        )
+        results.extend(
+            [
+                await screen.create_room(thinking_time=thinking_time)
+                for thinking_time in ThinkingTime
+            ],
+        )
+        return results
+
+    assert asyncio.run(create_rooms()) == [None] * (
+        len(Mode) + len(Length) + len(ThinkingTime)
+    )
+
+
+def test_create_room_rejects_stale_home_screen() -> None:
+    screenshot = _synthetic_blank_screenshot()
+    screen = HomeScreen(
+        context=ScreenContext(browser=BrowserControllerSpy(screenshot)),
+    )
+    screen._mark_stale()
+
+    with pytest.raises(ScreenStaleError) as exc_info:
+        asyncio.run(screen.create_room())
+
+    assert exc_info.value.screenshot == screenshot
 
 
 def test_summon_template_assets_exist() -> None:

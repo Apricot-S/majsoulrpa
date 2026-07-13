@@ -317,6 +317,15 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 両 template を告知検出に使った最後の screenshot と照合する
 - [x] Home 画面検出後は最初の screenshot より前に 1.0 秒待機する
 
+## Phase 6.7: HomeScreen 友人戦の部屋作成
+
+- [x] `Mode` が四人戦と三人戦を表す
+- [x] `Length` が一局戦、東風戦、半荘戦、CPU 戦を表す
+- [x] `ThinkingTime` が選択可能な 5 種類の持ち時間を表す
+- [x] `HomeScreen.create_room()` の既定値が四人戦、半荘戦、5+20 秒である
+- [x] `HomeScreen.create_room()` が各列挙値を受け付け、no-op で `None` を返す
+- [x] `HomeScreen.create_room()` が高レベル API としてログ記録と stale 保護を行う
+
 ## Phase 7: WebSocket sniffer
 
 - [x] sniffer backend の start に失敗した場合に browser を閉じる

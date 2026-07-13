@@ -1,4 +1,5 @@
 import asyncio
+from enum import Enum, auto
 from logging import getLogger
 from typing import override
 
@@ -27,6 +28,8 @@ from majsoulrpa.screens.base import (
     Screen,
     ScreenDetectionSpec,
     _format_sniffer_message,
+    _requires_active,
+    _screen_api,
 )
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
@@ -37,6 +40,26 @@ MONTH_TICKET_API_NAME = ".lq.Lobby.payMonthTicket"
 JADE_WAIT_TIMEOUT_SECONDS = 5.0
 
 _logger = getLogger(__name__)
+
+
+class Mode(Enum):
+    FOUR_PLAYER = auto()
+    THREE_PLAYER = auto()
+
+
+class Length(Enum):
+    ONE_GAME = auto()
+    EAST_ONLY = auto()
+    TWO_WIND_MATCH = auto()
+    VS_AI = auto()
+
+
+class ThinkingTime(Enum):
+    THREE_PLUS_FIVE = auto()
+    FIVE_PLUS_TEN = auto()
+    FIVE_PLUS_TWENTY = auto()
+    SIXTY_PLUS_ZERO = auto()
+    THREE_HUNDRED_PLUS_ZERO = auto()
 
 
 class HomeScreen(Screen):
@@ -180,3 +203,13 @@ class HomeScreen(Screen):
             if template.find(screenshot) is None:
                 msg = f"{name} was not found after closing announcements."
                 raise ScreenDetectionError(msg, screenshot)
+
+    @_screen_api
+    @_requires_active
+    async def create_room(
+        self,
+        mode: Mode = Mode.FOUR_PLAYER,
+        length: Length = Length.TWO_WIND_MATCH,
+        thinking_time: ThinkingTime = ThinkingTime.FIVE_PLUS_TWENTY,
+    ) -> None:
+        pass
