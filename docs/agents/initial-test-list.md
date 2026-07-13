@@ -463,6 +463,12 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ## Optional integration: Yostar verification email
 
+- [x] `AppConfig` で `yostar_email` 設定を省略できる
+- [x] `yostar_email` でメールアドレスだけを設定し、S3 設定を省略できる
+- [x] TOML の `[yostar_email.s3]` から bucket、prefix、AWS profile を読める
+- [x] Yostar email 設定の空のメールアドレスと bucket 名を拒否する
+- [x] Yostar email 設定の `repr` にメールアドレスを含めない
+- [x] config example は実メールアドレスや実 AWS 設定を含まない
 - [x] code provider は `async fetch()` の `Protocol` として差し替えられる
 - [x] MIME message の送信元が Yostar JP の完全一致でなければ拒否する
 - [x] 件名が既知の形式に完全一致した場合だけ 6 桁の認証コードを抽出する

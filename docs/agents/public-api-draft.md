@@ -87,6 +87,7 @@ TOML から読む補助 API は用意しますが、TOML 形式を内部表現�
 class AppConfig:
     endpoint: EndpointConfig
     browser: BrowserConfig
+    yostar_email: YostarEmailConfig | None
 ```
 
 方針:
@@ -94,7 +95,8 @@ class AppConfig:
 - `AppConfig()` でローカル一体構成の default を作れる
 - remote browser host も同じ config で表現できる
 - secret は config に直接持たせない
-- Yostar login のメールアドレスや AWS 設定は別の optional integration に置く
+- Yostar login のメールアドレスや AWS 設定は optional な
+  `yostar_email` 設定に置く
 
 ## browser host
 

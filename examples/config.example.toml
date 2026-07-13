@@ -58,3 +58,23 @@ headless = false
 # the process working directory.
 # Default: omitted (Python value: None)
 # user_data_dir = "user-data"
+
+[yostar_email]
+
+# Email address registered with Yostar. When mail is forwarded to SES, use the
+# original address in the message's To header, not the SES forwarding address.
+email_address = "user@example.com"
+
+[yostar_email.s3]
+
+# S3 bucket where an Amazon SES receipt rule stores raw MIME messages.
+bucket_name = "example-bucket"
+
+# Only objects below this key prefix are considered.
+# Default: ""
+key_prefix = "example-prefix/"
+
+# Optional AWS shared-config profile. When omitted, boto3 uses its normal
+# credential provider chain.
+# Default: omitted (Python value: None)
+# aws_profile = "example-profile"

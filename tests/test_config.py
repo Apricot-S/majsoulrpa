@@ -4,7 +4,13 @@ from textwrap import dedent
 import pytest
 from pydantic import ValidationError
 
-from majsoulrpa.config import AppConfig, BrowserConfig, EndpointConfig
+from majsoulrpa.config import (
+    AppConfig,
+    BrowserConfig,
+    EndpointConfig,
+    YostarEmailConfig,
+    YostarEmailS3Config,
+)
 
 
 def test_app_config_defaults_to_local_combined_runtime() -> None:
@@ -17,6 +23,7 @@ def test_app_config_defaults_to_local_combined_runtime() -> None:
     assert config.browser.viewport_height == 1080
     assert config.browser.headless is False
     assert config.browser.user_data_dir is None
+    assert config.yostar_email is None
 
 
 @pytest.mark.parametrize("host_key", ["browser_host", "client_host"])
@@ -42,12 +49,22 @@ def test_browser_user_data_dir_accepts_path() -> None:
     assert config.user_data_dir == Path("user-data")
 
 
-def test_config_example_uses_all_default_values() -> None:
+def test_config_example_uses_safe_yostar_email_placeholders() -> None:
     config_path = (
         Path(__file__).parents[1] / "examples" / "config.example.toml"
     )
 
-    assert AppConfig.from_toml_file(config_path) == AppConfig()
+    config = AppConfig.from_toml_file(config_path)
+
+    assert config.endpoint == EndpointConfig()
+    assert config.browser == BrowserConfig()
+    assert config.yostar_email == YostarEmailConfig(
+        email_address="user@example.com",
+        s3=YostarEmailS3Config(
+            bucket_name="example-bucket",
+            key_prefix="example-prefix/",
+        ),
+    )
 
 
 def test_app_config_can_be_loaded_from_toml_text() -> None:
@@ -91,6 +108,64 @@ def test_app_config_can_be_loaded_from_toml_file(tmp_path: Path) -> None:
     config = AppConfig.from_toml_file(config_file)
 
     assert config.browser.viewport_height == 1440
+
+
+def test_yostar_email_s3_config_can_be_loaded_from_toml() -> None:
+    config = AppConfig.from_toml_text(
+        dedent(
+            """
+            [yostar_email]
+            email_address = "user@example.com"
+
+            [yostar_email.s3]
+            bucket_name = "example-bucket"
+            key_prefix = "example-prefix/"
+            aws_profile = "example-profile"
+            """,
+        ),
+    )
+
+    assert config.yostar_email is not None
+    assert config.yostar_email.email_address == "user@example.com"
+    assert config.yostar_email.s3 is not None
+    assert config.yostar_email.s3.bucket_name == "example-bucket"
+    assert config.yostar_email.s3.key_prefix == "example-prefix/"
+    assert config.yostar_email.s3.aws_profile == "example-profile"
+    assert "user@example.com" not in repr(config)
+
+
+def test_yostar_email_config_does_not_require_s3_config() -> None:
+    config = AppConfig.from_toml_text(
+        dedent(
+            """
+            [yostar_email]
+            email_address = "user@example.com"
+            """,
+        ),
+    )
+
+    assert config.yostar_email == YostarEmailConfig(
+        email_address="user@example.com",
+    )
+    assert config.yostar_email is not None
+    assert config.yostar_email.s3 is None
+
+
+@pytest.mark.parametrize(
+    "config_text",
+    [
+        "[yostar_email]\nemail_address = ''\n",
+        (
+            "[yostar_email]\nemail_address = 'user@example.com'\n"
+            "[yostar_email.s3]\nbucket_name = ''\n"
+        ),
+    ],
+)
+def test_yostar_email_config_rejects_empty_required_values(
+    config_text: str,
+) -> None:
+    with pytest.raises(ValidationError):
+        AppConfig.from_toml_text(config_text)
 
 
 def test_app_config_rejects_unknown_toml_key() -> None:

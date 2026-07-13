@@ -51,11 +51,27 @@ class BrowserConfig(BaseModel):
     user_data_dir: Path | None = None
 
 
+class YostarEmailS3Config(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    bucket_name: Annotated[str, Field(min_length=1)]
+    key_prefix: str = ""
+    aws_profile: Annotated[str, Field(min_length=1)] | None = None
+
+
+class YostarEmailConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    email_address: Annotated[str, Field(min_length=1, repr=False)]
+    s3: YostarEmailS3Config | None = None
+
+
 class AppConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     endpoint: EndpointConfig = Field(default_factory=EndpointConfig)
     browser: BrowserConfig = Field(default_factory=BrowserConfig)
+    yostar_email: YostarEmailConfig | None = None
 
     @classmethod
     def from_toml_text(cls, text: str) -> "AppConfig":
