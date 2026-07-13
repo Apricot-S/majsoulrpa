@@ -70,47 +70,46 @@ class ThinkingTime(Enum):
 
 
 class HomeScreen(Screen):
-    # Replace these placeholders with confirmed coordinates before use.
     MODE_REGIONS: ClassVar[dict[Mode, Region]] = {
-        Mode.FOUR_PLAYER: Region(left=0, top=0, width=1, height=1),
-        Mode.THREE_PLAYER: Region(left=0, top=0, width=1, height=1),
+        Mode.FOUR_PLAYER: Region(left=426, top=254, width=216, height=80),
+        Mode.THREE_PLAYER: Region(left=691, top=254, width=216, height=80),
     }
     LENGTH_REGIONS: ClassVar[dict[Length, Region]] = {
-        Length.ONE_GAME: Region(left=0, top=0, width=1, height=1),
-        Length.EAST_ONLY: Region(left=0, top=0, width=1, height=1),
-        Length.TWO_WIND_MATCH: Region(left=0, top=0, width=1, height=1),
-        Length.VS_AI: Region(left=0, top=0, width=1, height=1),
+        Length.ONE_GAME: Region(left=426, top=464, width=216, height=80),
+        Length.EAST_ONLY: Region(left=691, top=464, width=216, height=80),
+        Length.TWO_WIND_MATCH: Region(left=956, top=464, width=216, height=80),
+        Length.VS_AI: Region(left=1222, top=464, width=216, height=80),
     }
     THINKING_TIME_REGIONS: ClassVar[dict[ThinkingTime, Region]] = {
         ThinkingTime.THREE_PLUS_FIVE: Region(
-            left=0,
-            top=0,
-            width=1,
-            height=1,
+            left=426,
+            top=573,
+            width=216,
+            height=80,
         ),
         ThinkingTime.FIVE_PLUS_TEN: Region(
-            left=0,
-            top=0,
-            width=1,
-            height=1,
+            left=691,
+            top=573,
+            width=216,
+            height=80,
         ),
         ThinkingTime.FIVE_PLUS_TWENTY: Region(
-            left=0,
-            top=0,
-            width=1,
-            height=1,
+            left=956,
+            top=573,
+            width=216,
+            height=80,
         ),
         ThinkingTime.SIXTY_PLUS_ZERO: Region(
-            left=0,
-            top=0,
-            width=1,
-            height=1,
+            left=1222,
+            top=573,
+            width=216,
+            height=80,
         ),
         ThinkingTime.THREE_HUNDRED_PLUS_ZERO: Region(
-            left=0,
-            top=0,
-            width=1,
-            height=1,
+            left=1487,
+            top=573,
+            width=216,
+            height=80,
         ),
     }
 
