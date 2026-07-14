@@ -38,12 +38,13 @@ from tests.screens.home._support import (
     _message_queue,
     _request_response,
     _synthetic_blank_screenshot,
+    _synthetic_home_ready_screenshot,
     _synthetic_template_screenshot,
 )
 
 
 def _tournament_browser(
-    *, include_error_confirm: bool = False
+    *, failure_home_screenshot: bytes | None = None
 ) -> BrowserControllerSpy:
     screenshots = [
         _synthetic_template_screenshot(
@@ -63,13 +64,14 @@ def _tournament_browser(
             settings_path=TOURNAMENT_CONFIRM_SETTINGS_PATH,
         ),
     ]
-    if include_error_confirm:
+    if failure_home_screenshot is not None:
         screenshots.append(
             _synthetic_template_screenshot(
                 template_path=TOURNAMENT_ERROR_CONFIRM_TEMPLATE_PATH,
                 settings_path=TOURNAMENT_ERROR_CONFIRM_SETTINGS_PATH,
             ),
         )
+        screenshots.append(failure_home_screenshot)
     return BrowserControllerSpy(screenshots[0], *screenshots[1:])
 
 
@@ -261,7 +263,9 @@ def test_enter_tournament_returns_failure_reason(
     async def sleep(seconds: float) -> None:
         sleeps.append(seconds)
 
-    browser = _tournament_browser(include_error_confirm=True)
+    browser = _tournament_browser(
+        failure_home_screenshot=_synthetic_home_ready_screenshot(),
+    )
     screen = HomeScreen(
         context=ScreenContext(
             browser=browser,
@@ -281,12 +285,23 @@ def test_enter_tournament_returns_failure_reason(
     assert result is expected
     assert not screen._stale
     assert f"Failed to enter a tournament: {expected.name}." in caplog.messages
-    assert sleeps == [1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5]
-    assert len(browser.clicked_points) == 6
+    assert sleeps == [
+        1.0,
+        1.0,
+        1.0,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        1.0,
+        1.0,
+    ]
+    assert len(browser.clicked_points) == 7
+    assert browser.screenshot_count == 6
     error_confirm_region = TemplateMatchSettings.from_toml_file(
         TOURNAMENT_ERROR_CONFIRM_SETTINGS_PATH,
     ).region
-    x, y = browser.clicked_points[-1]
+    x, y = browser.clicked_points[-2]
     assert (
         error_confirm_region.left
         < x
@@ -297,6 +312,11 @@ def test_enter_tournament_returns_failure_reason(
         < y
         < error_confirm_region.top + error_confirm_region.height
     )
+    x, y = browser.clicked_points[-1]
+    assert HomeScreen.TOURNAMENT_BACK_REGION.left < x
+    assert x < HomeScreen.TOURNAMENT_BACK_REGION.right
+    assert HomeScreen.TOURNAMENT_BACK_REGION.top < y
+    assert y < HomeScreen.TOURNAMENT_BACK_REGION.bottom
     if unknown_warning is None:
         assert (
             "Unrecognized fetchCustomizedContestByContestId error code"
@@ -304,6 +324,39 @@ def test_enter_tournament_returns_failure_reason(
         )
     else:
         assert unknown_warning in caplog.messages
+
+
+def test_enter_tournament_raises_if_home_buttons_are_missing_after_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    missing_home_screenshot = _synthetic_blank_screenshot()
+    browser = _tournament_browser(
+        failure_home_screenshot=missing_home_screenshot,
+    )
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=_message_queue(
+                _request_response(
+                    FETCH_CUSTOMIZED_CONTEST_API_NAME,
+                    {"error": {"code": 2501}},
+                ),
+            ),
+        ),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenDetectionError,
+        match="tournament-match was not found",
+    ) as exc_info:
+        asyncio.run(screen.enter_tournament("123456"))
+
+    assert exc_info.value.screenshot == missing_home_screenshot
+    assert not screen._stale
 
 
 @pytest.mark.parametrize(
