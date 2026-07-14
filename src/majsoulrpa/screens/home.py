@@ -83,6 +83,15 @@ class ThinkingTime(Enum):
     THREE_HUNDRED_PLUS_ZERO = auto()
 
 
+class JoinRoomFailureReason(Enum):
+    """Reason why joining a friendly match room failed."""
+
+    ROOM_NOT_FOUND = 1100
+    ROOM_FULL = 1101
+    MATCH_ALREADY_STARTED = 1109
+    UNRECOGNIZED_ERROR_CODE = -1
+
+
 class HomeScreen(Screen):
     MODE_REGIONS: ClassVar[dict[Mode, Region]] = {
         Mode.FOUR_PLAYER: Region(left=426, top=254, width=216, height=80),
@@ -318,7 +327,10 @@ class HomeScreen(Screen):
 
     @_screen_api
     @_requires_active
-    async def join_room(self, room_id: str) -> None:
+    async def join_room(
+        self,
+        room_id: str,
+    ) -> JoinRoomFailureReason | None:
         if ROOM_ID_PATTERN.fullmatch(room_id) is None:
             msg = "Room ID must be exactly 5 digits."
             screenshot = await self.screenshot()
@@ -364,21 +376,20 @@ class HomeScreen(Screen):
             screenshot = await self.screenshot()
             raise ScreenInconsistentMessageError(msg, screenshot)
 
-        join_room_error = await self._get_join_room_error(
+        failure_reason = await self._get_join_room_failure_reason(
             join_room_message.response,
         )
-        if join_room_error is None:
+        if failure_reason is None:
             _logger.info("Joined a friendly room successfully.")
             self._mark_stale()
-            return
+            return None
 
-        msg = "joinRoom error response handling is not implemented."
-        raise NotImplementedError(msg)
+        return failure_reason
 
-    async def _get_join_room_error(
+    async def _get_join_room_failure_reason(
         self,
         response: dict[str, JsonValue],
-    ) -> dict[str, JsonValue] | None:
+    ) -> JoinRoomFailureReason | None:
         if "error" not in response:
             return None
 
@@ -387,4 +398,14 @@ class HomeScreen(Screen):
             msg = "joinRoom error must be a dict containing code."
             screenshot = await self.screenshot()
             raise ScreenInconsistentMessageError(msg, screenshot)
-        return error
+
+        code = error["code"]
+        if isinstance(code, bool) or not isinstance(code, int):
+            msg = "joinRoom error code must be an integer."
+            screenshot = await self.screenshot()
+            raise ScreenInconsistentMessageError(msg, screenshot)
+
+        try:
+            return JoinRoomFailureReason(code)
+        except ValueError:
+            return JoinRoomFailureReason.UNRECOGNIZED_ERROR_CODE

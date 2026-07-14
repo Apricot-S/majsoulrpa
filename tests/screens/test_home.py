@@ -64,6 +64,7 @@ from majsoulrpa.screens.home import (
     JOIN_ROOM_API_NAME,
     ROOM_ID_PATTERN,
     HomeScreen,
+    JoinRoomFailureReason,
     Length,
     Mode,
     ThinkingTime,
@@ -255,6 +256,19 @@ def test_room_creation_enums_have_expected_members() -> None:
     ]
 
 
+def test_join_room_failure_reason_has_expected_members() -> None:
+    assert list(JoinRoomFailureReason) == [
+        JoinRoomFailureReason.ROOM_NOT_FOUND,
+        JoinRoomFailureReason.ROOM_FULL,
+        JoinRoomFailureReason.MATCH_ALREADY_STARTED,
+        JoinRoomFailureReason.UNRECOGNIZED_ERROR_CODE,
+    ]
+    assert JoinRoomFailureReason.ROOM_NOT_FOUND.value == 1100
+    assert JoinRoomFailureReason.ROOM_FULL.value == 1101
+    assert JoinRoomFailureReason.MATCH_ALREADY_STARTED.value == 1109
+    assert JoinRoomFailureReason.UNRECOGNIZED_ERROR_CODE.value == -1
+
+
 def test_room_id_pattern_matches_exactly_five_digits() -> None:
     assert ROOM_ID_PATTERN.pattern == r"\d{5}"
     assert ROOM_ID_PATTERN.fullmatch("12345") is not None
@@ -339,9 +353,20 @@ def test_join_room_raises_if_join_room_response_is_missing(
     assert not screen._stale
 
 
-def test_join_room_does_not_treat_error_response_as_success(
+@pytest.mark.parametrize(
+    ("error_code", "expected"),
+    [
+        (1100, JoinRoomFailureReason.ROOM_NOT_FOUND),
+        (1101, JoinRoomFailureReason.ROOM_FULL),
+        (1109, JoinRoomFailureReason.MATCH_ALREADY_STARTED),
+        (9999, JoinRoomFailureReason.UNRECOGNIZED_ERROR_CODE),
+    ],
+)
+def test_join_room_returns_failure_reason(
     caplog: pytest.LogCaptureFixture,
     monkeypatch: pytest.MonkeyPatch,
+    error_code: int,
+    expected: JoinRoomFailureReason,
 ) -> None:
     async def sleep(_seconds: float) -> None:
         pass
@@ -366,36 +391,43 @@ def test_join_room_does_not_treat_error_response_as_success(
             sniffer_messages=_message_queue(
                 _request_response(
                     JOIN_ROOM_API_NAME,
-                    {"error": {"code": 1}},
+                    {"error": {"code": error_code}},
                 ),
             ),
         ),
     )
     monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
 
-    with (
-        caplog.at_level(logging.INFO),
-        pytest.raises(
-            NotImplementedError,
-            match="error response handling is not implemented",
-        ),
-    ):
-        asyncio.run(screen.join_room("12345"))
+    with caplog.at_level(logging.INFO):
+        result = asyncio.run(screen.join_room("12345"))
 
+    assert result is expected
     assert not screen._stale
     assert "Joined a friendly room successfully." not in caplog.text
 
 
 @pytest.mark.parametrize(
-    "response",
+    ("response", "message"),
     [
-        {"error": {}},
-        {"error": "not-a-dict"},
+        ({"error": {}}, "joinRoom error must be a dict containing code"),
+        (
+            {"error": "not-a-dict"},
+            "joinRoom error must be a dict containing code",
+        ),
+        (
+            {"error": {"code": "1100"}},
+            "joinRoom error code must be an integer",
+        ),
+        (
+            {"error": {"code": True}},
+            "joinRoom error code must be an integer",
+        ),
     ],
 )
 def test_join_room_rejects_inconsistent_error(
     monkeypatch: pytest.MonkeyPatch,
     response: dict[str, JsonValue],
+    message: str,
 ) -> None:
     async def sleep(_seconds: float) -> None:
         pass
@@ -427,7 +459,7 @@ def test_join_room_rejects_inconsistent_error(
 
     with pytest.raises(
         ScreenInconsistentMessageError,
-        match="joinRoom error must be a dict containing code",
+        match=message,
     ) as exc_info:
         asyncio.run(screen.join_room("12345"))
 
