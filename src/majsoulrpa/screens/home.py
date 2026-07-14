@@ -118,6 +118,7 @@ class JoinRoomFailureReason(Enum):
 
 class HomeScreen(Screen):
     TOURNAMENT_ID_REGION = Region(left=657, top=344, width=414, height=38)
+    TOURNAMENT_BACK_REGION = Region(left=45, top=55, width=66, height=60)
     MODE_REGIONS: ClassVar[dict[Mode, Region]] = {
         Mode.FOUR_PLAYER: Region(left=426, top=254, width=216, height=80),
         Mode.THREE_PLAYER: Region(left=691, top=254, width=216, height=80),
@@ -404,6 +405,11 @@ class HomeScreen(Screen):
                 "error-confirm was not found after tournament entry failure."
             ),
         )
+        await asyncio.sleep(1.0)
+        await self.click_region(self.TOURNAMENT_BACK_REGION)
+        await asyncio.sleep(1.0)
+        screenshot = await self.context.browser.screenshot()
+        self._require_match_buttons(screenshot)
         return failure_reason
 
     async def _get_enter_tournament_response(self) -> dict[str, JsonValue]:
