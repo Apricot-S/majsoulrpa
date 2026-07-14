@@ -68,6 +68,9 @@ from majsoulrpa.sniffer.events import DecodedRequestResponse
 MONTH_TICKET_API_NAME = ".lq.Lobby.payMonthTicket"
 JADE_WAIT_TIMEOUT_SECONDS = 5.0
 TOURNAMENT_ID_PATTERN = re.compile(r"\d{6}")
+FETCH_CUSTOMIZED_CONTEST_API_NAME = (
+    ".lq.Lobby.fetchCustomizedContestByContestId"
+)
 ROOM_ID_PATTERN = re.compile(r"\d{5}")
 JOIN_ROOM_API_NAME = ".lq.Lobby.joinRoom"
 
@@ -357,7 +360,7 @@ class HomeScreen(Screen):
             message="enter was not found after opening tournament lobby.",
         )
         await asyncio.sleep(1.0)
-        await self.require_template(
+        confirm_result = await self.require_template(
             self.TOURNAMENT_CONFIRM_TEMPLATE,
             message=(
                 "confirm was not found after opening tournament entry dialog."
@@ -368,7 +371,72 @@ class HomeScreen(Screen):
             tournament_id,
             clear=False,
         )
-        return None
+        await asyncio.sleep(0.5)
+        await self._click_region(confirm_result.region)
+        # Wait for `.lq.Lobby.fetchCustomizedContestByContestId` to be
+        # exchanged.
+        await asyncio.sleep(0.5)
+
+        response = await self._get_enter_tournament_response()
+        return await self._get_enter_tournament_failure_reason(response)
+
+    async def _get_enter_tournament_response(self) -> dict[str, JsonValue]:
+        enter_tournament_message = None
+        while (message := self._get_sniffer_message_nowait()) is not None:
+            _logger.info(
+                "Sniffer message: %s",
+                _format_sniffer_message(message),
+            )
+            if message.raw.name == FETCH_CUSTOMIZED_CONTEST_API_NAME:
+                enter_tournament_message = message
+                break
+
+        if enter_tournament_message is None:
+            msg = f"{FETCH_CUSTOMIZED_CONTEST_API_NAME} message was not found."
+            screenshot = await self.screenshot()
+            raise ScreenInconsistentMessageError(msg, screenshot)
+
+        if not isinstance(enter_tournament_message, DecodedRequestResponse):
+            msg = "fetchCustomizedContestByContestId response was not found."
+            screenshot = await self.screenshot()
+            raise ScreenInconsistentMessageError(msg, screenshot)
+
+        return enter_tournament_message.response
+
+    async def _get_enter_tournament_failure_reason(
+        self,
+        response: dict[str, JsonValue],
+    ) -> EnterTournamentFailureReason | None:
+        if "error" not in response:
+            return None
+
+        error = response["error"]
+        if not isinstance(error, dict) or "code" not in error:
+            msg = (
+                "fetchCustomizedContestByContestId error must be a dict "
+                "containing code."
+            )
+            screenshot = await self.screenshot()
+            raise ScreenInconsistentMessageError(msg, screenshot)
+
+        code = error["code"]
+        if isinstance(code, bool) or not isinstance(code, int):
+            msg = (
+                "fetchCustomizedContestByContestId error code must be an "
+                "integer."
+            )
+            screenshot = await self.screenshot()
+            raise ScreenInconsistentMessageError(msg, screenshot)
+
+        try:
+            return EnterTournamentFailureReason(code)
+        except ValueError:
+            _logger.warning(
+                "Unrecognized fetchCustomizedContestByContestId "
+                "error code: %d.",
+                code,
+            )
+            return EnterTournamentFailureReason.UNRECOGNIZED_ERROR_CODE
 
     @_screen_api
     @_requires_active

@@ -387,6 +387,12 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `enter` から 1.0 秒待機して `confirm` の存在を必須確認する
 - [x] `confirm` がなければ screenshot 付き画面検出エラーにする
 - [x] `confirm` 確認後に tournament ID 領域へ `clear=False` で入力する
+- [x] tournament ID 入力から 0.5 秒待機して `confirm` をクリックする
+- [x] confirm 後に `.lq.Lobby.fetchCustomizedContestByContestId` の交換を 0.5 秒待つ
+- [x] 対象 message または response がなければ message 不整合エラーにする
+- [x] response の `error.code` を `EnterTournamentFailureReason` へ変換する
+- [x] 未対応 error code を warning log に記録して framework fallback へ変換する
+- [x] `error` が dict でないか `code` が整数でなければ message 不整合エラーにする
 
 ## Phase 7: WebSocket sniffer
 

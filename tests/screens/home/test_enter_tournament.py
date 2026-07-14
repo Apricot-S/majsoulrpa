@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 import pytest
+from pydantic import JsonValue
 
 import majsoulrpa.screens.home as home_module
 from majsoulrpa.assets.templates.home import (
@@ -19,10 +20,12 @@ from majsoulrpa.assets.templates.home.tournament_lobby import (
 from majsoulrpa.presentation.template import TemplateMatchSettings
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
+    ScreenInconsistentMessageError,
     ScreenInvalidArgumentError,
     ScreenStaleError,
 )
 from majsoulrpa.screens.home import (
+    FETCH_CUSTOMIZED_CONTEST_API_NAME,
     TOURNAMENT_ID_PATTERN,
     EnterTournamentFailureReason,
     HomeScreen,
@@ -30,9 +33,32 @@ from majsoulrpa.screens.home import (
 from tests.screens.home._support import (
     BrowserControllerSpy,
     ScreenContext,
+    _message_queue,
+    _request_response,
     _synthetic_blank_screenshot,
     _synthetic_template_screenshot,
 )
+
+
+def _tournament_browser() -> BrowserControllerSpy:
+    return BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=TOURNAMENT_MATCH_TEMPLATE_PATH,
+            settings_path=TOURNAMENT_MATCH_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=TOURNAMENT_LOBBY_TEMPLATE_PATH,
+            settings_path=TOURNAMENT_LOBBY_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=TOURNAMENT_ENTER_TEMPLATE_PATH,
+            settings_path=TOURNAMENT_ENTER_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=TOURNAMENT_CONFIRM_TEMPLATE_PATH,
+            settings_path=TOURNAMENT_CONFIRM_SETTINGS_PATH,
+        ),
+    )
 
 
 def test_enter_tournament_failure_reason_has_expected_members() -> None:
@@ -89,7 +115,14 @@ def test_enter_tournament_clicks_tournament_match_button(
             settings_path=TOURNAMENT_CONFIRM_SETTINGS_PATH,
         ),
     )
-    screen = HomeScreen(context=ScreenContext(browser=browser))
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=_message_queue(
+                _request_response(FETCH_CUSTOMIZED_CONTEST_API_NAME, {}),
+            ),
+        ),
+    )
     monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
 
     with caplog.at_level(logging.INFO):
@@ -102,8 +135,8 @@ def test_enter_tournament_clicks_tournament_match_button(
         in caplog.text
     )
     assert "123456" not in caplog.text
-    assert sleeps == [1.0, 1.0, 1.0, 0.5]
-    assert len(browser.clicked_points) == 4
+    assert sleeps == [1.0, 1.0, 1.0, 0.5, 0.5, 0.5]
+    assert len(browser.clicked_points) == 5
     assert browser.screenshot_count == 4
     assert input_values == ["123456"]
     assert pressed_keys == []
@@ -130,6 +163,173 @@ def test_enter_tournament_clicks_tournament_match_button(
     assert x < HomeScreen.TOURNAMENT_ID_REGION.right
     assert HomeScreen.TOURNAMENT_ID_REGION.top < y
     assert y < HomeScreen.TOURNAMENT_ID_REGION.bottom
+    confirm_region = TemplateMatchSettings.from_toml_file(
+        TOURNAMENT_CONFIRM_SETTINGS_PATH,
+    ).region
+    x, y = browser.clicked_points[4]
+    assert confirm_region.left < x < confirm_region.left + confirm_region.width
+    assert confirm_region.top < y < confirm_region.top + confirm_region.height
+
+
+def test_enter_tournament_raises_if_fetch_message_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    browser = _tournament_browser()
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=_message_queue(".lq.Unrelated"),
+        ),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenInconsistentMessageError,
+        match=r"fetchCustomizedContestByContestId.*message was not found",
+    ):
+        asyncio.run(screen.enter_tournament("123456"))
+
+    assert not screen._stale
+
+
+def test_enter_tournament_raises_if_fetch_response_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    browser = _tournament_browser()
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=_message_queue(
+                FETCH_CUSTOMIZED_CONTEST_API_NAME,
+            ),
+        ),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenInconsistentMessageError,
+        match="fetchCustomizedContestByContestId response was not found",
+    ):
+        asyncio.run(screen.enter_tournament("123456"))
+
+    assert not screen._stale
+
+
+@pytest.mark.parametrize(
+    ("error_code", "expected", "unknown_warning"),
+    [
+        (2501, EnterTournamentFailureReason.TOURNAMENT_NOT_FOUND, None),
+        (2536, EnterTournamentFailureReason.NO_ACTIVE_SEASON, None),
+        (
+            9999,
+            EnterTournamentFailureReason.UNRECOGNIZED_ERROR_CODE,
+            (
+                "Unrecognized fetchCustomizedContestByContestId "
+                "error code: 9999."
+            ),
+        ),
+    ],
+)
+def test_enter_tournament_returns_failure_reason(
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+    error_code: int,
+    expected: EnterTournamentFailureReason,
+    unknown_warning: str | None,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    browser = _tournament_browser()
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=_message_queue(
+                _request_response(
+                    FETCH_CUSTOMIZED_CONTEST_API_NAME,
+                    {"error": {"code": error_code}},
+                ),
+            ),
+        ),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with caplog.at_level(logging.INFO):
+        result = asyncio.run(screen.enter_tournament("123456"))
+
+    assert result is expected
+    assert not screen._stale
+    if unknown_warning is None:
+        assert (
+            "Unrecognized fetchCustomizedContestByContestId error code"
+            not in caplog.text
+        )
+    else:
+        assert unknown_warning in caplog.messages
+
+
+@pytest.mark.parametrize(
+    ("response", "message"),
+    [
+        (
+            {"error": {}},
+            (
+                "fetchCustomizedContestByContestId error must be a dict "
+                "containing code"
+            ),
+        ),
+        (
+            {"error": "not-a-dict"},
+            (
+                "fetchCustomizedContestByContestId error must be a dict "
+                "containing code"
+            ),
+        ),
+        (
+            {"error": {"code": "2501"}},
+            "fetchCustomizedContestByContestId error code must be an integer",
+        ),
+        (
+            {"error": {"code": True}},
+            "fetchCustomizedContestByContestId error code must be an integer",
+        ),
+    ],
+)
+def test_enter_tournament_rejects_inconsistent_error(
+    monkeypatch: pytest.MonkeyPatch,
+    response: dict[str, JsonValue],
+    message: str,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    browser = _tournament_browser()
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=_message_queue(
+                _request_response(
+                    FETCH_CUSTOMIZED_CONTEST_API_NAME,
+                    response,
+                ),
+            ),
+        ),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenInconsistentMessageError,
+        match=message,
+    ):
+        asyncio.run(screen.enter_tournament("123456"))
+
+    assert not screen._stale
 
 
 @pytest.mark.parametrize(
