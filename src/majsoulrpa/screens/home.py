@@ -32,6 +32,10 @@ from majsoulrpa.assets.templates.home.create_room import (
     CREATE_SETTINGS_PATH,
     CREATE_TEMPLATE_PATH,
 )
+from majsoulrpa.assets.templates.home.join_room import (
+    CONFIRM_SETTINGS_PATH,
+    CONFIRM_TEMPLATE_PATH,
+)
 from majsoulrpa.presentation import Region
 from majsoulrpa.presentation.template import load_png_template_matcher
 from majsoulrpa.screens.base import (
@@ -165,6 +169,10 @@ class HomeScreen(Screen):
     JOIN_ROOM_TEMPLATE = load_png_template_matcher(
         template_path=JOIN_ROOM_TEMPLATE_PATH,
         settings_path=JOIN_ROOM_SETTINGS_PATH,
+    )
+    JOIN_ROOM_CONFIRM_TEMPLATE = load_png_template_matcher(
+        template_path=CONFIRM_TEMPLATE_PATH,
+        settings_path=CONFIRM_SETTINGS_PATH,
     )
 
     @classmethod
@@ -318,4 +326,9 @@ class HomeScreen(Screen):
         await self.click_template(
             self.JOIN_ROOM_TEMPLATE,
             message="join-room was not found.",
+        )
+        await asyncio.sleep(1.0)
+        await self.require_template(
+            self.JOIN_ROOM_CONFIRM_TEMPLATE,
+            message="confirm was not found after opening room join dialog.",
         )

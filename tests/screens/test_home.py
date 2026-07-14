@@ -39,6 +39,10 @@ from majsoulrpa.assets.templates.home.create_room import (
     CREATE_SETTINGS_PATH,
     CREATE_TEMPLATE_PATH,
 )
+from majsoulrpa.assets.templates.home.join_room import (
+    CONFIRM_SETTINGS_PATH,
+    CONFIRM_TEMPLATE_PATH,
+)
 from majsoulrpa.presentation import Region
 from majsoulrpa.presentation.template import TemplateMatchSettings
 from majsoulrpa.screens import (
@@ -235,6 +239,10 @@ def test_join_room_accepts_exactly_five_digits(
                     template_path=JOIN_ROOM_TEMPLATE_PATH,
                     settings_path=JOIN_ROOM_SETTINGS_PATH,
                 ),
+                _synthetic_template_screenshot(
+                    template_path=CONFIRM_TEMPLATE_PATH,
+                    settings_path=CONFIRM_SETTINGS_PATH,
+                ),
             ),
         ),
     )
@@ -273,6 +281,10 @@ def test_join_room_clicks_friendly_match_then_join_room(
             template_path=JOIN_ROOM_TEMPLATE_PATH,
             settings_path=JOIN_ROOM_SETTINGS_PATH,
         ),
+        _synthetic_template_screenshot(
+            template_path=CONFIRM_TEMPLATE_PATH,
+            settings_path=CONFIRM_SETTINGS_PATH,
+        ),
     )
     screen = HomeScreen(context=ScreenContext(browser=browser, rng=Random(0)))
     monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
@@ -287,6 +299,8 @@ def test_join_room_clicks_friendly_match_then_join_room(
         "sleep:1.0",
         "screenshot",
         "click",
+        "sleep:1.0",
+        "screenshot",
     ]
 
 
@@ -333,6 +347,40 @@ def test_join_room_raises_if_join_room_button_is_missing(
     assert len(browser.clicked_points) == 1
     assert sleeps == [1.0]
     assert exc_info.value.screenshot == missing_join_room_screenshot
+
+
+def test_join_room_raises_if_confirm_button_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    missing_confirm_screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+            settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=JOIN_ROOM_TEMPLATE_PATH,
+            settings_path=JOIN_ROOM_SETTINGS_PATH,
+        ),
+        missing_confirm_screenshot,
+    )
+    screen = HomeScreen(context=ScreenContext(browser=browser))
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenDetectionError,
+        match="confirm was not found after opening room join dialog",
+    ) as exc_info:
+        asyncio.run(screen.join_room("12345"))
+
+    assert len(browser.clicked_points) == 2
+    assert sleeps == [1.0, 1.0]
+    assert exc_info.value.screenshot == missing_confirm_screenshot
 
 
 @pytest.mark.parametrize("room_id", ["", "1234", "123456", "12a45"])
@@ -914,6 +962,13 @@ def test_join_room_template_assets_exist() -> None:
     assert JOIN_ROOM_TEMPLATE_PATH.is_file()
     assert JOIN_ROOM_SETTINGS_PATH.name == "join-room.toml"
     assert JOIN_ROOM_SETTINGS_PATH.is_file()
+
+
+def test_join_room_confirm_template_assets_exist() -> None:
+    assert CONFIRM_TEMPLATE_PATH.name == "confirm.png"
+    assert CONFIRM_TEMPLATE_PATH.is_file()
+    assert CONFIRM_SETTINGS_PATH.name == "confirm.toml"
+    assert CONFIRM_SETTINGS_PATH.is_file()
 
 
 def test_room_create_button_template_assets_exist() -> None:
