@@ -117,7 +117,7 @@ class JoinRoomFailureReason(Enum):
 
 
 class HomeScreen(Screen):
-    TOURNAMENT_ID_REGION = Region(left=660, top=340, width=410, height=40)
+    TOURNAMENT_ID_REGION = Region(left=657, top=344, width=414, height=38)
     MODE_REGIONS: ClassVar[dict[Mode, Region]] = {
         Mode.FOUR_PLAYER: Region(left=426, top=254, width=216, height=80),
         Mode.THREE_PLAYER: Region(left=691, top=254, width=216, height=80),
