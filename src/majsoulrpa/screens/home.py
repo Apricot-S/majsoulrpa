@@ -329,8 +329,10 @@ class HomeScreen(Screen):
             message="join-room was not found.",
         )
         await asyncio.sleep(1.0)
-        await self.require_template(
+        confirm_result = await self.require_template(
             self.JOIN_ROOM_CONFIRM_TEMPLATE,
             message="confirm was not found after opening room join dialog.",
         )
-        await self.fill_region(self.ROOM_ID_REGION, room_id)
+        await self.fill_region(self.ROOM_ID_REGION, room_id, clear=False)
+        await asyncio.sleep(0.5)
+        await self._click_region(confirm_result.region)

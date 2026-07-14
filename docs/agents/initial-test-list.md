@@ -354,6 +354,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `join-room` のクリック後 1.0 秒待って `confirm` の存在を必須確認する
 - [x] `confirm` がなければ screenshot 付き画面検出エラーにする
 - [x] confirm 確認後に room ID 領域へ `clear=False` で room ID を入力する
+- [x] room ID 入力後 0.5 秒待って `confirm` の一致領域をクリックする
 
 ## Phase 7: WebSocket sniffer
 

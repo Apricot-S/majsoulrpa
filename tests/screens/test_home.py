@@ -300,10 +300,16 @@ def test_join_room_opens_dialog_and_fills_room_id_without_clearing(
     result = asyncio.run(screen.join_room("12345"))
 
     assert result is None
-    assert len(browser.clicked_points) == 3
+    assert len(browser.clicked_points) == 4
     x, y = browser.clicked_points[2]
     assert HomeScreen.ROOM_ID_REGION.left < x < HomeScreen.ROOM_ID_REGION.right
     assert HomeScreen.ROOM_ID_REGION.top < y < HomeScreen.ROOM_ID_REGION.bottom
+    confirm_region = TemplateMatchSettings.from_toml_file(
+        CONFIRM_SETTINGS_PATH,
+    ).region
+    x, y = browser.clicked_points[3]
+    assert confirm_region.left < x < confirm_region.left + confirm_region.width
+    assert confirm_region.top < y < confirm_region.top + confirm_region.height
     assert timeline == [
         "screenshot",
         "click",
@@ -315,6 +321,8 @@ def test_join_room_opens_dialog_and_fills_room_id_without_clearing(
         "click",
         "sleep:0.5",
         "input:12345",
+        "sleep:0.5",
+        "click",
     ]
 
 
