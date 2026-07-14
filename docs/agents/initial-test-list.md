@@ -381,6 +381,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `HomeScreen.enter_tournament()` を高レベル API のログ記録と stale 保護の対象にする
 - [x] 形式が一致する tournament ID では `tournament-match` をクリックする
 - [x] `tournament-match` がなければ screenshot 付き画面検出エラーにする
+- [x] `tournament-match` から 1.0 秒待機して `tournament-lobby` をクリックする
+- [x] `tournament-lobby` がなければ screenshot 付き画面検出エラーにする
 
 ## Phase 7: WebSocket sniffer
 

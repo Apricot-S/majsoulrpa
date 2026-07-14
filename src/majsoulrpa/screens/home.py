@@ -27,6 +27,8 @@ from majsoulrpa.assets.templates.home import (
     REWARDS_SIGN_IN_TEMPLATE_PATH,
     SUMMON_SETTINGS_PATH,
     SUMMON_TEMPLATE_PATH,
+    TOURNAMENT_LOBBY_SETTINGS_PATH,
+    TOURNAMENT_LOBBY_TEMPLATE_PATH,
     TOURNAMENT_MATCH_SETTINGS_PATH,
     TOURNAMENT_MATCH_TEMPLATE_PATH,
 )
@@ -181,6 +183,10 @@ class HomeScreen(Screen):
         template_path=TOURNAMENT_MATCH_TEMPLATE_PATH,
         settings_path=TOURNAMENT_MATCH_SETTINGS_PATH,
     )
+    TOURNAMENT_LOBBY_TEMPLATE = load_png_template_matcher(
+        template_path=TOURNAMENT_LOBBY_TEMPLATE_PATH,
+        settings_path=TOURNAMENT_LOBBY_SETTINGS_PATH,
+    )
     FRIENDLY_MATCH_TEMPLATE = load_png_template_matcher(
         template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
         settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
@@ -324,6 +330,11 @@ class HomeScreen(Screen):
         await self.click_template(
             self.TOURNAMENT_MATCH_TEMPLATE,
             message="tournament-match was not found.",
+        )
+        await asyncio.sleep(1.0)
+        await self.click_template(
+            self.TOURNAMENT_LOBBY_TEMPLATE,
+            message="tournament-lobby was not found.",
         )
         return None
 

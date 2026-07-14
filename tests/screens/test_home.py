@@ -33,6 +33,8 @@ from majsoulrpa.assets.templates.home import (
     REWARDS_SIGN_IN_TEMPLATE_PATH,
     SUMMON_SETTINGS_PATH,
     SUMMON_TEMPLATE_PATH,
+    TOURNAMENT_LOBBY_SETTINGS_PATH,
+    TOURNAMENT_LOBBY_TEMPLATE_PATH,
     TOURNAMENT_MATCH_SETTINGS_PATH,
     TOURNAMENT_MATCH_TEMPLATE_PATH,
 )
@@ -296,14 +298,25 @@ def test_tournament_id_pattern_matches_exactly_six_digits() -> None:
 
 def test_enter_tournament_clicks_tournament_match_button(
     caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
     browser = BrowserControllerSpy(
         _synthetic_template_screenshot(
             template_path=TOURNAMENT_MATCH_TEMPLATE_PATH,
             settings_path=TOURNAMENT_MATCH_SETTINGS_PATH,
         ),
+        _synthetic_template_screenshot(
+            template_path=TOURNAMENT_LOBBY_TEMPLATE_PATH,
+            settings_path=TOURNAMENT_LOBBY_SETTINGS_PATH,
+        ),
     )
     screen = HomeScreen(context=ScreenContext(browser=browser))
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
 
     with caplog.at_level(logging.INFO):
         result = asyncio.run(screen.enter_tournament("123456"))
@@ -315,12 +328,20 @@ def test_enter_tournament_clicks_tournament_match_button(
         in caplog.text
     )
     assert "123456" not in caplog.text
-    [(x, y)] = browser.clicked_points
-    region = TemplateMatchSettings.from_toml_file(
+    assert sleeps == [1.0]
+    assert len(browser.clicked_points) == 2
+    match_region = TemplateMatchSettings.from_toml_file(
         TOURNAMENT_MATCH_SETTINGS_PATH,
     ).region
-    assert region.left < x < region.left + region.width
-    assert region.top < y < region.top + region.height
+    x, y = browser.clicked_points[0]
+    assert match_region.left < x < match_region.left + match_region.width
+    assert match_region.top < y < match_region.top + match_region.height
+    lobby_region = TemplateMatchSettings.from_toml_file(
+        TOURNAMENT_LOBBY_SETTINGS_PATH,
+    ).region
+    x, y = browser.clicked_points[1]
+    assert lobby_region.left < x < lobby_region.left + lobby_region.width
+    assert lobby_region.top < y < lobby_region.top + lobby_region.height
 
 
 @pytest.mark.parametrize(
@@ -360,6 +381,37 @@ def test_enter_tournament_raises_if_tournament_match_button_is_missing() -> (
 
     assert exc_info.value.screenshot == screenshot
     assert browser.clicked_points == []
+    assert not screen._stale
+
+
+def test_enter_tournament_raises_if_tournament_lobby_button_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    missing_lobby_screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=TOURNAMENT_MATCH_TEMPLATE_PATH,
+            settings_path=TOURNAMENT_MATCH_SETTINGS_PATH,
+        ),
+        missing_lobby_screenshot,
+    )
+    screen = HomeScreen(context=ScreenContext(browser=browser))
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenDetectionError,
+        match="tournament-lobby was not found",
+    ) as exc_info:
+        asyncio.run(screen.enter_tournament("123456"))
+
+    assert exc_info.value.screenshot == missing_lobby_screenshot
+    assert sleeps == [1.0]
+    assert len(browser.clicked_points) == 1
     assert not screen._stale
 
 
@@ -1447,6 +1499,13 @@ def test_match_button_template_assets_exist() -> None:
     assert FRIENDLY_MATCH_TEMPLATE_PATH.is_file()
     assert FRIENDLY_MATCH_SETTINGS_PATH.name == "friendly-match.toml"
     assert FRIENDLY_MATCH_SETTINGS_PATH.is_file()
+
+
+def test_tournament_lobby_button_template_assets_exist() -> None:
+    assert TOURNAMENT_LOBBY_TEMPLATE_PATH.name == "tournament-lobby.png"
+    assert TOURNAMENT_LOBBY_TEMPLATE_PATH.is_file()
+    assert TOURNAMENT_LOBBY_SETTINGS_PATH.name == "tournament-lobby.toml"
+    assert TOURNAMENT_LOBBY_SETTINGS_PATH.is_file()
 
 
 def test_create_room_template_assets_exist() -> None:
