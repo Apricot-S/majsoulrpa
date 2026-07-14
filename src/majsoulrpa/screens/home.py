@@ -47,6 +47,8 @@ from majsoulrpa.assets.templates.home.tournament_lobby import (
     TOURNAMENT_CONFIRM_TEMPLATE_PATH,
     TOURNAMENT_ENTER_SETTINGS_PATH,
     TOURNAMENT_ENTER_TEMPLATE_PATH,
+    TOURNAMENT_ERROR_CONFIRM_SETTINGS_PATH,
+    TOURNAMENT_ERROR_CONFIRM_TEMPLATE_PATH,
 )
 from majsoulrpa.presentation import Region
 from majsoulrpa.presentation.template import load_png_template_matcher
@@ -204,6 +206,10 @@ class HomeScreen(Screen):
     TOURNAMENT_CONFIRM_TEMPLATE = load_png_template_matcher(
         template_path=TOURNAMENT_CONFIRM_TEMPLATE_PATH,
         settings_path=TOURNAMENT_CONFIRM_SETTINGS_PATH,
+    )
+    TOURNAMENT_ERROR_CONFIRM_TEMPLATE = load_png_template_matcher(
+        template_path=TOURNAMENT_ERROR_CONFIRM_TEMPLATE_PATH,
+        settings_path=TOURNAMENT_ERROR_CONFIRM_SETTINGS_PATH,
     )
     FRIENDLY_MATCH_TEMPLATE = load_png_template_matcher(
         template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
@@ -378,7 +384,27 @@ class HomeScreen(Screen):
         await asyncio.sleep(0.5)
 
         response = await self._get_enter_tournament_response()
-        return await self._get_enter_tournament_failure_reason(response)
+        failure_reason = await self._get_enter_tournament_failure_reason(
+            response,
+        )
+        if failure_reason is None:
+            _logger.info("Entered a tournament successfully.")
+            await asyncio.sleep(1.0)
+            self._mark_stale()
+            return None
+
+        _logger.warning(
+            "Failed to enter a tournament: %s.",
+            failure_reason.name,
+        )
+        await asyncio.sleep(0.5)
+        await self.click_template(
+            self.TOURNAMENT_ERROR_CONFIRM_TEMPLATE,
+            message=(
+                "error-confirm was not found after tournament entry failure."
+            ),
+        )
+        return failure_reason
 
     async def _get_enter_tournament_response(self) -> dict[str, JsonValue]:
         enter_tournament_message = None

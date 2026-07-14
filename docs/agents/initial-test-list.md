@@ -394,6 +394,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] response の `error.code` を `EnterTournamentFailureReason` へ変換する
 - [x] 未対応 error code を warning log に記録して framework fallback へ変換する
 - [x] `error` が dict でないか `code` が整数でなければ message 不整合エラーにする
+- [x] 大会取得成功時は info log 後に 1.0 秒待機して `HomeScreen` を stale にする
+- [x] 大会取得失敗時は失敗理由名を warning log に記録する
+- [x] 大会取得失敗から 0.5 秒待機して大会用 `error-confirm` をクリックする
 
 ## Phase 7: WebSocket sniffer
 

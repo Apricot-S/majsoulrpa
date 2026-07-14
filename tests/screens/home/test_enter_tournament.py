@@ -16,6 +16,8 @@ from majsoulrpa.assets.templates.home.tournament_lobby import (
     TOURNAMENT_CONFIRM_TEMPLATE_PATH,
     TOURNAMENT_ENTER_SETTINGS_PATH,
     TOURNAMENT_ENTER_TEMPLATE_PATH,
+    TOURNAMENT_ERROR_CONFIRM_SETTINGS_PATH,
+    TOURNAMENT_ERROR_CONFIRM_TEMPLATE_PATH,
 )
 from majsoulrpa.presentation.template import TemplateMatchSettings
 from majsoulrpa.screens.errors import (
@@ -40,8 +42,10 @@ from tests.screens.home._support import (
 )
 
 
-def _tournament_browser() -> BrowserControllerSpy:
-    return BrowserControllerSpy(
+def _tournament_browser(
+    *, include_error_confirm: bool = False
+) -> BrowserControllerSpy:
+    screenshots = [
         _synthetic_template_screenshot(
             template_path=TOURNAMENT_MATCH_TEMPLATE_PATH,
             settings_path=TOURNAMENT_MATCH_SETTINGS_PATH,
@@ -58,7 +62,15 @@ def _tournament_browser() -> BrowserControllerSpy:
             template_path=TOURNAMENT_CONFIRM_TEMPLATE_PATH,
             settings_path=TOURNAMENT_CONFIRM_SETTINGS_PATH,
         ),
-    )
+    ]
+    if include_error_confirm:
+        screenshots.append(
+            _synthetic_template_screenshot(
+                template_path=TOURNAMENT_ERROR_CONFIRM_TEMPLATE_PATH,
+                settings_path=TOURNAMENT_ERROR_CONFIRM_SETTINGS_PATH,
+            ),
+        )
+    return BrowserControllerSpy(screenshots[0], *screenshots[1:])
 
 
 def test_enter_tournament_failure_reason_has_expected_members() -> None:
@@ -129,13 +141,14 @@ def test_enter_tournament_clicks_tournament_match_button(
         result = asyncio.run(screen.enter_tournament("123456"))
 
     assert result is None
-    assert not screen._stale
+    assert screen._stale
     assert (
         "screen API called: screen=HomeScreen api=enter_tournament"
         in caplog.text
     )
     assert "123456" not in caplog.text
-    assert sleeps == [1.0, 1.0, 1.0, 0.5, 0.5, 0.5]
+    assert sleeps == [1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 1.0]
+    assert "Entered a tournament successfully." in caplog.messages
     assert len(browser.clicked_points) == 5
     assert browser.screenshot_count == 4
     assert input_values == ["123456"]
@@ -243,10 +256,12 @@ def test_enter_tournament_returns_failure_reason(
     expected: EnterTournamentFailureReason,
     unknown_warning: str | None,
 ) -> None:
-    async def sleep(_seconds: float) -> None:
-        pass
+    sleeps: list[float] = []
 
-    browser = _tournament_browser()
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    browser = _tournament_browser(include_error_confirm=True)
     screen = HomeScreen(
         context=ScreenContext(
             browser=browser,
@@ -265,6 +280,23 @@ def test_enter_tournament_returns_failure_reason(
 
     assert result is expected
     assert not screen._stale
+    assert f"Failed to enter a tournament: {expected.name}." in caplog.messages
+    assert sleeps == [1.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5]
+    assert len(browser.clicked_points) == 6
+    error_confirm_region = TemplateMatchSettings.from_toml_file(
+        TOURNAMENT_ERROR_CONFIRM_SETTINGS_PATH,
+    ).region
+    x, y = browser.clicked_points[-1]
+    assert (
+        error_confirm_region.left
+        < x
+        < error_confirm_region.left + error_confirm_region.width
+    )
+    assert (
+        error_confirm_region.top
+        < y
+        < error_confirm_region.top + error_confirm_region.height
+    )
     if unknown_warning is None:
         assert (
             "Unrecognized fetchCustomizedContestByContestId error code"
@@ -468,3 +500,7 @@ def test_tournament_lobby_dialog_template_assets_exist() -> None:
     assert TOURNAMENT_CONFIRM_TEMPLATE_PATH.is_file()
     assert TOURNAMENT_CONFIRM_SETTINGS_PATH.name == "confirm.toml"
     assert TOURNAMENT_CONFIRM_SETTINGS_PATH.is_file()
+    assert TOURNAMENT_ERROR_CONFIRM_TEMPLATE_PATH.name == "error-confirm.png"
+    assert TOURNAMENT_ERROR_CONFIRM_TEMPLATE_PATH.is_file()
+    assert TOURNAMENT_ERROR_CONFIRM_SETTINGS_PATH.name == "error-confirm.toml"
+    assert TOURNAMENT_ERROR_CONFIRM_SETTINGS_PATH.is_file()
