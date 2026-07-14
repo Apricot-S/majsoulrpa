@@ -161,7 +161,7 @@ class HomeScreen(Screen):
             height=80,
         ),
     }
-    ROOM_ID_REGION = Region(left=660, top=340, width=410, height=40)
+    ROOM_ID_REGION = Region(left=657, top=344, width=414, height=38)
     JOIN_ROOM_BACK_REGION = Region(left=1175, top=250, width=100, height=34)
 
     SUMMON_TEMPLATE = load_png_template_matcher(
