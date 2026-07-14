@@ -370,6 +370,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 参加失敗時は成功 log を出さず、`HomeScreen` を stale にしない
 - [x] 参加失敗時は失敗理由名を warning log に記録する
 - [x] 参加失敗から 0.5 秒待機して `error-confirm` をクリックする
+- [x] `error-confirm` から 1.0 秒待機して戻る座標をクリックする
+- [x] 戻る座標から 1.0 秒待機してホーム画面の対局ボタンを確認する
 
 ## Phase 7: WebSocket sniffer
 

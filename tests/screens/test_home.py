@@ -383,6 +383,10 @@ def test_join_room_returns_failure_reason(
             timeline.append("click")
             await super().click(x, y)
 
+        async def screenshot(self) -> bytes:
+            timeline.append("screenshot")
+            return await super().screenshot()
+
     async def sleep(seconds: float) -> None:
         sleeps.append(seconds)
         timeline.append(f"sleep:{seconds}")
@@ -404,6 +408,7 @@ def test_join_room_returns_failure_reason(
             template_path=ERROR_CONFIRM_TEMPLATE_PATH,
             settings_path=ERROR_CONFIRM_SETTINGS_PATH,
         ),
+        _synthetic_home_ready_screenshot(),
     )
     screen = HomeScreen(
         context=ScreenContext(
@@ -427,13 +432,22 @@ def test_join_room_returns_failure_reason(
     assert (
         f"Failed to join a friendly room: {expected.name}." in caplog.messages
     )
-    assert sleeps == [1.0, 1.0, 0.5, 0.5, 0.5, 0.5]
-    assert timeline[-2:] == ["sleep:0.5", "click"]
-    assert len(browser.clicked_points) == 5
+    assert sleeps == [1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 1.0, 1.0]
+    assert timeline[-7:] == [
+        "sleep:0.5",
+        "screenshot",
+        "click",
+        "sleep:1.0",
+        "click",
+        "sleep:1.0",
+        "screenshot",
+    ]
+    assert len(browser.clicked_points) == 6
+    assert browser.screenshot_count == 5
     error_confirm_region = TemplateMatchSettings.from_toml_file(
         ERROR_CONFIRM_SETTINGS_PATH,
     ).region
-    x, y = browser.clicked_points[-1]
+    x, y = browser.clicked_points[-2]
     assert (
         error_confirm_region.left
         < x
@@ -444,10 +458,64 @@ def test_join_room_returns_failure_reason(
         < y
         < error_confirm_region.top + error_confirm_region.height
     )
+    x, y = browser.clicked_points[-1]
+    assert HomeScreen.JOIN_ROOM_BACK_REGION.left < x
+    assert x < HomeScreen.JOIN_ROOM_BACK_REGION.right
+    assert HomeScreen.JOIN_ROOM_BACK_REGION.top < y
+    assert y < HomeScreen.JOIN_ROOM_BACK_REGION.bottom
     if warning_message is None:
         assert "Unrecognized joinRoom error code" not in caplog.text
     else:
         assert warning_message in caplog.messages
+
+
+def test_join_room_raises_if_home_buttons_are_missing_after_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    missing_home_screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+            settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=JOIN_ROOM_TEMPLATE_PATH,
+            settings_path=JOIN_ROOM_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=CONFIRM_TEMPLATE_PATH,
+            settings_path=CONFIRM_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=ERROR_CONFIRM_TEMPLATE_PATH,
+            settings_path=ERROR_CONFIRM_SETTINGS_PATH,
+        ),
+        missing_home_screenshot,
+    )
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=_message_queue(
+                _request_response(
+                    JOIN_ROOM_API_NAME,
+                    {"error": {"code": 1100}},
+                ),
+            ),
+        ),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenDetectionError,
+        match="tournament-match was not found",
+    ) as exc_info:
+        asyncio.run(screen.join_room("12345"))
+
+    assert exc_info.value.screenshot == missing_home_screenshot
+    assert not screen._stale
 
 
 @pytest.mark.parametrize(

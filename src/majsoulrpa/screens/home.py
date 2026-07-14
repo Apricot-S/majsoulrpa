@@ -138,6 +138,7 @@ class HomeScreen(Screen):
         ),
     }
     ROOM_ID_REGION = Region(left=660, top=340, width=410, height=40)
+    JOIN_ROOM_BACK_REGION = Region(left=0, top=0, width=1, height=1)
 
     SUMMON_TEMPLATE = load_png_template_matcher(
         template_path=SUMMON_TEMPLATE_PATH,
@@ -378,6 +379,11 @@ class HomeScreen(Screen):
             self.JOIN_ROOM_ERROR_CONFIRM_TEMPLATE,
             message="error-confirm was not found after room join failure.",
         )
+        await asyncio.sleep(1.0)
+        await self.click_region(self.JOIN_ROOM_BACK_REGION)
+        await asyncio.sleep(1.0)
+        screenshot = await self.context.browser.screenshot()
+        self._require_match_buttons(screenshot)
         return failure_reason
 
     async def _get_join_room_response(self) -> dict[str, JsonValue]:
