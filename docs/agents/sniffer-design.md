@@ -237,7 +237,8 @@ ZeroMQ PUB/SUB は subscriber の接続前や処理遅延時の message を保�
 - 最初に受け取った sequence が 1 より大きければ途中参加として記録する
 - gap または途中参加後、過去の完全性を必要とする Screen state は
   `unknown` とし、成功したように補完しない
-- 特定 message を待つ API は必ず timeout / cancellation を持つ
+- 特定 message の待機は、呼び出し側の `asyncio.timeout()` または cancellation で必ず
+  上限を設ける。高レベル Screen API 自体には timeout 引数を持たせない
 
 Req/Res 対応付けは publish 前に完了しているため、publication が 1 件欠落しても
 別の publication が unmatched Response になることはない。
@@ -308,6 +309,13 @@ browser host側の専用`CaptureSink`またはreplay / ack付きtransportを別�
 Screen state からは ZMQ socket や protobuf class を直接参照させず、client runtime が
 保持する event stream / state store の狭い API を `ScreenContext` へ渡す。具体的な
 Screen 状態機械は Sniffer transport が安定した後、1 画面ずつ設計・実装する。
+
+`RoomScreen` の状態機械は、decode 直後の observer ではなく、既存の内部 message queue を
+`SnifferMessageSource` として Screen が逐次読むことで更新する。Room 専用 thread や受信 task
+は増やさない。操作前に `get_nowait()` で蓄積済み message を処理し、click 後は `get()` で
+Req/Res と notice を待つ。host 交代、kick、外部からの game start も同じ source から処理する。
+Screen instance 間で必要な最新 snapshot だけは context 経由の小さな cache に保持する。
+詳細は [RoomScreen 設計](room-screen-design.md) に従う。
 
 client runtime の内部message queueは、API名で選別せず、受信してdecodeできたmessageを
 すべて到着順に保持する。通常の未読messageにはasync queue、読み取った後の差し戻しには

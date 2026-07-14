@@ -194,6 +194,8 @@ controller を渡す。
 - RPA 終了と browser close
 - 友人戦 room 参加
 - 友人戦 room 作成
+- 友人戦 room 状態取得
+- 友人戦 room 退出、AI 追加、ready、対局開始
 - 大会 lobby 参加
 
 進め方:
@@ -201,6 +203,9 @@ controller を渡す。
 - API ごとにテストリストを作る
 - 実装する高レベル API は常に 1 つに絞る
 - 各 API ごとにユーザーへ実ゲーム確認を依頼する
+- RoomScreen は [RoomScreen 設計](room-screen-design.md) の state cache と message source 処理を
+  先に実装し、
+  `get_state()`、状態待機、退出、AI 追加、ready、対局開始の順に 1 API ずつ進める
 
 対象外:
 

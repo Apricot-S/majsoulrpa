@@ -60,7 +60,7 @@ Presentation 検出は、画面状態を「できるだけ決定的に」扱い�
 
 - 固定 sleep だけで安定化しない
 - 画像認識、DOM 情報、通信情報のどれを使うかは画面ごとに判断する
-- 検出 timeout と操作 timeout を混同しない
+- 検出 timeout と、呼び出し側の `asyncio.timeout()` で管理する操作期限を混同しない
 - 未登録 Presentation は dispatch しない
 - 同時に複数 Presentation が成立する場合の優先順位を明示する
 
@@ -91,6 +91,25 @@ messageを観測させる。これによりScreenがmessageを読む前や、後
 `.lq.Lobby.createRoom`の`response.room.owner_id`から正の`int`を取得する。同じ値の再観測は
 許容し、異なる値はsession整合性エラーにする。`ScreenContext.account_id`はsession stateの
 現在値を読み取り専用で公開する。
+
+### Room state
+
+`RoomScreen` 導入時も、room message は既存の `SnifferMessageSource` から Screen が逐次読む。
+account ID と異なり、decode 直後かつ内部 queue 投入前の observer へ room 状態機械を追加しない。
+RoomScreen の callback と API は同時実行されず、source が未処理 message を到着順に保持するため、
+host 交代や kick も操作前 refresh または状態待機で処理できる。Room 専用 thread や Screen
+instance ごとの background task は追加しない。
+
+runtime は callback loop ごとに新しい Screen instance を生成するため、最新の immutable room
+snapshot と room generation だけは具体的な `RoomStateCache` として `ScreenContext` 経由で共有
+する。cache は RoomScreen が source を読んだときだけ更新し、raw message 履歴、operation
+response、waiter を保持しない。汎用 event sourcing store や Screen state registry は作らない。
+`ScreenContext` は protobuf object や ZMQ socket の具体型を `RoomScreen` へ公開しない。
+
+初期 snapshot は `createRoom`、`joinRoom`、`fetchRoom` response、更新は room notice から得る。
+host 権限は owner ID と session account ID から snapshot ごとに導出し、Screen instance へ
+cache しない。詳しい状態遷移、操作との相関、失敗モデルは
+[RoomScreen 設計](room-screen-design.md) に従う。
 
 ## 高レベル Screen API のログ
 

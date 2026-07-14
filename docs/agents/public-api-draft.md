@@ -12,7 +12,9 @@
 - callback の戻り値を次の data とする
 - data はフレームワークが解釈、保存、serialize、log しない
 - 未登録 Presentation は検出しても dispatch しない
-- detection timeout と操作 timeout は分ける
+- detection timeout と Screen 操作の期限管理は分ける
+- 高レベル Screen API は timeout 引数を持たず、操作期限は呼び出し側の
+  `asyncio.timeout()` で指定する
 
 同じ Presentation に複数 callback を登録できると、data の更新順序と例外時の
 扱いが曖昧になります。v3 初期では禁止し、必要が出たらユーザー側で 1 つの
@@ -145,7 +147,7 @@ class Screen:
 
 - `LoginScreen`
 - `HomeScreen`
-- `FriendlyRoomScreen`
+- `RoomScreen`
 - `TournamentLobbyScreen`
 
 初期実装では `LoginScreen` の API を 1 つだけ選びます。
@@ -173,12 +175,33 @@ async def stop(self, *, close_browser: bool = False) -> None: ...
 async def close_notifications(self) -> None: ...
 ```
 
-`FriendlyRoomScreen` 候補:
+`RoomScreen` 候補:
 
 ```python
-async def join_room(self, room_code: str) -> None: ...
-async def create_room(self, settings: RoomSettings) -> CreatedRoom: ...
+async def get_state(self) -> RoomState: ...
+async def wait_for_state_change(
+    self,
+    *,
+    after_version: int,
+) -> RoomState: ...
+async def leave(self) -> None: ...
+async def add_ai(self) -> RoomState: ...
+async def start_match(self) -> None: ...
+async def set_ready(self) -> RoomState: ...
 ```
+
+期限が必要な場合は API の外側で指定する。
+
+```python
+async with asyncio.timeout(10.0):
+    await room.add_ai()
+```
+
+部屋の作成と参加は `HomeScreen`、作成・参加後の待機部屋は `RoomScreen` の責務とする。
+`RoomState` は room ID、最大人数、人間プレイヤー、AI 数を持つ immutable snapshot とし、
+プレイヤーには account ID、名前、host、ready を含める。server rejection は Enum 戻り値
+ではなく、機械判定用 Enum を属性に持つ型付き例外にする。観測方式と状態遷移の詳細は
+[RoomScreen 設計](room-screen-design.md) を参照する。
 
 `TournamentLobbyScreen` 候補:
 

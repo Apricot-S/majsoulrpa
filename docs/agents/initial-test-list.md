@@ -400,6 +400,150 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 大会用 `error-confirm` から 1.0 秒待機して大会用の戻る座標をクリックする
 - [x] 大会用の戻る座標から 1.0 秒待機してホーム画面の対局ボタンを確認する
 
+## Phase 6.10: RoomScreen
+
+詳細な設計判断は [RoomScreen 設計](room-screen-design.md) に従う。以下は実装前の
+テストリストであり、高レベル API は記載順に 1 つずつ実装・手動確認する。
+
+### Room state model
+
+- [ ] `RoomPlayer` と `RoomState` は immutable である
+- [ ] `RoomState.version` は client 内の更新ごとに単調増加する
+- [ ] `room_id`、owner ID、self account ID、player account ID が正でなければ拒否する
+- [ ] `max_player_count` は 3 または 4 だけを許す
+- [ ] human player の account ID 重複を拒否する
+- [ ] active room の owner と self が human player list にいなければ拒否する
+- [ ] ready list に未知 account ID があれば拒否する
+- [ ] human と AI の合計が最大人数を超えたら拒否する
+- [ ] `RoomPlayer.is_host` を owner ID から導出する
+- [ ] `RoomPlayer.is_ready` を wire の ready 状態から導出し、host を暗黙に ready にしない
+- [ ] `self_is_host`、`participant_count`、`available_slots` を snapshot から導出する
+- [ ] player list は protocol で観測した順序を保つ
+- [ ] AI を正の account ID を持つ human player として公開しない
+- [ ] terminal state でも最後に確定した room 情報を保持する
+
+### Room state cache / SnifferMessageSource
+
+- [ ] 成功した `.lq.Lobby.createRoom` response から host の初期 snapshot を作る
+- [ ] 成功した `.lq.Lobby.joinRoom` response から guest の初期 snapshot を作る
+- [ ] 成功した `.lq.Lobby.fetchRoom` response から reload 後の snapshot を作る
+- [ ] error を持つ create / join / fetch response では active room を初期化しない
+- [ ] `.lq.NotifyRoomPlayerUpdate` で owner、human、AI を同じ version へ原子的に更新する
+- [ ] host 退出後の owner 更新で `self_is_host` を再導出する
+- [ ] `.lq.NotifyRoomPlayerReady` で対象 player の ready だけを更新する
+- [ ] `.lq.NotifyRoomGameStart` で `MATCH_STARTED` にする
+- [ ] `.lq.NotifyRoomKickOut` で `KICKED` にする
+- [ ] 成功した `.lq.Lobby.leaveRoom` response で `LEFT` にする
+- [ ] terminal 後の古い room notice を active state として復活させない
+- [ ] terminal 後の新しい完全 snapshot は新しい room generation を開始する
+- [ ] active 中に別 room ID の完全 snapshot が来たら不整合にする
+- [ ] 古い RoomScreen generation は新しい room で stale になる
+- [ ] room 状態用の decode 直後 observer や background task を追加しない
+- [ ] RoomScreen は `SnifferMessageSource.get_nowait()` で蓄積済み message を順番に処理する
+- [ ] RoomScreen は `SnifferMessageSource.get()` で新しい message を待機する
+- [ ] callback ごとに RoomScreen instance が変わっても共有 cache から最新 snapshot を得られる
+- [ ] cache は最新 snapshot と room generation 以外の raw message 履歴を保持しない
+- [ ] `HomeScreen.create_room()` は成功した createRoom message を RoomScreen 用に source へ残す
+- [ ] `HomeScreen.join_room()` は成功確認後に元の joinRoom message を 1 回だけ差し戻す
+- [ ] joinRoom の失敗 message は RoomScreen 用に差し戻さない
+- [ ] wait は cache が `after_version` より新しければ即時に返せる
+- [ ] wait は source の `get()` を使い sleep polling しない
+- [ ] wait 中の cancellation で適用済み snapshot を壊さない
+- [ ] Sniffer decode、stream gap、queue overflow を room state で成功扱いにしない
+
+### RoomScreen detection / state API
+
+- [ ] `RoomScreen` が `Screen` を継承する
+- [ ] 個人情報を含まない room template の synthetic screenshot で検出できる
+- [ ] threshold 未満の screenshot では検出しない
+- [ ] `before_callback()` は active room snapshot が得られるまで framework 内部の既定期限で待つ
+- [ ] 画像だけ room で snapshot がなければ状態を推測せず失敗する
+- [ ] `before_callback()` は source の蓄積済み message を処理して cache を最新化する
+- [ ] `get_state()` は network request や click を行わず最新 immutable snapshot を返す
+- [ ] RoomScreen の全高レベル API は `timeout` 引数を持たない
+- [ ] 呼び出し側の `asyncio.timeout()` で `get_state()` を中断できる
+- [ ] `wait_for_state_change()` は `after_version` より新しい snapshot を返す
+- [ ] `wait_for_state_change()` は kick / game start の terminal snapshot も 1 回返す
+- [ ] 呼び出し側 timeout による cancellation を RoomScreen が握りつぶさない
+- [ ] room ID、account ID、player 名を高レベル API log に含めない
+
+### Failure model
+
+- [ ] server rejection は Enum 戻り値ではなく `RoomOperationRejectedError` にする
+- [ ] rejection error が operation、reason Enum、元の整数 code を保持する
+- [ ] 未対応 code は数値を warning log に出し `UNRECOGNIZED_ERROR_CODE` にする
+- [ ] server の error message、room ID、account ID、player 名を例外 message に含めない
+- [ ] role / 満員 / 未 ready の事前条件失敗では browser operation を行わない
+- [ ] 事前条件失敗は operation と machine-readable な reason Enum を保持する
+- [ ] response 欠落と notice 欠落を server rejection に変換しない
+- [ ] malformed response / notice を空状態や通常失敗へ変換しない
+- [ ] browser / Sniffer infrastructure error を Room 用 rejection に変換しない
+- [ ] Room API の cancellation を cleanup 後に伝播する
+
+### `leave()`
+
+- [ ] host と guest の `WAITING` state で退出 UI を操作できる
+- [ ] click 前に source を drain し、その後の outbound `.lq.Lobby.leaveRoom` を対応付ける
+- [ ] 過去の leaveRoom response を今回の成功に使わない
+- [ ] 成功 response を観測した後だけ `LEFT` にして RoomScreen を stale にする
+- [ ] server rejection では active state と Screen を維持する
+- [ ] `MATCH_STARTED` の guest は退出 UI を操作できない
+- [ ] kick が leave 待機に割り込んだら呼び出し側 timeout より先に stale error にする
+- [ ] `leave()` の実ゲーム確認後まで `add_ai()` の実装へ進まない
+
+### `add_ai()`
+
+- [ ] 最新 snapshot で host の場合だけ AI 追加 UI を操作する
+- [ ] participant が満員なら UI を操作しない
+- [ ] source refresh 後の最新 host / capacity を使って事前条件を検証する
+- [ ] click 前に source を drain し、その後の outbound `.lq.Lobby.addRoomRobot` を対応付ける
+- [ ] 成功 response だけでは完了せず、後続 player update で AI が 1 増えるまで待つ
+- [ ] AI 数が 1 以外増減した場合は今回の成功として扱わない
+- [ ] server rejection を自動 retry しない
+- [ ] response 成功後に player update がなければ成功扱いにせず呼び出し側 timeout まで待つ
+- [ ] 成功時は更新後の `RoomState` を返し Screen を active のままにする
+- [ ] `add_ai()` の実ゲーム確認後まで `set_ready()` の実装へ進まない
+
+### `set_ready()`
+
+- [ ] 最新 snapshot で guest の場合だけ ready UI を操作する
+- [ ] host が呼んだ場合は UI を操作せず不正操作エラーにする
+- [ ] すでに ready の guest は click せず同じ snapshot を返す
+- [ ] click 前に source を drain し、その後の outbound `.lq.Lobby.readyPlay` を対応付ける
+- [ ] readyPlay request の `ready` が `true` でなければ不整合にする
+- [ ] 成功 response だけでは完了せず、自分の ready notice まで待つ
+- [ ] 別 player の ready notice を自分の成功として扱わない
+- [ ] 成功時は自分が ready の `RoomState` を返し Screen を active のままにする
+- [ ] `set_ready()` の実ゲーム確認後まで `start_match()` の実装へ進まない
+
+### `start_match()`
+
+- [ ] 最新 snapshot で host の場合だけ start UI を操作する
+- [ ] human guest が 1 人でも未 ready なら UI を操作しない
+- [ ] AI を含む participant が最大人数未満なら UI を操作しない
+- [ ] ready 判定から host を除外する
+- [ ] source refresh 後の最新 host、ready、満員を使って事前条件を検証する
+- [ ] click 前に source を drain し、その後の outbound `.lq.Lobby.startRoom` を対応付ける
+- [ ] 成功 response だけでは完了せず game start notice まで待つ
+- [ ] game start notice 後だけ `MATCH_STARTED` にして RoomScreen を stale にする
+- [ ] guest が外部 host の start を観測した場合も `MATCH_STARTED` にする
+- [ ] server rejection では RoomScreen を stale にしない
+
+### RoomScreen 手動確認
+
+- [ ] 四人 / 三人 room の snapshot field の意味を確認する
+- [ ] `persons`、`robots`、`robot_count`、`positions` の関係を確認する
+- [ ] ready notice の `account_list` と `seq` の意味を確認する
+- [ ] host 退出後の owner update と host 交代を確認する
+- [ ] kick notice と画面遷移を確認する
+- [ ] AI 追加成功、満員、guest の UI / response を確認する
+- [ ] 空席、未 ready、全 ready の start 条件を確認する
+- [ ] host / guest の退出と対局開始後の退出不可を確認する
+- [ ] room operation の既知 error code と dialog 復旧可否を確認する
+- [ ] Room / room notice の `seq` 増加規則を確認する
+- [ ] 実 payload を tests、fixtures、docs、chat、commit へ含めない
+- [ ] 個人情報のない必要画像と settings はユーザーがコミットする
+
 ## Phase 7: WebSocket sniffer
 
 - [x] sniffer backend の start に失敗した場合に browser を閉じる

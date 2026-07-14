@@ -1,0 +1,418 @@
+# RoomScreen 設計
+
+## 目的と範囲
+
+`RoomScreen` は、合意済み友人戦の待機部屋で現在の状態を参照し、部屋からの退出、
+AI の追加、対局開始、準備完了を安全に操作する `Screen` である。
+
+この設計は待機部屋だけを対象とする。オープン対局、段位戦、未合意の対局への参加、
+対局中の操作は対象にしない。WebSocket request をフレームワークから生成して送信する
+API も追加しない。操作は雀魂の画面に対して行い、成否と状態変化を Sniffer が観測した
+WebSocket message で確認する。
+
+部屋 ID、account ID、プレイヤー名は、フレームワーク利用者が bot を参加・開始させるかを
+判断するため、この Screen では例外的に公開する。これらを通常ログへ自動出力しない。
+
+## 公開名
+
+公開 class 名は `RoomScreen` とする。`FriendlyRoomScreen` は意味は明確だが、既存の
+`HomeScreen.create_room()` / `join_room()` から到達する画面名として長く、今回の要件で
+指定された名前とも異なるため採用しない。
+
+## 公開データモデル
+
+公開する状態は mutable な内部 object や protobuf object ではなく、取得時点の immutable
+snapshot とする。
+
+```python
+from dataclasses import dataclass
+from enum import StrEnum
+
+
+class RoomStatus(StrEnum):
+    WAITING = "waiting"
+    MATCH_STARTED = "match_started"
+    LEFT = "left"
+    KICKED = "kicked"
+
+
+@dataclass(frozen=True, slots=True)
+class RoomPlayer:
+    account_id: int
+    name: str
+    is_host: bool
+    is_ready: bool
+
+
+@dataclass(frozen=True, slots=True)
+class RoomState:
+    version: int
+    status: RoomStatus
+    room_id: int
+    max_player_count: int
+    players: tuple[RoomPlayer, ...]
+    ai_count: int
+    self_account_id: int
+
+    @property
+    def self_is_host(self) -> bool: ...
+
+    @property
+    def participant_count(self) -> int: ...
+
+    @property
+    def available_slots(self) -> int: ...
+```
+
+設計上の意味は次のとおりとする。
+
+- `version` は RPA client 内で状態が変わるたびに増える単調増加値である。wire 上の
+  `Room.seq` をそのまま公開する値ではない。
+- `room_id` は protocol の正の整数をそのまま公開する。`HomeScreen.join_room()` の文字列入力
+  とは型が異なる。
+- `max_player_count` は `3` または `4` だけを許す。それ以外は protocol 不整合とする。
+- `players` は人間のプレイヤーだけを含む。`Room.persons` / `player_list` の順序を維持し、
+  seat の意味が実通信で確認できるまでは seat API を追加しない。
+- AI は正の account ID を持つ人間として扱わず、`ai_count` として分ける。これにより
+  AI 追加の完了と空き枠を判定できる。
+- `is_host` は snapshot の `owner_id` と account ID の一致から毎回導出する。
+- `is_ready` は protocol の `ready_list` または準備通知が示す値である。ホストを便宜的に
+  `True` へ書き換えない。対局開始条件を調べるときだけホストを判定対象から除外する。
+- `self_account_id` は client session state で取得済みの正の値でなければならない。
+
+terminal な `MATCH_STARTED`、`LEFT`、`KICKED` でも最後に確定できた部屋情報は snapshot に
+残す。これにより `wait_for_state_change()` の待機中に起きた遷移を利用者が判定できる。
+terminal 遷移後に同じ `RoomScreen` で別の操作はできない。
+
+## 公開 API 候補
+
+すべて async の高レベル Screen API とし、`majsoulrpa.screens.api` の info log 対象、
+stale 保護対象とする。
+
+```python
+class RoomScreen(Screen):
+    async def get_state(self) -> RoomState: ...
+
+    async def wait_for_state_change(
+        self,
+        *,
+        after_version: int,
+    ) -> RoomState: ...
+
+    async def leave(self) -> None: ...
+
+    async def add_ai(self) -> RoomState: ...
+
+    async def start_match(self) -> None: ...
+
+    async def set_ready(self) -> RoomState: ...
+```
+
+高レベル Screen API は timeout 引数を持たない。期限が必要な利用者は structured concurrency に
+従い、呼び出し側で `asyncio.timeout()` を使う。
+
+```python
+async with asyncio.timeout(10.0):
+    state = await screen.add_ai()
+```
+
+RoomScreen 内部の message 待機は cancellation をそのまま伝播する。呼び出し側の timeout を
+通常完了や server rejection として扱わず、timeout 時に自動 retry もしない。
+他の Screen API と同様に、同じ Screen instance に対する複数 API の並行呼び出しは
+サポートしない。RPA runtime は callback を逐次実行するため、通常利用で操作が競合しない。
+
+`get_state()` は新しい network request を送らず、`SnifferMessageSource` に蓄積された
+message をその時点まで読み進めて最新 snapshot を返す。
+`wait_for_state_change()` は polling 用 sleep を利用者に書かせず、指定 version より新しい
+snapshot を待つ。待機開始後の最初の更新が terminal 遷移でも、その terminal snapshot を
+1 回返す。その後の Screen API は stale error になる。
+
+### `leave()`
+
+- ホストとゲストの両方が利用できる。
+- `WAITING` 以外では画面を操作しない。
+- 特に、ゲストが `MATCH_STARTED` へ遷移した後は退出操作を行えない。
+- 成功した `.lq.Lobby.leaveRoom` response を観測して `LEFT` にした後で Screen を stale にする。
+- ホスト退出後に残った側で起きるホスト交代は、残った client の
+  `.lq.NotifyRoomPlayerUpdate` から処理する。
+
+### `add_ai()`
+
+- 最新 snapshot で自分がホストの場合だけ利用できる。
+- `participant_count < max_player_count` を事前条件とする。
+- UI が選ぶ空き位置へ 1 体だけ追加する。位置指定 API は実需要が出るまで追加しない。
+- `.lq.Lobby.addRoomRobot` の成功 response だけで完了にせず、その後の
+  `.lq.NotifyRoomPlayerUpdate` で AI 数が 1 増えた snapshot まで待つ。
+- 満員、ホストでない、または room が active でない場合は click しない。
+- 自動 retry はしない。競合による server rejection は型付き例外として返す。
+
+### `start_match()`
+
+- 最新 snapshot で自分がホストの場合だけ利用できる。
+- 人間のゲスト全員が `is_ready` でなければ click しない。
+- AI を含めた参加人数が `max_player_count` に達していることも事前条件とする。この条件が
+  実際の UI / server と異なる場合は手動確認結果に基づいて設計を更新する。
+- `.lq.Lobby.startRoom` の成功 response に加えて `.lq.NotifyRoomGameStart` を待つ。
+- game start notice を観測して `MATCH_STARTED` にした後で Screen を stale にする。
+
+### `set_ready()`
+
+- 最新 snapshot で自分がゲストの場合だけ利用できる。
+- すでに ready なら、確認済みの最新 snapshot を返す idempotent な no-op とする。成功した
+  ように見せる fallback ではなく、要求された事後条件がすでに成立している場合である。
+- `.lq.Lobby.readyPlay` request の `ready` が `true` であることと成功 response を確認し、
+  `.lq.NotifyRoomPlayerReady` で自分が ready になった snapshot まで待つ。
+- ready 解除 API は今回追加しない。
+
+## WebSocket 観測方式
+
+### 結論
+
+操作のたびに一時的な Sniffer を開始せず、`RPARuntime` と兄弟 task としてすでに常駐する
+Sniffer client 受信 task が decode 済み message を `SnifferMessageSource` へ蓄積する。
+`RoomScreen` は既存の protected `get()` / `get_nowait()` 操作だけでそれを読み進める。
+decode 直後に room 専用 observer を呼ぶ処理、OS thread、Room 専用 background task は
+追加しない。
+
+```text
+ZMQ SUB
+  -> protobuf decode
+  -> account ID 用 session state.observe(message)
+  -> 既存の bounded Sniffer message queue
+       -> RoomScreen が get() / get_nowait()
+       -> room message を snapshot へ反映
+```
+
+room 状態だけ account ID と同じ decode 直後の observer に置く必要はない。RoomScreen の
+callback と API は逐次実行され、`SnifferMessageSource` がその間の message を順序どおり保持
+するためである。host 交代や kick は、次の `get_state()`、状態待機、または操作前 refresh で
+処理できる。`wait_for_state_change()` は source の `get()` を直接 await する。
+
+ただし、現在の runtime は callback loop ごとに新しい Screen instance を生成する。最初の
+RoomScreen instance が完全 snapshot を消費したあとで callback が return しても状態を失わない
+よう、最新 snapshot と room generation だけは `ScreenContext` から共有される具体的な
+`RoomStateCache` に保持する。これは message を常時観測する service ではなく、RoomScreen が
+source を読んだときだけ更新する小さな cache である。raw message の履歴、operation response、
+waiter は保持しない。
+
+`RoomScreen.before_callback()` と各公開 API の先頭は、まず `get_nowait()` でその時点の queue を
+drain し、room message を cache へ反映する。待機が必要な API は続けて `get()` で到着順に読む。
+Sniffer の stream gap、decode error、queue overflow は従来どおり runtime 全体の失敗とし、
+Room state を推測で補完しない。長時間 callback が source を読まず queue 上限へ達した場合も、
+常駐 observer を追加しても queue 自体は残るため解決しない。従来どおり黙って破棄せず
+runtime error にする。
+
+初期 snapshot を RoomScreen へ引き渡すため、`HomeScreen.create_room()` / `join_room()` は成功した
+`createRoom` / `joinRoom` の完全な decoded Req/Res を source に残す。現行 `join_room()` は成功
+message を消費するため、RoomScreen 実装時に response dict だけでなく元の decoded message を
+保持し、成功確認後に 1 回だけ `put_back()` する。失敗 response は RoomScreen へ渡さない。
+
+### 初期 snapshot と更新 message
+
+現行 protocol から次の対応を設計の出発点とする。実装前に synthetic message で固定し、
+実際の雀魂では payload を docs や fixture へ転記せず動作だけを確認する。
+
+| message | 用途 |
+|---|---|
+| `.lq.Lobby.createRoom` response | ホスト側の最初の完全な `Room` snapshot |
+| `.lq.Lobby.joinRoom` response | ゲスト側の最初の完全な `Room` snapshot |
+| `.lq.Lobby.fetchRoom` response | reload / session 復元時の完全な `Room` snapshot |
+| `.lq.NotifyRoomPlayerUpdate` | owner、人間、AI、位置情報の更新。ホスト交代もここで扱う |
+| `.lq.NotifyRoomPlayerReady` | 個別プレイヤーの ready 更新 |
+| `.lq.NotifyRoomGameStart` | `MATCH_STARTED` への terminal 遷移 |
+| `.lq.NotifyRoomKickOut` | 自分が kick されたことによる `KICKED` への terminal 遷移 |
+| `.lq.Lobby.leaveRoom` response | 自発的退出による `LEFT` への terminal 遷移 |
+| `.lq.Lobby.addRoomRobot` response | AI 追加要求の server 成否 |
+| `.lq.Lobby.readyPlay` response | ready 要求の server 成否 |
+| `.lq.Lobby.startRoom` response | 対局開始要求の server 成否 |
+
+`Room` の `seq` と room notice の `seq` は順序検証に使える可能性があるが、増加規則をまだ
+実通信で確認していない。推測で厳密化せず、手動 spike で同値、連番、飛び値の意味を確認して
+から test を追加する。PUB/SUB publication sequence の gap 検出はこの確認前でも有効である。
+
+`NotifyRoomPlayerReady.account_list` は現行 `.proto` 上では名前に反して singular field である。
+最初の実装は `account_id` と `ready` による個別更新を基準とし、`account_list` の実 payload
+上の意味は手動 spike で確認する。decode 結果の形が想定と違う場合は空 list などへ変換せず、
+protocol / design を更新する。
+
+### 操作と message の相関
+
+各操作は次の順序で行う。
+
+1. `get_nowait()` で現在の source を空になるまで読み、room state を最新化する。
+2. active room generation、権限、満員・ready 条件を確認する。
+3. template または確定した `Region` を使って画面を click する。
+4. source の `get()` で到着 message を順に処理し、期待する outbound Req/Res を待つ。
+5. response の `error` を検証し、server rejection なら例外にする。
+6. 状態変化を伴う操作では、期待する notice と事後条件を満たす snapshot まで読み進める。
+7. terminal 操作だけ Screen を stale にする。
+
+click 前に source を drain し、同じ Screen の操作を並行実行しないため、click 後に得た同名
+Req/Res を今回の操作へ対応付けられる。response や notice が待機開始より先に到着しても
+bounded queue に残るため取り逃がさない。Req/Res の request direction、API 名、既知 request
+field も確認する。response 成功後に必要な notice が来ない場合は成功扱いにせず待機を続け、
+呼び出し側の timeout または cancellation に委ねる。矛盾した notice を観測した場合は
+message 不整合として失敗させる。
+
+## 状態整合性
+
+次を満たさない decoded message は、RoomScreen が source から読み取った時点で screenshot 付き
+`ScreenInconsistentMessageError` とする。Sniffer transport / protobuf decode 自体の失敗は、
+従来どおり background task から元の infrastructure error として伝播する。
+
+- active snapshot の room ID、owner ID、self account ID、各人間の account ID は正である。
+- `max_player_count` は 3 または 4 である。
+- 人間の account ID は重複しない。
+- active room の owner ID と self account ID は human player list に存在する。
+- ready 対象の account ID は human player list に存在する。
+- 人間と AI の合計は最大人数を超えない。
+- 同じ active room generation の途中で room ID が変化しない。
+- terminal 後の古い room update を新しい active state として扱わない。
+
+新しい `createRoom` / `joinRoom` / `fetchRoom` の完全 snapshot を terminal state 後に観測した
+場合は、新しい room generation を開始できる。古い `RoomScreen` は generation が一致しない
+ため stale になる。active 中に別 room ID の完全 snapshot を観測した場合は暗黙に切り替えず
+不整合とする。
+
+`robot_count` と `robots`、`positions` の厳密な関係は手動 spike 後に固定する。確認前に
+片方が空だから他方を捨てる fallback は置かない。
+
+## ホスト交代、kick、外部からの対局開始
+
+ホスト権限を `RoomScreen` instance の bool として cache しない。各 `RoomState` の
+`owner_id` から `RoomPlayer.is_host` と `self_is_host` を再導出する。
+`NotifyRoomPlayerUpdate` でホストが変われば、同じ callback 中でも次の `get_state()` または
+`wait_for_state_change()` から新しい権限が見える。操作 lock 取得後にも再検証するため、
+ホスト交代との race で古い権限を使って click しない。
+
+空 payload の `NotifyRoomKickOut` は受信した client 自身の kick として `KICKED` にする。
+待機中の Room API は terminal state を検知して呼び出し側の timeout より先に失敗する。
+外部ホストが対局を開始した場合も `NotifyRoomGameStart` で `MATCH_STARTED` にし、その後の
+Room 操作を禁止する。
+
+## 失敗モデル
+
+### 結論: Enum を属性に持つ例外
+
+server error code を戻り値の Enum にする方式は採用しない。呼び出し側が戻り値を無視して
+失敗を成功として進める可能性があるためである。一方、文字列だけの例外では bot が理由を
+安全に分岐できない。したがって、server rejection は機械判定用 Enum と元の数値 code を
+属性に持つ型付き例外として表す。
+
+```python
+class RoomOperation(StrEnum):
+    LEAVE = "leave"
+    ADD_AI = "add_ai"
+    START_MATCH = "start_match"
+    SET_READY = "set_ready"
+
+
+class RoomOperationFailureReason(Enum):
+    # 実通信で意味と数値を確認できた項目だけ追加する。
+    UNRECOGNIZED_ERROR_CODE = -1
+
+
+class RoomOperationNotAllowedReason(StrEnum):
+    NOT_HOST = "not_host"
+    HOST_CANNOT_READY = "host_cannot_ready"
+    ROOM_FULL = "room_full"
+    ROOM_NOT_FULL = "room_not_full"
+    GUEST_NOT_READY = "guest_not_ready"
+    ROOM_INACTIVE = "room_inactive"
+
+
+class RoomOperationNotAllowedError(ScreenInvalidOperationError):
+    operation: RoomOperation
+    reason: RoomOperationNotAllowedReason
+
+
+class RoomOperationRejectedError(ScreenError):
+    operation: RoomOperation
+    reason: RoomOperationFailureReason
+    server_error_code: int
+```
+
+同じ数値 code の意味が操作ごとに異なることが手動確認で分かった場合は、無理に共通 Enum に
+せず操作別 Enum へ分割する。既知 code を資料や他実装から推測して先に追加しない。
+未対応 code は数値だけ warning log に残し、`UNRECOGNIZED_ERROR_CODE` とする。server の
+`Error.message`、room ID、account ID、プレイヤー名は通常例外 message に含めない。
+
+失敗の分類は次のとおりとする。
+
+| 失敗 | 扱い |
+|---|---|
+| host 限定 API を guest が呼ぶ、guest 限定 API を host が呼ぶ | `RoomOperationNotAllowedError` + reason Enum |
+| 満員、空席、guest 未 ready など事前条件不成立 | 同上。click しない |
+| server の `error.code` | `RoomOperationRejectedError` |
+| 未知 code | 上記例外 + `UNRECOGNIZED_ERROR_CODE`。数値 code は属性に保持 |
+| response / notice が到着しない | API 内では待機を継続。呼び出し側の timeout / cancellation に委ねる |
+| message field の欠落・型不正・矛盾 | `ScreenInconsistentMessageError` |
+| kick 済み、対局開始済み、別 room generation | `ScreenStaleError` の Room 用派生 |
+| template / 操作対象が見つからない | `ScreenDetectionError` |
+| browser / Sniffer / decode / stream gap | 元の infrastructure error を変換せず伝播 |
+| cancellation | cleanup 後にそのまま伝播 |
+
+server rejection、呼び出し側 timeout、kick を自動 retry しない。UI error dialog を閉じて同じ
+`RoomScreen` を継続利用できることが操作ごとの手動確認で確定した場合だけ、例外送出前の
+画面復旧をその API の明示的な手順として設計する。復旧に失敗した場合は元の rejection を
+成功扱いにせず、cleanup failure を添えて報告する。
+
+## 画面検出と画像資産
+
+`RoomScreen.detection_spec()` は待機部屋に固有で、個人情報を含まない template を使う。
+WebSocket state だけを Screen の画像到達判定の代用にしない。画像で RoomScreen が検出され、
+`before_callback()` で対応する active room snapshot を取得できて初めて callback を実行する。
+framework hook である `before_callback()` の初期化上限は public 引数にせず、実装時に runtime
+側の既定期限または内部定数として固定する。画像だけ成立して snapshot がない場合は状態を
+推測せず失敗させる。
+
+実装時に必要な RoomScreen、退出、AI 追加、開始、ready、error dialog の template または
+確定 `Region` は、実画面で確認後にユーザーへコミットを依頼する。エージェントが実ゲーム
+由来の screenshot を生成、複製、コミットしない。
+
+## ログと公開情報
+
+- 高レベル API の info log は Screen 名と API 名だけとする。
+- Room state の取得だけで room ID、account ID、名前を log しない。
+- 成功 log に room ID や player 情報を含めない。
+- rejection log は operation と failure reason 名だけを基本とし、未知 code のときだけ数値を
+  warning に出す。
+- Sniffer 調査ログは既存の安全性方針の例外に従う。decode 済み message を出せるが、docs、
+  fixture、examples、チャット、コミットへ転記しない。
+- raw payload bytes は別の debug log に出せるが、保存物をコミットしない。
+
+## 実装前の手動 spike
+
+実装を始める前に、次を合意済み友人戦でユーザーに確認してもらう。payload の値は文書へ
+貼らず、API 名、field の意味、error code の意味、画面遷移という設計結果だけを反映する。
+
+1. 四人部屋と三人部屋の create / join / fetch snapshot。
+2. `persons`、`robots`、`robot_count`、`positions` の関係。
+3. ready 通知の `account_id`、`ready`、`account_list`、`seq` の意味。
+4. host 退出時の player update と owner の選ばれ方。
+5. host による kick を受けた client の notice と遷移。
+6. AI 追加成功、満員時、guest から操作できない場合の UI と response。
+7. guest 未 ready、空席あり、全員 ready の各 start 操作と response / notice 順序。
+8. guest / host の退出成功と、対局開始後に退出 UI が使えないこと。
+9. 各 Req/Res の既知 error code と error dialog 復旧手順。
+10. Room / notice の `seq` 増加規則。
+
+実通信ログは一時ログだけに置き、コミットしない。必要な template 画像と settings は、個人
+情報が写っていないことを確認したうえでユーザーにコミットを依頼する。
+
+## TDD と実装順
+
+高レベル API は一度に 1 つだけ実装し、各段階で自動テスト、品質ゲート、実ゲーム確認を
+完了してから次へ進む。
+
+1. `RoomState` / `RoomPlayer` の純粋な decode と不変条件。
+2. `RoomStateCache` と `SnifferMessageSource` からの snapshot 更新、terminal、instance 間共有。
+3. `RoomScreen` の画像検出と `get_state()`。
+4. `wait_for_state_change()` と外部 host 交代 / kick の扱い。
+5. `leave()`。
+6. `add_ai()`。
+7. `set_ready()`。
+8. `start_match()`。
+
+自動テストは synthetic decoded message、fake state store、fake browser operation、synthetic
+screenshot だけを使う。実雀魂、実 network、ライブ payload は使わない。

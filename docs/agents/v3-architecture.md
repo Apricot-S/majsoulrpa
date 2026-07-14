@@ -76,7 +76,8 @@ browser host
 screens
   -> screen context
   -> browser operations
-  -> sniffer queue when needed
+  -> sniffer queue when raw message consumption is needed
+  -> room state view through screen context when current room state is needed
 ```
 
 `screens` は `RPAApp` に依存しません。`sniffer` は `screens` の具体 class に
@@ -142,6 +143,7 @@ Screen base は、custom screen を書くための最小 surface にします。
 - screenshot 取得 API
 - template match API
 - sniffer queue 参照
+- room state の読み取り・待機 API
 - runtime stop 要求 API
 
 `ScreenContext` に含めないもの:

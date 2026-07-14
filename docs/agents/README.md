@@ -15,6 +15,7 @@
 - [カスタマイズ方針](customization.md)
 - [WebSocket キャプチャ方針](websocket-capture.md)
 - [WebSocket Sniffer 設計](sniffer-design.md)
+- [RoomScreen 設計](room-screen-design.md)
 - [テストと品質基準](testing-quality.md)
 - [初回テストリスト](initial-test-list.md)
 - [安全性と秘密情報](safety-secrets.md)
@@ -35,3 +36,6 @@ API や内部構造を変更する作業では、[API 設計方針](api-guidelin
 WebSocket capture、通信依存の画面状態、Sniffer hook を扱う作業では、
 [WebSocket キャプチャ方針](websocket-capture.md) と
 [WebSocket Sniffer 設計](sniffer-design.md) も確認してください。
+
+友人戦待機部屋の状態や操作を扱う作業では、[RoomScreen 設計](room-screen-design.md) も
+確認してください。

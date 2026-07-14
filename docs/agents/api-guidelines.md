@@ -55,6 +55,21 @@ result = await app.run(config, data, detection_timeout=60)
 - timeout は呼び出し側が読める位置で指定できる
 - 失敗時は明示的な例外として表す
 
+高レベル Screen API 自体には `timeout` 引数を追加しない。非同期操作の期限は、利用者が
+`asyncio.timeout()` で API 呼び出し全体を囲む。Screen API は timeout の存在を意識せず、
+cancellation を握りつぶさずに伝播する。
+
+```python
+async with asyncio.timeout(10.0):
+    await screen.long_running_operation()
+```
+
+この方針は Ruff の
+[`ASYNC109`](https://docs.astral.sh/ruff/rules/async-function-with-timeout/) と
+structured concurrency の考え方に合わせる。framework 全体の
+画面検出期限である `RPAApp.run(..., detection_timeout=...)` は、個別 Screen 操作の timeout
+引数とは別の runtime policy として扱う。
+
 ## API を増やす基準
 
 高レベル API は、次の条件を満たす場合に追加します。
