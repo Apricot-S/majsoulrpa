@@ -504,6 +504,7 @@ class HomeScreen(Screen):
         failure_reason = await self._get_join_room_failure_reason(response)
         if failure_reason is None:
             _logger.info("Joined a friendly room successfully.")
+            await asyncio.sleep(1.0)
             self._mark_stale()
             return None
 

@@ -385,6 +385,11 @@ def test_join_room_opens_dialog_and_fills_room_id_without_clearing(
             timeline.append(f"key:{key}")
             await super().press_key(key)
 
+    class OrderedHomeScreen(HomeScreen):
+        def _mark_stale(self) -> None:
+            timeline.append("mark_stale")
+            super()._mark_stale()
+
     async def sleep(seconds: float) -> None:
         timeline.append(f"sleep:{seconds}")
 
@@ -407,7 +412,7 @@ def test_join_room_opens_dialog_and_fills_room_id_without_clearing(
         _request_response(JOIN_ROOM_API_NAME, {}),
         ".lq.AfterJoinRoom",
     )
-    screen = HomeScreen(
+    screen = OrderedHomeScreen(
         context=ScreenContext(
             browser=browser,
             sniffer_messages=messages,
@@ -443,6 +448,8 @@ def test_join_room_opens_dialog_and_fills_room_id_without_clearing(
         "sleep:0.5",
         "click",
         "sleep:0.5",
+        "sleep:1.0",
+        "mark_stale",
     ]
     remaining_message = messages.get_nowait()
     assert remaining_message is not None
