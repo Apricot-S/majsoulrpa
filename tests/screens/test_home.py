@@ -386,6 +386,55 @@ def test_join_room_does_not_treat_error_response_as_success(
     assert "Joined a friendly room successfully." not in caplog.text
 
 
+@pytest.mark.parametrize(
+    "response",
+    [
+        {"error": {}},
+        {"error": "not-a-dict"},
+    ],
+)
+def test_join_room_rejects_inconsistent_error(
+    monkeypatch: pytest.MonkeyPatch,
+    response: dict[str, JsonValue],
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    screenshot = _synthetic_template_screenshot(
+        template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+        settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+    )
+    browser = BrowserControllerSpy(
+        screenshot,
+        _synthetic_template_screenshot(
+            template_path=JOIN_ROOM_TEMPLATE_PATH,
+            settings_path=JOIN_ROOM_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=CONFIRM_TEMPLATE_PATH,
+            settings_path=CONFIRM_SETTINGS_PATH,
+        ),
+    )
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=_message_queue(
+                _request_response(JOIN_ROOM_API_NAME, response),
+            ),
+        ),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenInconsistentMessageError,
+        match="joinRoom error must be a dict containing code",
+    ) as exc_info:
+        asyncio.run(screen.join_room("12345"))
+
+    assert exc_info.value.screenshot == screenshot
+    assert not screen._stale
+
+
 def test_join_room_opens_dialog_and_fills_room_id_without_clearing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

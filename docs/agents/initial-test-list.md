@@ -361,6 +361,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `.lq.Lobby.joinRoom` が response を持たなければ message 不整合エラーにする
 - [x] response に `error` がなければ成功を info log に出して stale にする
 - [x] 成功時の info log に room ID を含めない
+- [x] joinRoom response の `error` 抽出と構造確認を private helper に分離する
+- [x] `error` が dict でないか `code` がなければ message 不整合エラーにする
 - [ ] response に `error` がある場合の error code を失敗理由へ変換する
 
 ## Phase 7: WebSocket sniffer

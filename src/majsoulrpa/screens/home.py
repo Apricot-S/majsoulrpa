@@ -4,6 +4,8 @@ from enum import Enum, auto
 from logging import getLogger
 from typing import ClassVar, override
 
+from pydantic import JsonValue
+
 from majsoulrpa.assets.templates.home import (
     CREATE_ROOM_SETTINGS_PATH,
     CREATE_ROOM_TEMPLATE_PATH,
@@ -362,10 +364,27 @@ class HomeScreen(Screen):
             screenshot = await self.screenshot()
             raise ScreenInconsistentMessageError(msg, screenshot)
 
-        if "error" not in join_room_message.response:
+        join_room_error = await self._get_join_room_error(
+            join_room_message.response,
+        )
+        if join_room_error is None:
             _logger.info("Joined a friendly room successfully.")
             self._mark_stale()
             return
 
         msg = "joinRoom error response handling is not implemented."
         raise NotImplementedError(msg)
+
+    async def _get_join_room_error(
+        self,
+        response: dict[str, JsonValue],
+    ) -> dict[str, JsonValue] | None:
+        if "error" not in response:
+            return None
+
+        error = response["error"]
+        if not isinstance(error, dict) or "code" not in error:
+            msg = "joinRoom error must be a dict containing code."
+            screenshot = await self.screenshot()
+            raise ScreenInconsistentMessageError(msg, screenshot)
+        return error
