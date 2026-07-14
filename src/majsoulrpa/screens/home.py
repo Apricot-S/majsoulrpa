@@ -37,6 +37,8 @@ from majsoulrpa.assets.templates.home.create_room import (
 from majsoulrpa.assets.templates.home.join_room import (
     CONFIRM_SETTINGS_PATH,
     CONFIRM_TEMPLATE_PATH,
+    ERROR_CONFIRM_SETTINGS_PATH,
+    ERROR_CONFIRM_TEMPLATE_PATH,
 )
 from majsoulrpa.presentation import Region
 from majsoulrpa.presentation.template import load_png_template_matcher
@@ -188,6 +190,10 @@ class HomeScreen(Screen):
     JOIN_ROOM_CONFIRM_TEMPLATE = load_png_template_matcher(
         template_path=CONFIRM_TEMPLATE_PATH,
         settings_path=CONFIRM_SETTINGS_PATH,
+    )
+    JOIN_ROOM_ERROR_CONFIRM_TEMPLATE = load_png_template_matcher(
+        template_path=ERROR_CONFIRM_TEMPLATE_PATH,
+        settings_path=ERROR_CONFIRM_SETTINGS_PATH,
     )
 
     @classmethod
@@ -363,6 +369,15 @@ class HomeScreen(Screen):
             self._mark_stale()
             return None
 
+        _logger.warning(
+            "Failed to join a friendly room: %s.",
+            failure_reason.name,
+        )
+        await asyncio.sleep(0.5)
+        await self.click_template(
+            self.JOIN_ROOM_ERROR_CONFIRM_TEMPLATE,
+            message="error-confirm was not found after room join failure.",
+        )
         return failure_reason
 
     async def _get_join_room_response(self) -> dict[str, JsonValue]:

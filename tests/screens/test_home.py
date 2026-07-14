@@ -43,6 +43,8 @@ from majsoulrpa.assets.templates.home.create_room import (
 from majsoulrpa.assets.templates.home.join_room import (
     CONFIRM_SETTINGS_PATH,
     CONFIRM_TEMPLATE_PATH,
+    ERROR_CONFIRM_SETTINGS_PATH,
+    ERROR_CONFIRM_TEMPLATE_PATH,
 )
 from majsoulrpa.presentation import Region
 from majsoulrpa.presentation.template import TemplateMatchSettings
@@ -373,10 +375,19 @@ def test_join_room_returns_failure_reason(
     expected: JoinRoomFailureReason,
     warning_message: str | None,
 ) -> None:
-    async def sleep(_seconds: float) -> None:
-        pass
+    sleeps: list[float] = []
+    timeline: list[str] = []
 
-    browser = BrowserControllerSpy(
+    class OrderedBrowserControllerSpy(BrowserControllerSpy):
+        async def click(self, x: float, y: float) -> None:
+            timeline.append("click")
+            await super().click(x, y)
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+        timeline.append(f"sleep:{seconds}")
+
+    browser = OrderedBrowserControllerSpy(
         _synthetic_template_screenshot(
             template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
             settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
@@ -388,6 +399,10 @@ def test_join_room_returns_failure_reason(
         _synthetic_template_screenshot(
             template_path=CONFIRM_TEMPLATE_PATH,
             settings_path=CONFIRM_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=ERROR_CONFIRM_TEMPLATE_PATH,
+            settings_path=ERROR_CONFIRM_SETTINGS_PATH,
         ),
     )
     screen = HomeScreen(
@@ -409,6 +424,26 @@ def test_join_room_returns_failure_reason(
     assert result is expected
     assert not screen._stale
     assert "Joined a friendly room successfully." not in caplog.text
+    assert (
+        f"Failed to join a friendly room: {expected.name}." in caplog.messages
+    )
+    assert sleeps == [1.0, 1.0, 0.5, 0.5, 0.5, 0.5]
+    assert timeline[-2:] == ["sleep:0.5", "click"]
+    assert len(browser.clicked_points) == 5
+    error_confirm_region = TemplateMatchSettings.from_toml_file(
+        ERROR_CONFIRM_SETTINGS_PATH,
+    ).region
+    x, y = browser.clicked_points[-1]
+    assert (
+        error_confirm_region.left
+        < x
+        < error_confirm_region.left + error_confirm_region.width
+    )
+    assert (
+        error_confirm_region.top
+        < y
+        < error_confirm_region.top + error_confirm_region.height
+    )
     if warning_message is None:
         assert "Unrecognized joinRoom error code" not in caplog.text
     else:
@@ -1265,6 +1300,13 @@ def test_join_room_confirm_template_assets_exist() -> None:
     assert CONFIRM_TEMPLATE_PATH.is_file()
     assert CONFIRM_SETTINGS_PATH.name == "confirm.toml"
     assert CONFIRM_SETTINGS_PATH.is_file()
+
+
+def test_join_room_error_confirm_template_assets_exist() -> None:
+    assert ERROR_CONFIRM_TEMPLATE_PATH.name == "error-confirm.png"
+    assert ERROR_CONFIRM_TEMPLATE_PATH.is_file()
+    assert ERROR_CONFIRM_SETTINGS_PATH.name == "error-confirm.toml"
+    assert ERROR_CONFIRM_SETTINGS_PATH.is_file()
 
 
 def test_room_create_button_template_assets_exist() -> None:
