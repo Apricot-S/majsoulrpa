@@ -358,6 +358,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] confirm クリック後 0.5 秒待って `.lq.Lobby.joinRoom` を走査する
 - [x] `.lq.Lobby.joinRoom` より前の message を読み捨て、後続 message は残す
 - [x] `.lq.Lobby.joinRoom` がなければ screenshot 付き message 不整合エラーにする
+- [x] `.lq.Lobby.joinRoom` が response を持たなければ message 不整合エラーにする
+- [x] response に `error` がなければ成功を info log に出して stale にする
+- [x] 成功時の info log に room ID を含めない
+- [ ] response に `error` がある場合の error code を失敗理由へ変換する
 
 ## Phase 7: WebSocket sniffer
 

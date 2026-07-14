@@ -51,6 +51,7 @@ from majsoulrpa.screens.errors import (
     ScreenInvalidArgumentError,
     ScreenUnexpectedStateError,
 )
+from majsoulrpa.sniffer.events import DecodedRequestResponse
 
 MONTH_TICKET_API_NAME = ".lq.Lobby.payMonthTicket"
 JADE_WAIT_TIMEOUT_SECONDS = 5.0
@@ -351,3 +352,16 @@ class HomeScreen(Screen):
             msg = f"{JOIN_ROOM_API_NAME} message was not found."
             screenshot = await self.screenshot()
             raise ScreenInconsistentMessageError(msg, screenshot)
+
+        if not isinstance(join_room_message, DecodedRequestResponse):
+            msg = "joinRoom response was not found."
+            screenshot = await self.screenshot()
+            raise ScreenInconsistentMessageError(msg, screenshot)
+
+        if "error" not in join_room_message.response:
+            _logger.info("Joined a friendly room successfully.")
+            self._mark_stale()
+            return
+
+        msg = "joinRoom error response handling is not implemented."
+        raise NotImplementedError(msg)

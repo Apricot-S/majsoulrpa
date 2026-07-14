@@ -9,6 +9,7 @@ from typing import Any
 import cv2
 import numpy as np
 import pytest
+from pydantic import JsonValue
 
 import majsoulrpa.screens.home as home_module
 from majsoulrpa.assets.templates.home import (
@@ -60,13 +61,21 @@ from majsoulrpa.screens.errors import (
     ScreenUnexpectedStateError,
 )
 from majsoulrpa.screens.home import (
+    JOIN_ROOM_API_NAME,
     ROOM_ID_PATTERN,
     HomeScreen,
     Length,
     Mode,
     ThinkingTime,
 )
-from majsoulrpa.sniffer.events import DecodedNotice, Direction, RawNotice
+from majsoulrpa.sniffer.events import (
+    DecodedNotice,
+    DecodedRequestResponse,
+    DecodedSnifferMessage,
+    Direction,
+    RawNotice,
+    RawRequestResponse,
+)
 from majsoulrpa.sniffer.message_queue import SnifferMessageQueue
 from tests.sniffer.fakes import EMPTY_SNIFFER_MESSAGES
 
@@ -174,24 +183,49 @@ def _synthetic_home_ready_screenshot() -> bytes:
     )
 
 
-def _message_queue(*names: str) -> SnifferMessageQueue:
-    queue = SnifferMessageQueue(capacity=10, max_payload_bytes=1024)
-    for name in names:
-        queue.enqueue(
-            DecodedNotice(
-                raw=RawNotice(
-                    direction=Direction.INBOUND,
-                    name=name,
-                    payload=b"synthetic",
-                    observed_at=datetime.datetime(
-                        2026,
-                        1,
-                        2,
-                        tzinfo=datetime.UTC,
-                    ),
-                ),
-                message={},
+def _notice(name: str) -> DecodedNotice:
+    return DecodedNotice(
+        raw=RawNotice(
+            direction=Direction.INBOUND,
+            name=name,
+            payload=b"synthetic",
+            observed_at=datetime.datetime(
+                2026,
+                1,
+                2,
+                tzinfo=datetime.UTC,
             ),
+        ),
+        message={},
+    )
+
+
+def _request_response(
+    name: str,
+    response: dict[str, JsonValue],
+) -> DecodedRequestResponse:
+    observed_at = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
+    return DecodedRequestResponse(
+        raw=RawRequestResponse(
+            request_direction=Direction.OUTBOUND,
+            name=name,
+            request=b"synthetic-request",
+            response=b"synthetic-response",
+            request_observed_at=observed_at,
+            response_observed_at=observed_at,
+        ),
+        request={},
+        response=response,
+    )
+
+
+def _message_queue(
+    *messages: str | DecodedSnifferMessage,
+) -> SnifferMessageQueue:
+    queue = SnifferMessageQueue(capacity=10, max_payload_bytes=1024)
+    for message in messages:
+        queue.enqueue(
+            _notice(message) if isinstance(message, str) else message
         )
     return queue
 
@@ -249,16 +283,107 @@ def test_join_room_accepts_exactly_five_digits(
                     settings_path=CONFIRM_SETTINGS_PATH,
                 ),
             ),
-            sniffer_messages=_message_queue(".lq.Lobby.joinRoom"),
+            sniffer_messages=_message_queue(
+                _request_response(JOIN_ROOM_API_NAME, {}),
+            ),
         ),
     )
     monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
 
-    with caplog.at_level(logging.INFO, logger="majsoulrpa.screens.api"):
+    with caplog.at_level(logging.INFO):
         result = asyncio.run(screen.join_room("12345"))
 
     assert result is None
+    assert screen._stale
     assert "screen API called: screen=HomeScreen api=join_room" in caplog.text
+    assert "Joined a friendly room successfully." in caplog.text
+    assert "12345" not in caplog.text
+
+
+def test_join_room_raises_if_join_room_response_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    screenshot = _synthetic_template_screenshot(
+        template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+        settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+    )
+    browser = BrowserControllerSpy(
+        screenshot,
+        _synthetic_template_screenshot(
+            template_path=JOIN_ROOM_TEMPLATE_PATH,
+            settings_path=JOIN_ROOM_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=CONFIRM_TEMPLATE_PATH,
+            settings_path=CONFIRM_SETTINGS_PATH,
+        ),
+    )
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=_message_queue(JOIN_ROOM_API_NAME),
+        ),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenInconsistentMessageError,
+        match="joinRoom response was not found",
+    ) as exc_info:
+        asyncio.run(screen.join_room("12345"))
+
+    assert exc_info.value.screenshot == screenshot
+    assert not screen._stale
+
+
+def test_join_room_does_not_treat_error_response_as_success(
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+            settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=JOIN_ROOM_TEMPLATE_PATH,
+            settings_path=JOIN_ROOM_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=CONFIRM_TEMPLATE_PATH,
+            settings_path=CONFIRM_SETTINGS_PATH,
+        ),
+    )
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=_message_queue(
+                _request_response(
+                    JOIN_ROOM_API_NAME,
+                    {"error": {"code": 1}},
+                ),
+            ),
+        ),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with (
+        caplog.at_level(logging.INFO),
+        pytest.raises(
+            NotImplementedError,
+            match="error response handling is not implemented",
+        ),
+    ):
+        asyncio.run(screen.join_room("12345"))
+
+    assert not screen._stale
+    assert "Joined a friendly room successfully." not in caplog.text
 
 
 def test_join_room_opens_dialog_and_fills_room_id_without_clearing(
@@ -302,7 +427,7 @@ def test_join_room_opens_dialog_and_fills_room_id_without_clearing(
     )
     messages = _message_queue(
         ".lq.Unrelated",
-        ".lq.Lobby.joinRoom",
+        _request_response(JOIN_ROOM_API_NAME, {}),
         ".lq.AfterJoinRoom",
     )
     screen = HomeScreen(
