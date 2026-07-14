@@ -344,6 +344,10 @@ class HomeScreen(Screen):
 
         join_room_message = None
         while (message := self._get_sniffer_message_nowait()) is not None:
+            _logger.info(
+                "Sniffer message: %s",
+                _format_sniffer_message(message),
+            )
             if message.raw.name == JOIN_ROOM_API_NAME:
                 join_room_message = message
                 break
