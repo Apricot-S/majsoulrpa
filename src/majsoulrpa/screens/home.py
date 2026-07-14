@@ -356,6 +356,16 @@ class HomeScreen(Screen):
         # Wait for `.lq.Lobby.joinRoom` to be exchanged.
         await asyncio.sleep(0.5)
 
+        response = await self._get_join_room_response()
+        failure_reason = await self._get_join_room_failure_reason(response)
+        if failure_reason is None:
+            _logger.info("Joined a friendly room successfully.")
+            self._mark_stale()
+            return None
+
+        return failure_reason
+
+    async def _get_join_room_response(self) -> dict[str, JsonValue]:
         join_room_message = None
         while (message := self._get_sniffer_message_nowait()) is not None:
             _logger.info(
@@ -376,15 +386,7 @@ class HomeScreen(Screen):
             screenshot = await self.screenshot()
             raise ScreenInconsistentMessageError(msg, screenshot)
 
-        failure_reason = await self._get_join_room_failure_reason(
-            join_room_message.response,
-        )
-        if failure_reason is None:
-            _logger.info("Joined a friendly room successfully.")
-            self._mark_stale()
-            return None
-
-        return failure_reason
+        return join_room_message.response
 
     async def _get_join_room_failure_reason(
         self,
