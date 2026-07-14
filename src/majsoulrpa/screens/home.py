@@ -408,4 +408,5 @@ class HomeScreen(Screen):
         try:
             return JoinRoomFailureReason(code)
         except ValueError:
+            _logger.warning("Unrecognized joinRoom error code: %d.", code)
             return JoinRoomFailureReason.UNRECOGNIZED_ERROR_CODE

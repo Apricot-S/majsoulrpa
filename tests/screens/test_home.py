@@ -354,12 +354,16 @@ def test_join_room_raises_if_join_room_response_is_missing(
 
 
 @pytest.mark.parametrize(
-    ("error_code", "expected"),
+    ("error_code", "expected", "warning_message"),
     [
-        (1100, JoinRoomFailureReason.ROOM_NOT_FOUND),
-        (1101, JoinRoomFailureReason.ROOM_FULL),
-        (1109, JoinRoomFailureReason.MATCH_ALREADY_STARTED),
-        (9999, JoinRoomFailureReason.UNRECOGNIZED_ERROR_CODE),
+        (1100, JoinRoomFailureReason.ROOM_NOT_FOUND, None),
+        (1101, JoinRoomFailureReason.ROOM_FULL, None),
+        (1109, JoinRoomFailureReason.MATCH_ALREADY_STARTED, None),
+        (
+            9999,
+            JoinRoomFailureReason.UNRECOGNIZED_ERROR_CODE,
+            "Unrecognized joinRoom error code: 9999.",
+        ),
     ],
 )
 def test_join_room_returns_failure_reason(
@@ -367,6 +371,7 @@ def test_join_room_returns_failure_reason(
     monkeypatch: pytest.MonkeyPatch,
     error_code: int,
     expected: JoinRoomFailureReason,
+    warning_message: str | None,
 ) -> None:
     async def sleep(_seconds: float) -> None:
         pass
@@ -404,6 +409,10 @@ def test_join_room_returns_failure_reason(
     assert result is expected
     assert not screen._stale
     assert "Joined a friendly room successfully." not in caplog.text
+    if warning_message is None:
+        assert "Unrecognized joinRoom error code" not in caplog.text
+    else:
+        assert warning_message in caplog.messages
 
 
 @pytest.mark.parametrize(

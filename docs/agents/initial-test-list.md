@@ -365,6 +365,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `error` が dict でないか `code` がなければ message 不整合エラーにする
 - [x] joinRoom の既知 error code を `JoinRoomFailureReason` へ変換する
 - [x] 未対応 error code を framework 側の `UNRECOGNIZED_ERROR_CODE` へ変換する
+- [x] 未対応 error code の数値を warning log に記録する
 - [x] error code が整数でなければ message 不整合エラーにする
 - [x] 参加失敗時は成功 log を出さず、`HomeScreen` を stale にしない
 
