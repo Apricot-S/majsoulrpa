@@ -54,6 +54,7 @@ from majsoulrpa.screens import (
 )
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
+    ScreenInconsistentMessageError,
     ScreenInvalidArgumentError,
     ScreenStaleError,
     ScreenUnexpectedStateError,
@@ -199,6 +200,10 @@ def test_home_screen_is_screen() -> None:
     assert issubclass(HomeScreen, Screen)
 
 
+def test_inconsistent_message_error_is_runtime_error() -> None:
+    assert issubclass(ScreenInconsistentMessageError, RuntimeError)
+
+
 def test_room_creation_enums_have_expected_members() -> None:
     assert list(Mode) == [Mode.FOUR_PLAYER, Mode.THREE_PLAYER]
     assert list(Length) == [
@@ -244,6 +249,7 @@ def test_join_room_accepts_exactly_five_digits(
                     settings_path=CONFIRM_SETTINGS_PATH,
                 ),
             ),
+            sniffer_messages=_message_queue(".lq.Lobby.joinRoom"),
         ),
     )
     monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
@@ -294,7 +300,18 @@ def test_join_room_opens_dialog_and_fills_room_id_without_clearing(
             settings_path=CONFIRM_SETTINGS_PATH,
         ),
     )
-    screen = HomeScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+    messages = _message_queue(
+        ".lq.Unrelated",
+        ".lq.Lobby.joinRoom",
+        ".lq.AfterJoinRoom",
+    )
+    screen = HomeScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=messages,
+            rng=Random(0),
+        ),
+    )
     monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
 
     result = asyncio.run(screen.join_room("12345"))
@@ -323,7 +340,49 @@ def test_join_room_opens_dialog_and_fills_room_id_without_clearing(
         "input:12345",
         "sleep:0.5",
         "click",
+        "sleep:0.5",
     ]
+    remaining_message = messages.get_nowait()
+    assert remaining_message is not None
+    assert remaining_message.raw.name == ".lq.AfterJoinRoom"
+    assert messages.get_nowait() is None
+
+
+def test_join_room_raises_if_join_room_message_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    screenshot = _synthetic_template_screenshot(
+        template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
+        settings_path=FRIENDLY_MATCH_SETTINGS_PATH,
+    )
+    browser = BrowserControllerSpy(
+        screenshot,
+        _synthetic_template_screenshot(
+            template_path=JOIN_ROOM_TEMPLATE_PATH,
+            settings_path=JOIN_ROOM_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=CONFIRM_TEMPLATE_PATH,
+            settings_path=CONFIRM_SETTINGS_PATH,
+        ),
+    )
+    messages = _message_queue(".lq.Unrelated")
+    screen = HomeScreen(
+        context=ScreenContext(browser=browser, sniffer_messages=messages),
+    )
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenInconsistentMessageError,
+        match=r"\.lq\.Lobby\.joinRoom.*not found",
+    ) as exc_info:
+        asyncio.run(screen.join_room("12345"))
+
+    assert exc_info.value.screenshot == screenshot
+    assert messages.get_nowait() is None
 
 
 def test_join_room_raises_if_friendly_match_button_is_missing() -> None:

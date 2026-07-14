@@ -45,6 +45,10 @@ class ScreenInvalidArgumentError(ScreenError, ValueError):
     pass
 
 
+class ScreenInconsistentMessageError(ScreenError):
+    pass
+
+
 class ScreenInvalidOperationError(ScreenError):
     pass
 

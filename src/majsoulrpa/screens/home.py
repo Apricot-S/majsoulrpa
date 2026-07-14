@@ -47,6 +47,7 @@ from majsoulrpa.screens.base import (
 )
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
+    ScreenInconsistentMessageError,
     ScreenInvalidArgumentError,
     ScreenUnexpectedStateError,
 )
@@ -54,6 +55,7 @@ from majsoulrpa.screens.errors import (
 MONTH_TICKET_API_NAME = ".lq.Lobby.payMonthTicket"
 JADE_WAIT_TIMEOUT_SECONDS = 5.0
 ROOM_ID_PATTERN = re.compile(r"\d{5}")
+JOIN_ROOM_API_NAME = ".lq.Lobby.joinRoom"
 
 _logger = getLogger(__name__)
 
@@ -336,3 +338,16 @@ class HomeScreen(Screen):
         await self.fill_region(self.ROOM_ID_REGION, room_id, clear=False)
         await asyncio.sleep(0.5)
         await self._click_region(confirm_result.region)
+        # Wait for `.lq.Lobby.joinRoom` to be exchanged.
+        await asyncio.sleep(0.5)
+
+        join_room_message = None
+        while (message := self._get_sniffer_message_nowait()) is not None:
+            if message.raw.name == JOIN_ROOM_API_NAME:
+                join_room_message = message
+                break
+
+        if join_room_message is None:
+            msg = f"{JOIN_ROOM_API_NAME} message was not found."
+            screenshot = await self.screenshot()
+            raise ScreenInconsistentMessageError(msg, screenshot)

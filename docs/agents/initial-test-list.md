@@ -355,6 +355,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `confirm` がなければ screenshot 付き画面検出エラーにする
 - [x] confirm 確認後に room ID 領域へ `clear=False` で room ID を入力する
 - [x] room ID 入力後 0.5 秒待って `confirm` の一致領域をクリックする
+- [x] confirm クリック後 0.5 秒待って `.lq.Lobby.joinRoom` を走査する
+- [x] `.lq.Lobby.joinRoom` より前の message を読み捨て、後続 message は残す
+- [x] `.lq.Lobby.joinRoom` がなければ screenshot 付き message 不整合エラーにする
 
 ## Phase 7: WebSocket sniffer
 

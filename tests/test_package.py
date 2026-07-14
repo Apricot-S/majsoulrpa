@@ -67,6 +67,7 @@ def test_screens_import_does_not_load_login_screen_module() -> None:
         "ScreenDetectionSpec",
         "ScreenDetectionTimeoutError",
         "ScreenError",
+        "ScreenInconsistentMessageError",
         "ScreenInvalidArgumentError",
         "ScreenInvalidOperationError",
         "ScreenStaleError",
