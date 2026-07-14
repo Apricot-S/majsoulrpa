@@ -255,7 +255,7 @@ def test_join_room_accepts_exactly_five_digits(
     assert "screen API called: screen=HomeScreen api=join_room" in caplog.text
 
 
-def test_join_room_clicks_friendly_match_then_join_room(
+def test_join_room_opens_dialog_and_fills_room_id_without_clearing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     timeline: list[str] = []
@@ -268,6 +268,14 @@ def test_join_room_clicks_friendly_match_then_join_room(
         async def screenshot(self) -> bytes:
             timeline.append("screenshot")
             return await super().screenshot()
+
+        async def input_text(self, text: str) -> None:
+            timeline.append(f"input:{text}")
+            await super().input_text(text)
+
+        async def press_key(self, key: str) -> None:
+            timeline.append(f"key:{key}")
+            await super().press_key(key)
 
     async def sleep(seconds: float) -> None:
         timeline.append(f"sleep:{seconds}")
@@ -292,7 +300,10 @@ def test_join_room_clicks_friendly_match_then_join_room(
     result = asyncio.run(screen.join_room("12345"))
 
     assert result is None
-    assert len(browser.clicked_points) == 2
+    assert len(browser.clicked_points) == 3
+    x, y = browser.clicked_points[2]
+    assert HomeScreen.ROOM_ID_REGION.left < x < HomeScreen.ROOM_ID_REGION.right
+    assert HomeScreen.ROOM_ID_REGION.top < y < HomeScreen.ROOM_ID_REGION.bottom
     assert timeline == [
         "screenshot",
         "click",
@@ -301,6 +312,9 @@ def test_join_room_clicks_friendly_match_then_join_room(
         "click",
         "sleep:1.0",
         "screenshot",
+        "click",
+        "sleep:0.5",
+        "input:12345",
     ]
 
 

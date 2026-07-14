@@ -121,6 +121,7 @@ class HomeScreen(Screen):
             height=80,
         ),
     }
+    ROOM_ID_REGION = Region(left=660, top=340, width=410, height=40)
 
     SUMMON_TEMPLATE = load_png_template_matcher(
         template_path=SUMMON_TEMPLATE_PATH,
@@ -332,3 +333,4 @@ class HomeScreen(Screen):
             self.JOIN_ROOM_CONFIRM_TEMPLATE,
             message="confirm was not found after opening room join dialog.",
         )
+        await self.fill_region(self.ROOM_ID_REGION, room_id)

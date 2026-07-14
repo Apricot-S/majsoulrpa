@@ -353,6 +353,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] room 参加ダイアログの `confirm` template と settings を HomeScreen から利用できる
 - [x] `join-room` のクリック後 1.0 秒待って `confirm` の存在を必須確認する
 - [x] `confirm` がなければ screenshot 付き画面検出エラーにする
+- [x] confirm 確認後に room ID 領域へ `clear=False` で room ID を入力する
 
 ## Phase 7: WebSocket sniffer
 
