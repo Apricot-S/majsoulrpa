@@ -59,10 +59,19 @@ from majsoulrpa.sniffer.events import DecodedRequestResponse
 
 MONTH_TICKET_API_NAME = ".lq.Lobby.payMonthTicket"
 JADE_WAIT_TIMEOUT_SECONDS = 5.0
+TOURNAMENT_ID_PATTERN = re.compile(r"\d{6}")
 ROOM_ID_PATTERN = re.compile(r"\d{5}")
 JOIN_ROOM_API_NAME = ".lq.Lobby.joinRoom"
 
 _logger = getLogger(__name__)
+
+
+class EnterTournamentFailureReason(Enum):
+    """Reason why entering a tournament failed."""
+
+    TOURNAMENT_NOT_FOUND = 2501
+    NO_ACTIVE_SEASON = 2536
+    UNRECOGNIZED_ERROR_CODE = -1
 
 
 class Mode(Enum):
@@ -300,6 +309,23 @@ class HomeScreen(Screen):
             if template.find(screenshot) is None:
                 msg = f"{name} was not found after closing announcements."
                 raise ScreenDetectionError(msg, screenshot)
+
+    @_screen_api
+    @_requires_active
+    async def enter_tournament(
+        self,
+        tournament_id: str,
+    ) -> EnterTournamentFailureReason | None:
+        if TOURNAMENT_ID_PATTERN.fullmatch(tournament_id) is None:
+            msg = "Tournament ID must be exactly 6 digits."
+            screenshot = await self.screenshot()
+            raise ScreenInvalidArgumentError(msg, screenshot)
+
+        await self.click_template(
+            self.TOURNAMENT_MATCH_TEMPLATE,
+            message="tournament-match was not found.",
+        )
+        return None
 
     @_screen_api
     @_requires_active

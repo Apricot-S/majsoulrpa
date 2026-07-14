@@ -373,6 +373,15 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `error-confirm` から 1.0 秒待機して戻る座標をクリックする
 - [x] 戻る座標から 1.0 秒待機してホーム画面の対局ボタンを確認する
 
+## Phase 6.9: HomeScreen 大会ロビー参加
+
+- [x] `EnterTournamentFailureReason` が既知コードと framework fallback を表す
+- [x] tournament ID の形式を `re.compile(r"\d{6}")` の完全一致で判定する
+- [x] 形式が一致しない tournament ID は screenshot 付き不正引数エラーにする
+- [x] `HomeScreen.enter_tournament()` を高レベル API のログ記録と stale 保護の対象にする
+- [x] 形式が一致する tournament ID では `tournament-match` をクリックする
+- [x] `tournament-match` がなければ screenshot 付き画面検出エラーにする
+
 ## Phase 7: WebSocket sniffer
 
 - [x] sniffer backend の start に失敗した場合に browser を閉じる

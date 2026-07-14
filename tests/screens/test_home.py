@@ -65,6 +65,8 @@ from majsoulrpa.screens.errors import (
 from majsoulrpa.screens.home import (
     JOIN_ROOM_API_NAME,
     ROOM_ID_PATTERN,
+    TOURNAMENT_ID_PATTERN,
+    EnterTournamentFailureReason,
     HomeScreen,
     JoinRoomFailureReason,
     Length,
@@ -271,9 +273,107 @@ def test_join_room_failure_reason_has_expected_members() -> None:
     assert JoinRoomFailureReason.UNRECOGNIZED_ERROR_CODE.value == -1
 
 
+def test_enter_tournament_failure_reason_has_expected_members() -> None:
+    assert list(EnterTournamentFailureReason) == [
+        EnterTournamentFailureReason.TOURNAMENT_NOT_FOUND,
+        EnterTournamentFailureReason.NO_ACTIVE_SEASON,
+        EnterTournamentFailureReason.UNRECOGNIZED_ERROR_CODE,
+    ]
+    assert EnterTournamentFailureReason.TOURNAMENT_NOT_FOUND.value == 2501
+    assert EnterTournamentFailureReason.NO_ACTIVE_SEASON.value == 2536
+    assert EnterTournamentFailureReason.UNRECOGNIZED_ERROR_CODE.value == -1
+
+
 def test_room_id_pattern_matches_exactly_five_digits() -> None:
     assert ROOM_ID_PATTERN.pattern == r"\d{5}"
     assert ROOM_ID_PATTERN.fullmatch("12345") is not None
+
+
+def test_tournament_id_pattern_matches_exactly_six_digits() -> None:
+    assert TOURNAMENT_ID_PATTERN.pattern == r"\d{6}"
+    assert TOURNAMENT_ID_PATTERN.fullmatch("123456") is not None
+
+
+def test_enter_tournament_clicks_tournament_match_button(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=TOURNAMENT_MATCH_TEMPLATE_PATH,
+            settings_path=TOURNAMENT_MATCH_SETTINGS_PATH,
+        ),
+    )
+    screen = HomeScreen(context=ScreenContext(browser=browser))
+
+    with caplog.at_level(logging.INFO):
+        result = asyncio.run(screen.enter_tournament("123456"))
+
+    assert result is None
+    assert not screen._stale
+    assert (
+        "screen API called: screen=HomeScreen api=enter_tournament"
+        in caplog.text
+    )
+    assert "123456" not in caplog.text
+    [(x, y)] = browser.clicked_points
+    region = TemplateMatchSettings.from_toml_file(
+        TOURNAMENT_MATCH_SETTINGS_PATH,
+    ).region
+    assert region.left < x < region.left + region.width
+    assert region.top < y < region.top + region.height
+
+
+@pytest.mark.parametrize(
+    "tournament_id",
+    ["", "12345", "1234567", "12345a"],
+)
+def test_enter_tournament_rejects_id_not_matching_six_digits(
+    tournament_id: str,
+) -> None:
+    screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(screenshot)
+    screen = HomeScreen(context=ScreenContext(browser=browser))
+
+    with pytest.raises(
+        ScreenInvalidArgumentError,
+        match="Tournament ID must be exactly 6 digits",
+    ) as exc_info:
+        asyncio.run(screen.enter_tournament(tournament_id))
+
+    assert exc_info.value.screenshot == screenshot
+    assert browser.clicked_points == []
+    assert not screen._stale
+
+
+def test_enter_tournament_raises_if_tournament_match_button_is_missing() -> (
+    None
+):
+    screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(screenshot)
+    screen = HomeScreen(context=ScreenContext(browser=browser))
+
+    with pytest.raises(
+        ScreenDetectionError,
+        match="tournament-match was not found",
+    ) as exc_info:
+        asyncio.run(screen.enter_tournament("123456"))
+
+    assert exc_info.value.screenshot == screenshot
+    assert browser.clicked_points == []
+    assert not screen._stale
+
+
+def test_enter_tournament_rejects_stale_home_screen() -> None:
+    screenshot = _synthetic_blank_screenshot()
+    screen = HomeScreen(
+        context=ScreenContext(browser=BrowserControllerSpy(screenshot)),
+    )
+    screen._mark_stale()
+
+    with pytest.raises(ScreenStaleError) as exc_info:
+        asyncio.run(screen.enter_tournament("123456"))
+
+    assert exc_info.value.screenshot == screenshot
 
 
 def test_join_room_accepts_exactly_five_digits(
