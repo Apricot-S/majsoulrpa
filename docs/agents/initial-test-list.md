@@ -383,6 +383,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `tournament-match` がなければ screenshot 付き画面検出エラーにする
 - [x] `tournament-match` から 1.0 秒待機して `tournament-lobby` をクリックする
 - [x] `tournament-lobby` がなければ screenshot 付き画面検出エラーにする
+- [x] `tournament-lobby` から 1.0 秒待機して `enter` をクリックする
+- [x] `enter` から 1.0 秒待機して `confirm` の存在を必須確認する
+- [x] `confirm` がなければ screenshot 付き画面検出エラーにする
+- [x] `confirm` 確認後に tournament ID 領域へ `clear=False` で入力する
 
 ## Phase 7: WebSocket sniffer
 

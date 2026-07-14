@@ -42,6 +42,12 @@ from majsoulrpa.assets.templates.home.join_room import (
     ERROR_CONFIRM_SETTINGS_PATH,
     ERROR_CONFIRM_TEMPLATE_PATH,
 )
+from majsoulrpa.assets.templates.home.tournament_lobby import (
+    TOURNAMENT_CONFIRM_SETTINGS_PATH,
+    TOURNAMENT_CONFIRM_TEMPLATE_PATH,
+    TOURNAMENT_ENTER_SETTINGS_PATH,
+    TOURNAMENT_ENTER_TEMPLATE_PATH,
+)
 from majsoulrpa.presentation import Region
 from majsoulrpa.presentation.template import load_png_template_matcher
 from majsoulrpa.screens.base import (
@@ -106,6 +112,7 @@ class JoinRoomFailureReason(Enum):
 
 
 class HomeScreen(Screen):
+    TOURNAMENT_ID_REGION = Region(left=660, top=340, width=410, height=40)
     MODE_REGIONS: ClassVar[dict[Mode, Region]] = {
         Mode.FOUR_PLAYER: Region(left=426, top=254, width=216, height=80),
         Mode.THREE_PLAYER: Region(left=691, top=254, width=216, height=80),
@@ -186,6 +193,14 @@ class HomeScreen(Screen):
     TOURNAMENT_LOBBY_TEMPLATE = load_png_template_matcher(
         template_path=TOURNAMENT_LOBBY_TEMPLATE_PATH,
         settings_path=TOURNAMENT_LOBBY_SETTINGS_PATH,
+    )
+    TOURNAMENT_ENTER_TEMPLATE = load_png_template_matcher(
+        template_path=TOURNAMENT_ENTER_TEMPLATE_PATH,
+        settings_path=TOURNAMENT_ENTER_SETTINGS_PATH,
+    )
+    TOURNAMENT_CONFIRM_TEMPLATE = load_png_template_matcher(
+        template_path=TOURNAMENT_CONFIRM_TEMPLATE_PATH,
+        settings_path=TOURNAMENT_CONFIRM_SETTINGS_PATH,
     )
     FRIENDLY_MATCH_TEMPLATE = load_png_template_matcher(
         template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
@@ -335,6 +350,23 @@ class HomeScreen(Screen):
         await self.click_template(
             self.TOURNAMENT_LOBBY_TEMPLATE,
             message="tournament-lobby was not found.",
+        )
+        await asyncio.sleep(1.0)
+        await self.click_template(
+            self.TOURNAMENT_ENTER_TEMPLATE,
+            message="enter was not found after opening tournament lobby.",
+        )
+        await asyncio.sleep(1.0)
+        await self.require_template(
+            self.TOURNAMENT_CONFIRM_TEMPLATE,
+            message=(
+                "confirm was not found after opening tournament entry dialog."
+            ),
+        )
+        await self.fill_region(
+            self.TOURNAMENT_ID_REGION,
+            tournament_id,
+            clear=False,
         )
         return None
 

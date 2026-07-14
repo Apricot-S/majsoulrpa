@@ -48,6 +48,12 @@ from majsoulrpa.assets.templates.home.join_room import (
     ERROR_CONFIRM_SETTINGS_PATH,
     ERROR_CONFIRM_TEMPLATE_PATH,
 )
+from majsoulrpa.assets.templates.home.tournament_lobby import (
+    TOURNAMENT_CONFIRM_SETTINGS_PATH,
+    TOURNAMENT_CONFIRM_TEMPLATE_PATH,
+    TOURNAMENT_ENTER_SETTINGS_PATH,
+    TOURNAMENT_ENTER_TEMPLATE_PATH,
+)
 from majsoulrpa.presentation import Region
 from majsoulrpa.presentation.template import TemplateMatchSettings
 from majsoulrpa.screens import (
@@ -301,11 +307,22 @@ def test_enter_tournament_clicks_tournament_match_button(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     sleeps: list[float] = []
+    input_values: list[str] = []
+    pressed_keys: list[str] = []
+
+    class TournamentBrowserControllerSpy(BrowserControllerSpy):
+        async def input_text(self, text: str) -> None:
+            input_values.append(text)
+            await super().input_text(text)
+
+        async def press_key(self, key: str) -> None:
+            pressed_keys.append(key)
+            await super().press_key(key)
 
     async def sleep(seconds: float) -> None:
         sleeps.append(seconds)
 
-    browser = BrowserControllerSpy(
+    browser = TournamentBrowserControllerSpy(
         _synthetic_template_screenshot(
             template_path=TOURNAMENT_MATCH_TEMPLATE_PATH,
             settings_path=TOURNAMENT_MATCH_SETTINGS_PATH,
@@ -313,6 +330,14 @@ def test_enter_tournament_clicks_tournament_match_button(
         _synthetic_template_screenshot(
             template_path=TOURNAMENT_LOBBY_TEMPLATE_PATH,
             settings_path=TOURNAMENT_LOBBY_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=TOURNAMENT_ENTER_TEMPLATE_PATH,
+            settings_path=TOURNAMENT_ENTER_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=TOURNAMENT_CONFIRM_TEMPLATE_PATH,
+            settings_path=TOURNAMENT_CONFIRM_SETTINGS_PATH,
         ),
     )
     screen = HomeScreen(context=ScreenContext(browser=browser))
@@ -328,8 +353,11 @@ def test_enter_tournament_clicks_tournament_match_button(
         in caplog.text
     )
     assert "123456" not in caplog.text
-    assert sleeps == [1.0]
-    assert len(browser.clicked_points) == 2
+    assert sleeps == [1.0, 1.0, 1.0, 0.5]
+    assert len(browser.clicked_points) == 4
+    assert browser.screenshot_count == 4
+    assert input_values == ["123456"]
+    assert pressed_keys == []
     match_region = TemplateMatchSettings.from_toml_file(
         TOURNAMENT_MATCH_SETTINGS_PATH,
     ).region
@@ -342,6 +370,17 @@ def test_enter_tournament_clicks_tournament_match_button(
     x, y = browser.clicked_points[1]
     assert lobby_region.left < x < lobby_region.left + lobby_region.width
     assert lobby_region.top < y < lobby_region.top + lobby_region.height
+    enter_region = TemplateMatchSettings.from_toml_file(
+        TOURNAMENT_ENTER_SETTINGS_PATH,
+    ).region
+    x, y = browser.clicked_points[2]
+    assert enter_region.left < x < enter_region.left + enter_region.width
+    assert enter_region.top < y < enter_region.top + enter_region.height
+    x, y = browser.clicked_points[3]
+    assert HomeScreen.TOURNAMENT_ID_REGION.left < x
+    assert x < HomeScreen.TOURNAMENT_ID_REGION.right
+    assert HomeScreen.TOURNAMENT_ID_REGION.top < y
+    assert y < HomeScreen.TOURNAMENT_ID_REGION.bottom
 
 
 @pytest.mark.parametrize(
@@ -412,6 +451,42 @@ def test_enter_tournament_raises_if_tournament_lobby_button_is_missing(
     assert exc_info.value.screenshot == missing_lobby_screenshot
     assert sleeps == [1.0]
     assert len(browser.clicked_points) == 1
+    assert not screen._stale
+
+
+def test_enter_tournament_raises_if_confirm_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    missing_confirm_screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=TOURNAMENT_MATCH_TEMPLATE_PATH,
+            settings_path=TOURNAMENT_MATCH_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=TOURNAMENT_LOBBY_TEMPLATE_PATH,
+            settings_path=TOURNAMENT_LOBBY_SETTINGS_PATH,
+        ),
+        _synthetic_template_screenshot(
+            template_path=TOURNAMENT_ENTER_TEMPLATE_PATH,
+            settings_path=TOURNAMENT_ENTER_SETTINGS_PATH,
+        ),
+        missing_confirm_screenshot,
+    )
+    screen = HomeScreen(context=ScreenContext(browser=browser))
+    monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
+
+    with pytest.raises(
+        ScreenDetectionError,
+        match="confirm was not found after opening tournament entry dialog",
+    ) as exc_info:
+        asyncio.run(screen.enter_tournament("123456"))
+
+    assert exc_info.value.screenshot == missing_confirm_screenshot
+    assert len(browser.clicked_points) == 3
     assert not screen._stale
 
 
@@ -1506,6 +1581,17 @@ def test_tournament_lobby_button_template_assets_exist() -> None:
     assert TOURNAMENT_LOBBY_TEMPLATE_PATH.is_file()
     assert TOURNAMENT_LOBBY_SETTINGS_PATH.name == "tournament-lobby.toml"
     assert TOURNAMENT_LOBBY_SETTINGS_PATH.is_file()
+
+
+def test_tournament_lobby_dialog_template_assets_exist() -> None:
+    assert TOURNAMENT_ENTER_TEMPLATE_PATH.name == "enter.png"
+    assert TOURNAMENT_ENTER_TEMPLATE_PATH.is_file()
+    assert TOURNAMENT_ENTER_SETTINGS_PATH.name == "enter.toml"
+    assert TOURNAMENT_ENTER_SETTINGS_PATH.is_file()
+    assert TOURNAMENT_CONFIRM_TEMPLATE_PATH.name == "confirm.png"
+    assert TOURNAMENT_CONFIRM_TEMPLATE_PATH.is_file()
+    assert TOURNAMENT_CONFIRM_SETTINGS_PATH.name == "confirm.toml"
+    assert TOURNAMENT_CONFIRM_SETTINGS_PATH.is_file()
 
 
 def test_create_room_template_assets_exist() -> None:
