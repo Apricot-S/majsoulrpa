@@ -75,7 +75,11 @@ def test_remote_browser_controller_sends_click_and_text_input() -> None:
         ClickResponse(x=25, y=40),
         TextInputResponse(text="player@example.invalid"),
     )
-    controller = RemoteBrowserController(transport, rng=Random(0))
+    controller = RemoteBrowserController(
+        transport,
+        rng=Random(0),
+        click_hover_delay_seconds=0.125,
+    )
 
     asyncio.run(controller.click(25, 40))
     asyncio.run(controller.input_text("ab"))
@@ -86,6 +90,7 @@ def test_remote_browser_controller_sends_click_and_text_input() -> None:
     assert click_command == ClickCommand(
         x=25,
         y=40,
+        hover_delay_seconds=0.125,
         mouse_down_up_delay_seconds=click_command.mouse_down_up_delay_seconds,
     )
     assert click_command.mouse_down_up_delay_seconds > 0
@@ -94,6 +99,19 @@ def test_remote_browser_controller_sends_click_and_text_input() -> None:
         character_delay_seconds=text_command.character_delay_seconds,
     )
     assert text_command.character_delay_seconds > 0
+
+
+def test_remote_browser_controller_sends_warp_click_without_hover_delay() -> (
+    None
+):
+    transport = BrowserClientTransportSpy(ClickResponse(x=25, y=40))
+    controller = RemoteBrowserController(transport)
+
+    asyncio.run(controller.click(25, 40, warp=True))
+
+    [command] = transport.sent_commands
+    assert isinstance(command, ClickCommand)
+    assert command.hover_delay_seconds is None
 
 
 def test_remote_browser_controller_clicks_and_waits_for_yostar_auth() -> None:
@@ -222,6 +240,7 @@ def test_browser_command_schema_rejects_unknown_key() -> None:
                 "type": "click",
                 "x": 10,
                 "y": 20,
+                "hover_delay_seconds": 0.1,
                 "mouse_down_up_delay_seconds": 0.1,
                 "unexpected": True,
             },
@@ -233,7 +252,16 @@ def test_browser_command_schema_rejects_invalid_delay() -> None:
         ClickCommand(
             x=10,
             y=20,
+            hover_delay_seconds=0.1,
             mouse_down_up_delay_seconds=0,
+        )
+
+    with pytest.raises(ValueError, match="greater than 0"):
+        ClickCommand(
+            x=10,
+            y=20,
+            hover_delay_seconds=0,
+            mouse_down_up_delay_seconds=0.1,
         )
 
     with pytest.raises(ValueError, match="greater than 0"):

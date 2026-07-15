@@ -36,6 +36,7 @@ async def _roundtrip_command_and_response() -> None:
             ClickCommand(
                 x=25,
                 y=40,
+                hover_delay_seconds=0.1,
                 mouse_down_up_delay_seconds=0.1,
             ),
         )
@@ -50,6 +51,7 @@ async def _roundtrip_command_and_response() -> None:
     assert command == ClickCommand(
         x=25,
         y=40,
+        hover_delay_seconds=0.1,
         mouse_down_up_delay_seconds=0.1,
     )
     assert response == ClickResponse(x=25, y=40)
@@ -132,6 +134,7 @@ async def _zmq_request_server_handles_client_requests() -> None:
             ClickCommand(
                 x=25,
                 y=40,
+                hover_delay_seconds=0.1,
                 mouse_down_up_delay_seconds=0.1,
             ),
         )
@@ -157,6 +160,7 @@ async def _zmq_request_server_handles_client_requests() -> None:
         ClickCommand(
             x=25,
             y=40,
+            hover_delay_seconds=0.1,
             mouse_down_up_delay_seconds=0.1,
         ),
         TextInputCommand(

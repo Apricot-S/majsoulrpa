@@ -12,6 +12,7 @@ from majsoulrpa.browser.history import (
 from majsoulrpa.browser.messages import (
     BrowserCommand,
     BrowserResponse,
+    ClickCommand,
     GotoUrlCommand,
     GotoUrlResponse,
     ScreenshotResponse,
@@ -70,6 +71,26 @@ def test_browser_history_keeps_goto_url_for_log_id() -> None:
     assert summarize_browser_response(GotoUrlResponse(url=url)) == {
         "type": "goto_url",
         "url": url,
+    }
+
+
+@pytest.mark.parametrize("hover_delay_seconds", [0.1, None])
+def test_browser_history_keeps_click_delays(
+    hover_delay_seconds: float | None,
+) -> None:
+    command = ClickCommand(
+        x=25,
+        y=40,
+        hover_delay_seconds=hover_delay_seconds,
+        mouse_down_up_delay_seconds=0.05,
+    )
+
+    assert summarize_browser_command(command) == {
+        "type": "click",
+        "x": 25,
+        "y": 40,
+        "hover_delay_seconds": hover_delay_seconds,
+        "mouse_down_up_delay_seconds": 0.05,
     }
 
 

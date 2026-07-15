@@ -96,6 +96,12 @@
 - [x] client transport は `send_command` と `recv_response` を分ける
 - [x] browser controller は `fill_region` を command / response に変換する
 - [x] browser controller は `move_mouse` を command / response に変換する
+- [x] browser controller は通常 click に固定の hover delay を設定する
+- [x] browser controller は `warp=True` の click に hover delay を設定しない
+- [x] Screen の region click は warp 指定を browser controller へ渡す
+- [x] Playwright の通常 click は move、hover wait、down、down/up wait、up の順に実行する
+- [x] Playwright の warp click は速度を優先して `mouse.click()` を使う
+- [x] Playwright の通常 click は down 後の cancellation でも mouse up する
 - [x] browser controller は `goto_url` を command / response に変換する
 - [x] browser controller は `reload` を command / response に変換する
 - [x] browser controller は `stop_browser_host` を command / response に変換する

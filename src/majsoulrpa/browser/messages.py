@@ -13,6 +13,7 @@ class ClickCommand(BaseModel):
     type: Literal["click"] = "click"
     x: float
     y: float
+    hover_delay_seconds: PositiveDelay | None
     mouse_down_up_delay_seconds: PositiveDelay
 
 

@@ -42,6 +42,8 @@ class MouseSpy:
     def __init__(self, events: list[str] | None = None) -> None:
         self.clicks: list[tuple[float, float, float]] = []
         self.moves: list[tuple[float, float]] = []
+        self.downs = 0
+        self.ups = 0
         self._events = events
 
     async def click(self, x: float, y: float, *, delay: float) -> None:
@@ -51,6 +53,18 @@ class MouseSpy:
 
     async def move(self, x: float, y: float) -> None:
         self.moves.append((x, y))
+        if self._events is not None:
+            self._events.append("move")
+
+    async def down(self) -> None:
+        self.downs += 1
+        if self._events is not None:
+            self._events.append("down")
+
+    async def up(self) -> None:
+        self.ups += 1
+        if self._events is not None:
+            self._events.append("up")
 
 
 class KeyboardSpy:
@@ -195,7 +209,40 @@ class PageSpy:
         )
 
 
-def test_playwright_command_executor_clicks_with_mouse_delay() -> None:
+def test_playwright_command_executor_hovers_before_mouse_down(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    page = PageSpy()
+    executor = PlaywrightCommandExecutor(page)
+
+    async def sleep(seconds: float) -> None:
+        page.events.append(f"sleep:{seconds}")
+
+    monkeypatch.setattr(browser_playwright.asyncio, "sleep", sleep)
+
+    response = asyncio.run(
+        executor.execute(
+            ClickCommand(
+                x=25,
+                y=40,
+                hover_delay_seconds=0.125,
+                mouse_down_up_delay_seconds=0.1,
+            ),
+        ),
+    )
+
+    assert response == ClickResponse(x=25, y=40)
+    assert page.events == [
+        "move",
+        "sleep:0.125",
+        "down",
+        "sleep:0.1",
+        "up",
+    ]
+    assert page.mouse_spy.clicks == []
+
+
+def test_playwright_command_executor_warp_clicks_with_mouse_delay() -> None:
     page = PageSpy()
     executor = PlaywrightCommandExecutor(page)
 
@@ -204,13 +251,52 @@ def test_playwright_command_executor_clicks_with_mouse_delay() -> None:
             ClickCommand(
                 x=25,
                 y=40,
+                hover_delay_seconds=None,
                 mouse_down_up_delay_seconds=0.1,
             ),
         ),
     )
 
     assert response == ClickResponse(x=25, y=40)
+    assert page.events == ["click"]
     assert page.mouse_spy.clicks == [(25, 40, 100)]
+
+
+def test_playwright_command_executor_releases_mouse_when_cancelled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    page = PageSpy()
+    executor = PlaywrightCommandExecutor(page)
+    sleep_count = 0
+
+    async def sleep(seconds: float) -> None:
+        nonlocal sleep_count
+        sleep_count += 1
+        page.events.append(f"sleep:{seconds}")
+        if sleep_count == 2:
+            raise asyncio.CancelledError
+
+    monkeypatch.setattr(browser_playwright.asyncio, "sleep", sleep)
+
+    with pytest.raises(asyncio.CancelledError):
+        asyncio.run(
+            executor.execute(
+                ClickCommand(
+                    x=25,
+                    y=40,
+                    hover_delay_seconds=0.125,
+                    mouse_down_up_delay_seconds=0.1,
+                ),
+            ),
+        )
+
+    assert page.events == [
+        "move",
+        "sleep:0.125",
+        "down",
+        "sleep:0.1",
+        "up",
+    ]
 
 
 def test_playwright_executor_waits_for_yostar_auth_before_click() -> None:
@@ -411,6 +497,7 @@ def test_playwright_command_executor_returns_error_response() -> None:
             ClickCommand(
                 x=25,
                 y=40,
+                hover_delay_seconds=None,
                 mouse_down_up_delay_seconds=0.1,
             ),
         ),

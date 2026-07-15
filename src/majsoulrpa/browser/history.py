@@ -76,6 +76,7 @@ def summarize_browser_command(command: BrowserCommand) -> Mapping[str, object]:
                 "type": command.type,
                 "x": command.x,
                 "y": command.y,
+                "hover_delay_seconds": command.hover_delay_seconds,
                 "mouse_down_up_delay_seconds": (
                     command.mouse_down_up_delay_seconds
                 ),

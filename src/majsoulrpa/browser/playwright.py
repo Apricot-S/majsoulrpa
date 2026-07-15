@@ -1,3 +1,4 @@
+import asyncio
 import base64
 from collections.abc import Awaitable, Callable
 from contextlib import AsyncExitStack
@@ -53,6 +54,8 @@ HTTP_OK_STATUS = 200
 class MouseLike(Protocol):
     async def click(self, x: float, y: float, *, delay: float) -> None: ...
     async def move(self, x: float, y: float) -> None: ...
+    async def down(self) -> None: ...
+    async def up(self) -> None: ...
 
 
 class KeyboardLike(Protocol):
@@ -142,11 +145,20 @@ class PlaywrightCommandExecutor:
             return BrowserErrorResponse(message=str(error))
 
     async def _click(self, command: ClickCommand) -> ClickResponse:
-        await self._page.mouse.click(
-            command.x,
-            command.y,
-            delay=command.mouse_down_up_delay_seconds * 1000,
-        )
+        if command.hover_delay_seconds is None:
+            await self._page.mouse.click(
+                command.x,
+                command.y,
+                delay=command.mouse_down_up_delay_seconds * 1000,
+            )
+        else:
+            await self._page.mouse.move(command.x, command.y)
+            await asyncio.sleep(command.hover_delay_seconds)
+            await self._page.mouse.down()
+            try:
+                await asyncio.sleep(command.mouse_down_up_delay_seconds)
+            finally:
+                await self._page.mouse.up()
         return ClickResponse(x=command.x, y=command.y)
 
     async def _move_mouse(

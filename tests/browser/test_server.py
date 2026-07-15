@@ -43,6 +43,7 @@ def test_browser_request_handler_executes_command_and_sends_response() -> None:
     command = ClickCommand(
         x=25,
         y=40,
+        hover_delay_seconds=0.1,
         mouse_down_up_delay_seconds=0.1,
     )
     response = ClickResponse(x=25, y=40)
@@ -60,6 +61,7 @@ def test_browser_request_handler_serves_until_cancelled() -> None:
     click_command = ClickCommand(
         x=25,
         y=40,
+        hover_delay_seconds=0.1,
         mouse_down_up_delay_seconds=0.1,
     )
     text_command = TextInputCommand(
@@ -85,6 +87,7 @@ def test_browser_request_handler_stops_after_stop_browser_host() -> None:
     next_command = ClickCommand(
         x=25,
         y=40,
+        hover_delay_seconds=0.1,
         mouse_down_up_delay_seconds=0.1,
     )
     transport = BrowserServerTransportSpy(stop_command, next_command)

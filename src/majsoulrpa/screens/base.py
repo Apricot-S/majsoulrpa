@@ -29,7 +29,13 @@ _screen_api_depth: ContextVar[int] = ContextVar(
 
 
 class BrowserController(Protocol):
-    async def click(self, x: float, y: float) -> object: ...
+    async def click(
+        self,
+        x: float,
+        y: float,
+        *,
+        warp: bool = False,
+    ) -> object: ...
     async def move_mouse(self, x: float, y: float) -> object: ...
     async def goto_url(self, url: str) -> object: ...
     async def reload(self) -> object: ...
@@ -281,13 +287,26 @@ class Screen(ABC):
         return self._context
 
     @_requires_active
-    async def click_region(self, region: Region) -> None:
+    async def click_region(
+        self,
+        region: Region,
+        *,
+        warp: bool = False,
+    ) -> None:
         scaled_region = self.context.scale_region(region)
-        await self._click_region(scaled_region)
+        await self._click_region(scaled_region, warp=warp)
 
-    async def _click_region(self, scaled_region: Region) -> None:
+    async def _click_region(
+        self,
+        scaled_region: Region,
+        *,
+        warp: bool = False,
+    ) -> None:
         x, y = scaled_region.random_point(rng=self.context.rng)
-        await self.context.browser.click(x, y)
+        if warp:
+            await self.context.browser.click(x, y, warp=True)
+        else:
+            await self.context.browser.click(x, y)
 
     @_requires_active
     async def move_region(self, region: Region) -> None:

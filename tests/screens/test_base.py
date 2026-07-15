@@ -88,6 +88,7 @@ class LoginScreen(Screen):
 class BrowserControllerSpy:
     def __init__(self) -> None:
         self.clicked_points: list[tuple[float, float]] = []
+        self.click_warps: list[bool] = []
         self.moved_points: list[tuple[float, float]] = []
         self.visited_urls: list[str] = []
         self.input_texts: list[str] = []
@@ -97,8 +98,15 @@ class BrowserControllerSpy:
         self.browser_host_stops = 0
         self.screenshot_bytes = b"\x89PNG\r\n\x1a\n"
 
-    async def click(self, x: float, y: float) -> None:
+    async def click(
+        self,
+        x: float,
+        y: float,
+        *,
+        warp: bool = False,
+    ) -> None:
         self.clicked_points.append((x, y))
+        self.click_warps.append(warp)
         self.events.append("click")
 
     async def move_mouse(self, x: float, y: float) -> None:
@@ -800,6 +808,22 @@ def test_screen_moves_to_scaled_region() -> None:
     assert 100 < y < 102
     assert browser.clicked_points == []
     assert browser.events == ["move_mouse"]
+
+
+def test_screen_forwards_warp_region_click() -> None:
+    browser = BrowserControllerSpy()
+    screen = LoginScreen(
+        context=ScreenContext(browser=browser, rng=Random(0)),
+    )
+
+    asyncio.run(
+        screen.click_region(
+            Region(left=300, top=150, width=6, height=3),
+            warp=True,
+        ),
+    )
+
+    assert browser.click_warps == [True]
 
 
 def test_screen_finds_template() -> None:

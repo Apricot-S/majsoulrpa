@@ -30,6 +30,7 @@ from majsoulrpa.browser.transport import BrowserClientTransport
 from majsoulrpa.timing import get_random_delay
 
 DEFAULT_CLICK_MOUSE_DOWN_UP_DELAY_SECONDS = 0.1
+DEFAULT_CLICK_HOVER_DELAY_SECONDS = 0.1
 DEFAULT_TEXT_INPUT_CHARACTER_DELAY_SECONDS = 0.05
 DEFAULT_KEY_DOWN_UP_DELAY_SECONDS = 0.1
 DEFAULT_YOSTAR_AUTH_TIMEOUT_SECONDS = 1.0
@@ -48,6 +49,7 @@ class RemoteBrowserController:
         click_mouse_down_up_delay_seconds: float = (
             DEFAULT_CLICK_MOUSE_DOWN_UP_DELAY_SECONDS
         ),
+        click_hover_delay_seconds: float = DEFAULT_CLICK_HOVER_DELAY_SECONDS,
         text_input_character_delay_seconds: float = (
             DEFAULT_TEXT_INPUT_CHARACTER_DELAY_SECONDS
         ),
@@ -58,16 +60,26 @@ class RemoteBrowserController:
         self._click_mouse_down_up_delay_seconds = (
             click_mouse_down_up_delay_seconds
         )
+        self._click_hover_delay_seconds = click_hover_delay_seconds
         self._text_input_character_delay_seconds = (
             text_input_character_delay_seconds
         )
         self._key_down_up_delay_seconds = key_down_up_delay_seconds
 
-    async def click(self, x: float, y: float) -> ClickResponse:
+    async def click(
+        self,
+        x: float,
+        y: float,
+        *,
+        warp: bool = False,
+    ) -> ClickResponse:
         return await self._request(
             ClickCommand(
                 x=x,
                 y=y,
+                hover_delay_seconds=(
+                    None if warp else self._click_hover_delay_seconds
+                ),
                 mouse_down_up_delay_seconds=get_random_delay(
                     self._click_mouse_down_up_delay_seconds,
                     rng=self._rng,
