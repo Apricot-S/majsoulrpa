@@ -20,6 +20,24 @@ MajsoulRPA v3 は、v2 の README と examples にある利用感を出発点に
 - [初回テストリスト](docs/agents/initial-test-list.md)
 - [安全性と秘密情報](docs/agents/safety-secrets.md)
 
+## Python 実行環境
+
+このリポジトリの Python コマンドは `uv` 経由で実行します。セッションごとに
+`python` の場所や Codex の bundled runtime を探索しません。managed sandbox で
+ユーザー共通の uv cache にアクセスできない場合があるため、リポジトリ内の
+`.uv_cache` を明示します。
+
+```console
+uv --cache-dir .uv_cache run python -m pytest
+uv --cache-dir .uv_cache run python -m ruff check .
+uv --cache-dir .uv_cache run python -m ruff format --check .
+uv --cache-dir .uv_cache run python -m ty check
+```
+
+対象を絞る場合も、同じ prefix の後ろに pytest の path や option を指定します。
+managed sandbox の実行権限で失敗した場合は、この uv command の実行承認を求め、
+別の Python runtime を探すフォールバックは行いません。
+
 ## 最重要ルール
 
 - 合意済みの友人戦・大会での利用のみを対象にします。

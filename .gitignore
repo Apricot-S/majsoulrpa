@@ -262,4 +262,5 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/python,venv,windows,macos,linux
 
 # uv
+.uv_cache/
 uv.lock
