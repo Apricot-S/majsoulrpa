@@ -52,9 +52,10 @@ def test_browser_import_does_not_load_playwright_backend_module() -> None:
     assert "majsoulrpa.browser.playwright" not in sys.modules
 
 
-def test_screens_import_does_not_load_login_screen_module() -> None:
+def test_screens_import_does_not_load_concrete_screen_modules() -> None:
     sys.modules.pop("majsoulrpa.screens", None)
     sys.modules.pop("majsoulrpa.screens.login", None)
+    sys.modules.pop("majsoulrpa.screens.room", None)
     if hasattr(majsoulrpa, "screens"):
         delattr(majsoulrpa, "screens")
 
@@ -74,6 +75,17 @@ def test_screens_import_does_not_load_login_screen_module() -> None:
         "ScreenUnexpectedStateError",
     ]
     assert "majsoulrpa.screens.login" not in sys.modules
+    assert "majsoulrpa.screens.room" not in sys.modules
+
+
+def test_room_import_does_not_load_opencv_template_module() -> None:
+    sys.modules.pop("majsoulrpa.screens.room", None)
+    sys.modules.pop("majsoulrpa.presentation.template", None)
+
+    room = importlib.import_module("majsoulrpa.screens.room")
+
+    assert room.__all__ == ["RoomPlayer", "RoomState", "RoomStatus"]
+    assert "majsoulrpa.presentation.template" not in sys.modules
 
 
 def test_browser_public_exports_are_minimal() -> None:

@@ -407,20 +407,20 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Room state model
 
-- [ ] `RoomPlayer` と `RoomState` は immutable である
+- [x] `RoomPlayer` と `RoomState` は immutable である
 - [ ] `RoomState.version` は client 内の更新ごとに単調増加する
-- [ ] `room_id`、owner ID、self account ID、player account ID が正でなければ拒否する
-- [ ] `max_player_count` は 3 または 4 だけを許す
-- [ ] human player の account ID 重複を拒否する
-- [ ] active room の owner と self が human player list にいなければ拒否する
-- [ ] ready list に未知 account ID があれば拒否する
-- [ ] human と AI の合計が最大人数を超えたら拒否する
-- [ ] `RoomPlayer.is_host` を owner ID から導出する
-- [ ] `RoomPlayer.is_ready` を wire の ready 状態から導出し、host を暗黙に ready にしない
-- [ ] `self_is_host`、`participant_count`、`available_slots` を snapshot から導出する
-- [ ] player list は protocol で観測した順序を保つ
-- [ ] AI を正の account ID を持つ human player として公開しない
-- [ ] terminal state でも最後に確定した room 情報を保持する
+- [x] `room_id`、owner ID、self account ID、player account ID が正でなければ拒否する
+- [x] `max_player_count` は 3 または 4 だけを許す
+- [x] human player の account ID 重複を拒否する
+- [x] active room の owner と self が human player list にいなければ拒否する
+- [x] ready list に未知 account ID があれば拒否する
+- [x] human と AI の合計が最大人数を超えたら拒否する
+- [x] `RoomPlayer.is_host` を owner ID から導出する
+- [x] `RoomPlayer.is_ready` を wire の ready 状態から導出し、host を暗黙に ready にしない
+- [x] `self_is_host`、`participant_count`、`available_slots` を snapshot から導出する
+- [x] player list は protocol で観測した順序を保つ
+- [x] AI を正の account ID を持つ human player として公開しない
+- [x] terminal state でも最後に確定した room 情報を保持する
 
 ### Room state cache / SnifferMessageSource
 
