@@ -460,9 +460,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### RoomScreen detection / state API
 
-- [ ] `RoomScreen` が `Screen` を継承する
-- [ ] 個人情報を含まない room template の synthetic screenshot で検出できる
-- [ ] threshold 未満の screenshot では検出しない
+- [x] `room-sign` の template と settings asset が存在する
+- [x] `RoomScreen` が `Screen` を継承する
+- [x] 個人情報を含まない room template の synthetic screenshot で検出できる
+- [x] threshold 未満の screenshot では検出しない
 - [ ] `before_callback()` は active room snapshot が得られるまで framework 内部の既定期限で待つ
 - [ ] 画像だけ room で snapshot がなければ状態を推測せず失敗する
 - [ ] `before_callback()` は source の蓄積済み message を処理して cache を最新化する

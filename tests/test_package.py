@@ -80,12 +80,31 @@ def test_screens_import_does_not_load_concrete_screen_modules() -> None:
 
 def test_room_import_does_not_load_opencv_template_module() -> None:
     sys.modules.pop("majsoulrpa.screens.room", None)
+    sys.modules.pop("majsoulrpa.screens.room.screen", None)
     sys.modules.pop("majsoulrpa.presentation.template", None)
 
     room = importlib.import_module("majsoulrpa.screens.room")
 
-    assert room.__all__ == ["RoomPlayer", "RoomState", "RoomStatus"]
+    assert room.__all__ == [
+        "RoomPlayer",
+        "RoomScreen",
+        "RoomState",
+        "RoomStatus",
+    ]
+    assert "majsoulrpa.screens.room.screen" not in sys.modules
     assert "majsoulrpa.presentation.template" not in sys.modules
+
+
+def test_room_screen_attribute_loads_opencv_template_module() -> None:
+    sys.modules.pop("majsoulrpa.screens.room", None)
+    sys.modules.pop("majsoulrpa.screens.room.screen", None)
+    sys.modules.pop("majsoulrpa.presentation.template", None)
+
+    room = importlib.import_module("majsoulrpa.screens.room")
+
+    assert room.RoomScreen.__name__ == "RoomScreen"
+    assert "majsoulrpa.screens.room.screen" in sys.modules
+    assert "majsoulrpa.presentation.template" in sys.modules
 
 
 def test_browser_public_exports_are_minimal() -> None:

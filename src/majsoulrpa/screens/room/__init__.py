@@ -1,3 +1,19 @@
+from typing import TYPE_CHECKING
+
 from majsoulrpa.screens.room.state import RoomPlayer, RoomState, RoomStatus
 
-__all__ = ["RoomPlayer", "RoomState", "RoomStatus"]
+if TYPE_CHECKING:
+    from majsoulrpa.screens.room.screen import RoomScreen
+
+__all__ = ["RoomPlayer", "RoomScreen", "RoomState", "RoomStatus"]
+
+
+def __getattr__(name: str) -> object:
+    if name != "RoomScreen":
+        msg = f"module {__name__!r} has no attribute {name!r}"
+        raise AttributeError(msg)
+
+    from majsoulrpa.screens.room.screen import RoomScreen  # noqa: PLC0415
+
+    globals()[name] = RoomScreen
+    return RoomScreen
