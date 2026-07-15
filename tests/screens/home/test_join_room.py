@@ -163,9 +163,15 @@ def test_join_room_returns_failure_reason(
     timeline: list[str] = []
 
     class OrderedBrowserControllerSpy(BrowserControllerSpy):
-        async def click(self, x: float, y: float) -> None:
+        async def click(
+            self,
+            x: float,
+            y: float,
+            *,
+            warp: bool = False,
+        ) -> None:
             timeline.append("click")
-            await super().click(x, y)
+            await super().click(x, y, warp=warp)
 
         async def screenshot(self) -> bytes:
             timeline.append("screenshot")
@@ -369,9 +375,15 @@ def test_join_room_opens_dialog_and_fills_room_id_without_clearing(
     timeline: list[str] = []
 
     class OrderedBrowserControllerSpy(BrowserControllerSpy):
-        async def click(self, x: float, y: float) -> None:
+        async def click(
+            self,
+            x: float,
+            y: float,
+            *,
+            warp: bool = False,
+        ) -> None:
             timeline.append("click")
-            await super().click(x, y)
+            await super().click(x, y, warp=warp)
 
         async def screenshot(self) -> bytes:
             timeline.append("screenshot")

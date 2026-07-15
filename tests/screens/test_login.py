@@ -62,7 +62,14 @@ class BrowserControllerSpy:
         ) = YostarAuthAcceptedResponse()
         self.fail_click_number: int | None = None
 
-    async def click(self, x: float, y: float) -> None:
+    async def click(
+        self,
+        x: float,
+        y: float,
+        *,
+        warp: bool = False,
+    ) -> None:
+        _ = warp
         if self.fail_click_number == len(self.clicked_points) + 1:
             msg = "click failed"
             raise RuntimeError(msg)

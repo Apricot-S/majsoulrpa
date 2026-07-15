@@ -29,8 +29,8 @@ from majsoulrpa.browser.messages import (
 from majsoulrpa.browser.transport import BrowserClientTransport
 from majsoulrpa.timing import get_random_delay
 
+DEFAULT_CLICK_HOVER_DELAY_SECONDS = 0.12
 DEFAULT_CLICK_MOUSE_DOWN_UP_DELAY_SECONDS = 0.1
-DEFAULT_CLICK_HOVER_DELAY_SECONDS = 0.1
 DEFAULT_TEXT_INPUT_CHARACTER_DELAY_SECONDS = 0.05
 DEFAULT_KEY_DOWN_UP_DELAY_SECONDS = 0.1
 DEFAULT_YOSTAR_AUTH_TIMEOUT_SECONDS = 1.0
@@ -46,10 +46,10 @@ class RemoteBrowserController:
         transport: BrowserClientTransport,
         *,
         rng: Random | None = None,
+        click_hover_delay_seconds: float = DEFAULT_CLICK_HOVER_DELAY_SECONDS,
         click_mouse_down_up_delay_seconds: float = (
             DEFAULT_CLICK_MOUSE_DOWN_UP_DELAY_SECONDS
         ),
-        click_hover_delay_seconds: float = DEFAULT_CLICK_HOVER_DELAY_SECONDS,
         text_input_character_delay_seconds: float = (
             DEFAULT_TEXT_INPUT_CHARACTER_DELAY_SECONDS
         ),
@@ -57,10 +57,10 @@ class RemoteBrowserController:
     ) -> None:
         self._transport = transport
         self._rng = rng
+        self._click_hover_delay_seconds = click_hover_delay_seconds
         self._click_mouse_down_up_delay_seconds = (
             click_mouse_down_up_delay_seconds
         )
-        self._click_hover_delay_seconds = click_hover_delay_seconds
         self._text_input_character_delay_seconds = (
             text_input_character_delay_seconds
         )

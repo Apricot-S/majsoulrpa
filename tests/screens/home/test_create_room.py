@@ -176,9 +176,15 @@ def test_create_room_clicks_settings_then_create_at_half_second_intervals(
     timeline: list[str] = []
 
     class OrderedBrowserControllerSpy(BrowserControllerSpy):
-        async def click(self, x: float, y: float) -> None:
+        async def click(
+            self,
+            x: float,
+            y: float,
+            *,
+            warp: bool = False,
+        ) -> None:
             timeline.append("click")
-            await super().click(x, y)
+            await super().click(x, y, warp=warp)
 
         async def screenshot(self) -> bytes:
             timeline.append("screenshot")
@@ -251,12 +257,18 @@ def test_create_room_remains_active_when_setting_or_create_click_fails(
             super().__init__(screenshot, *screenshots)
             self.click_count = 0
 
-        async def click(self, x: float, y: float) -> None:
+        async def click(
+            self,
+            x: float,
+            y: float,
+            *,
+            warp: bool = False,
+        ) -> None:
             self.click_count += 1
             if self.click_count == failing_click_number:
                 msg = "synthetic click failure"
                 raise RuntimeError(msg)
-            await super().click(x, y)
+            await super().click(x, y, warp=warp)
 
     async def sleep(_seconds: float) -> None:
         pass

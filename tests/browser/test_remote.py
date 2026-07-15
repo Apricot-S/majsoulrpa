@@ -114,6 +114,17 @@ def test_remote_browser_controller_sends_warp_click_without_hover_delay() -> (
     assert command.hover_delay_seconds is None
 
 
+def test_remote_browser_controller_uses_default_hover_delay() -> None:
+    transport = BrowserClientTransportSpy(ClickResponse(x=25, y=40))
+    controller = RemoteBrowserController(transport)
+
+    asyncio.run(controller.click(25, 40))
+
+    [command] = transport.sent_commands
+    assert isinstance(command, ClickCommand)
+    assert command.hover_delay_seconds == 0.12
+
+
 def test_remote_browser_controller_clicks_and_waits_for_yostar_auth() -> None:
     transport = BrowserClientTransportSpy(YostarAuthAcceptedResponse())
     controller = RemoteBrowserController(transport, rng=Random(0))

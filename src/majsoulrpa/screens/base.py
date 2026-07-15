@@ -303,10 +303,7 @@ class Screen(ABC):
         warp: bool = False,
     ) -> None:
         x, y = scaled_region.random_point(rng=self.context.rng)
-        if warp:
-            await self.context.browser.click(x, y, warp=True)
-        else:
-            await self.context.browser.click(x, y)
+        await self.context.browser.click(x, y, warp=warp)
 
     @_requires_active
     async def move_region(self, region: Region) -> None:

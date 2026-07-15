@@ -45,7 +45,14 @@ class BrowserControllerSpy:
         self.screenshot_count = 0
         self.events: list[str] = []
 
-    async def click(self, x: float, y: float) -> None:
+    async def click(
+        self,
+        x: float,
+        y: float,
+        *,
+        warp: bool = False,
+    ) -> None:
+        _ = warp
         self.clicked_points.append((x, y))
 
     async def move_mouse(self, x: float, y: float) -> None:
