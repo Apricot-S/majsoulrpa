@@ -408,7 +408,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 ### Room state model
 
 - [x] `RoomPlayer` と `RoomState` は immutable である
-- [ ] `RoomState.version` は client 内の更新ごとに単調増加する
+- [x] `RoomState.version` は client 内の更新ごとに単調増加する
 - [x] `room_id`、owner ID、self account ID、player account ID が正でなければ拒否する
 - [x] `max_player_count` は 3 または 4 だけを許す
 - [x] human player の account ID 重複を拒否する
@@ -424,25 +424,25 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Room state cache / SnifferMessageSource
 
-- [ ] 成功した `.lq.Lobby.createRoom` response から host の初期 snapshot を作る
-- [ ] 成功した `.lq.Lobby.joinRoom` response から guest の初期 snapshot を作る
-- [ ] 成功した `.lq.Lobby.fetchRoom` response から reload 後の snapshot を作る
-- [ ] error を持つ create / join / fetch response では active room を初期化しない
-- [ ] `.lq.NotifyRoomPlayerUpdate` で owner、human、AI を同じ version へ原子的に更新する
-- [ ] host 退出後の owner 更新で `self_is_host` を再導出する
-- [ ] `.lq.NotifyRoomPlayerReady` で対象 player の ready だけを更新する
-- [ ] `.lq.NotifyRoomGameStart` で `MATCH_STARTED` にする
-- [ ] `.lq.NotifyRoomKickOut` で `KICKED` にする
-- [ ] 成功した `.lq.Lobby.leaveRoom` response で `LEFT` にする
-- [ ] terminal 後の古い room notice を active state として復活させない
-- [ ] terminal 後の新しい完全 snapshot は新しい room generation を開始する
-- [ ] active 中に別 room ID の完全 snapshot が来たら不整合にする
+- [x] 成功した `.lq.Lobby.createRoom` response から host の初期 snapshot を作る
+- [x] 成功した `.lq.Lobby.joinRoom` response から guest の初期 snapshot を作る
+- [x] 成功した `.lq.Lobby.fetchRoom` response から reload 後の snapshot を作る
+- [x] error を持つ create / join / fetch response では active room を初期化しない
+- [x] `.lq.NotifyRoomPlayerUpdate` で owner、human、AI を同じ version へ原子的に更新する
+- [x] host 退出後の owner 更新で `self_is_host` を再導出する
+- [x] `.lq.NotifyRoomPlayerReady` で対象 player の ready だけを更新する
+- [x] `.lq.NotifyRoomGameStart` で `MATCH_STARTED` にする
+- [x] `.lq.NotifyRoomKickOut` で `KICKED` にする
+- [x] 成功した `.lq.Lobby.leaveRoom` response で `LEFT` にする
+- [x] terminal 後の古い room notice を active state として復活させない
+- [x] terminal 後の新しい完全 snapshot は新しい room generation を開始する
+- [x] active 中に別 room ID の完全 snapshot が来たら不整合にする
 - [ ] 古い RoomScreen generation は新しい room で stale になる
-- [ ] room 状態用の decode 直後 observer や background task を追加しない
+- [x] room 状態用の decode 直後 observer や background task を追加しない
 - [ ] RoomScreen は `SnifferMessageSource.get_nowait()` で蓄積済み message を順番に処理する
 - [ ] RoomScreen は `SnifferMessageSource.get()` で新しい message を待機する
 - [ ] callback ごとに RoomScreen instance が変わっても共有 cache から最新 snapshot を得られる
-- [ ] cache は最新 snapshot と room generation 以外の raw message 履歴を保持しない
+- [x] cache は最新 snapshot と room generation 以外の raw message 履歴を保持しない
 - [ ] `HomeScreen.create_room()` は成功した createRoom message を RoomScreen 用に source へ残す
 - [ ] `HomeScreen.join_room()` は成功確認後に元の joinRoom message を 1 回だけ差し戻す
 - [ ] joinRoom の失敗 message は RoomScreen 用に差し戻さない
