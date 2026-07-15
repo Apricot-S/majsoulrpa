@@ -97,10 +97,7 @@ def _require_int(value: dict[str, JsonValue], field_name: str) -> int:
     return result
 
 
-def _require_positive_int(
-    value: dict[str, JsonValue],
-    field_name: str,
-) -> int:
+def _require_positive_int(value: dict[str, JsonValue], field_name: str) -> int:
     result = _require_int(value, field_name)
     if result <= 0:
         msg = f"room.{field_name} must be positive."
