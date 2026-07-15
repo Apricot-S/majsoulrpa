@@ -29,6 +29,7 @@ from majsoulrpa.config import AppConfig, BrowserConfig, EndpointConfig
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
 from majsoulrpa.screens.errors import ScreenDetectionTimeoutError
+from majsoulrpa.screens.room.cache import RoomStateCache
 from majsoulrpa.sniffer.message_queue import SnifferMessageQueue
 
 SYNTHETIC_PNG = b"\x89PNG\r\n\x1a\n"
@@ -199,6 +200,10 @@ def test_controller_runtime_injects_screen_context() -> None:
     assert isinstance(
         exc_info.value.context.sniffer_messages,
         SnifferMessageQueue,
+    )
+    assert isinstance(
+        exc_info.value.context.room_state_cache,
+        RoomStateCache,
     )
     assert exc_info.value.context.account_id is None
     assert context.socket_spy.closed

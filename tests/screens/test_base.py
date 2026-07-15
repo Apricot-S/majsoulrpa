@@ -26,6 +26,7 @@ from majsoulrpa.screens.errors import (
     ScreenDetectionTimeoutError,
     ScreenStaleError,
 )
+from majsoulrpa.screens.room.cache import RoomStateCache
 from majsoulrpa.sniffer.events import (
     DecodedNotice,
     DecodedRequestResponse,
@@ -373,6 +374,20 @@ def test_screen_context_exposes_current_account_id() -> None:
     account_state.account_id = 123456
 
     assert context.account_id == 123456
+
+
+def test_screen_context_shares_room_state_cache_between_screens() -> None:
+    room_state_cache = RoomStateCache()
+    context = ScreenContext(
+        browser=BrowserControllerSpy(),
+        room_state_cache=room_state_cache,
+    )
+
+    first = LoginScreen(context=context)
+    second = LoginScreen(context=context)
+
+    assert first.context.room_state_cache is room_state_cache
+    assert second.context.room_state_cache is room_state_cache
 
 
 def test_screen_gets_and_puts_back_messages_through_context() -> None:

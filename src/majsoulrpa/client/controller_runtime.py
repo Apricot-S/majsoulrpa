@@ -14,6 +14,7 @@ from majsoulrpa.client.session import SessionState
 from majsoulrpa.config import AppConfig
 from majsoulrpa.endpoint import make_browser_host_tcp_endpoint
 from majsoulrpa.screens import Screen, ScreenContext
+from majsoulrpa.screens.room.cache import RoomStateCache
 from majsoulrpa.sniffer.client_runtime import SnifferClientRuntime
 from majsoulrpa.sniffer.decoder import SnifferMessageDecoder
 from majsoulrpa.sniffer.message_queue import SnifferMessageQueue
@@ -98,9 +99,11 @@ class ControllerRuntimeFactory:
             max_payload_bytes=SNIFFER_QUEUE_MAX_PAYLOAD_BYTES,
         )
         session_state = SessionState()
+        room_state_cache = RoomStateCache()
         screen_context = ScreenContext(
             browser=controller,
             sniffer_messages=sniffer_queue,
+            room_state_cache=room_state_cache,
             account_state=session_state,
             request_stop=stop_flag.request_stop,
             viewport_width=viewport_width_for_height(
