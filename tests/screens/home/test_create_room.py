@@ -255,6 +255,7 @@ def test_create_room_clicks_settings_then_create_at_half_second_intervals(
         "click",
         "sleep:0.5",
         "click",
+        "sleep:1.0",
     ]
     assert messages.get_nowait() is create_room_message
     assert messages.get_nowait() is None
