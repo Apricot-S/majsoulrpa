@@ -46,33 +46,22 @@ class RoomStateCache:
     def apply(
         self,
         message: DecodedSnifferMessage,
-        *,
         self_account_id: int,
     ) -> RoomState | None:
         if isinstance(message, DecodedNotice):
-            return self._apply_notice(
-                message,
-                self_account_id=self_account_id,
-            )
-        return self._apply_request_response(
-            message,
-            self_account_id=self_account_id,
-        )
+            return self._apply_notice(message, self_account_id)
+        return self._apply_request_response(message, self_account_id)
 
     def _apply_notice(
         self,
         message: DecodedNotice,
-        *,
         self_account_id: int,
     ) -> RoomState | None:
         status = _TERMINAL_NOTICE_STATUSES.get(message.raw.name)
         if status is not None:
             return self._apply_terminal(status)
         if message.raw.name == ".lq.NotifyRoomPlayerUpdate":
-            return self._apply_player_update(
-                message.message,
-                self_account_id=self_account_id,
-            )
+            return self._apply_player_update(message.message, self_account_id)
         if message.raw.name == ".lq.NotifyRoomPlayerReady":
             return self._apply_ready_update(message.message)
         return self._state
@@ -80,7 +69,6 @@ class RoomStateCache:
     def _apply_request_response(
         self,
         message: DecodedRequestResponse,
-        *,
         self_account_id: int,
     ) -> RoomState | None:
         if message.raw.name == ".lq.Lobby.leaveRoom":
@@ -89,15 +77,11 @@ class RoomStateCache:
             return self._apply_terminal(RoomStatus.LEFT)
         if message.raw.name not in _FULL_SNAPSHOT_API_NAMES:
             return self._state
-        return self._apply_full_snapshot(
-            message.response,
-            self_account_id=self_account_id,
-        )
+        return self._apply_full_snapshot(message.response, self_account_id)
 
     def _apply_full_snapshot(
         self,
         response: dict[str, JsonValue],
-        *,
         self_account_id: int,
     ) -> RoomState | None:
         if "error" in response:
@@ -148,7 +132,6 @@ class RoomStateCache:
     def _apply_player_update(
         self,
         message: dict[str, JsonValue],
-        *,
         self_account_id: int,
     ) -> RoomState:
         previous = self._require_state_for_update()
@@ -192,10 +175,7 @@ class RoomStateCache:
         self._state = state
         return state
 
-    def _apply_ready_update(
-        self,
-        message: dict[str, JsonValue],
-    ) -> RoomState:
+    def _apply_ready_update(self, message: dict[str, JsonValue]) -> RoomState:
         previous = self._require_state_for_update()
         if previous.status is not RoomStatus.WAITING:
             return previous

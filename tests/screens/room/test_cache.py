@@ -96,7 +96,7 @@ def test_cache_applies_created_room_as_first_generation() -> None:
                 },
             },
         ),
-        self_account_id=100001,
+        100001,
     )
 
     assert state is cache.state
@@ -123,9 +123,9 @@ def test_cache_does_not_increment_version_for_identical_snapshot() -> None:
             },
         },
     )
-    first = cache.apply(message, self_account_id=100001)
+    first = cache.apply(message, 100001)
 
-    second = cache.apply(message, self_account_id=100001)
+    second = cache.apply(message, 100001)
 
     assert second is first
     assert second is not None
@@ -142,7 +142,7 @@ def test_cache_accepts_other_complete_room_snapshots(name: str) -> None:
 
     state = cache.apply(
         _request_response(name, {"room": _room()}),
-        self_account_id=100002,
+        100002,
     )
 
     assert state is not None
@@ -164,7 +164,7 @@ def test_cache_does_not_initialize_from_failed_response(name: str) -> None:
 
     state = cache.apply(
         _request_response(name, {"error": {"code": 9999}}),
-        self_account_id=100001,
+        100001,
     )
 
     assert state is None
@@ -176,7 +176,7 @@ def test_cache_increments_version_for_changed_snapshot() -> None:
     cache = RoomStateCache()
     cache.apply(
         _create_room_message({"room": _room()}),
-        self_account_id=100002,
+        100002,
     )
 
     state = cache.apply(
@@ -184,7 +184,7 @@ def test_cache_increments_version_for_changed_snapshot() -> None:
             ".lq.Lobby.fetchRoom",
             {"room": _room(ready=True)},
         ),
-        self_account_id=100002,
+        100002,
     )
 
     assert state is not None
@@ -197,7 +197,7 @@ def test_cache_rejects_different_room_during_active_generation() -> None:
     cache = RoomStateCache()
     cache.apply(
         _create_room_message({"room": _room()}),
-        self_account_id=100002,
+        100002,
     )
 
     with pytest.raises(RoomStateTransitionError):
@@ -206,7 +206,7 @@ def test_cache_rejects_different_room_during_active_generation() -> None:
                 ".lq.Lobby.fetchRoom",
                 {"room": _room(room_id=54321)},
             ),
-            self_account_id=100002,
+            100002,
         )
 
 
@@ -214,19 +214,19 @@ def test_cache_starts_new_generation_after_game_start() -> None:
     cache = RoomStateCache()
     cache.apply(
         _create_room_message({"room": _room()}),
-        self_account_id=100002,
+        100002,
     )
 
     terminal = cache.apply(
         _notice(".lq.NotifyRoomGameStart"),
-        self_account_id=100002,
+        100002,
     )
     next_room = cache.apply(
         _request_response(
             ".lq.Lobby.joinRoom",
             {"room": _room(room_id=54321)},
         ),
-        self_account_id=100002,
+        100002,
     )
 
     assert terminal is not None
@@ -243,12 +243,12 @@ def test_cache_marks_successful_leave_as_terminal() -> None:
     cache = RoomStateCache()
     initial = cache.apply(
         _create_room_message({"room": _room()}),
-        self_account_id=100002,
+        100002,
     )
 
     terminal = cache.apply(
         _request_response(".lq.Lobby.leaveRoom", {}),
-        self_account_id=100002,
+        100002,
     )
 
     assert initial is not None
@@ -264,7 +264,7 @@ def test_cache_keeps_waiting_state_after_rejected_leave() -> None:
     cache = RoomStateCache()
     initial = cache.apply(
         _create_room_message({"room": _room()}),
-        self_account_id=100002,
+        100002,
     )
 
     state = cache.apply(
@@ -272,7 +272,7 @@ def test_cache_keeps_waiting_state_after_rejected_leave() -> None:
             ".lq.Lobby.leaveRoom",
             {"error": {"code": 9999}},
         ),
-        self_account_id=100002,
+        100002,
     )
 
     assert state is initial
@@ -285,12 +285,12 @@ def test_cache_marks_kick_notice_as_terminal() -> None:
     cache = RoomStateCache()
     initial = cache.apply(
         _create_room_message({"room": _room()}),
-        self_account_id=100002,
+        100002,
     )
 
     terminal = cache.apply(
         _notice(".lq.NotifyRoomKickOut"),
-        self_account_id=100002,
+        100002,
     )
 
     assert initial is not None
@@ -305,7 +305,7 @@ def test_cache_applies_player_update_and_rederives_host() -> None:
     cache = RoomStateCache()
     cache.apply(
         _create_room_message({"room": _room()}),
-        self_account_id=100002,
+        100002,
     )
 
     state = cache.apply(
@@ -322,7 +322,7 @@ def test_cache_applies_player_update_and_rederives_host() -> None:
                 "positions": [],
             },
         ),
-        self_account_id=100002,
+        100002,
     )
 
     assert state is not None
@@ -338,7 +338,7 @@ def test_cache_applies_ready_notice_to_target_player() -> None:
     cache = RoomStateCache()
     cache.apply(
         _create_room_message({"room": _room()}),
-        self_account_id=100002,
+        100002,
     )
 
     state = cache.apply(
@@ -346,7 +346,7 @@ def test_cache_applies_ready_notice_to_target_player() -> None:
             ".lq.NotifyRoomPlayerReady",
             {"account_id": 100002, "ready": True},
         ),
-        self_account_id=100002,
+        100002,
     )
 
     assert state is not None
@@ -367,7 +367,7 @@ def test_player_update_drops_ready_state_for_player_who_left() -> None:
     room["ready_list"] = [100003]
     cache.apply(
         _create_room_message({"room": room}),
-        self_account_id=100002,
+        100002,
     )
 
     state = cache.apply(
@@ -384,7 +384,7 @@ def test_player_update_drops_ready_state_for_player_who_left() -> None:
                 "positions": [],
             },
         ),
-        self_account_id=100002,
+        100002,
     )
 
     assert state is not None
@@ -397,11 +397,11 @@ def test_cache_ignores_old_room_update_after_terminal_state() -> None:
     cache = RoomStateCache()
     cache.apply(
         _create_room_message({"room": _room()}),
-        self_account_id=100002,
+        100002,
     )
     terminal = cache.apply(
         _notice(".lq.NotifyRoomKickOut"),
-        self_account_id=100002,
+        100002,
     )
 
     state = cache.apply(
@@ -417,7 +417,7 @@ def test_cache_ignores_old_room_update_after_terminal_state() -> None:
                 "positions": [],
             },
         ),
-        self_account_id=100002,
+        100002,
     )
 
     assert state is terminal
