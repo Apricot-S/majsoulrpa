@@ -499,6 +499,7 @@ class HomeScreen(Screen):
         await self.click_region(self.THINKING_TIME_REGIONS[thinking_time])
         await asyncio.sleep(0.5)
         await self._click_region(create_result.region)
+        await asyncio.sleep(1.0)
         self._mark_stale()
 
     @_screen_api
