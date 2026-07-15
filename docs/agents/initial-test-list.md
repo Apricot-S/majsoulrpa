@@ -450,9 +450,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] RoomScreen は `SnifferMessageSource.get()` で新しい message を待機する
 - [ ] callback ごとに RoomScreen instance が変わっても共有 cache から最新 snapshot を得られる
 - [x] cache は最新 snapshot と room generation 以外の raw message 履歴を保持しない
-- [ ] `HomeScreen.create_room()` は成功した createRoom message を RoomScreen 用に source へ残す
-- [ ] `HomeScreen.join_room()` は成功確認後に元の joinRoom message を 1 回だけ差し戻す
-- [ ] joinRoom の失敗 message は RoomScreen 用に差し戻さない
+- [x] `HomeScreen.create_room()` は成功した createRoom message を RoomScreen 用に source へ残す
+- [x] `HomeScreen.join_room()` は成功確認後に元の joinRoom message を 1 回だけ差し戻す
+- [x] joinRoom の失敗 message は RoomScreen 用に差し戻さない
 - [ ] wait は cache が `after_version` より新しければ即時に返せる
 - [ ] wait は source の `get()` を使い sleep polling しない
 - [ ] wait 中の cancellation で適用済み snapshot を壊さない

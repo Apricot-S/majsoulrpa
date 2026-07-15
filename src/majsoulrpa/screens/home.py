@@ -532,14 +532,21 @@ class HomeScreen(Screen):
         # Wait for `.lq.Lobby.joinRoom` to be exchanged.
         await asyncio.sleep(0.5)
 
-        response = await self._get_join_room_response()
-        failure_reason = await self._get_join_room_failure_reason(response)
+        message = await self._get_join_room_message()
+        failure_reason = await self._get_join_room_failure_reason(
+            message.response,
+        )
         if failure_reason is None:
+            self._put_back_sniffer_message(message)
             _logger.info("Joined a friendly room successfully.")
             await asyncio.sleep(1.0)
             self._mark_stale()
             return None
 
+        _logger.info(
+            "Sniffer message: %s",
+            _format_sniffer_message(message),
+        )
         _logger.warning(
             "Failed to join a friendly room: %s.",
             failure_reason.name,
@@ -556,16 +563,16 @@ class HomeScreen(Screen):
         self._require_match_buttons(screenshot)
         return failure_reason
 
-    async def _get_join_room_response(self) -> dict[str, JsonValue]:
+    async def _get_join_room_message(self) -> DecodedRequestResponse:
         join_room_message = None
         while (message := self._get_sniffer_message_nowait()) is not None:
+            if message.raw.name == JOIN_ROOM_API_NAME:
+                join_room_message = message
+                break
             _logger.info(
                 "Sniffer message: %s",
                 _format_sniffer_message(message),
             )
-            if message.raw.name == JOIN_ROOM_API_NAME:
-                join_room_message = message
-                break
 
         if join_room_message is None:
             msg = f"{JOIN_ROOM_API_NAME} message was not found."
@@ -577,7 +584,7 @@ class HomeScreen(Screen):
             screenshot = await self.screenshot()
             raise ScreenInconsistentMessageError(msg, screenshot)
 
-        return join_room_message.response
+        return join_room_message
 
     async def _get_join_room_failure_reason(
         self,

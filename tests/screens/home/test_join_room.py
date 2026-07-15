@@ -97,6 +97,7 @@ def test_join_room_accepts_exactly_five_digits(
     assert screen._stale
     assert "screen API called: screen=HomeScreen api=join_room" in caplog.text
     assert "Joined a friendly room successfully." in caplog.text
+    assert "Sniffer message:" not in caplog.text
     assert "12345" not in caplog.text
 
 
@@ -200,15 +201,16 @@ def test_join_room_returns_failure_reason(
         ),
         _synthetic_home_ready_screenshot(),
     )
+    messages = _message_queue(
+        _request_response(
+            JOIN_ROOM_API_NAME,
+            {"error": {"code": error_code}},
+        ),
+    )
     screen = HomeScreen(
         context=ScreenContext(
             browser=browser,
-            sniffer_messages=_message_queue(
-                _request_response(
-                    JOIN_ROOM_API_NAME,
-                    {"error": {"code": error_code}},
-                ),
-            ),
+            sniffer_messages=messages,
         ),
     )
     monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
@@ -219,6 +221,8 @@ def test_join_room_returns_failure_reason(
     assert result is expected
     assert not screen._stale
     assert "Joined a friendly room successfully." not in caplog.text
+    assert "Sniffer message:" in caplog.text
+    assert JOIN_ROOM_API_NAME in caplog.text
     assert (
         f"Failed to join a friendly room: {expected.name}." in caplog.messages
     )
@@ -257,6 +261,7 @@ def test_join_room_returns_failure_reason(
         assert "Unrecognized joinRoom error code" not in caplog.text
     else:
         assert warning_message in caplog.messages
+    assert messages.get_nowait() is None
 
 
 def test_join_room_raises_if_home_buttons_are_missing_after_failure(
@@ -463,6 +468,9 @@ def test_join_room_opens_dialog_and_fills_room_id_without_clearing(
         "sleep:1.0",
         "mark_stale",
     ]
+    remaining_message = messages.get_nowait()
+    assert remaining_message is not None
+    assert remaining_message.raw.name == JOIN_ROOM_API_NAME
     remaining_message = messages.get_nowait()
     assert remaining_message is not None
     assert remaining_message.raw.name == ".lq.AfterJoinRoom"

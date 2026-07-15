@@ -30,6 +30,8 @@ from majsoulrpa.screens.home import (
 from tests.screens.home._support import (
     BrowserControllerSpy,
     ScreenContext,
+    _message_queue,
+    _request_response,
     _synthetic_blank_screenshot,
     _synthetic_template_screenshot,
 )
@@ -207,8 +209,17 @@ def test_create_room_clicks_settings_then_create_at_half_second_intervals(
             settings_path=CREATE_SETTINGS_PATH,
         ),
     )
+    create_room_message = _request_response(
+        ".lq.Lobby.createRoom",
+        {"room": {}},
+    )
+    messages = _message_queue(create_room_message)
     screen = HomeScreen(
-        context=ScreenContext(browser=browser, rng=Random(0)),
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=messages,
+            rng=Random(0),
+        ),
     )
     monkeypatch.setattr(home_module.asyncio, "sleep", sleep)
 
@@ -245,6 +256,8 @@ def test_create_room_clicks_settings_then_create_at_half_second_intervals(
         "sleep:0.5",
         "click",
     ]
+    assert messages.get_nowait() is create_room_message
+    assert messages.get_nowait() is None
 
 
 @pytest.mark.parametrize("failing_click_number", [3, 6])
