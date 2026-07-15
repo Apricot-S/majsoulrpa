@@ -11,6 +11,7 @@ from majsoulrpa.sniffer.events import (
     DecodedNotice,
     DecodedRequestResponse,
     DecodedSnifferMessage,
+    Direction,
 )
 
 _FULL_SNAPSHOT_API_NAMES = frozenset(
@@ -24,6 +25,12 @@ _TERMINAL_NOTICE_STATUSES = {
     ".lq.NotifyRoomGameStart": RoomStatus.MATCH_STARTED,
     ".lq.NotifyRoomKickOut": RoomStatus.KICKED,
 }
+_INBOUND_PLAYER_NOTICE_NAMES = frozenset(
+    {
+        ".lq.NotifyRoomPlayerReady",
+        ".lq.NotifyRoomPlayerUpdate",
+    },
+)
 
 
 class RoomStateTransitionError(ValueError):
@@ -57,6 +64,13 @@ class RoomStateCache:
         message: DecodedNotice,
         self_account_id: int,
     ) -> RoomState | None:
+        if (
+            message.raw.name in _INBOUND_PLAYER_NOTICE_NAMES
+            and message.raw.direction is not Direction.INBOUND
+        ):
+            msg = f"{message.raw.name} must be an inbound notice."
+            raise RoomStateTransitionError(msg)
+
         status = _TERMINAL_NOTICE_STATUSES.get(message.raw.name)
         if status is not None:
             return self._apply_terminal(status)

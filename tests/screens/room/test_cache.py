@@ -44,11 +44,13 @@ def _create_room_message(
 def _notice(
     name: str,
     message: dict[str, JsonValue] | None = None,
+    *,
+    direction: Direction = Direction.INBOUND,
 ) -> DecodedNotice:
     observed_at = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
     return DecodedNotice(
         raw=RawNotice(
-            direction=Direction.INBOUND,
+            direction=direction,
             name=name,
             payload=b"synthetic-notice",
             observed_at=observed_at,
@@ -354,6 +356,29 @@ def test_cache_applies_ready_notice_to_target_player() -> None:
     assert state.players[0].is_ready is False
     assert state.players[1].is_ready is True
     assert cache.generation == 1
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        ".lq.NotifyRoomPlayerUpdate",
+        ".lq.NotifyRoomPlayerReady",
+    ],
+)
+def test_cache_rejects_outbound_player_notice(name: str) -> None:
+    cache = RoomStateCache()
+    initial = cache.apply(
+        _create_room_message({"room": _room()}),
+        100002,
+    )
+
+    with pytest.raises(RoomStateTransitionError, match="inbound"):
+        cache.apply(
+            _notice(name, direction=Direction.OUTBOUND),
+            100002,
+        )
+
+    assert cache.state is initial
 
 
 def test_player_update_drops_ready_state_for_player_who_left() -> None:

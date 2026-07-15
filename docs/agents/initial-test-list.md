@@ -431,6 +431,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `.lq.NotifyRoomPlayerUpdate` で owner、human、AI を同じ version へ原子的に更新する
 - [x] host 退出後の owner 更新で `self_is_host` を再導出する
 - [x] `.lq.NotifyRoomPlayerReady` で対象 player の ready だけを更新する
+- [x] player update / ready の同名通知が outbound なら不正な message として拒否する
 - [x] `.lq.NotifyRoomGameStart` で `MATCH_STARTED` にする
 - [x] `.lq.NotifyRoomKickOut` で `KICKED` にする
 - [x] 成功した `.lq.Lobby.leaveRoom` response で `LEFT` にする
