@@ -36,9 +36,7 @@ class SessionState:
             raise AccountIDMismatchError(msg)
 
 
-def _extract_account_id(
-    message: DecodedSnifferMessage,
-) -> int | None:
+def _extract_account_id(message: DecodedSnifferMessage) -> int | None:
     if not isinstance(message, DecodedRequestResponse):
         return None
 
