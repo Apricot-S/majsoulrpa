@@ -453,9 +453,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `HomeScreen.create_room()` は成功した createRoom message を RoomScreen 用に source へ残す
 - [x] `HomeScreen.join_room()` は成功確認後に元の joinRoom message を 1 回だけ差し戻す
 - [x] joinRoom の失敗 message は RoomScreen 用に差し戻さない
-- [ ] wait は cache が `after_version` より新しければ即時に返せる
-- [ ] wait は source の `get()` を使い sleep polling しない
-- [ ] wait 中の cancellation で適用済み snapshot を壊さない
+- [x] wait は cache が渡された snapshot の version より新しければ即時に返せる
+- [x] wait は source の `get()` を使い sleep polling しない
+- [x] wait 中の cancellation で適用済み snapshot を壊さない
 - [ ] Sniffer decode、stream gap、queue overflow を room state で成功扱いにしない
 
 ### RoomScreen detection / state API
@@ -470,9 +470,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `get_state()` は network request や click を行わず最新 immutable snapshot を返す
 - [ ] RoomScreen の全高レベル API は `timeout` 引数を持たない
 - [ ] 呼び出し側の `asyncio.timeout()` で `get_state()` を中断できる
-- [ ] `wait_for_state_change()` は `after_version` より新しい snapshot を返す
-- [ ] `wait_for_state_change()` は kick / game start の terminal snapshot も 1 回返す
-- [ ] 呼び出し側 timeout による cancellation を RoomScreen が握りつぶさない
+- [x] `wait_for_state_change()` は渡された snapshot より新しい snapshot を返す
+- [x] `wait_for_state_change()` は別 room、別 self account、未来 version、同一 version で内容が矛盾する snapshot を拒否する
+- [x] `wait_for_state_change()` は kick / game start の terminal snapshot も 1 回返す
+- [x] 呼び出し側 timeout による cancellation を RoomScreen が握りつぶさない
 - [x] room ID、account ID、player 名を高レベル API log に含めない
 
 ### Failure model
@@ -486,7 +487,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] response 欠落と notice 欠落を server rejection に変換しない
 - [x] malformed response / notice を空状態や通常失敗へ変換しない
 - [ ] browser / Sniffer infrastructure error を Room 用 rejection に変換しない
-- [ ] Room API の cancellation を cleanup 後に伝播する
+- [x] Room API の cancellation を cleanup 後に伝播する
 
 ### `leave()`
 

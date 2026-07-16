@@ -17,6 +17,7 @@ from majsoulrpa.screens.base import (
 )
 from majsoulrpa.screens.errors import (
     ScreenInconsistentMessageError,
+    ScreenInvalidArgumentError,
     ScreenStaleError,
 )
 from majsoulrpa.screens.room.state import RoomState, RoomStatus
@@ -67,11 +68,35 @@ class RoomScreen(Screen):
     async def get_state(self) -> RoomState:
         await self._drain_room_messages(await self._get_self_account_id())
         await self._ensure_current_generation()
-        state = self.context.room_state_cache.state
-        if state is None:
-            msg = "Room state is not initialized."
-            raise RuntimeError(msg)
-        return state
+        return self._get_cached_state()
+
+    @_screen_api
+    @_requires_active
+    async def wait_for_state_change(self, state: RoomState) -> RoomState:
+        self_account_id = await self._get_self_account_id()
+        await self._drain_room_messages(self_account_id)
+        await self._ensure_current_generation()
+        current = self._get_cached_state()
+        if (
+            state.room_id != current.room_id
+            or state.self_account_id != current.self_account_id
+            or state.version > current.version
+            or (state.version == current.version and state != current)
+        ):
+            screenshot = await self.context.browser.screenshot()
+            msg = "state does not belong to the current room snapshot history."
+            raise ScreenInvalidArgumentError(msg, screenshot)
+
+        while True:
+            current = self._get_cached_state()
+            if current.version > state.version:
+                if current.status is not RoomStatus.WAITING:
+                    self._mark_stale()
+                return current
+
+            message = await self._get_sniffer_message()
+            await self._apply_room_message(message, self_account_id)
+            await self._ensure_current_generation()
 
     async def _get_self_account_id(self) -> int:
         self_account_id = self.context.account_id
@@ -84,6 +109,13 @@ class RoomScreen(Screen):
     def _has_active_room_state(self) -> bool:
         state = self.context.room_state_cache.state
         return state is not None and state.status is RoomStatus.WAITING
+
+    def _get_cached_state(self) -> RoomState:
+        state = self.context.room_state_cache.state
+        if state is None:
+            msg = "Room state is not initialized."
+            raise RuntimeError(msg)
+        return state
 
     async def _ensure_current_generation(self) -> None:
         if self._room_generation is None:

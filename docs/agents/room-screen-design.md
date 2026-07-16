@@ -93,11 +93,7 @@ stale 保護対象とする。
 class RoomScreen(Screen):
     async def get_state(self) -> RoomState: ...
 
-    async def wait_for_state_change(
-        self,
-        *,
-        after_version: int,
-    ) -> RoomState: ...
+    async def wait_for_state_change(self, state: RoomState) -> RoomState: ...
 
     async def leave(self) -> None: ...
 
@@ -123,9 +119,10 @@ RoomScreen 内部の message 待機は cancellation をそのまま伝播する�
 
 `get_state()` は新しい network request を送らず、`SnifferMessageSource` に蓄積された
 message をその時点まで読み進めて最新 snapshot を返す。
-`wait_for_state_change()` は polling 用 sleep を利用者に書かせず、指定 version より新しい
-snapshot を待つ。待機開始後の最初の更新が terminal 遷移でも、その terminal snapshot を
-1 回返す。その後の Screen API は stale error になる。
+`wait_for_state_change()` は polling 用 sleep を利用者に書かせず、渡された snapshot の
+version より新しい snapshot を待つ。snapshot の room ID と self account ID が現在の room と
+一致し、version が現在より未来でないことを検証する。待機開始後の最初の更新が terminal
+遷移でも、その terminal snapshot を 1 回返す。その後の Screen API は stale error になる。
 
 ### `leave()`
 
