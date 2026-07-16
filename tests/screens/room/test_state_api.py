@@ -243,7 +243,9 @@ def test_get_state_drains_messages_without_browser_operation() -> None:
     assert browser.screenshot_count == 0
 
 
-def test_room_state_update_error_becomes_inconsistent_message_error() -> None:
+def test_room_state_update_error_logs_message_before_inconsistent_error(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     messages = _message_queue(
         _request_response(".lq.Lobby.joinRoom", {"room": _room()}),
     )
@@ -259,11 +261,26 @@ def test_room_state_update_error_becomes_inconsistent_message_error() -> None:
     malformed_notice.message["ready"] = "invalid"
     messages.enqueue(malformed_notice)
 
-    with pytest.raises(ScreenInconsistentMessageError) as exc_info:
+    with (
+        caplog.at_level(
+            logging.INFO,
+            logger="majsoulrpa.screens.room.screen",
+        ),
+        pytest.raises(ScreenInconsistentMessageError) as exc_info,
+    ):
         asyncio.run(screen.get_state())
 
     assert exc_info.value.screenshot == screenshot
     assert isinstance(exc_info.value.__cause__, RoomStateDecodeError)
+    messages_logged = [
+        record.getMessage()
+        for record in caplog.records
+        if record.name == "majsoulrpa.screens.room.screen"
+    ]
+    assert len(messages_logged) == 1
+    assert messages_logged[0].startswith("Sniffer message: ")
+    assert ".lq.NotifyRoomPlayerReady" in messages_logged[0]
+    assert '"ready":"invalid"' in messages_logged[0]
 
 
 def test_room_screen_instances_share_latest_context_state() -> None:

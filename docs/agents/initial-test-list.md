@@ -475,6 +475,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `wait_for_state_change()` は kick / game start の terminal snapshot も 1 回返す
 - [x] 呼び出し側 timeout による cancellation を RoomScreen が握りつぶさない
 - [x] room ID、account ID、player 名を高レベル API log に含めない
+- [x] RoomState 更新に失敗した message も例外送出前に Sniffer log へ出す
 
 ### Failure model
 

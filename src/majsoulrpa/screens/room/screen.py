@@ -138,13 +138,13 @@ class RoomScreen(Screen):
         message: DecodedSnifferMessage,
         self_account_id: int,
     ) -> None:
+        _logger.info(
+            "Sniffer message: %s",
+            _format_sniffer_message(message),
+        )
         try:
             self.context.room_state_cache.apply(message, self_account_id)
         except Exception as error:
             screenshot = await self.context.browser.screenshot()
             msg = "Room state message is inconsistent."
             raise ScreenInconsistentMessageError(msg, screenshot) from error
-        _logger.info(
-            "Sniffer message: %s",
-            _format_sniffer_message(message),
-        )
