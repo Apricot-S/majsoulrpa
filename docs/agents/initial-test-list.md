@@ -444,11 +444,11 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] terminal 後の古い room notice を active state として復活させない
 - [x] terminal 後の新しい完全 snapshot は新しい room generation を開始する
 - [x] active 中に別 room ID の完全 snapshot が来たら不整合にする
-- [ ] 古い RoomScreen generation は新しい room で stale になる
+- [x] 古い RoomScreen generation は新しい room で stale になる
 - [x] room 状態用の decode 直後 observer や background task を追加しない
-- [ ] RoomScreen は `SnifferMessageSource.get_nowait()` で蓄積済み message を順番に処理する
-- [ ] RoomScreen は `SnifferMessageSource.get()` で新しい message を待機する
-- [ ] callback ごとに RoomScreen instance が変わっても共有 cache から最新 snapshot を得られる
+- [x] RoomScreen は `SnifferMessageSource.get_nowait()` で蓄積済み message を順番に処理する
+- [x] RoomScreen は `SnifferMessageSource.get()` で新しい message を待機する
+- [x] callback ごとに RoomScreen instance が変わっても共有 cache から最新 snapshot を得られる
 - [x] cache は最新 snapshot と room generation 以外の raw message 履歴を保持しない
 - [x] `HomeScreen.create_room()` は成功した createRoom message を RoomScreen 用に source へ残す
 - [x] `HomeScreen.join_room()` は成功確認後に元の joinRoom message を 1 回だけ差し戻す
@@ -464,16 +464,16 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `RoomScreen` が `Screen` を継承する
 - [x] 個人情報を含まない room template の synthetic screenshot で検出できる
 - [x] threshold 未満の screenshot では検出しない
-- [ ] `before_callback()` は active room snapshot が得られるまで framework 内部の既定期限で待つ
-- [ ] 画像だけ room で snapshot がなければ状態を推測せず失敗する
-- [ ] `before_callback()` は source の蓄積済み message を処理して cache を最新化する
-- [ ] `get_state()` は network request や click を行わず最新 immutable snapshot を返す
+- [x] `before_callback()` は active room snapshot が得られるまで framework 内部の既定期限で待つ
+- [x] 画像だけ room で snapshot がなければ状態を推測せず失敗する
+- [x] `before_callback()` は source の蓄積済み message を処理して cache を最新化する
+- [x] `get_state()` は network request や click を行わず最新 immutable snapshot を返す
 - [ ] RoomScreen の全高レベル API は `timeout` 引数を持たない
 - [ ] 呼び出し側の `asyncio.timeout()` で `get_state()` を中断できる
 - [ ] `wait_for_state_change()` は `after_version` より新しい snapshot を返す
 - [ ] `wait_for_state_change()` は kick / game start の terminal snapshot も 1 回返す
 - [ ] 呼び出し側 timeout による cancellation を RoomScreen が握りつぶさない
-- [ ] room ID、account ID、player 名を高レベル API log に含めない
+- [x] room ID、account ID、player 名を高レベル API log に含めない
 
 ### Failure model
 
@@ -484,7 +484,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] role / 満員 / 未 ready の事前条件失敗では browser operation を行わない
 - [ ] 事前条件失敗は operation と machine-readable な reason Enum を保持する
 - [ ] response 欠落と notice 欠落を server rejection に変換しない
-- [ ] malformed response / notice を空状態や通常失敗へ変換しない
+- [x] malformed response / notice を空状態や通常失敗へ変換しない
 - [ ] browser / Sniffer infrastructure error を Room 用 rejection に変換しない
 - [ ] Room API の cancellation を cleanup 後に伝播する
 
