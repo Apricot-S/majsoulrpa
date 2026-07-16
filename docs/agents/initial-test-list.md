@@ -495,7 +495,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] host と guest の `WAITING` state で退出 UI を操作できる
 - [x] click 前に source を drain し、その後の outbound `.lq.Lobby.leaveRoom` を対応付ける
 - [x] 過去の leaveRoom response を今回の成功に使わない
-- [x] 成功 response を観測した後だけ `LEFT` にして RoomScreen を stale にする
+- [x] 成功 response を観測した後だけ `LEFT` にして RoomScreen を stale にし、return 前に 1.0 秒待機する
 - [x] server rejection では active state と Screen を維持する
 - [x] `MATCH_STARTED` の guest は退出 UI を操作できない
 - [x] kick が leave 待機に割り込んだら呼び出し側 timeout より先に stale error にする

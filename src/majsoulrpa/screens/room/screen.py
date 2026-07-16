@@ -148,6 +148,7 @@ class RoomScreen(Screen):
                 message.raw.name == LEAVE_API_NAME
                 and state.status is RoomStatus.LEFT
             ):
+                await asyncio.sleep(1.0)
                 return
             screenshot = await self.context.browser.screenshot()
             msg = "Room became inactive while waiting to leave."

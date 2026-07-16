@@ -7,6 +7,7 @@ from inspect import signature
 import pytest
 from pydantic import JsonValue
 
+import majsoulrpa.screens.room.screen as room_module
 from majsoulrpa.assets.templates.room import (
     LEAVE_SETTINGS_PATH,
     LEAVE_TEMPLATE_PATH,
@@ -69,7 +70,14 @@ class _OperationMessageSource:
 @pytest.mark.parametrize("self_account_id", [100001, 100002])
 def test_leave_clicks_ui_and_stales_after_success(
     self_account_id: int,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    monkeypatch.setattr(room_module.asyncio, "sleep", sleep)
     messages = _OperationMessageSource(
         queued=(_request_response(".lq.Lobby.joinRoom", {"room": _room()}),),
         waiting=(_request_response(".lq.Lobby.leaveRoom", {}),),
@@ -91,6 +99,7 @@ def test_leave_clicks_ui_and_stales_after_success(
     result = asyncio.run(screen.leave())
 
     assert result is None
+    assert sleeps == [1.0]
     assert len(browser.clicked_points) == 1
     assert messages.get_count == 1
     state = context.room_state_cache.state
