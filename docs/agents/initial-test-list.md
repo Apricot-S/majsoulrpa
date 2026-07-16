@@ -479,26 +479,26 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Failure model
 
-- [ ] server rejection は Enum 戻り値ではなく `RoomOperationRejectedError` にする
-- [ ] rejection error が operation、reason Enum、元の整数 code を保持する
-- [ ] 未対応 code は数値を warning log に出し `UNRECOGNIZED_ERROR_CODE` にする
-- [ ] server の error message、room ID、account ID、player 名を例外 message に含めない
+- [x] server rejection は Enum 戻り値ではなく `RoomOperationRejectedError` にする
+- [x] rejection error が operation、reason Enum、元の整数 code を保持する
+- [x] 未対応 code は数値を warning log に出し `UNRECOGNIZED_ERROR_CODE` にする
+- [x] server の error message、room ID、account ID、player 名を例外 message に含めない
 - [ ] role / 満員 / 未 ready の事前条件失敗では browser operation を行わない
 - [ ] 事前条件失敗は operation と machine-readable な reason Enum を保持する
-- [ ] response 欠落と notice 欠落を server rejection に変換しない
+- [x] response 欠落と notice 欠落を server rejection に変換しない
 - [x] malformed response / notice を空状態や通常失敗へ変換しない
 - [ ] browser / Sniffer infrastructure error を Room 用 rejection に変換しない
 - [x] Room API の cancellation を cleanup 後に伝播する
 
 ### `leave()`
 
-- [ ] host と guest の `WAITING` state で退出 UI を操作できる
-- [ ] click 前に source を drain し、その後の outbound `.lq.Lobby.leaveRoom` を対応付ける
-- [ ] 過去の leaveRoom response を今回の成功に使わない
-- [ ] 成功 response を観測した後だけ `LEFT` にして RoomScreen を stale にする
-- [ ] server rejection では active state と Screen を維持する
-- [ ] `MATCH_STARTED` の guest は退出 UI を操作できない
-- [ ] kick が leave 待機に割り込んだら呼び出し側 timeout より先に stale error にする
+- [x] host と guest の `WAITING` state で退出 UI を操作できる
+- [x] click 前に source を drain し、その後の outbound `.lq.Lobby.leaveRoom` を対応付ける
+- [x] 過去の leaveRoom response を今回の成功に使わない
+- [x] 成功 response を観測した後だけ `LEFT` にして RoomScreen を stale にする
+- [x] server rejection では active state と Screen を維持する
+- [x] `MATCH_STARTED` の guest は退出 UI を操作できない
+- [x] kick が leave 待機に割り込んだら呼び出し側 timeout より先に stale error にする
 - [ ] `leave()` の実ゲーム確認後まで `add_ai()` の実装へ進まない
 
 ### `add_ai()`

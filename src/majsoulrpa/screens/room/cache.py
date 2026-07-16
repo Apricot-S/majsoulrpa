@@ -86,6 +86,9 @@ class RoomStateCache:
         self_account_id: int,
     ) -> RoomState | None:
         if message.raw.name == ".lq.Lobby.leaveRoom":
+            if message.raw.request_direction is not Direction.OUTBOUND:
+                msg = ".lq.Lobby.leaveRoom must be an outbound request."
+                raise RoomStateTransitionError(msg)
             if "error" in message.response:
                 return self._state
             return self._apply_terminal(RoomStatus.LEFT)

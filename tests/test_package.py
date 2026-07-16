@@ -86,6 +86,9 @@ def test_room_import_does_not_load_opencv_template_module() -> None:
     room = importlib.import_module("majsoulrpa.screens.room")
 
     assert room.__all__ == [
+        "RoomOperation",
+        "RoomOperationFailureReason",
+        "RoomOperationRejectedError",
         "RoomPlayer",
         "RoomScreen",
         "RoomState",

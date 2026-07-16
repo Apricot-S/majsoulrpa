@@ -1,4 +1,5 @@
 import datetime
+from dataclasses import replace
 
 import pytest
 from pydantic import JsonValue
@@ -281,6 +282,19 @@ def test_cache_keeps_waiting_state_after_rejected_leave() -> None:
     assert state is not None
     assert state.status.value == "waiting"
     assert state.version == 1
+
+
+def test_cache_requires_leave_request_to_be_outbound() -> None:
+    cache = RoomStateCache()
+    cache.apply(_create_room_message({"room": _room()}), 100002)
+    message = _request_response(".lq.Lobby.leaveRoom", {})
+    message = replace(
+        message,
+        raw=replace(message.raw, request_direction=Direction.INBOUND),
+    )
+
+    with pytest.raises(RoomStateTransitionError):
+        cache.apply(message, 100002)
 
 
 def test_cache_marks_kick_notice_as_terminal() -> None:

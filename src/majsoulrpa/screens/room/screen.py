@@ -1,8 +1,10 @@
 import asyncio
 from logging import getLogger
-from typing import override
+from typing import NoReturn, override
 
 from majsoulrpa.assets.templates.room import (
+    LEAVE_SETTINGS_PATH,
+    LEAVE_TEMPLATE_PATH,
     ROOM_SIGN_SETTINGS_PATH,
     ROOM_SIGN_TEMPLATE_PATH,
 )
@@ -20,10 +22,20 @@ from majsoulrpa.screens.errors import (
     ScreenInvalidArgumentError,
     ScreenStaleError,
 )
+from majsoulrpa.screens.room.errors import (
+    RoomOperation,
+    RoomOperationFailureReason,
+    RoomOperationRejectedError,
+)
 from majsoulrpa.screens.room.state import RoomState, RoomStatus
-from majsoulrpa.sniffer.events import DecodedSnifferMessage
+from majsoulrpa.sniffer.events import (
+    DecodedRequestResponse,
+    DecodedSnifferMessage,
+    Direction,
+)
 
 ROOM_STATE_INITIALIZATION_TIMEOUT_SECONDS = 5.0
+LEAVE_API_NAME = ".lq.Lobby.leaveRoom"
 
 _logger = getLogger(__name__)
 
@@ -32,6 +44,10 @@ class RoomScreen(Screen):
     ROOM_SIGN_TEMPLATE = load_png_template_matcher(
         template_path=ROOM_SIGN_TEMPLATE_PATH,
         settings_path=ROOM_SIGN_SETTINGS_PATH,
+    )
+    LEAVE_TEMPLATE = load_png_template_matcher(
+        template_path=LEAVE_TEMPLATE_PATH,
+        settings_path=LEAVE_SETTINGS_PATH,
     )
 
     def __init__(self, context: ScreenContext | None = None) -> None:
@@ -98,6 +114,83 @@ class RoomScreen(Screen):
             await self._apply_room_message(message, self_account_id)
             await self._ensure_current_generation()
 
+    @_screen_api
+    @_requires_active
+    async def leave(self) -> None:
+        self_account_id = await self._get_self_account_id()
+        await self._drain_room_messages(self_account_id)
+        await self._ensure_current_generation()
+        await self._ensure_waiting_state()
+        await self.click_template(
+            self.LEAVE_TEMPLATE,
+            message="leave was not found.",
+        )
+
+        while True:
+            message = await self._get_sniffer_message()
+            await self._apply_room_message(message, self_account_id)
+            leave_response = None
+            if message.raw.name == LEAVE_API_NAME:
+                leave_response = await self._require_leave_response(message)
+            await self._ensure_current_generation()
+            if (
+                leave_response is not None
+                and "error" in leave_response.response
+            ):
+                await self._raise_leave_rejection(leave_response)
+
+            state = self._get_cached_state()
+            if state.status is RoomStatus.WAITING:
+                continue
+
+            self._mark_stale()
+            if (
+                message.raw.name == LEAVE_API_NAME
+                and state.status is RoomStatus.LEFT
+            ):
+                return
+            screenshot = await self.context.browser.screenshot()
+            msg = "Room became inactive while waiting to leave."
+            raise ScreenStaleError(msg, screenshot)
+
+    async def _require_leave_response(
+        self,
+        message: DecodedSnifferMessage,
+    ) -> DecodedRequestResponse:
+        if (
+            isinstance(message, DecodedRequestResponse)
+            and message.raw.request_direction is Direction.OUTBOUND
+        ):
+            return message
+        screenshot = await self.context.browser.screenshot()
+        msg = "leaveRoom must be an outbound request/response."
+        raise ScreenInconsistentMessageError(msg, screenshot)
+
+    async def _raise_leave_rejection(
+        self,
+        message: DecodedRequestResponse,
+    ) -> NoReturn:
+        error = message.response["error"]
+        if not isinstance(error, dict) or "code" not in error:
+            screenshot = await self.context.browser.screenshot()
+            msg = "leaveRoom error must be a dict containing code."
+            raise ScreenInconsistentMessageError(msg, screenshot)
+
+        code = error["code"]
+        if isinstance(code, bool) or not isinstance(code, int):
+            screenshot = await self.context.browser.screenshot()
+            msg = "leaveRoom error code must be an integer."
+            raise ScreenInconsistentMessageError(msg, screenshot)
+
+        _logger.warning("Unrecognized leaveRoom error code: %d.", code)
+        screenshot = await self.context.browser.screenshot()
+        raise RoomOperationRejectedError(
+            RoomOperation.LEAVE,
+            RoomOperationFailureReason.UNRECOGNIZED_ERROR_CODE,
+            code,
+            screenshot,
+        )
+
     async def _get_self_account_id(self) -> int:
         self_account_id = self.context.account_id
         if self_account_id is None:
@@ -127,6 +220,14 @@ class RoomScreen(Screen):
         screenshot = await self.context.browser.screenshot()
         self._mark_stale()
         msg = "RoomScreen belongs to an old room generation."
+        raise ScreenStaleError(msg, screenshot)
+
+    async def _ensure_waiting_state(self) -> None:
+        if self._get_cached_state().status is RoomStatus.WAITING:
+            return
+        screenshot = await self.context.browser.screenshot()
+        self._mark_stale()
+        msg = "Room is no longer active."
         raise ScreenStaleError(msg, screenshot)
 
     async def _drain_room_messages(self, self_account_id: int) -> None:
