@@ -50,6 +50,10 @@ from majsoulrpa.assets.templates.home.tournament_lobby import (
     TOURNAMENT_ERROR_CONFIRM_SETTINGS_PATH,
     TOURNAMENT_ERROR_CONFIRM_TEMPLATE_PATH,
 )
+from majsoulrpa.assets.templates.tournament import (
+    LEAVE_SETTINGS_PATH,
+    LEAVE_TEMPLATE_PATH,
+)
 from majsoulrpa.presentation import Region
 from majsoulrpa.presentation.template import load_png_template_matcher
 from majsoulrpa.screens.base import (
@@ -118,7 +122,6 @@ class JoinRoomFailureReason(Enum):
 
 class HomeScreen(Screen):
     TOURNAMENT_ID_REGION = Region(left=657, top=344, width=414, height=38)
-    TOURNAMENT_BACK_REGION = Region(left=45, top=55, width=66, height=60)
     MODE_REGIONS: ClassVar[dict[Mode, Region]] = {
         Mode.FOUR_PLAYER: Region(left=426, top=254, width=216, height=80),
         Mode.THREE_PLAYER: Region(left=691, top=254, width=216, height=80),
@@ -211,6 +214,10 @@ class HomeScreen(Screen):
     TOURNAMENT_ERROR_CONFIRM_TEMPLATE = load_png_template_matcher(
         template_path=TOURNAMENT_ERROR_CONFIRM_TEMPLATE_PATH,
         settings_path=TOURNAMENT_ERROR_CONFIRM_SETTINGS_PATH,
+    )
+    TOURNAMENT_LEAVE_TEMPLATE = load_png_template_matcher(
+        template_path=LEAVE_TEMPLATE_PATH,
+        settings_path=LEAVE_SETTINGS_PATH,
     )
     FRIENDLY_MATCH_TEMPLATE = load_png_template_matcher(
         template_path=FRIENDLY_MATCH_TEMPLATE_PATH,
@@ -406,7 +413,10 @@ class HomeScreen(Screen):
             ),
         )
         await asyncio.sleep(1.0)
-        await self.click_region(self.TOURNAMENT_BACK_REGION)
+        await self.click_template(
+            self.TOURNAMENT_LEAVE_TEMPLATE,
+            message="tournament leave was not found after entry failure.",
+        )
         await asyncio.sleep(1.0)
         screenshot = await self.context.browser.screenshot()
         self._require_match_buttons(screenshot)

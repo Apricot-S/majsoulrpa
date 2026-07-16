@@ -403,8 +403,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 大会取得成功時は info log 後に 1.0 秒待機して `HomeScreen` を stale にする
 - [x] 大会取得失敗時は失敗理由名を warning log に記録する
 - [x] 大会取得失敗から 0.5 秒待機して大会用 `error-confirm` をクリックする
-- [x] 大会用 `error-confirm` から 1.0 秒待機して大会用の戻る座標をクリックする
-- [x] 大会用の戻る座標から 1.0 秒待機してホーム画面の対局ボタンを確認する
+- [x] 大会用 `error-confirm` から 1.0 秒待機して共通 `tournament/leave` template をクリックする
+- [x] 大会用の退出ボタンから 1.0 秒待機してホーム画面の対局ボタンを確認する
 
 ## Phase 6.10: RoomScreen
 

@@ -19,6 +19,10 @@ from majsoulrpa.assets.templates.home.tournament_lobby import (
     TOURNAMENT_ERROR_CONFIRM_SETTINGS_PATH,
     TOURNAMENT_ERROR_CONFIRM_TEMPLATE_PATH,
 )
+from majsoulrpa.assets.templates.tournament import (
+    LEAVE_SETTINGS_PATH,
+    LEAVE_TEMPLATE_PATH,
+)
 from majsoulrpa.presentation.template import TemplateMatchSettings
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
@@ -69,6 +73,12 @@ def _tournament_browser(
             _synthetic_template_screenshot(
                 template_path=TOURNAMENT_ERROR_CONFIRM_TEMPLATE_PATH,
                 settings_path=TOURNAMENT_ERROR_CONFIRM_SETTINGS_PATH,
+            ),
+        )
+        screenshots.append(
+            _synthetic_template_screenshot(
+                template_path=LEAVE_TEMPLATE_PATH,
+                settings_path=LEAVE_SETTINGS_PATH,
             ),
         )
         screenshots.append(failure_home_screenshot)
@@ -297,7 +307,7 @@ def test_enter_tournament_returns_failure_reason(
         1.0,
     ]
     assert len(browser.clicked_points) == 7
-    assert browser.screenshot_count == 6
+    assert browser.screenshot_count == 7
     error_confirm_region = TemplateMatchSettings.from_toml_file(
         TOURNAMENT_ERROR_CONFIRM_SETTINGS_PATH,
     ).region
@@ -313,10 +323,11 @@ def test_enter_tournament_returns_failure_reason(
         < error_confirm_region.top + error_confirm_region.height
     )
     x, y = browser.clicked_points[-1]
-    assert HomeScreen.TOURNAMENT_BACK_REGION.left < x
-    assert x < HomeScreen.TOURNAMENT_BACK_REGION.right
-    assert HomeScreen.TOURNAMENT_BACK_REGION.top < y
-    assert y < HomeScreen.TOURNAMENT_BACK_REGION.bottom
+    leave_region = TemplateMatchSettings.from_toml_file(
+        LEAVE_SETTINGS_PATH,
+    ).region
+    assert leave_region.left < x < leave_region.left + leave_region.width
+    assert leave_region.top < y < leave_region.top + leave_region.height
     if unknown_warning is None:
         assert (
             "Unrecognized fetchCustomizedContestByContestId error code"
