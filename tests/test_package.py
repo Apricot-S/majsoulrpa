@@ -88,6 +88,8 @@ def test_room_import_does_not_load_opencv_template_module() -> None:
     assert room.__all__ == [
         "RoomOperation",
         "RoomOperationFailureReason",
+        "RoomOperationNotAllowedError",
+        "RoomOperationNotAllowedReason",
         "RoomOperationRejectedError",
         "RoomPlayer",
         "RoomScreen",

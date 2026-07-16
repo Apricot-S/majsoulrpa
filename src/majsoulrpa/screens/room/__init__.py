@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING
 from majsoulrpa.screens.room.errors import (
     RoomOperation,
     RoomOperationFailureReason,
+    RoomOperationNotAllowedError,
+    RoomOperationNotAllowedReason,
     RoomOperationRejectedError,
 )
 from majsoulrpa.screens.room.state import RoomPlayer, RoomState, RoomStatus
@@ -13,6 +15,8 @@ if TYPE_CHECKING:
 __all__ = [
     "RoomOperation",
     "RoomOperationFailureReason",
+    "RoomOperationNotAllowedError",
+    "RoomOperationNotAllowedReason",
     "RoomOperationRejectedError",
     "RoomPlayer",
     "RoomScreen",

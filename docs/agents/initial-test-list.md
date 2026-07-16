@@ -483,8 +483,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] rejection error が operation、reason Enum、元の整数 code を保持する
 - [x] 未対応 code は数値を warning log に出し `UNRECOGNIZED_ERROR_CODE` にする
 - [x] server の error message、room ID、account ID、player 名を例外 message に含めない
-- [ ] role / 満員 / 未 ready の事前条件失敗では browser operation を行わない
-- [ ] 事前条件失敗は operation と machine-readable な reason Enum を保持する
+- [x] role / 満員 / 未 ready の事前条件失敗では browser operation を行わない
+- [x] 事前条件失敗は operation と machine-readable な reason Enum を保持する
 - [x] response 欠落と notice 欠落を server rejection に変換しない
 - [x] malformed response / notice を空状態や通常失敗へ変換しない
 - [ ] browser / Sniffer infrastructure error を Room 用 rejection に変換しない
@@ -499,19 +499,19 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] server rejection では active state と Screen を維持する
 - [x] `MATCH_STARTED` の guest は退出 UI を操作できない
 - [x] kick が leave 待機に割り込んだら呼び出し側 timeout より先に stale error にする
-- [ ] `leave()` の実ゲーム確認後まで `add_ai()` の実装へ進まない
+- [x] `leave()` の実ゲーム確認後まで `add_ai()` の実装へ進まない
 
 ### `add_ai()`
 
-- [ ] 最新 snapshot で host の場合だけ AI 追加 UI を操作する
-- [ ] participant が満員なら UI を操作しない
-- [ ] source refresh 後の最新 host / capacity を使って事前条件を検証する
-- [ ] click 前に source を drain し、その後の outbound `.lq.Lobby.addRoomRobot` を対応付ける
-- [ ] 成功 response だけでは完了せず、後続 player update で AI が 1 増えるまで待つ
-- [ ] AI 数が 1 以外増減した場合は今回の成功として扱わない
-- [ ] server rejection を自動 retry しない
-- [ ] response 成功後に player update がなければ成功扱いにせず呼び出し側 timeout まで待つ
-- [ ] 成功時は更新後の `RoomState` を返し Screen を active のままにする
+- [x] 最新 snapshot で host の場合だけ AI 追加 UI を操作する
+- [x] participant が満員なら UI を操作しない
+- [x] source refresh 後の最新 host / capacity を使って事前条件を検証する
+- [x] click 前に source を drain し、その後の outbound `.lq.Lobby.addRoomRobot` を対応付ける
+- [x] 成功 response だけでは完了せず、後続 player update で AI が 1 増えるまで待つ
+- [x] AI 数が 1 以外増減した場合は今回の成功として扱わない
+- [x] server rejection を自動 retry しない
+- [x] response 成功後に player update がなければ成功扱いにせず呼び出し側 timeout まで待つ
+- [x] 成功時は更新後の `RoomState` を返し Screen を active のままにする
 - [ ] `add_ai()` の実ゲーム確認後まで `set_ready()` の実装へ進まない
 
 ### `set_ready()`

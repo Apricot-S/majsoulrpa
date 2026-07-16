@@ -3,6 +3,8 @@ from logging import getLogger
 from typing import NoReturn, override
 
 from majsoulrpa.assets.templates.room import (
+    ADD_AI_SETTINGS_PATHS,
+    ADD_AI_TEMPLATE_PATH,
     LEAVE_SETTINGS_PATH,
     LEAVE_TEMPLATE_PATH,
     ROOM_SIGN_SETTINGS_PATH,
@@ -18,6 +20,7 @@ from majsoulrpa.screens.base import (
     _screen_api,
 )
 from majsoulrpa.screens.errors import (
+    ScreenDetectionError,
     ScreenInconsistentMessageError,
     ScreenInvalidArgumentError,
     ScreenStaleError,
@@ -25,6 +28,8 @@ from majsoulrpa.screens.errors import (
 from majsoulrpa.screens.room.errors import (
     RoomOperation,
     RoomOperationFailureReason,
+    RoomOperationNotAllowedError,
+    RoomOperationNotAllowedReason,
     RoomOperationRejectedError,
 )
 from majsoulrpa.screens.room.state import RoomState, RoomStatus
@@ -36,6 +41,7 @@ from majsoulrpa.sniffer.events import (
 
 ROOM_STATE_INITIALIZATION_TIMEOUT_SECONDS = 5.0
 LEAVE_API_NAME = ".lq.Lobby.leaveRoom"
+ADD_AI_API_NAME = ".lq.Lobby.addRoomRobot"
 
 _logger = getLogger(__name__)
 
@@ -48,6 +54,13 @@ class RoomScreen(Screen):
     LEAVE_TEMPLATE = load_png_template_matcher(
         template_path=LEAVE_TEMPLATE_PATH,
         settings_path=LEAVE_SETTINGS_PATH,
+    )
+    ADD_AI_TEMPLATES = tuple(
+        load_png_template_matcher(
+            template_path=ADD_AI_TEMPLATE_PATH,
+            settings_path=settings_path,
+        )
+        for settings_path in ADD_AI_SETTINGS_PATHS
     )
 
     def __init__(self, context: ScreenContext | None = None) -> None:
@@ -154,6 +167,40 @@ class RoomScreen(Screen):
             msg = "Room became inactive while waiting to leave."
             raise ScreenStaleError(msg, screenshot)
 
+    @_screen_api
+    @_requires_active
+    async def add_ai(self) -> RoomState:
+        self_account_id = await self._get_self_account_id()
+        await self._drain_room_messages(self_account_id)
+        await self._ensure_current_generation()
+        await self._ensure_waiting_state()
+        previous = self._get_cached_state()
+        await self._ensure_add_ai_allowed(previous)
+        await self._click_add_ai_template()
+
+        response_succeeded = False
+        while True:
+            message = await self._get_sniffer_message()
+            await self._apply_room_message(message, self_account_id)
+            add_ai_response = None
+            if message.raw.name == ADD_AI_API_NAME:
+                add_ai_response = await self._require_add_ai_response(message)
+            await self._ensure_current_generation()
+            await self._ensure_waiting_state()
+            if add_ai_response is not None:
+                if "error" in add_ai_response.response:
+                    await self._raise_add_ai_rejection(add_ai_response)
+                response_succeeded = True
+                continue
+
+            state = self._get_cached_state()
+            if (
+                response_succeeded
+                and message.raw.name == ".lq.NotifyRoomPlayerUpdate"
+                and state.ai_count == previous.ai_count + 1
+            ):
+                return state
+
     async def _require_leave_response(
         self,
         message: DecodedSnifferMessage,
@@ -187,6 +234,72 @@ class RoomScreen(Screen):
         screenshot = await self.context.browser.screenshot()
         raise RoomOperationRejectedError(
             RoomOperation.LEAVE,
+            RoomOperationFailureReason.UNRECOGNIZED_ERROR_CODE,
+            code,
+            screenshot,
+        )
+
+    async def _ensure_add_ai_allowed(self, state: RoomState) -> None:
+        reason = None
+        if not state.self_is_host:
+            reason = RoomOperationNotAllowedReason.NOT_HOST
+        elif state.available_slots == 0:
+            reason = RoomOperationNotAllowedReason.ROOM_FULL
+        if reason is None:
+            return
+
+        screenshot = await self.context.browser.screenshot()
+        raise RoomOperationNotAllowedError(
+            RoomOperation.ADD_AI,
+            reason,
+            screenshot,
+        )
+
+    async def _click_add_ai_template(self) -> None:
+        screenshot = await self.context.browser.screenshot()
+        for template in self.ADD_AI_TEMPLATES:
+            result = template.find(screenshot)
+            if result is None:
+                continue
+            await self._click_region(result.region)
+            return
+
+        msg = "add-ai was not found."
+        raise ScreenDetectionError(msg, screenshot)
+
+    async def _require_add_ai_response(
+        self,
+        message: DecodedSnifferMessage,
+    ) -> DecodedRequestResponse:
+        if (
+            isinstance(message, DecodedRequestResponse)
+            and message.raw.request_direction is Direction.OUTBOUND
+        ):
+            return message
+        screenshot = await self.context.browser.screenshot()
+        msg = "addRoomRobot must be an outbound request/response."
+        raise ScreenInconsistentMessageError(msg, screenshot)
+
+    async def _raise_add_ai_rejection(
+        self,
+        message: DecodedRequestResponse,
+    ) -> NoReturn:
+        error = message.response["error"]
+        if not isinstance(error, dict) or "code" not in error:
+            screenshot = await self.context.browser.screenshot()
+            msg = "addRoomRobot error must be a dict containing code."
+            raise ScreenInconsistentMessageError(msg, screenshot)
+
+        code = error["code"]
+        if isinstance(code, bool) or not isinstance(code, int):
+            screenshot = await self.context.browser.screenshot()
+            msg = "addRoomRobot error code must be an integer."
+            raise ScreenInconsistentMessageError(msg, screenshot)
+
+        _logger.warning("Unrecognized addRoomRobot error code: %d.", code)
+        screenshot = await self.context.browser.screenshot()
+        raise RoomOperationRejectedError(
+            RoomOperation.ADD_AI,
             RoomOperationFailureReason.UNRECOGNIZED_ERROR_CODE,
             code,
             screenshot,
