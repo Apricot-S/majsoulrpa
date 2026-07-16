@@ -513,7 +513,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] server rejection を自動 retry しない
 - [x] response または player update の片方しかなければ成功扱いにせず呼び出し側 timeout まで待つ
 - [x] 成功時は更新後の `RoomState` を返し Screen を active のままにする
-- [ ] `add_ai()` の実ゲーム確認後まで `set_ready()` の実装へ進まない
+- [x] `add_ai()` の実ゲーム確認後まで `set_ready()` の実装へ進まない
 
 ### `set_ready()`
 

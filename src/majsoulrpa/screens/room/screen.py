@@ -130,10 +130,7 @@ class RoomScreen(Screen):
     @_screen_api
     @_requires_active
     async def leave(self) -> None:
-        self_account_id = await self._get_self_account_id()
-        await self._drain_room_messages(self_account_id)
-        await self._ensure_current_generation()
-        await self._ensure_waiting_state()
+        self_account_id, _ = await self._prepare_room_operation()
         await self.click_template(
             self.LEAVE_TEMPLATE,
             message="leave was not found.",
@@ -144,13 +141,18 @@ class RoomScreen(Screen):
             await self._apply_room_message(message, self_account_id)
             leave_response = None
             if message.raw.name == LEAVE_API_NAME:
-                leave_response = await self._require_leave_response(message)
+                leave_response = await self._require_operation_response(
+                    message,
+                )
             await self._ensure_current_generation()
             if (
                 leave_response is not None
                 and "error" in leave_response.response
             ):
-                await self._raise_leave_rejection(leave_response)
+                await self._raise_operation_rejection(
+                    leave_response,
+                    RoomOperation.LEAVE,
+                )
 
             state = self._get_cached_state()
             if state.status is RoomStatus.WAITING:
@@ -170,11 +172,7 @@ class RoomScreen(Screen):
     @_screen_api
     @_requires_active
     async def add_ai(self) -> RoomState:
-        self_account_id = await self._get_self_account_id()
-        await self._drain_room_messages(self_account_id)
-        await self._ensure_current_generation()
-        await self._ensure_waiting_state()
-        previous = self._get_cached_state()
+        self_account_id, previous = await self._prepare_room_operation()
         await self._ensure_add_ai_allowed(previous)
         await self._click_add_ai_template()
 
@@ -185,12 +183,17 @@ class RoomScreen(Screen):
             await self._apply_room_message(message, self_account_id)
             add_ai_response = None
             if message.raw.name == ADD_AI_API_NAME:
-                add_ai_response = await self._require_add_ai_response(message)
+                add_ai_response = await self._require_operation_response(
+                    message,
+                )
             await self._ensure_current_generation()
             await self._ensure_waiting_state()
             if add_ai_response is not None:
                 if "error" in add_ai_response.response:
-                    await self._raise_add_ai_rejection(add_ai_response)
+                    await self._raise_operation_rejection(
+                        add_ai_response,
+                        RoomOperation.ADD_AI,
+                    )
                 response_succeeded = True
 
             state = self._get_cached_state()
@@ -204,7 +207,14 @@ class RoomScreen(Screen):
             ):
                 return state
 
-    async def _require_leave_response(
+    async def _prepare_room_operation(self) -> tuple[int, RoomState]:
+        self_account_id = await self._get_self_account_id()
+        await self._drain_room_messages(self_account_id)
+        await self._ensure_current_generation()
+        await self._ensure_waiting_state()
+        return self_account_id, self._get_cached_state()
+
+    async def _require_operation_response(
         self,
         message: DecodedSnifferMessage,
     ) -> DecodedRequestResponse:
@@ -214,29 +224,36 @@ class RoomScreen(Screen):
         ):
             return message
         screenshot = await self.context.browser.screenshot()
-        msg = "leaveRoom must be an outbound request/response."
+        operation_name = message.raw.name.rsplit(".", maxsplit=1)[-1]
+        msg = f"{operation_name} must be an outbound request/response."
         raise ScreenInconsistentMessageError(msg, screenshot)
 
-    async def _raise_leave_rejection(
+    async def _raise_operation_rejection(
         self,
         message: DecodedRequestResponse,
+        operation: RoomOperation,
     ) -> NoReturn:
         error = message.response["error"]
+        operation_name = message.raw.name.rsplit(".", maxsplit=1)[-1]
         if not isinstance(error, dict) or "code" not in error:
             screenshot = await self.context.browser.screenshot()
-            msg = "leaveRoom error must be a dict containing code."
+            msg = f"{operation_name} error must be a dict containing code."
             raise ScreenInconsistentMessageError(msg, screenshot)
 
         code = error["code"]
         if isinstance(code, bool) or not isinstance(code, int):
             screenshot = await self.context.browser.screenshot()
-            msg = "leaveRoom error code must be an integer."
+            msg = f"{operation_name} error code must be an integer."
             raise ScreenInconsistentMessageError(msg, screenshot)
 
-        _logger.warning("Unrecognized leaveRoom error code: %d.", code)
+        _logger.warning(
+            "Unrecognized %s error code: %d.",
+            operation_name,
+            code,
+        )
         screenshot = await self.context.browser.screenshot()
         raise RoomOperationRejectedError(
-            RoomOperation.LEAVE,
+            operation,
             RoomOperationFailureReason.UNRECOGNIZED_ERROR_CODE,
             code,
             screenshot,
@@ -269,44 +286,6 @@ class RoomScreen(Screen):
 
         msg = "add-ai was not found."
         raise ScreenDetectionError(msg, screenshot)
-
-    async def _require_add_ai_response(
-        self,
-        message: DecodedSnifferMessage,
-    ) -> DecodedRequestResponse:
-        if (
-            isinstance(message, DecodedRequestResponse)
-            and message.raw.request_direction is Direction.OUTBOUND
-        ):
-            return message
-        screenshot = await self.context.browser.screenshot()
-        msg = "addRoomRobot must be an outbound request/response."
-        raise ScreenInconsistentMessageError(msg, screenshot)
-
-    async def _raise_add_ai_rejection(
-        self,
-        message: DecodedRequestResponse,
-    ) -> NoReturn:
-        error = message.response["error"]
-        if not isinstance(error, dict) or "code" not in error:
-            screenshot = await self.context.browser.screenshot()
-            msg = "addRoomRobot error must be a dict containing code."
-            raise ScreenInconsistentMessageError(msg, screenshot)
-
-        code = error["code"]
-        if isinstance(code, bool) or not isinstance(code, int):
-            screenshot = await self.context.browser.screenshot()
-            msg = "addRoomRobot error code must be an integer."
-            raise ScreenInconsistentMessageError(msg, screenshot)
-
-        _logger.warning("Unrecognized addRoomRobot error code: %d.", code)
-        screenshot = await self.context.browser.screenshot()
-        raise RoomOperationRejectedError(
-            RoomOperation.ADD_AI,
-            RoomOperationFailureReason.UNRECOGNIZED_ERROR_CODE,
-            code,
-            screenshot,
-        )
 
     async def _get_self_account_id(self) -> int:
         self_account_id = self.context.account_id
