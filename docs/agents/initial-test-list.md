@@ -517,14 +517,20 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### `set_ready()`
 
+- [ ] 公開 API はキーワード専用の `ready: bool = True` を受け取り、ready と ready 解除を
+      同じ状態設定操作として扱う
+- [ ] `cancel()` / `cancel_ready()` / `ready()` の alias は追加せず、`start_match()` も
+      `start()` に短縮しない
 - [ ] 最新 snapshot で guest の場合だけ ready UI を操作する
-- [ ] host が呼んだ場合は UI を操作せず不正操作エラーにする
-- [ ] すでに ready の guest は click せず同じ snapshot を返す
+- [ ] host が呼んだ場合は目標状態によらず UI を操作せず不正操作エラーにする
+- [ ] 自分の `is_ready` が目標状態と一致する guest は click せず同じ snapshot を返す
 - [ ] click 前に source を drain し、その後の outbound `.lq.Lobby.readyPlay` を対応付ける
-- [ ] readyPlay request の `ready` が `true` でなければ不整合にする
-- [ ] 成功 response だけでは完了せず、自分の ready notice まで待つ
+- [ ] readyPlay request の `ready` が指定した目標状態と一致しなければ不整合にする
+- [ ] 成功 response と自分の ready notice の両方を待ち、片方だけでは完了しない
+- [ ] response と notice の順序を実通信で確認するまでは特定の到着順に依存しない
 - [ ] 別 player の ready notice を自分の成功として扱わない
-- [ ] 成功時は自分が ready の `RoomState` を返し Screen を active のままにする
+- [ ] 自分の ready notice が目標状態と一致しなければ成功として扱わない
+- [ ] 成功時は自分の `is_ready` が目標状態の `RoomState` を返し Screen を active のままにする
 - [ ] `set_ready()` の実ゲーム確認後まで `start_match()` の実装へ進まない
 
 ### `start_match()`

@@ -102,7 +102,11 @@ class RoomScreen(Screen):
 
     async def start_match(self) -> None: ...
 
-    async def set_ready(self) -> RoomState: ...
+    async def set_ready(
+        self,
+        *,
+        ready: bool = True,
+    ) -> RoomState: ...
 ```
 
 高レベル Screen API は timeout 引数を持たない。期限が必要な利用者は structured concurrency に
@@ -157,11 +161,19 @@ version より新しい snapshot を待つ。snapshot の room ID と self accou
 ### `set_ready()`
 
 - 最新 snapshot で自分がゲストの場合だけ利用できる。
-- すでに ready なら、確認済みの最新 snapshot を返す idempotent な no-op とする。成功した
-  ように見せる fallback ではなく、要求された事後条件がすでに成立している場合である。
-- `.lq.Lobby.readyPlay` request の `ready` が `true` であることと成功 response を確認し、
-  `.lq.NotifyRoomPlayerReady` で自分が ready になった snapshot まで待つ。
-- ready 解除 API は今回追加しない。
+- キーワード専用引数 `ready` で目標状態を指定する。省略時は `True` とし、
+  `set_ready()` は ready、`set_ready(ready=False)` は ready 解除を行う。
+- 自分の `is_ready` がすでに `ready` と一致する場合は、確認済みの最新 snapshot を返す
+  idempotent な no-op とする。成功したように見せる fallback ではなく、要求された事後条件が
+  すでに成立している場合である。
+- `.lq.Lobby.readyPlay` request の `ready` が指定した目標状態と一致すること、および成功
+  response を確認し、`.lq.NotifyRoomPlayerReady` で自分の `is_ready` が目標状態になった
+  snapshot まで待つ。response と notice の到着順は実通信で確認するまで固定しない。
+- ready 解除専用の `cancel()` / `cancel_ready()` は追加しない。`cancel()` は取り消す対象が
+  名前から分からず、同じ状態設定操作を別 API に分ける必要もないためである。
+- 操作名は `set_ready()` と `start_match()` を維持し、`ready()` / `start()` の alias は
+  追加しない。前者は目標状態を設定する idempotent な操作、後者は対局開始操作であることを
+  明示する。
 
 ## WebSocket 観測方式
 
