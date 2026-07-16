@@ -140,32 +140,25 @@ class RoomScreen(Screen):
         while True:
             message = await self._get_sniffer_message()
             await self._apply_room_message(message, self_account_id)
-            leave_response = None
-            if message.raw.name == LEAVE_API_NAME:
-                leave_response = await self._require_operation_response(
-                    message,
-                )
             await self._ensure_current_generation()
-            if (
-                leave_response is not None
-                and "error" in leave_response.response
-            ):
-                await self._raise_operation_rejection(
-                    leave_response,
-                    RoomOperation.LEAVE,
-                )
-
             state = self._get_cached_state()
+
+            if message.raw.name == LEAVE_API_NAME:
+                response = await self._require_operation_response(message)
+                if "error" in response.response:
+                    await self._raise_operation_rejection(
+                        response,
+                        RoomOperation.LEAVE,
+                    )
+                if state.status is RoomStatus.LEFT:
+                    self._mark_stale()
+                    await asyncio.sleep(1.0)
+                    return
+
             if state.status is RoomStatus.WAITING:
                 continue
 
             self._mark_stale()
-            if (
-                message.raw.name == LEAVE_API_NAME
-                and state.status is RoomStatus.LEFT
-            ):
-                await asyncio.sleep(1.0)
-                return
             screenshot = await self.context.browser.screenshot()
             msg = "Room became inactive while waiting to leave."
             raise ScreenStaleError(msg, screenshot)
