@@ -6,7 +6,7 @@ Local configuration and generated game records must not be committed. `examples/
 
 ## yostar_email_s3.py
 
-Requests a Yostar verification email during login, waits for Amazon SES to receive and store it in Amazon S3, extracts its verification code, and uses it to log in. After reaching the Home screen, the example waits for two seconds and stops both the browser host and the RPA client.
+Requests a Yostar verification email during login, waits for AWS SES to receive and store it in AWS S3, extracts its verification code, and uses it to log in. After reaching the Home screen, the example waits for two seconds and stops both the browser host and the RPA client.
 
 Install the S3 optional dependency:
 
