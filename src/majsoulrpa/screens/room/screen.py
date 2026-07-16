@@ -42,6 +42,7 @@ from majsoulrpa.sniffer.events import (
 ROOM_STATE_INITIALIZATION_TIMEOUT_SECONDS = 5.0
 LEAVE_API_NAME = ".lq.Lobby.leaveRoom"
 ADD_AI_API_NAME = ".lq.Lobby.addRoomRobot"
+PLAYER_UPDATE_NOTICE_NAME = ".lq.NotifyRoomPlayerUpdate"
 
 _logger = getLogger(__name__)
 
@@ -176,36 +177,33 @@ class RoomScreen(Screen):
         await self._ensure_add_ai_allowed(previous)
         await self._click_add_ai_template()
 
+        expected_ai_count = previous.ai_count + 1
         response_succeeded = False
         ai_update_succeeded = False
-        while True:
+        state = previous
+        while not (
+            response_succeeded
+            and ai_update_succeeded
+            and state.ai_count == expected_ai_count
+        ):
             message = await self._get_sniffer_message()
             await self._apply_room_message(message, self_account_id)
-            add_ai_response = None
-            if message.raw.name == ADD_AI_API_NAME:
-                add_ai_response = await self._require_operation_response(
-                    message,
-                )
             await self._ensure_current_generation()
             await self._ensure_waiting_state()
-            if add_ai_response is not None:
-                if "error" in add_ai_response.response:
+            state = self._get_cached_state()
+
+            if message.raw.name == ADD_AI_API_NAME:
+                response = await self._require_operation_response(message)
+                if "error" in response.response:
                     await self._raise_operation_rejection(
-                        add_ai_response,
+                        response,
                         RoomOperation.ADD_AI,
                     )
                 response_succeeded = True
+            elif message.raw.name == PLAYER_UPDATE_NOTICE_NAME:
+                ai_update_succeeded = state.ai_count == expected_ai_count
 
-            state = self._get_cached_state()
-            if message.raw.name == ".lq.NotifyRoomPlayerUpdate":
-                ai_update_succeeded = state.ai_count == previous.ai_count + 1
-
-            if (
-                response_succeeded
-                and ai_update_succeeded
-                and state.ai_count == previous.ai_count + 1
-            ):
-                return state
+        return state
 
     async def _prepare_room_operation(self) -> tuple[int, RoomState]:
         self_account_id = await self._get_self_account_id()
