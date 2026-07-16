@@ -24,7 +24,7 @@ def _room() -> dict[str, JsonValue]:
             {"account_id": 100002, "nickname": "guest"},
         ],
         "ready_list": [100002],
-        "robot_count": 1,
+        "robot_count": 0,
         "robots": [{"account_id": 0, "nickname": "synthetic-ai"}],
     }
 
@@ -84,8 +84,6 @@ def test_room_player_rejects_non_positive_account_id() -> None:
         ("owner_id", True),
         ("max_player_count", 2),
         ("max_player_count", True),
-        ("robot_count", -1),
-        ("robot_count", True),
     ],
 )
 def test_decode_rejects_invalid_room_numbers(
@@ -94,6 +92,14 @@ def test_decode_rejects_invalid_room_numbers(
 ) -> None:
     room = _room()
     room[field_name] = value
+
+    with pytest.raises(RoomStateDecodeError):
+        decode_room_state(room, version=1, self_account_id=100002)
+
+
+def test_decode_rejects_non_list_robots() -> None:
+    room = _room()
+    room["robots"] = None
 
     with pytest.raises(RoomStateDecodeError):
         decode_room_state(room, version=1, self_account_id=100002)
@@ -136,7 +142,7 @@ def test_decode_rejects_ready_account_id_outside_room() -> None:
 def test_decode_rejects_participant_count_over_capacity() -> None:
     room = _room()
     room["max_player_count"] = 3
-    room["robot_count"] = 2
+    room["robots"] = [{}, {}]
 
     with pytest.raises(RoomStateDecodeError):
         decode_room_state(room, version=1, self_account_id=100002)

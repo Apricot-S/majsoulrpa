@@ -180,7 +180,7 @@ class RoomStateCache:
             "max_player_count": previous.max_player_count,
             "persons": player_list,
             "ready_list": list(current_account_ids),
-            "robot_count": message.get("robot_count"),
+            "robots": message.get("robots"),
         }
         state = decode_room_state(
             room,

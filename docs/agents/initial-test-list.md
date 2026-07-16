@@ -420,6 +420,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] human player の account ID 重複を拒否する
 - [x] active room の owner と self が human player list にいなければ拒否する
 - [x] ready list に未知 account ID があれば拒否する
+- [x] `ai_count` は変化しない `robot_count` ではなく `robots` の要素数から導出する
 - [x] human と AI の合計が最大人数を超えたら拒否する
 - [x] `RoomPlayer.is_host` を owner ID から導出する
 - [x] `RoomPlayer.is_ready` を wire の ready 状態から導出し、host を暗黙に ready にしない
@@ -507,10 +508,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] participant が満員なら UI を操作しない
 - [x] source refresh 後の最新 host / capacity を使って事前条件を検証する
 - [x] click 前に source を drain し、その後の outbound `.lq.Lobby.addRoomRobot` を対応付ける
-- [x] 成功 response だけでは完了せず、後続 player update で AI が 1 増えるまで待つ
+- [x] 成功 response と AI が 1 増えた player update の両方を到着順によらず待つ
 - [x] AI 数が 1 以外増減した場合は今回の成功として扱わない
 - [x] server rejection を自動 retry しない
-- [x] response 成功後に player update がなければ成功扱いにせず呼び出し側 timeout まで待つ
+- [x] response または player update の片方しかなければ成功扱いにせず呼び出し側 timeout まで待つ
 - [x] 成功時は更新後の `RoomState` を返し Screen を active のままにする
 - [ ] `add_ai()` の実ゲーム確認後まで `set_ready()` の実装へ進まない
 
@@ -542,7 +543,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 ### RoomScreen 手動確認
 
 - [ ] 四人 / 三人 room の snapshot field の意味を確認する
-- [ ] `persons`、`robots`、`robot_count`、`positions` の関係を確認する
+- [x] `persons`、`robots`、`robot_count`、`positions` の関係を確認する
 - [ ] ready notice の `account_list` と `seq` の意味を確認する
 - [ ] host 退出後の owner update と host 交代を確認する
 - [ ] kick notice と画面遷移を確認する

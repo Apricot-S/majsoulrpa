@@ -16,10 +16,7 @@ def decode_room_state(
     room_id = _require_positive_int(room, "room_id")
     owner_id = _require_positive_int(room, "owner_id")
     max_player_count = _require_int(room, "max_player_count")
-    robot_count = _require_int(room, "robot_count")
-    if robot_count < 0:
-        msg = "room.robot_count must not be negative."
-        raise RoomStateDecodeError(msg)
+    robots = _require_list(room, "robots")
 
     ready_list = _require_list(room, "ready_list")
     ready_account_ids = {
@@ -49,7 +46,7 @@ def decode_room_state(
             room_id=room_id,
             max_player_count=max_player_count,
             players=players,
-            ai_count=robot_count,
+            ai_count=len(robots),
             self_account_id=self_account_id,
         )
     except ValueError as error:

@@ -23,6 +23,7 @@ from majsoulrpa.screens.room import (
     RoomOperationNotAllowedReason,
     RoomOperationRejectedError,
     RoomScreen,
+    RoomState,
     RoomStatus,
 )
 from majsoulrpa.sniffer.events import (
@@ -50,7 +51,7 @@ def _player_update(
         ".lq.NotifyRoomPlayerUpdate",
         {
             "owner_id": owner_id,
-            "robot_count": ai_count,
+            "robot_count": 0,
             "player_list": [
                 {"account_id": 100001, "nickname": "host"},
                 {"account_id": 100002, "nickname": "guest"},
@@ -96,6 +97,39 @@ def test_add_ai_clicks_detected_position_and_waits_for_player_update(
     assert state.ai_count == 1
 
 
+def test_add_ai_accepts_player_update_before_response() -> None:
+    messages = _OperationMessageSource(
+        queued=(_request_response(".lq.Lobby.createRoom", {"room": _room()}),),
+        waiting=(
+            _player_update(),
+            _request_response(".lq.Lobby.addRoomRobot", {}),
+        ),
+    )
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=ADD_AI_TEMPLATE_PATH,
+            settings_path=ADD_AI_SETTINGS_PATHS[0],
+        ),
+    )
+    screen = RoomScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=messages,
+            account_state=_AccountState(100001),
+        ),
+    )
+    asyncio.run(screen.before_callback())
+
+    async def add_ai() -> RoomState:
+        async with asyncio.timeout(0.01):
+            return await screen.add_ai()
+
+    state = asyncio.run(add_ai())
+
+    assert state.ai_count == 1
+    assert messages.get_count == 2
+
+
 @pytest.mark.parametrize(
     ("self_account_id", "ai_count", "expected_reason"),
     [
@@ -109,7 +143,7 @@ def test_add_ai_rejects_failed_precondition_without_clicking(
     expected_reason: RoomOperationNotAllowedReason,
 ) -> None:
     room = _room()
-    room["robot_count"] = ai_count
+    room["robots"] = [{}] * ai_count
     messages = _OperationMessageSource(
         queued=(_request_response(".lq.Lobby.createRoom", {"room": room}),),
         waiting=(),
@@ -200,10 +234,7 @@ def test_add_ai_server_rejection_keeps_screen_active() -> None:
             _request_response(".lq.Lobby.addRoomRobot", {}),
             _player_update(ai_count=2),
         ),
-        (
-            _player_update(),
-            _request_response(".lq.Lobby.addRoomRobot", {}),
-        ),
+        (_player_update(),),
     ],
 )
 def test_add_ai_waits_for_subsequent_single_ai_update(

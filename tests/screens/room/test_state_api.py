@@ -137,6 +137,7 @@ def _room(*, room_id: int = 12345) -> dict[str, JsonValue]:
         ],
         "ready_list": [],
         "robot_count": 0,
+        "robots": [],
     }
 
 

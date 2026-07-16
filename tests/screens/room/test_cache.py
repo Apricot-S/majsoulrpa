@@ -76,6 +76,7 @@ def _room(
         ],
         "ready_list": ready_list,
         "robot_count": 0,
+        "robots": [],
     }
 
 
@@ -96,6 +97,7 @@ def test_cache_applies_created_room_as_first_generation() -> None:
                     ],
                     "ready_list": [],
                     "robot_count": 0,
+                    "robots": [],
                 },
             },
         ),
@@ -123,6 +125,7 @@ def test_cache_does_not_increment_version_for_identical_snapshot() -> None:
                 ],
                 "ready_list": [],
                 "robot_count": 0,
+                "robots": [],
             },
         },
     )
@@ -329,7 +332,7 @@ def test_cache_applies_player_update_and_rederives_host() -> None:
             ".lq.NotifyRoomPlayerUpdate",
             {
                 "owner_id": 100002,
-                "robot_count": 1,
+                "robot_count": 0,
                 "player_list": [
                     {"account_id": 100001, "nickname": "former-host"},
                     {"account_id": 100002, "nickname": "new-host"},

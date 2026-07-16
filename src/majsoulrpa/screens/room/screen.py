@@ -179,6 +179,7 @@ class RoomScreen(Screen):
         await self._click_add_ai_template()
 
         response_succeeded = False
+        ai_update_succeeded = False
         while True:
             message = await self._get_sniffer_message()
             await self._apply_room_message(message, self_account_id)
@@ -191,12 +192,14 @@ class RoomScreen(Screen):
                 if "error" in add_ai_response.response:
                     await self._raise_add_ai_rejection(add_ai_response)
                 response_succeeded = True
-                continue
 
             state = self._get_cached_state()
+            if message.raw.name == ".lq.NotifyRoomPlayerUpdate":
+                ai_update_succeeded = state.ai_count == previous.ai_count + 1
+
             if (
                 response_succeeded
-                and message.raw.name == ".lq.NotifyRoomPlayerUpdate"
+                and ai_update_succeeded
                 and state.ai_count == previous.ai_count + 1
             ):
                 return state

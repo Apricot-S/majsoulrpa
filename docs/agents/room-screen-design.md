@@ -73,8 +73,9 @@ class RoomState:
 - `max_player_count` は `3` または `4` だけを許す。それ以外は protocol 不整合とする。
 - `players` は人間のプレイヤーだけを含む。`Room.persons` / `player_list` の順序を維持し、
   seat の意味が実通信で確認できるまでは seat API を追加しない。
-- AI は正の account ID を持つ人間として扱わず、`ai_count` として分ける。これにより
-  AI 追加の完了と空き枠を判定できる。
+- AI は人間として扱わず、`robots` の要素数を `ai_count` として公開する。`robot_count` は
+  AI 追加後も `0` のまま変化しないため、状態計算には使わない。これにより AI 追加の完了と
+  空き枠を判定できる。
 - `is_host` は snapshot の `owner_id` と account ID の一致から毎回導出する。
 - `is_ready` は protocol の `ready_list` または準備通知が示す値である。ホストを便宜的に
   `True` へ書き換えない。対局開始条件を調べるときだけホストを判定対象から除外する。
@@ -138,8 +139,9 @@ version より新しい snapshot を待つ。snapshot の room ID と self accou
 - 最新 snapshot で自分がホストの場合だけ利用できる。
 - `participant_count < max_player_count` を事前条件とする。
 - UI が選ぶ空き位置へ 1 体だけ追加する。位置指定 API は実需要が出るまで追加しない。
-- `.lq.Lobby.addRoomRobot` の成功 response だけで完了にせず、その後の
-  `.lq.NotifyRoomPlayerUpdate` で AI 数が 1 増えた snapshot まで待つ。
+- `.lq.Lobby.addRoomRobot` の成功 response と、
+  `.lq.NotifyRoomPlayerUpdate` で AI 数が 1 増えた snapshot の両方を待つ。実通信では
+  notice が response より先に観測されるため、両者の到着順は問わない。
 - 満員、ホストでない、または room が active でない場合は click しない。
 - 自動 retry はしない。競合による server rejection は型付き例外として返す。
 
@@ -239,16 +241,17 @@ protocol / design を更新する。
 1. `get_nowait()` で現在の source を空になるまで読み、room state を最新化する。
 2. active room generation、権限、満員・ready 条件を確認する。
 3. template または確定した `Region` を使って画面を click する。
-4. source の `get()` で到着 message を順に処理し、期待する outbound Req/Res を待つ。
-5. response の `error` を検証し、server rejection なら例外にする。
-6. 状態変化を伴う操作では、期待する notice と事後条件を満たす snapshot まで読み進める。
+4. source の `get()` で到着 message を順に処理し、期待する outbound Req/Res と notice を待つ。
+5. response を観測したら `error` を検証し、server rejection なら例外にする。
+6. 状態変化を伴う操作では、必要な response と事後条件を満たす snapshot の両方が揃うまで
+   読み進める。両者の順序は操作ごとの実通信結果に従う。
 7. terminal 操作だけ Screen を stale にする。
 
 click 前に source を drain し、同じ Screen の操作を並行実行しないため、click 後に得た同名
 Req/Res を今回の操作へ対応付けられる。response や notice が待機開始より先に到着しても
 bounded queue に残るため取り逃がさない。Req/Res の request direction、API 名、既知 request
-field も確認する。response 成功後に必要な notice が来ない場合は成功扱いにせず待機を続け、
-呼び出し側の timeout または cancellation に委ねる。矛盾した notice を観測した場合は
+field も確認する。必要な response または notice の片方が来ない場合は成功扱いにせず待機を
+続け、呼び出し側の timeout または cancellation に委ねる。矛盾した notice を観測した場合は
 message 不整合として失敗させる。
 
 ## 状態整合性
@@ -271,8 +274,10 @@ message 不整合として失敗させる。
 ため stale になる。active 中に別 room ID の完全 snapshot を観測した場合は暗黙に切り替えず
 不整合とする。
 
-`robot_count` と `robots`、`positions` の厳密な関係は手動 spike 後に固定する。確認前に
-片方が空だから他方を捨てる fallback は置かない。
+実通信では `robot_count` は AI 追加後も `0` のままで、`robots` に追加順の AI が入り、各 AI の
+`account_id` は `1`、`2`、`3` と増える。`positions` は画面左から並ぶ player slot ごとに、その
+slot を占める人間または AI の account ID を保持する。現時点の公開状態は座席指定を扱わず、
+`ai_count = len(robots)` だけを利用する。
 
 ## ホスト交代、kick、外部からの対局開始
 
