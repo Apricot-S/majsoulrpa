@@ -11,12 +11,6 @@ from majsoulrpa.sniffer import DecodedRequestResponse, Direction
 
 FETCH_GAME_LIVE_LIST_API_NAME = ".lq.Lobby.fetchGameLiveList"
 OUTPUT_DIRECTORY = Path(__file__).resolve().parent / "game-ids"
-ROOM_MENU_SCREENSHOT_PATH = (
-    Path(__file__).resolve().parent / "spectating-room-menu.png"
-)
-MODE_MENU_SCREENSHOT_PATH = (
-    Path(__file__).resolve().parent / "spectating-mode-menu.png"
-)
 
 
 @dataclass(frozen=True)
@@ -88,7 +82,7 @@ class FetchIDScreen(HomeScreen):
 
     async def enter_spectating(self) -> None:
         await self.click_region(self.WATCH_REGION)
-        await asyncio.sleep(2.0)
+        await asyncio.sleep(1.0)
 
     async def fetch_ids_once(self) -> list[GameIDBatch]:
         batches: list[GameIDBatch] = []
@@ -193,29 +187,28 @@ async def login(screen: LoginScreen, data: Any) -> Any:
 @rpa.on(FetchIDScreen)
 async def fetch_id(screen: FetchIDScreen, data: Any) -> list[Path]:
     _ = data
+    output_paths: list[Path] = []
     async with asyncio.timeout(30.0):
         await screen.enter_spectating()
-        await screen.click_region(screen.ROOM_MENU_REGION)
-        await asyncio.sleep(2.0)
-        room_menu_screenshot = await screen.screenshot()
-        await asyncio.to_thread(
-            ROOM_MENU_SCREENSHOT_PATH.write_bytes,
-            room_menu_screenshot,
-        )
-        print(f"Saved: {ROOM_MENU_SCREENSHOT_PATH}")
 
-        await screen.click_region(screen.MODE_MENU_REGION)
-        await asyncio.sleep(2.0)
-        mode_menu_screenshot = await screen.screenshot()
-        await asyncio.to_thread(
-            MODE_MENU_SCREENSHOT_PATH.write_bytes,
-            mode_menu_screenshot,
-        )
-        print(f"Saved: {MODE_MENU_SCREENSHOT_PATH}")
+    while True:
+        async with asyncio.timeout(180.0):
+            batches = await screen.fetch_ids_once()
+
+        for batch in batches:
+            print(f"[{batch.filename}]")
+            for game_id in batch.game_ids:
+                print(game_id)
+            output_path = await asyncio.to_thread(append_game_ids, batch)
+            output_paths.append(output_path)
+            print(f"Appended: {output_path}")
+
+        if not await fetch_another_round():
+            break
 
     await screen.stop_browser_host()
     await screen.stop_rpa()
-    return [ROOM_MENU_SCREENSHOT_PATH, MODE_MENU_SCREENSHOT_PATH]
+    return output_paths
 
 
 async def main() -> None:
