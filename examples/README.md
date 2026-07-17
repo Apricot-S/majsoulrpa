@@ -38,9 +38,6 @@ Opens the spectating screen from Home, switches through the Gold, Jade, and Thro
 four-player East and South lists, and prints the unique game record IDs from
 `.lq.Lobby.fetchGameLiveList` in observation order.
 
-This example uses only fixed `Region` values for the spectating screen.
-It does not use screenshot templates or heartbeat monitoring.
-
 First, start the client example:
 
 ```console
