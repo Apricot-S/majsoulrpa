@@ -41,42 +41,42 @@ class GameIDBatch:
 
 class FetchIDScreen(HomeScreen):
     WATCH_REGION = Region(left=1195, top=975, width=92, height=75)
-    ROOM_MENU_REGION = Region(left=143, top=210, width=377, height=71)
+    ROOM_MENU_REGION = Region(left=153, top=220, width=357, height=51)
     ROOMS: ClassVar[tuple[RoomSelection, ...]] = (
         RoomSelection(
             name="gold",
-            region=Region(left=143, top=281, width=322, height=71),
+            region=Region(left=153, top=291, width=302, height=51),
         ),
         RoomSelection(
             name="jade",
-            region=Region(left=143, top=355, width=322, height=69),
+            region=Region(left=153, top=365, width=302, height=49),
         ),
         RoomSelection(
             name="throne",
-            region=Region(left=143, top=427, width=322, height=68),
+            region=Region(left=153, top=437, width=302, height=48),
         ),
     )
-    MODE_MENU_REGION = Region(left=575, top=210, width=380, height=71)
+    MODE_MENU_REGION = Region(left=585, top=220, width=360, height=51)
     MODES: ClassVar[tuple[ModeSelection, ...]] = (
         ModeSelection(
             player_count=4,
             name="east",
-            region=Region(left=575, top=281, width=325, height=70),
+            region=Region(left=585, top=291, width=305, height=50),
         ),
         ModeSelection(
             player_count=4,
             name="south",
-            region=Region(left=575, top=353, width=325, height=70),
+            region=Region(left=585, top=363, width=305, height=50),
         ),
         ModeSelection(
             player_count=3,
             name="east",
-            region=Region(left=575, top=425, width=325, height=70),
+            region=Region(left=585, top=435, width=305, height=50),
         ),
         ModeSelection(
             player_count=3,
             name="south",
-            region=Region(left=575, top=497, width=325, height=34),
+            region=Region(left=585, top=507, width=305, height=14),
         ),
     )
 
