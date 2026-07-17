@@ -6,7 +6,10 @@ from inspect import signature
 import pytest
 from pydantic import JsonValue
 
+import majsoulrpa.screens.room.screen as room_module
 from majsoulrpa.assets.templates.room import (
+    ROOM_SIGN_SETTINGS_PATH,
+    ROOM_SIGN_TEMPLATE_PATH,
     START_SETTINGS_PATH,
     START_TEMPLATE_PATH,
 )
@@ -66,9 +69,15 @@ def _player_update(
     )
 
 
-def test_start_match_clicks_start_and_stales_after_response_and_notice() -> (
-    None
-):
+def test_start_match_clicks_start_and_stales_after_response_and_notice(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    monkeypatch.setattr(room_module.asyncio, "sleep", sleep)
     messages = _OperationMessageSource(
         queued=(
             _request_response(
@@ -81,11 +90,18 @@ def test_start_match_clicks_start_and_stales_after_response_and_notice() -> (
             _notice(".lq.NotifyRoomGameStart"),
         ),
     )
+    start_screenshot = _synthetic_template_screenshot(
+        template_path=START_TEMPLATE_PATH,
+        settings_path=START_SETTINGS_PATH,
+    )
+    room_screenshot = _synthetic_template_screenshot(
+        template_path=ROOM_SIGN_TEMPLATE_PATH,
+        settings_path=ROOM_SIGN_SETTINGS_PATH,
+    )
     browser = BrowserControllerSpy(
-        _synthetic_template_screenshot(
-            template_path=START_TEMPLATE_PATH,
-            settings_path=START_SETTINGS_PATH,
-        ),
+        start_screenshot,
+        room_screenshot,
+        _synthetic_blank_screenshot(),
     )
     context = ScreenContext(
         browser=browser,
@@ -100,6 +116,51 @@ def test_start_match_clicks_start_and_stales_after_response_and_notice() -> (
     assert result is None
     assert len(browser.clicked_points) == 1
     assert messages.get_count == 2
+    assert context.room_state_cache.state is not None
+    assert context.room_state_cache.state.status is RoomStatus.MATCH_STARTED
+    assert sleeps == [room_module.TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS]
+    with pytest.raises(ScreenStaleError):
+        asyncio.run(screen.get_state())
+
+
+def test_start_match_waits_while_room_screen_remains_visible() -> None:
+    messages = _OperationMessageSource(
+        queued=(
+            _request_response(
+                ".lq.Lobby.createRoom",
+                {"room": _startable_room()},
+            ),
+        ),
+        waiting=(
+            _request_response(".lq.Lobby.startRoom", {}),
+            _notice(".lq.NotifyRoomGameStart"),
+        ),
+    )
+    start_screenshot = _synthetic_template_screenshot(
+        template_path=START_TEMPLATE_PATH,
+        settings_path=START_SETTINGS_PATH,
+    )
+    room_screenshot = _synthetic_template_screenshot(
+        template_path=ROOM_SIGN_TEMPLATE_PATH,
+        settings_path=ROOM_SIGN_SETTINGS_PATH,
+    )
+    browser = BrowserControllerSpy(start_screenshot, room_screenshot)
+    browser.screenshot_bytes = room_screenshot
+    context = ScreenContext(
+        browser=browser,
+        sniffer_messages=messages,
+        account_state=_AccountState(100001),
+    )
+    screen = RoomScreen(context=context)
+    asyncio.run(screen.before_callback())
+
+    async def start_match_with_timeout() -> None:
+        async with asyncio.timeout(0.001):
+            await screen.start_match()
+
+    with pytest.raises(TimeoutError):
+        asyncio.run(start_match_with_timeout())
+
     assert context.room_state_cache.state is not None
     assert context.room_state_cache.state.status is RoomStatus.MATCH_STARTED
     with pytest.raises(ScreenStaleError):

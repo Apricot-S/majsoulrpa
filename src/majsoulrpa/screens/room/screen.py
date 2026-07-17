@@ -18,6 +18,7 @@ from majsoulrpa.assets.templates.room import (
 )
 from majsoulrpa.presentation.template import load_png_template_matcher
 from majsoulrpa.screens.base import (
+    TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS,
     Screen,
     ScreenContext,
     ScreenDetectionSpec,
@@ -143,7 +144,12 @@ class RoomScreen(Screen):
         while True:
             current = self._get_cached_state()
             if current.version > state.version:
-                if current.status is not RoomStatus.WAITING:
+                if current.status is RoomStatus.MATCH_STARTED:
+                    try:
+                        await self._wait_until_room_disappears()
+                    finally:
+                        self._mark_stale()
+                elif current.status is not RoomStatus.WAITING:
                     self._mark_stale()
                 return current
 
@@ -263,6 +269,8 @@ class RoomScreen(Screen):
                 screenshot = await self.context.browser.screenshot()
                 msg = "Room became inactive while waiting to start the match."
                 raise ScreenStaleError(msg, screenshot)
+
+            await self._wait_until_room_disappears()
         finally:
             if game_start_succeeded:
                 self._mark_stale()
@@ -440,6 +448,13 @@ class RoomScreen(Screen):
 
         msg = "add-ai was not found."
         raise ScreenDetectionError(msg, screenshot)
+
+    async def _wait_until_room_disappears(self) -> None:
+        while True:
+            screenshot = await self.context.browser.screenshot()
+            if not self.ROOM_SIGN_TEMPLATE.matches(screenshot):
+                return
+            await asyncio.sleep(TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS)
 
     async def _get_self_account_id(self) -> int:
         self_account_id = self.context.account_id

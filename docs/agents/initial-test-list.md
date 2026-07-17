@@ -474,6 +474,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `wait_for_state_change()` は渡された snapshot より新しい snapshot を返す
 - [x] `wait_for_state_change()` は別 room、別 self account、未来 version、同一 version で内容が矛盾する snapshot を拒否する
 - [x] `wait_for_state_change()` は kick / game start の terminal snapshot も 1 回返す
+- [x] game start の terminal snapshot は `room-sign` が消えるまで返さず、消失後に Screen を stale にする
+- [x] game start 後の画面消失待機が cancellation されても terminal snapshot を保持して Screen を stale にする
 - [x] 呼び出し側 timeout による cancellation を RoomScreen が握りつぶさない
 - [x] room ID、account ID、player 名を高レベル API log に含めない
 - [x] RoomState 更新に失敗した message も例外送出前に Sniffer log へ出す
@@ -543,6 +545,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] click 前に source を drain し、その後の outbound `.lq.Lobby.startRoom` を対応付ける
 - [x] 成功 response だけでは完了せず game start notice まで待つ
 - [x] game start notice 後だけ `MATCH_STARTED` にして RoomScreen を stale にする
+- [x] `start_match()` は `MATCH_STARTED` 後も `room-sign` が消えるまで戻らない
+- [x] ローディング画面の可変イラストは検出せず、既存の `room-sign` の消失を遷移条件にする
 - [x] guest が外部 host の start を観測した場合も `MATCH_STARTED` にする
 - [x] server rejection では RoomScreen を stale にしない
 

@@ -8,6 +8,10 @@ import pytest
 from pydantic import JsonValue
 
 import majsoulrpa.screens.room.screen as room_module
+from majsoulrpa.assets.templates.room import (
+    ROOM_SIGN_SETTINGS_PATH,
+    ROOM_SIGN_TEMPLATE_PATH,
+)
 from majsoulrpa.screens import (
     ScreenContext,
     ScreenInconsistentMessageError,
@@ -26,6 +30,8 @@ from tests.screens.home._support import (
     BrowserControllerSpy,
     _message_queue,
     _request_response,
+    _synthetic_blank_screenshot,
+    _synthetic_template_screenshot,
 )
 from tests.sniffer.fakes import EMPTY_SNIFFER_MESSAGES
 
@@ -334,7 +340,7 @@ def test_old_room_screen_generation_becomes_stale_for_new_room() -> None:
 def test_before_callback_fails_when_initial_snapshot_does_not_arrive(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    screenshot = b"synthetic-screenshot"
+    screenshot = _synthetic_blank_screenshot()
     screen = RoomScreen(
         context=ScreenContext(
             browser=BrowserControllerSpy(screenshot),
@@ -538,7 +544,7 @@ def test_wait_for_state_change_returns_terminal_snapshot_once(
     notice_name: str,
     expected_status: RoomStatus,
 ) -> None:
-    screenshot = b"synthetic-screenshot"
+    screenshot = _synthetic_blank_screenshot()
     messages = _QueuedThenWaitingMessageSource(
         _request_response(".lq.Lobby.joinRoom", {"room": _room()}),
         _notice(notice_name),
@@ -560,6 +566,77 @@ def test_wait_for_state_change_returns_terminal_snapshot_once(
     with pytest.raises(ScreenStaleError) as exc_info:
         asyncio.run(screen.get_state())
     assert exc_info.value.screenshot == screenshot
+
+
+def test_wait_for_state_change_returns_after_room_screen_disappears(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    monkeypatch.setattr(room_module.asyncio, "sleep", sleep)
+    room_screenshot = _synthetic_template_screenshot(
+        template_path=ROOM_SIGN_TEMPLATE_PATH,
+        settings_path=ROOM_SIGN_SETTINGS_PATH,
+    )
+    messages = _QueuedThenWaitingMessageSource(
+        _request_response(".lq.Lobby.joinRoom", {"room": _room()}),
+        _notice(".lq.NotifyRoomGameStart"),
+    )
+    screen = RoomScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(
+                room_screenshot,
+                _synthetic_blank_screenshot(),
+            ),
+            sniffer_messages=messages,
+            account_state=_AccountState(100002),
+        ),
+    )
+    asyncio.run(screen.before_callback())
+    previous = asyncio.run(screen.get_state())
+
+    state = asyncio.run(screen.wait_for_state_change(previous))
+
+    assert state.status is RoomStatus.MATCH_STARTED
+    assert sleeps == [room_module.TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS]
+    with pytest.raises(ScreenStaleError):
+        asyncio.run(screen.get_state())
+
+
+def test_wait_for_state_change_waits_while_room_screen_remains_visible() -> (
+    None
+):
+    screenshot = _synthetic_template_screenshot(
+        template_path=ROOM_SIGN_TEMPLATE_PATH,
+        settings_path=ROOM_SIGN_SETTINGS_PATH,
+    )
+    messages = _QueuedThenWaitingMessageSource(
+        _request_response(".lq.Lobby.joinRoom", {"room": _room()}),
+        _notice(".lq.NotifyRoomGameStart"),
+    )
+    context = ScreenContext(
+        browser=BrowserControllerSpy(screenshot),
+        sniffer_messages=messages,
+        account_state=_AccountState(100002),
+    )
+    screen = RoomScreen(context=context)
+    asyncio.run(screen.before_callback())
+    previous = asyncio.run(screen.get_state())
+
+    async def wait_with_timeout() -> None:
+        async with asyncio.timeout(0.001):
+            await screen.wait_for_state_change(previous)
+
+    with pytest.raises(TimeoutError):
+        asyncio.run(wait_with_timeout())
+
+    assert context.room_state_cache.state is not None
+    assert context.room_state_cache.state.status is RoomStatus.MATCH_STARTED
+    with pytest.raises(ScreenStaleError):
+        asyncio.run(screen.get_state())
 
 
 def test_wait_for_state_change_cancellation_keeps_applied_snapshot() -> None:

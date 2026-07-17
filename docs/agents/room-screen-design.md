@@ -127,7 +127,9 @@ message をその時点まで読み進めて最新 snapshot を返す。
 `wait_for_state_change()` は polling 用 sleep を利用者に書かせず、渡された snapshot の
 version より新しい snapshot を待つ。snapshot の room ID と self account ID が現在の room と
 一致し、version が現在より未来でないことを検証する。待機開始後の最初の更新が terminal
-遷移でも、その terminal snapshot を 1 回返す。その後の Screen API は stale error になる。
+遷移でも、その terminal snapshot を 1 回返す。`MATCH_STARTED` の場合は `room-sign` が
+画面から消えるまで待ってから Screen を stale にして返す。その後の Screen API は stale
+error になる。
 
 ### `leave()`
 
@@ -156,7 +158,14 @@ version より新しい snapshot を待つ。snapshot の room ID と self accou
 - AI を含めた参加人数が `max_player_count` に達していることも事前条件とする。この条件が
   実際の UI / server と異なる場合は手動確認結果に基づいて設計を更新する。
 - `.lq.Lobby.startRoom` の成功 response に加えて `.lq.NotifyRoomGameStart` を待つ。
-- game start notice を観測して `MATCH_STARTED` にした後で Screen を stale にする。
+- game start notice を観測して `MATCH_STARTED` にした後、`room-sign` が画面から消えるまで
+  待ってから Screen を stale にする。ローディング画面のイラストは設定により異なるため、
+  ローディング画面自体の template 検出は行わない。
+- guest が `wait_for_state_change()` で `MATCH_STARTED` を観測した場合も、同じ画面消失条件を
+  満たしてから terminal snapshot を返す。これにより callback 終了直後に runtime が
+  `RoomScreen` を再検出しないようにする。
+- 画面消失待機が呼び出し側 timeout で中断されても、通信上は terminal のため Screen は
+  stale にする。
 
 ### `set_ready()`
 
