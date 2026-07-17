@@ -1,16 +1,22 @@
 # Examples
 
-A configuration file template is available at `examples/config.example.toml`.
-Create `examples/config.toml` from it as needed and load it from both the browser host and the client.
+Run these examples from the repository root. A configuration template is available at `examples/config.example.toml`; copy it to `examples/config.toml` when an example requires configuration.
 
-Local configuration, generated game IDs, and game records must not be
-committed. `examples/.gitignore` excludes `examples/config.toml`,
-`examples/game-ids/`, and `examples/game-records/`.
+Do not commit local configuration or generated data. The examples' `.gitignore` excludes:
+
+- `examples/config.toml`
+- `examples/game-ids/`
+- `examples/game-records/`
+
+For every example, start the RPA client before the browser host. This reduces the chance of missing initial WebSocket messages when saved cookies allow Mahjong Soul to skip `LoginScreen`.
 
 ## yostar_email_s3.py
 
-Requests a Yostar verification email during login, waits for AWS SES to receive and store it in AWS S3, extracts its verification code, and uses it to log in.
-After reaching the Home screen, the example waits for two seconds and stops both the browser host and the RPA client.
+### Purpose
+
+Logs in using a Yostar verification email delivered by AWS SES to S3. The example extracts the verification code, completes login, waits two seconds after reaching Home, and stops the browser host and RPA client.
+
+### Preparation
 
 Install the S3 optional dependency:
 
@@ -18,74 +24,94 @@ Install the S3 optional dependency:
 pip install ".[s3]"
 ```
 
-Create `examples/config.toml` based on `examples/config.example.toml`, then configure the `[yostar_email]` and `[yostar_email.s3]` sections.
+Copy `examples/config.example.toml` to `examples/config.toml`, then configure the `[yostar_email]` and `[yostar_email.s3]` sections. AWS credentials are resolved through boto3's normal credential provider chain. Do not put AWS access keys in `config.toml`.
 
-AWS credentials are resolved through boto3's normal credential provider chain. Do not place AWS access keys in `config.toml`.
+### Run
 
-First, start the RPA client:
+1. Start the RPA client:
 
-```console
-python examples/yostar_email_s3.py
-```
+   ```console
+   python examples/yostar_email_s3.py
+   ```
 
-After the client begins waiting, start the browser host in another terminal with the same configuration:
+2. After the client begins waiting, start the browser host in another terminal with the same configuration:
 
-```console
-majsoulrpa-browser --config examples/config.toml
-```
+   ```console
+   majsoulrpa-browser --config examples/config.toml
+   ```
+
+### Runtime input and output
+
+No terminal input is required. The verification code is obtained from S3. This example does not create an output file.
 
 ## fetch_id.py
 
-Opens the spectating screen from Home, then switches through the Gold, Jade, and Throne Room four-player and three-player East and South lists.
-It obtains game record IDs from `.lq.Lobby.fetchGameLiveList` and prints them in observation order.
+### Purpose
 
-Each fetch also appends the IDs as UTF-8 text, one ID per line, to:
+Opens the spectating screen from Home and visits the Gold, Jade, and Throne Room lists for four-player and three-player East and South games. It obtains game record IDs from `.lq.Lobby.fetchGameLiveList`.
+
+### Preparation
+
+No additional configuration is required. Generated ID files are written under the ignored `examples/game-ids/` directory.
+
+### Run
+
+1. Start the RPA client:
+
+   ```console
+   python examples/fetch_id.py
+   ```
+
+2. After the client begins waiting, start the browser host in another terminal:
+
+   ```console
+   majsoulrpa-browser
+   ```
+
+### Runtime input and output
+
+If `LoginScreen` appears, enter the email address and verification code when prompted.
+
+After one fetch completes, the example displays `Fetch again? [y/N]:`. Enter `y` to fetch again. Press Enter or enter `N` to finish.
+
+IDs are printed to the terminal and appended as UTF-8 text, one ID per line, to files named:
 
 ```text
 examples/game-ids/<4|3>-<east|south>-<gold|jade|throne>.txt
 ```
 
-After each fetch, `Fetch again? [y/N]:` is displayed. Enter `y` to fetch again; press Enter or enter `N` to finish.
-
-First, start the client example:
-
-```console
-python examples/fetch_id.py
-```
-
-After the client begins waiting for the browser host, start the browser host in another terminal:
-
-```console
-majsoulrpa-browser
-```
-
-Starting them in this order reduces the chance of missing the initial WebSocket communication, even when `LoginScreen` is skipped because saved cookies are available.
-
-Enter your email address and verification code if required.
-
-The collected IDs are printed one per line and appended to their corresponding files.
-
 ## fetch_log.py
 
-Repeatedly prompts for a game record ID, navigates to the corresponding Mahjong Soul game record URL,
-and saves the response from `.lq.Lobby.fetchGameRecord` to `examples/game-records/<game-record-id>.bin`.
+### Purpose
 
-Enter a blank line to stop fetching records.
+Prompts for game record IDs, opens each corresponding Mahjong Soul game record URL, and captures the `.lq.Lobby.fetchGameRecord` response.
 
-First, start the client example:
+### Preparation
 
-```console
-python examples/fetch_log.py
+No additional configuration is required. Generated records are written under the ignored `examples/game-records/` directory.
+
+### Run
+
+1. Start the RPA client:
+
+   ```console
+   python examples/fetch_log.py
+   ```
+
+2. After the client begins waiting, start the browser host in another terminal:
+
+   ```console
+   majsoulrpa-browser
+   ```
+
+### Runtime input and output
+
+If `LoginScreen` appears, enter the email address and verification code when prompted. Then enter a game record ID at each `Log ID` prompt. Enter a blank line to finish.
+
+Each response is saved to:
+
+```text
+examples/game-records/<game-record-id>.bin
 ```
 
-After the client begins waiting for the browser host, start the browser host in another terminal:
-
-```console
-majsoulrpa-browser
-```
-
-Starting them in this order reduces the chance of missing the initial WebSocket communication, even when `LoginScreen` is skipped because saved cookies are available.
-
-Enter your email address and verification code if required, then enter a game record ID at the prompt.
-
-The saved data is not decoded JSON. It consists of the raw response bytes obtained from the captured request/response event.
+The `.bin` file contains raw response bytes from the captured request/response event; it is not decoded JSON.
