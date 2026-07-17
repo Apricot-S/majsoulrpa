@@ -159,13 +159,13 @@ def append_game_ids(
 async def fetch_another_round() -> bool:
     while True:
         answer = (
-            await asyncio.to_thread(input, "Fetch another round? [Y/n]: ")
+            await asyncio.to_thread(input, "Fetch another round? [y/N]: ")
         ).strip()
-        if answer in {"", "y", "Y"}:
+        if answer in {"y", "Y"}:
             return True
-        if answer in {"n", "N"}:
+        if answer in {"", "n", "N"}:
             return False
-        print("Please answer Y or n.")
+        print("Please answer y or N.")
 
 
 rpa = RPAApp()

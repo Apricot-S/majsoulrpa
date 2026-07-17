@@ -45,8 +45,8 @@ Each round also appends the IDs as UTF-8 text, one ID per line, to:
 examples/game-ids/<4|3>-<east|south>-<gold|jade|throne>.txt
 ```
 
-After each complete round, `Fetch another round? [Y/n]:` is displayed.
-Press Enter or enter `Y` to fetch another round; enter `n` to finish.
+After each complete round, `Fetch another round? [y/N]:` is displayed.
+Enter `y` to fetch another round; press Enter or enter `N` to finish.
 
 First, start the client example:
 
