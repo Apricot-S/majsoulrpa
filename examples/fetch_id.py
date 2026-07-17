@@ -57,7 +57,7 @@ class FetchIDScreen(HomeScreen):
             region=Region(left=144, top=437, width=322, height=72),
         ),
     )
-    MODE_MENU_REGION = Region(left=578, top=211, width=377, height=72)
+    MODE_MENU_REGION = Region(left=575, top=210, width=380, height=71)
     MODES: ClassVar[tuple[ModeSelection, ...]] = (
         ModeSelection(
             player_count=4,
