@@ -30,6 +30,31 @@ After the client begins waiting, start the browser host in another terminal with
 majsoulrpa-browser --config examples/config.toml
 ```
 
+## fetch_id.py
+
+Opens the spectating screen from Home, switches through the Gold, Jade, and Throne Room
+four-player East and South lists, and prints the unique game record IDs from
+`.lq.Lobby.fetchGameLiveList` in observation order.
+
+This example uses only fixed `Region` values for the spectating screen.
+It does not use screenshot templates or heartbeat monitoring.
+
+First, start the client example:
+
+```console
+python examples/fetch_id.py
+```
+
+After the client begins waiting for the browser host, start the browser host in another terminal:
+
+```console
+majsoulrpa-browser
+```
+
+Enter your email address and verification code if required.
+
+The collected IDs are printed one per line.
+
 ## fetch_log.py
 
 Repeatedly prompts for a game record ID, navigates to the corresponding Mahjong Soul game record URL, and saves the response from `.lq.Lobby.fetchGameRecord` to `examples/game-records/<game-record-id>.bin`.
