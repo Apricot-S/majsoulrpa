@@ -57,10 +57,7 @@ async def login(screen: LoginScreen, data: Any) -> Any:
     async with asyncio.timeout(30.0):
         await screen.enter_email_address(email_address)
 
-    verification_code = await asyncio.to_thread(
-        input,
-        "Verification code: ",
-    )
+    verification_code = await asyncio.to_thread(input, "Verification code: ")
     async with asyncio.timeout(30.0):
         await screen.enter_verification_code(verification_code)
 
