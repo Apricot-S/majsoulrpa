@@ -77,7 +77,7 @@ class FetchIDScreen(HomeScreen):
         ModeSelection(
             player_count=3,
             name="east",
-            region=Region(left=575, top=424, width=325, height=71),
+            region=Region(left=575, top=425, width=325, height=70),
         ),
         ModeSelection(
             player_count=3,
