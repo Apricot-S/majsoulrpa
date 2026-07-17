@@ -59,7 +59,7 @@ class FetchIDScreen(HomeScreen):
         ),
         RoomSelection(
             name="throne",
-            region=Region(left=143, top=426, width=322, height=71),
+            region=Region(left=143, top=427, width=322, height=68),
         ),
     )
     MODE_MENU_REGION = Region(left=575, top=210, width=380, height=71)
