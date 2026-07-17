@@ -18,6 +18,8 @@ While some API names and design ideas were borrowed, the architecture and codeba
 > MajsoulRPA is currently in active development. Login, Home screen operations, friendly-room management, and tournament-lobby entry are available.
 >
 > In-match gameplay and tournament-room operations are not yet implemented, so MajsoulRPA cannot yet automate a complete game from start to finish.
+>
+> `MatchScreen` will be redesigned from the [v1-develop branch](https://github.com/Apricot-S/majsoulrpa/tree/v1-develop). Its user-facing behavior and match-flow knowledge will be used as the starting point, while its internal implementation will not be carried over as-is.
 
 ## Key differences from the original project
 

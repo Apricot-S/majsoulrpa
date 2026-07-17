@@ -183,7 +183,7 @@ controller を渡す。
 - この Phase でも自動テストから実ブラウザ、実雀魂、実 network へはアクセスしない
 - controller は低レベル操作 API に留め、`fill_region` などの画面 API は Screen 側に置く
 
-## Phase 6: Home / room / tournament API
+## Phase 6: Home / room / match / tournament API
 
 目的: 合意済み友人戦・大会に必要な画面操作を、1 API ずつ追加する。
 
@@ -195,7 +195,15 @@ controller を渡す。
 - 友人戦 room 作成
 - 友人戦 room 状態取得
 - 友人戦 room 退出、AI 追加、ready、対局開始
+- 対局中の `MatchScreen`
 - 大会 lobby 参加
+
+### MatchScreen の再設計
+
+`MatchScreen` は [v1-develop branch](https://github.com/Apricot-S/majsoulrpa/tree/v1-develop)
+を出発点として再設計する。同 branch で確認できる利用者向けの振る舞いと対局進行の知見は
+参照するが、内部構造や private API をそのまま移植する前提にはしない。現在の Screen、
+Sniffer、browser controller の境界に合わせ、テストリストを先に作成して API ごとに実装する。
 
 進め方:
 
