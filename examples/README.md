@@ -1,12 +1,14 @@
 # Examples
 
-A configuration file template is available at `examples/config.example.toml`. Create `examples/config.toml` from it as needed and load it from both the browser host and the client.
+A configuration file template is available at `examples/config.example.toml`.
+Create `examples/config.toml` from it as needed and load it from both the browser host and the client.
 
 Local configuration and generated game records must not be committed. `examples/.gitignore` excludes `examples/config.toml` and `examples/game-records/`.
 
 ## yostar_email_s3.py
 
-Requests a Yostar verification email during login, waits for AWS SES to receive and store it in AWS S3, extracts its verification code, and uses it to log in. After reaching the Home screen, the example waits for two seconds and stops both the browser host and the RPA client.
+Requests a Yostar verification email during login, waits for AWS SES to receive and store it in AWS S3, extracts its verification code, and uses it to log in.
+After reaching the Home screen, the example waits for two seconds and stops both the browser host and the RPA client.
 
 Install the S3 optional dependency:
 
@@ -57,7 +59,8 @@ The collected IDs are printed one per line.
 
 ## fetch_log.py
 
-Repeatedly prompts for a game record ID, navigates to the corresponding Mahjong Soul game record URL, and saves the response from `.lq.Lobby.fetchGameRecord` to `examples/game-records/<game-record-id>.bin`.
+Repeatedly prompts for a game record ID, navigates to the corresponding Mahjong Soul game record URL,
+and saves the response from `.lq.Lobby.fetchGameRecord` to `examples/game-records/<game-record-id>.bin`.
 
 Enter a blank line to stop fetching records.
 
