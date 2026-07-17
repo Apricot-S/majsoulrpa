@@ -8,10 +8,6 @@ class VerificationCodeProvider(Protocol):
         """Wait for a code; optionally delete matching emails read."""
         ...
 
-    async def fetch_nowait(
-        self,
-        *,
-        delete_read_emails: bool = False,
-    ) -> str:
+    async def fetch_nowait(self, *, delete_read_emails: bool = False) -> str:
         """Fetch once and optionally delete matching emails read."""
         ...

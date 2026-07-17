@@ -70,11 +70,7 @@ class S3VerificationCodeProvider:
             except VerificationEmailNotFoundError:
                 await asyncio.sleep(poll_interval)
 
-    async def fetch_nowait(
-        self,
-        *,
-        delete_read_emails: bool = False,
-    ) -> str:
+    async def fetch_nowait(self, *, delete_read_emails: bool = False) -> str:
         """Check S3 once and optionally delete matching emails read."""
         client = await self._resolve_client()
         return await self._run_fetch_once(
@@ -186,12 +182,7 @@ def _is_current(received_at: datetime, *, now: datetime) -> bool:
     return timedelta(0) <= age < VERIFICATION_EMAIL_EXPIRATION
 
 
-def _read_object(
-    client: S3Client,
-    *,
-    bucket_name: str,
-    key: str,
-) -> bytes:
+def _read_object(client: S3Client, *, bucket_name: str, key: str) -> bytes:
     response = client.get_object(Bucket=bucket_name, Key=key)
     body = response["Body"].read()
     if not isinstance(body, bytes):
