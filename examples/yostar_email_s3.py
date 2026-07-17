@@ -37,11 +37,10 @@ def create_rpa(config: AppConfig) -> RPAApp:
             bucket_name=s3_config.bucket_name,
             key_prefix=s3_config.key_prefix,
             aws_profile=s3_config.aws_profile,
+            poll_interval=EMAIL_POLL_INTERVAL_SECONDS,
         )
         async with asyncio.timeout(EMAIL_WAIT_TIMEOUT_SECONDS):
-            verification_code = await code_provider.fetch(
-                poll_interval=EMAIL_POLL_INTERVAL_SECONDS,
-            )
+            verification_code = await code_provider.fetch()
 
         async with asyncio.timeout(30.0):
             await screen.enter_verification_code(verification_code)

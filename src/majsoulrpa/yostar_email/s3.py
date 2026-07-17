@@ -39,27 +39,23 @@ class S3VerificationCodeProvider:
         bucket_name: str,
         key_prefix: str = "",
         aws_profile: str | None = None,
+        poll_interval: float = 5.0,
         client: S3Client | None = None,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
+        if poll_interval <= 0.0:
+            msg = "poll_interval must be greater than zero."
+            raise ValueError(msg)
         self._email_address = email_address
         self._bucket_name = bucket_name
         self._key_prefix = key_prefix
         self._aws_profile = aws_profile
+        self._poll_interval = poll_interval
         self._client = client
         self._clock = clock or _utc_now
 
-    async def fetch(
-        self,
-        *,
-        poll_interval: float = 5.0,
-        delete_read_emails: bool = False,
-    ) -> str:
+    async def fetch(self, *, delete_read_emails: bool = False) -> str:
         """Poll S3 and optionally delete matching emails read."""
-        if poll_interval <= 0.0:
-            msg = "poll_interval must be greater than zero."
-            raise ValueError(msg)
-
         client = await self._resolve_client()
         while True:
             try:
@@ -68,7 +64,7 @@ class S3VerificationCodeProvider:
                     delete_read_emails=delete_read_emails,
                 )
             except VerificationEmailNotFoundError:
-                await asyncio.sleep(poll_interval)
+                await asyncio.sleep(self._poll_interval)
 
     async def fetch_nowait(self, *, delete_read_emails: bool = False) -> str:
         """Check S3 once and optionally delete matching emails read."""

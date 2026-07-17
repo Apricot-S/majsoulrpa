@@ -184,6 +184,7 @@ def test_fetch_retries_until_email_is_available() -> None:
     provider = S3VerificationCodeProvider(
         email_address="user@example.com",
         bucket_name="example-bucket",
+        poll_interval=0.001,
         client=cast("S3Client", client),
         clock=lambda: NOW,
     )
@@ -191,7 +192,6 @@ def test_fetch_retries_until_email_is_available() -> None:
     assert (
         asyncio.run(
             provider.fetch(
-                poll_interval=0.001,
                 delete_read_emails=True,
             )
         )
@@ -221,24 +221,24 @@ def test_fetch_creates_s3_client_once_before_polling(
         email_address="user@example.com",
         bucket_name="example-bucket",
         aws_profile="example-profile",
+        poll_interval=0.001,
         clock=lambda: NOW,
     )
 
-    assert asyncio.run(provider.fetch(poll_interval=0.001)) == "012345"
+    assert asyncio.run(provider.fetch()) == "012345"
     assert client.attempts == 2
     assert created_profiles == ["example-profile"]
 
 
 def test_fetch_rejects_nonpositive_poll_interval() -> None:
-    provider = S3VerificationCodeProvider(
-        email_address="user@example.com",
-        bucket_name="example-bucket",
-        client=cast("S3Client", S3ClientFake([], {})),
-        clock=lambda: NOW,
-    )
-
     with pytest.raises(ValueError, match="poll_interval"):
-        asyncio.run(provider.fetch(poll_interval=0.0))
+        S3VerificationCodeProvider(
+            email_address="user@example.com",
+            bucket_name="example-bucket",
+            poll_interval=0.0,
+            client=cast("S3Client", S3ClientFake([], {})),
+            clock=lambda: NOW,
+        )
 
 
 def test_missing_boto3_names_required_extra(
