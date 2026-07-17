@@ -424,7 +424,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] human と AI の合計が最大人数を超えたら拒否する
 - [x] `RoomPlayer.is_host` を owner ID から導出する
 - [x] `RoomPlayer.is_ready` を wire の ready 状態から導出し、host を暗黙に ready にしない
-- [x] `self_is_host`、`participant_count`、`available_slots` を snapshot から導出する
+- [x] `self_is_host`、`self_is_ready`、`all_guests_ready`、`participant_count`、`available_slots` を snapshot から導出する
 - [x] player list は protocol で観測した順序を保つ
 - [x] AI を正の account ID を持つ human player として公開しない
 - [x] terminal state でも最後に確定した room 情報を保持する
@@ -457,7 +457,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] wait は cache が渡された snapshot の version より新しければ即時に返せる
 - [x] wait は source の `get()` を使い sleep polling しない
 - [x] wait 中の cancellation で適用済み snapshot を壊さない
-- [ ] Sniffer decode、stream gap、queue overflow を room state で成功扱いにしない
+- [x] Sniffer decode、stream gap、queue overflow を room state で成功扱いにしない
 
 ### RoomScreen detection / state API
 
@@ -469,8 +469,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 画像だけ room で snapshot がなければ状態を推測せず失敗する
 - [x] `before_callback()` は source の蓄積済み message を処理して cache を最新化する
 - [x] `get_state()` は network request や click を行わず最新 immutable snapshot を返す
-- [ ] RoomScreen の全高レベル API は `timeout` 引数を持たない
-- [ ] 呼び出し側の `asyncio.timeout()` で `get_state()` を中断できる
+- [x] RoomScreen の全高レベル API は `timeout` 引数を持たない
+- [x] 呼び出し側の `asyncio.timeout()` で待機を伴う RoomScreen API を中断できる
 - [x] `wait_for_state_change()` は渡された snapshot より新しい snapshot を返す
 - [x] `wait_for_state_change()` は別 room、別 self account、未来 version、同一 version で内容が矛盾する snapshot を拒否する
 - [x] `wait_for_state_change()` は kick / game start の terminal snapshot も 1 回返す
@@ -490,7 +490,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 事前条件失敗は operation と machine-readable な reason Enum を保持する
 - [x] response 欠落と notice 欠落を server rejection に変換しない
 - [x] malformed response / notice を空状態や通常失敗へ変換しない
-- [ ] browser / Sniffer infrastructure error を Room 用 rejection に変換しない
+- [x] browser / Sniffer infrastructure error を Room 用 rejection に変換しない
 - [x] Room API の cancellation を cleanup 後に伝播する
 
 ### `leave()`
@@ -550,20 +550,31 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] guest が外部 host の start を観測した場合も `MATCH_STARTED` にする
 - [x] server rejection では RoomScreen を stale にしない
 
-### RoomScreen 手動確認
+### RoomScreen 完了確認
 
-- [ ] 四人 / 三人 room の snapshot field の意味を確認する
+- [x] `get_state()`、`wait_for_state_change()`、`leave()`、`add_ai()`、`set_ready()`、
+      `start_match()` を 1 API ずつ実装し、自動テスト後に実ゲームで確認する
+- [x] host と guest の対局開始で、`room-sign` 消失後に callback から戻ることを実ゲームで確認する
+- [x] Phase 6.10 の実装に必要な個人情報のない画像と settings をユーザーがコミットする
+
+## RoomScreen follow-up 調査
+
+以下は Phase 6.10 の実装完了を妨げない protocol 調査と edge-case の実ゲーム確認である。
+対応する場合は、観測結果に基づいて設計とテストリストを更新する。
+
+- [x] 四人 / 三人 room の snapshot field の意味を確認する
 - [x] `persons`、`robots`、`robot_count`、`positions` の関係を確認する
 - [ ] ready notice の `account_list` と `seq` の意味を確認する
 - [ ] host 退出後の owner update と host 交代を確認する
 - [ ] kick notice と画面遷移を確認する
-- [ ] AI 追加成功、満員、guest の UI / response を確認する
-- [ ] 空席、未 ready、全 ready の start 条件を確認する
+- [x] AI 追加成功の UI / response を確認する
+- [ ] AI 追加の満員、guest rejection の UI / response を確認する
+- [x] 全 guest ready かつ満員での start 成功を確認する
+- [ ] 空席または未 ready での start rejection を確認する
 - [ ] host / guest の退出と対局開始後の退出不可を確認する
 - [ ] room operation の既知 error code と dialog 復旧可否を確認する
 - [ ] Room / room notice の `seq` 増加規則を確認する
-- [ ] 実 payload を tests、fixtures、docs、chat、commit へ含めない
-- [ ] 個人情報のない必要画像と settings はユーザーがコミットする
+- [ ] 実 payload を tests、fixtures、docs、chat、commit へ含めないことを継続的に監査する
 
 ## Phase 7: WebSocket sniffer
 

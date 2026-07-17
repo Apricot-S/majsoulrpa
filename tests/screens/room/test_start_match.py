@@ -69,6 +69,12 @@ def _player_update(
     )
 
 
+class _FailingScreenshotBrowser(BrowserControllerSpy):
+    async def screenshot(self) -> bytes:
+        msg = "synthetic browser infrastructure failure"
+        raise RuntimeError(msg)
+
+
 def test_start_match_clicks_start_and_stales_after_response_and_notice(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -525,6 +531,32 @@ def test_start_match_requires_start_template() -> None:
     assert browser.clicked_points == []
     assert messages.get_count == 0
     assert asyncio.run(screen.get_state()).status is RoomStatus.WAITING
+
+
+def test_start_match_does_not_convert_browser_failure() -> None:
+    messages = _OperationMessageSource(
+        queued=(
+            _request_response(
+                ".lq.Lobby.createRoom",
+                {"room": _startable_room()},
+            ),
+        ),
+        waiting=(),
+    )
+    screen = RoomScreen(
+        context=ScreenContext(
+            browser=_FailingScreenshotBrowser(b"unused"),
+            sniffer_messages=messages,
+            account_state=_AccountState(100001),
+        ),
+    )
+    asyncio.run(screen.before_callback())
+
+    with pytest.raises(
+        RuntimeError,
+        match="synthetic browser infrastructure failure",
+    ):
+        asyncio.run(screen.start_match())
 
 
 def test_kick_interrupts_start_match_wait() -> None:
