@@ -213,7 +213,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `LoginScreen.enter_verification_code()` が認証コード入力後 0.5 秒待機してログインボタンをクリックする
 
 認証コード後のログインフローは、まず
-[認証コード後のログインフロー計画](login-verification-flow-plan.md) の spike を行い、
+[認証コード後のログインフロー設計](../design/screens/login-verification.md) の spike を行い、
 通信判定と画面 template の可否を確認してから実装する。
 
 ### 認証コード誤りの通信判定 spike
@@ -408,7 +408,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ## Phase 6.10: RoomScreen
 
-詳細な設計判断は [RoomScreen 設計](room-screen-design.md) に従う。以下は実装前の
+詳細な設計判断は [RoomScreen 設計](../design/screens/room.md) に従う。以下は実装前の
 テストリストであり、高レベル API は記載順に 1 つずつ実装・手動確認する。
 
 ### Room state model

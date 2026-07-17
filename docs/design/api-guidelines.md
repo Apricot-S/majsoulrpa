@@ -70,6 +70,10 @@ structured concurrency の考え方に合わせる。framework 全体の
 画面検出期限である `RPAApp.run(..., detection_timeout=...)` は、個別 Screen 操作の timeout
 引数とは別の runtime policy として扱う。
 
+この判断の背景は
+[ADR-0001: Screen操作の期限を呼び出し側で管理する](../adr/0001-caller-managed-screen-timeouts.md)
+に記録する。
+
 ## API を増やす基準
 
 高レベル API は、次の条件を満たす場合に追加します。

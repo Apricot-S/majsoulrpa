@@ -1,8 +1,7 @@
-# テンプレート照合設計メモ
+# テンプレート照合設計
 
-この文書は、`LoginScreen` 到達判定に必要なテンプレート照合の設計メモです。
-`LoginScreen.enter_email_address()` はまだ実装しません。まず、スクリーンショットが
-対象画面に到達しているかを判定するための画像照合だけを実装対象にします。
+この文書は、Screen到達判定と画面操作に使用するテンプレート照合、座標表現、
+ビューポートスケーリングを定義します。
 
 ## 目的
 
@@ -227,24 +226,3 @@ class LoginScreen(Screen):
 
 実テンプレート画像と TOML は、必要になった時点でユーザーにコミットを依頼します。
 初期実装では synthetic numpy array だけで照合ロジックを固定します。
-
-## TDD 順序
-
-1. TOML から `TemplateMatchSettings` を読める
-2. unknown key を reject する
-3. region、margin、threshold の不正値を reject する
-4. `RegionConfig.to_region()` が immutable な `Region` を返す
-5. `Region.right` と `Region.bottom` が計算される
-6. template size と region size が違うと例外
-7. 1920x1080 screenshot では scale 1 で照合する
-8. 1280x720 screenshot では template、region、margin を `2 / 3` に scale して照合する
-9. 2560x1440 screenshot では template、region、margin を `4 / 3` に scale して照合する
-10. アスペクト比が 16:9 でない screenshot は例外
-11. fake `np.ndarray` screenshot の指定 region が一致したら `matches()` が true
-12. `match()` が `score` と実 screenshot 座標系の `Region` を返す
-13. margin 内でずれたテンプレートも match し、ずれた `Region` を返す
-14. threshold 未満なら `matches()` が false
-15. screenshot が探索領域より小さい場合は例外
-16. `LoginScreen.detection_spec()` が template predicate を返す
-
-この段階では `LoginScreen.enter_email_address()` は実装しません。

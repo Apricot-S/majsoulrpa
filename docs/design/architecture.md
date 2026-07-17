@@ -1,7 +1,7 @@
-# アーキテクチャ草案
+# アーキテクチャ
 
-この文書は MajsoulRPA の内部構成候補を整理する設計メモです。パッケージ構造は
-現在の要件、テスト容易性、ライフサイクル管理に基づいて決定します。
+この文書は MajsoulRPA の現在の内部構成と依存方向を示します。パッケージ構造は、
+要件、テスト容易性、ライフサイクル管理に基づいて決定します。
 
 ## 方針
 
@@ -13,49 +13,53 @@
 
 それ以外の層は作りません。
 
-## 候補パッケージ構成
+## パッケージ構成
 
 ```text
 src/majsoulrpa/
   __init__.py
   app.py
   config.py
-  errors.py
   browser/
-    __init__.py
+    controller.py
+    messages.py
+    playwright.py
     runner.py
     server.py
-    playwright.py
+    transport.py
     zmq.py
   client/
-    __init__.py
+    controller_runtime.py
     runtime.py
-    dispatch.py
+    session.py
+  presentation/
+    region.py
+    template.py
   screens/
-    __init__.py
     base.py
+    errors.py
     login.py
     home.py
-    room.py
-    tournament.py
+    room/
   sniffer/
-    __init__.py
-    hook.py
-    metadata.py
+    correlator.py
+    decoder.py
+    envelope.py
+    events.py
+    message_queue.py
     playwright.py
-    mitmproxy.py
+    publication.py
+    runtime.py
+    worker.py
+    zmq.py
   yostar_email/
-    __init__.py
-    code_provider.py
-    s3_code_provider.py
-  testing/
-    __init__.py
-    fake_browser.py
-    fake_capture.py
-    fake_screen.py
+    email.py
+    provider.py
+    s3.py
 ```
 
-これは初期候補です。実装開始時に、不要な package は作りません。
+一覧は主要な責務を示すもので、単純な補助 module と生成物は省略しています。新しい package は、
+実装の差し替え、ライフサイクル管理、またはテスト容易性に明確な価値がある場合だけ追加します。
 
 ## 依存方向
 
@@ -115,13 +119,7 @@ client runtime は、登録済み screen の検出と callback 実行を担当�
 - timeout と cancellation を扱う
 - stop 要求を処理する
 
-設計上の未決定:
-
-- screen priority を class 属性にするか、登録順にするか
-- detection loop の tick 間隔を config に出すか
-- screen detection の失敗を即例外にするか、次候補へ進むか
-
-初期案:
+現在の方針:
 
 - priority は登録順とする
 - tick 間隔は public config に出さず、timeout と待機 API で制御する
@@ -137,13 +135,14 @@ Screen base は、custom screen を書くための最小 surface にします。
 - `Screen`
 - `ScreenDetector`
 
-`ScreenContext` に含める候補:
+`ScreenContext` に含めるもの:
 
-- browser 操作用 port
+- browser controller
 - screenshot 取得 API
 - template match API
 - sniffer queue 参照
-- room state の読み取り・待機 API
+- Sniffer message source
+- room state cache
 - runtime stop 要求 API
 
 `ScreenContext` に含めないもの:
@@ -188,20 +187,15 @@ sniffer は差し替え価値があるため、狭い境界を許可します。
 - protocol 生成物の管理
 - 保存先 policy
 
-Playwright sniffer を最初に spike し、要件を満たせない場合に mitmproxy を
-採用候補にします。
+WebSocket frame は Playwright で capture します。browser host 内で最小 envelope decode と
+Request / Response 対応検証を行ってから、pyzmq PUB/SUB で RPA client へ配信します。
+具体的な protobuf 本文は client 側で decode します。詳細は
+[WebSocket Sniffer 設計](network/sniffer.md) を参照してください。
 
-`SnifferConfig` は初期 config には置きません。sniffer backend の spike 後に、
-ユーザーが実際に設定すべき値が明確になってから追加します。
+## テスト構成
 
-初期実装では Playwright で frame を capture し、browser host 内で最小 envelope
-decode と Request / Response 対応検証を行ってから、pyzmq PUB/SUB で RPA client
-へ配信する。具体的な protobuf 本文は client 側で decode する。詳細は
-[WebSocket Sniffer 設計](sniffer-design.md) を参照する。
-
-## `testing/`
-
-testing package は、実ブラウザや実通信なしで TDD を進めるために用意します。
+テスト用 fake と synthetic data は `tests/` に置き、実ブラウザや実通信なしで各境界を
+検証します。
 
 候補:
 
@@ -211,12 +205,12 @@ testing package は、実ブラウザや実通信なしで TDD を進めるた�
 - fake screen
 - callback dispatch helper
 
-testing helper は public API として安定化させる必要はありません。ただし、
-examples が testing helper に依存しないようにします。
+テスト helper は公開 API として安定化させません。examples もテスト helper に
+依存させません。
 
 ## 外部由来の資産
 
-以下の資産は必要性と安全性を確認してから導入します。
+以下の資産は必要性と安全性を確認してから追加または更新します。
 
 - screenshot template
 - `.proto` ファイル

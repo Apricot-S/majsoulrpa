@@ -18,7 +18,7 @@ MajsoulRPA の実装は t_wada の TDD に従います。
 
 候補:
 
-- `docs/agents/test-list.md`
+- `docs/development/test-plan.md`
 - issue / task tracker
 - 対象モジュール近くの design note
 

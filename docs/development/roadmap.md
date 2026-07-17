@@ -32,7 +32,7 @@
 作業:
 
 - `AGENTS.md` を短い入口として書き直す
-- `docs/agents/` に設計・開発資料を作成する
+- `docs/` を資料の役割ごとに構成し、設計・開発資料を作成する
 - 公開 API で重視する利用体験を整理する
 - 安全性、秘密情報、外部資産の取り扱いを決める
 - 開発工程と品質ゲートを明文化する
@@ -210,7 +210,7 @@ Sniffer、browser controller の境界に合わせ、テストリストを先に
 - API ごとにテストリストを作る
 - 実装する高レベル API は常に 1 つに絞る
 - 各 API ごとにユーザーへ実ゲーム確認を依頼する
-- RoomScreen は [RoomScreen 設計](room-screen-design.md) の state cache と message source 処理を
+- RoomScreen は [RoomScreen 設計](../design/screens/room.md) の state cache と message source 処理を
   先に実装し、
   `get_state()`、状態待機、退出、AI 追加、ready、対局開始の順に 1 API ずつ進める
 

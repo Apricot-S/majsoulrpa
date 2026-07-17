@@ -1,12 +1,10 @@
-# 認証コード後のログインフロー計画
+# 認証コード後のログインフロー設計
 
 ## 目的と範囲
 
 `LoginScreen.enter_verification_code()` の後に続く、認証コードの成否判定、
-利用規約同意画面の操作、ログイン画面からの遷移を段階的に実装する。
-
-この計画では実装を行わない。実装は高レベル API を 1 つずつ追加し、各段階で
-ユーザーによる実際の雀魂での手動確認を挟む。
+利用規約同意画面の操作、ログイン画面からの遷移を定義する。変更時は高レベル API を
+1 つずつ扱い、各段階でユーザーによる実際の雀魂での手動確認を挟む。
 
 認証コード、メールアドレス、Cookie、token、HTTP response body、実画面の
 スクリーンショットは、テスト、fixture、ログ、ドキュメント、コミットに含めない。
@@ -23,7 +21,7 @@ POST https://jp-sdk-api.yostarplat.com/yostar/get-auth
 成功時と拒否時はいずれも HTTP status 200 であるため、status だけでは判定しない。
 JSON response の `Code` と、成功時の `Data.Token` の存在を browser host 内で確認する。
 観測内容の詳細は
-[雀魂ログイン認証コード処理の調査結果](majsoulrpa_yostar_auth_investigation.md) を参照する。
+[雀魂ログイン認証コード処理の調査結果](../../investigations/yostar-auth.md) を参照する。
 
 ### Sniffer との分離
 
@@ -38,6 +36,10 @@ JSON response の `Code` と、成功時の `Data.Token` の存在を browser ho
 このため、HTTP method を既存 Sniffer に追加しない。WebSocket Sniffer は従来の責務に
 限定し、認証 HTTP は browser command の request-scoped な待機処理として実装する。
 汎用 HTTP capture hook や別の常設 event transport も、この API のためには追加しない。
+
+この判断は
+[ADR-0005: Yostar認証応答をrequest-scoped browser commandで待つ](../../adr/0005-request-scoped-yostar-auth-wait.md)
+に記録する。
 
 ### browser host 側の処理
 
@@ -135,14 +137,3 @@ callback を dispatch でき、ログイン固有の通信に依存しない。
 decorator は重複を減らすための内部実装であり、Screen の public API 契約を曖昧にしない。
 新しい public 操作を追加する際に decorator の適用漏れを防ぐため、基底 helper と
 `LoginScreen` の操作を対象に回帰テストを置く。
-
-## 実装順序
-
-1. atomic browser command と response 型を synthetic data だけで TDD 実装する。
-2. Playwright executor が response 待機を click より先に開始することを fake page で固定する。
-3. `LoginScreen` が rejected result を不正引数エラーへ変換する。
-4. ユーザーに実際の雀魂で accepted / rejected の両方を手動確認してもらう。
-5. 同意画面と遷移先画面の template 候補を選定し、必要な資産のコミットをユーザーに依頼する。
-6. `Screen` の stale 共通基盤を、対象 API の実装前に TDD で追加する。
-7. checkbox 操作、同意後遷移をそれぞれ別の高レベル API 単位で
-   実装し、品質ゲート後に毎回手動確認する。

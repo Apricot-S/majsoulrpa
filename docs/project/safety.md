@@ -59,7 +59,7 @@ key-prefix = "example-prefix/"
 - token
 - 実メール本文
 
-ただし Sniffer ログは、fork 元から引き継いだ API 調査用途のため例外とする。
+ただし Sniffer ログは、API 調査用途のため例外とする。
 decode 済み message は raw payload bytes を除き、認証情報を含む内容を
 Screen 側で選んだ level のログへ出してよい。このログをコミット、fixture、
 サンプル、ドキュメントへ転記してはいけない。

@@ -6,19 +6,21 @@ MajsoulRPA は、合意済みの友人戦・大会で利用する RPA フレー�
 
 このリポジトリで作業するエージェントは、まず以下の資料を確認してください。
 
-- [プロジェクト方針](docs/agents/project-charter.md)
-- [開発計画](docs/agents/development-plan.md)
-- [API 設計方針](docs/agents/api-guidelines.md)
-- [公開 API 草案](docs/agents/public-api-draft.md)
-- [内部設計方針](docs/agents/internal-design.md)
-- [アーキテクチャ草案](docs/agents/architecture.md)
-- [カスタマイズ方針](docs/agents/customization.md)
-- [WebSocket キャプチャ方針](docs/agents/websocket-capture.md)
-- [WebSocket Sniffer 設計](docs/agents/sniffer-design.md)
-- [RoomScreen 設計](docs/agents/room-screen-design.md)
-- [テストと品質基準](docs/agents/testing-quality.md)
-- [初回テストリスト](docs/agents/initial-test-list.md)
-- [安全性と秘密情報](docs/agents/safety-secrets.md)
+- [ドキュメント索引](docs/README.md)
+- [プロジェクト方針](docs/project/charter.md)
+- [安全性と秘密情報](docs/project/safety.md)
+- [開発ロードマップ](docs/development/roadmap.md)
+- [テスト計画](docs/development/test-plan.md)
+- [テストと品質基準](docs/development/testing.md)
+- [アーキテクチャ](docs/design/architecture.md)
+- [API 設計方針](docs/design/api-guidelines.md)
+- [公開 API 設計](docs/design/public-api.md)
+- [内部設計方針](docs/design/internals.md)
+- [カスタマイズ方針](docs/design/customization.md)
+- [WebSocket キャプチャ方針](docs/design/network/websocket-capture.md)
+- [WebSocket Sniffer 設計](docs/design/network/sniffer.md)
+- [RoomScreen 設計](docs/design/screens/room.md)
+- [ADR 一覧](docs/adr/README.md)
 
 ## Python 実行環境
 

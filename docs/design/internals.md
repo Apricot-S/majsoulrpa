@@ -109,7 +109,7 @@ response、waiter を保持しない。汎用 event sourcing store や Screen st
 初期 snapshot は `createRoom`、`joinRoom`、`fetchRoom` response、更新は room notice から得る。
 host 権限は owner ID と session account ID から snapshot ごとに導出し、Screen instance へ
 cache しない。詳しい状態遷移、操作との相関、失敗モデルは
-[RoomScreen 設計](room-screen-design.md) に従う。
+[RoomScreen 設計](screens/room.md) に従う。
 
 ## 高レベル Screen API のログ
 
@@ -187,7 +187,7 @@ Yostar 認証では `page.expect_response()` の開始、login click、response 
 - 実アカウントや個人情報が写らないことを確認する
 
 テンプレート照合は OpenCV と numpy で実装します。テストのためだけに Pillow は
-追加しません。詳細は [テンプレート照合設計メモ](template-matching.md) に従います。
+追加しません。詳細は [テンプレート照合設計メモ](screens/template-matching.md) に従います。
 
 画面上の矩形は `Region` として表現します。`Region` はテンプレート照合結果だけでなく、
 固定領域クリックや入力欄探索にも使う共通の値オブジェクトです。TOML から読む設定値は

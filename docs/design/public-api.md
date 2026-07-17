@@ -1,6 +1,6 @@
-# 公開 API 草案
+# 公開 API 設計
 
-この文書は MajsoulRPA の公開 API 候補を整理する草案です。実装時に
+この文書は MajsoulRPA の公開 API と今後追加する候補を整理します。実装時に
 テストリストと照合して変更してよいですが、変更する場合は理由を残します。
 
 ## 設計判断
@@ -155,7 +155,7 @@ class Screen:
 `LoginScreen.enter_email_address()` に入る前に、まず `LoginScreen` に到達したかを
 判定するテンプレート照合を実装します。照合結果は score と `Region` を持つ
 `TemplateMatchResult` とし、`Region` は将来の画面クリックや固定領域指定にも使います。
-詳細は [テンプレート照合設計メモ](template-matching.md) を参照します。
+詳細は [テンプレート照合設計メモ](screens/template-matching.md) を参照します。
 
 ## 操作 API
 
@@ -206,7 +206,7 @@ async with asyncio.timeout(10.0):
 `RoomState` は room ID、最大人数、人間プレイヤー、AI 数を持つ immutable snapshot とし、
 プレイヤーには account ID、名前、host、ready を含める。server rejection は Enum 戻り値
 ではなく、機械判定用 Enum を属性に持つ型付き例外にする。観測方式と状態遷移の詳細は
-[RoomScreen 設計](room-screen-design.md) を参照する。
+[RoomScreen 設計](screens/room.md) を参照する。
 
 `TournamentLobbyScreen` 候補:
 
@@ -260,7 +260,7 @@ PUB/SUB は永続配送を保証しない。client hook は sequence gap を検�
 fallbackを追加しない。
 
 Req/Res 対応検証と二段階 decode の詳細は
-[WebSocket Sniffer 設計](sniffer-design.md) を参照します。
+[WebSocket Sniffer 設計](network/sniffer.md) を参照します。
 
 ## Optional integration
 

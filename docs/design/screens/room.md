@@ -208,6 +208,10 @@ callback と API は逐次実行され、`SnifferMessageSource` がその間の 
 するためである。host 交代や kick は、次の `get_state()`、状態待機、または操作前 refresh で
 処理できる。`wait_for_state_change()` は source の `get()` を直接 await する。
 
+この状態管理方式の判断は
+[ADR-0004: Room状態をmessage sourceと共有cacheで管理する](../../adr/0004-room-state-message-source-and-cache.md)
+に記録する。
+
 ただし、現在の runtime は callback loop ごとに新しい Screen instance を生成する。最初の
 RoomScreen instance が完全 snapshot を消費したあとで callback が return しても状態を失わない
 よう、最新 snapshot と room generation だけは `ScreenContext` から共有される具体的な

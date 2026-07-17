@@ -21,18 +21,18 @@
 
 次の設計資料を判断基準とした。
 
-- `project-charter.md`
-- `development-plan.md`
-- `api-guidelines.md`
-- `public-api-draft.md`
-- `internal-design.md`
-- `architecture.md`
-- `customization.md`
-- `websocket-capture.md`
-- `sniffer-design.md`
-- `testing-quality.md`
-- `initial-test-list.md`
-- `safety-secrets.md`
+- `docs/project/charter.md`
+- `docs/development/roadmap.md`
+- `docs/design/api-guidelines.md`
+- `docs/design/public-api.md`
+- `docs/design/internals.md`
+- `docs/design/architecture.md`
+- `docs/design/customization.md`
+- `docs/design/network/websocket-capture.md`
+- `docs/design/network/sniffer.md`
+- `docs/development/testing.md`
+- `docs/development/test-plan.md`
+- `docs/project/safety.md`
 
 手書きの `src/majsoulrpa` 実装、対応する tests、公開 export、optional dependency の
 import 経路を確認した。生成物である `assets/protocol/liqi_pb2.py` は生成コードのため、

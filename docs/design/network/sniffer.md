@@ -159,6 +159,10 @@ Req/Res 対応検証だけは browser host 側で行う。
 しない。前者は browser host を肥大化させ、後者は PUB/SUB の欠落を protocol
 不整合と区別できない。
 
+この責務分割の判断は
+[ADR-0003: Sniffer decodeをbrowser hostとclientに分割する](../../adr/0003-split-sniffer-decoding.md)
+に記録する。
+
 ## 内部データモデル
 
 値 object は frozen な pydantic model または dataclass とし、少なくとも次を持つ。
@@ -314,7 +318,7 @@ Screen 状態機械は Sniffer transport が安定した後、1 画面ずつ設�
 は増やさない。操作前に `get_nowait()` で蓄積済み message を処理し、click 後は `get()` で
 Req/Res と notice を待つ。host 交代、kick、外部からの game start も同じ source から処理する。
 Screen instance 間で必要な最新 snapshot だけは context 経由の小さな cache に保持する。
-詳細は [RoomScreen 設計](room-screen-design.md) に従う。
+詳細は [RoomScreen 設計](../screens/room.md) に従う。
 
 client runtime の内部message queueは、API名で選別せず、受信してdecodeできたmessageを
 すべて到着順に保持する。通常の未読messageにはasync queue、読み取った後の差し戻しには

@@ -64,6 +64,10 @@ HTTP 全般へ拡張したり、汎用 HTTP capture hook を公開したりし�
 最初に Playwright capture の spike を行います。Playwright で要件を満たせるなら、
 初期実装は Playwright を優先します。
 
+採用理由は
+[ADR-0002: WebSocket captureにPlaywrightを使用する](../../adr/0002-use-playwright-for-websocket-capture.md)
+に記録する。
+
 ただし、capture は置換価値が明確な領域です。Playwright と mitmproxy を
 比較する間だけ、狭い capture backend 境界を設けることは許容します。
 この境界は、以下だけを責務にします。
@@ -89,7 +93,7 @@ Playwright 案は、次を満たせる場合に採用候補とします。
 
 Playwright と pyzmq PUB/SUB を使う初期実装の責務分割、Req/Res 対応検証、
 二段階 decode、配送保証、lifecycle の詳細は
-[WebSocket Sniffer 設計](sniffer-design.md) に定めます。
+[WebSocket Sniffer 設計](sniffer.md) に定めます。
 
 ## テスト方針
 
