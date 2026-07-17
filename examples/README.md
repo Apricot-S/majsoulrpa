@@ -39,14 +39,13 @@ majsoulrpa-browser --config examples/config.toml
 Opens the spectating screen from Home, then switches through the Gold, Jade, and Throne Room four-player and three-player East and South lists.
 It obtains game record IDs from `.lq.Lobby.fetchGameLiveList` and prints them in observation order.
 
-Each round also appends the IDs as UTF-8 text, one ID per line, to:
+Each fetch also appends the IDs as UTF-8 text, one ID per line, to:
 
 ```text
 examples/game-ids/<4|3>-<east|south>-<gold|jade|throne>.txt
 ```
 
-After each complete round, `Fetch another round? [y/N]:` is displayed.
-Enter `y` to fetch another round; press Enter or enter `N` to finish.
+After each fetch, `Fetch again? [y/N]:` is displayed. Enter `y` to fetch again; press Enter or enter `N` to finish.
 
 First, start the client example:
 

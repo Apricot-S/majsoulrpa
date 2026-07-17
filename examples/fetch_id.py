@@ -156,10 +156,10 @@ def append_game_ids(
     return output_path
 
 
-async def fetch_another_round() -> bool:
+async def fetch_again() -> bool:
     while True:
         answer = (
-            await asyncio.to_thread(input, "Fetch another round? [y/N]: ")
+            await asyncio.to_thread(input, "Fetch again? [y/N]: ")
         ).strip()
         if answer in {"y", "Y"}:
             return True
@@ -203,7 +203,7 @@ async def fetch_id(screen: FetchIDScreen, data: Any) -> list[Path]:
             output_paths.append(output_path)
             print(f"Appended: {output_path}")
 
-        if not await fetch_another_round():
+        if not await fetch_again():
             break
 
     await screen.stop_browser_host()
