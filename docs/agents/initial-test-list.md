@@ -531,20 +531,20 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 別 player の ready notice を自分の成功として扱わない
 - [x] 自分の ready notice が目標状態と一致しなければ成功として扱わない
 - [x] 成功時は自分の `is_ready` が目標状態の `RoomState` を返し Screen を active のままにする
-- [ ] `set_ready()` の実ゲーム確認後まで `start_match()` の実装へ進まない
+- [x] `set_ready()` の実ゲーム確認後まで `start_match()` の実装へ進まない
 
 ### `start_match()`
 
-- [ ] 最新 snapshot で host の場合だけ start UI を操作する
-- [ ] human guest が 1 人でも未 ready なら UI を操作しない
-- [ ] AI を含む participant が最大人数未満なら UI を操作しない
-- [ ] ready 判定から host を除外する
-- [ ] source refresh 後の最新 host、ready、満員を使って事前条件を検証する
-- [ ] click 前に source を drain し、その後の outbound `.lq.Lobby.startRoom` を対応付ける
-- [ ] 成功 response だけでは完了せず game start notice まで待つ
-- [ ] game start notice 後だけ `MATCH_STARTED` にして RoomScreen を stale にする
-- [ ] guest が外部 host の start を観測した場合も `MATCH_STARTED` にする
-- [ ] server rejection では RoomScreen を stale にしない
+- [x] 最新 snapshot で host の場合だけ start UI を操作する
+- [x] human guest が 1 人でも未 ready なら UI を操作しない
+- [x] AI を含む participant が最大人数未満なら UI を操作しない
+- [x] ready 判定から host を除外する
+- [x] source refresh 後の最新 host、ready、満員を使って事前条件を検証する
+- [x] click 前に source を drain し、その後の outbound `.lq.Lobby.startRoom` を対応付ける
+- [x] 成功 response だけでは完了せず game start notice まで待つ
+- [x] game start notice 後だけ `MATCH_STARTED` にして RoomScreen を stale にする
+- [x] guest が外部 host の start を観測した場合も `MATCH_STARTED` にする
+- [x] server rejection では RoomScreen を stale にしない
 
 ### RoomScreen 手動確認
 

@@ -80,6 +80,12 @@ class RoomState:
         )
 
     @property
+    def all_guests_ready(self) -> bool:
+        return all(
+            player.is_ready for player in self.players if not player.is_host
+        )
+
+    @property
     def participant_count(self) -> int:
         return len(self.players) + self.ai_count
 

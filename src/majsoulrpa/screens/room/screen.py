@@ -13,6 +13,8 @@ from majsoulrpa.assets.templates.room import (
     READY_TEMPLATE_PATH,
     ROOM_SIGN_SETTINGS_PATH,
     ROOM_SIGN_TEMPLATE_PATH,
+    START_SETTINGS_PATH,
+    START_TEMPLATE_PATH,
 )
 from majsoulrpa.presentation.template import load_png_template_matcher
 from majsoulrpa.screens.base import (
@@ -48,6 +50,8 @@ ROOM_STATE_INITIALIZATION_TIMEOUT_SECONDS = 5.0
 LEAVE_API_NAME = ".lq.Lobby.leaveRoom"
 ADD_AI_API_NAME = ".lq.Lobby.addRoomRobot"
 PLAYER_UPDATE_NOTICE_NAME = ".lq.NotifyRoomPlayerUpdate"
+START_MATCH_API_NAME = ".lq.Lobby.startRoom"
+GAME_START_NOTICE_NAME = ".lq.NotifyRoomGameStart"
 SET_READY_API_NAME = ".lq.Lobby.readyPlay"
 PLAYER_READY_NOTICE_NAME = ".lq.NotifyRoomPlayerReady"
 
@@ -69,6 +73,10 @@ class RoomScreen(Screen):
             settings_path=settings_path,
         )
         for settings_path in ADD_AI_SETTINGS_PATHS
+    )
+    START_MATCH_TEMPLATE = load_png_template_matcher(
+        template_path=START_TEMPLATE_PATH,
+        settings_path=START_SETTINGS_PATH,
     )
     READY_TEMPLATE = load_png_template_matcher(
         template_path=READY_TEMPLATE_PATH,
@@ -215,6 +223,52 @@ class RoomScreen(Screen):
 
     @_screen_api
     @_requires_active
+    async def start_match(self) -> None:
+        self_account_id, state = await self._prepare_room_operation()
+        await self._ensure_start_match_allowed(state)
+        await self.click_template(
+            self.START_MATCH_TEMPLATE,
+            message="start was not found.",
+        )
+
+        response_succeeded = False
+        game_start_succeeded = False
+        try:
+            while not (response_succeeded and game_start_succeeded):
+                message = await self._get_sniffer_message()
+                await self._apply_room_message(message, self_account_id)
+                await self._ensure_current_generation()
+                state = self._get_cached_state()
+
+                if message.raw.name == START_MATCH_API_NAME:
+                    response = await self._require_operation_response(message)
+                    if "error" in response.response:
+                        await self._raise_operation_rejection(
+                            response,
+                            RoomOperation.START_MATCH,
+                        )
+                    response_succeeded = True
+                elif message.raw.name == GAME_START_NOTICE_NAME:
+                    game_start_succeeded = (
+                        state.status is RoomStatus.MATCH_STARTED
+                    )
+
+                if state.status in {
+                    RoomStatus.WAITING,
+                    RoomStatus.MATCH_STARTED,
+                }:
+                    continue
+
+                self._mark_stale()
+                screenshot = await self.context.browser.screenshot()
+                msg = "Room became inactive while waiting to start the match."
+                raise ScreenStaleError(msg, screenshot)
+        finally:
+            if game_start_succeeded:
+                self._mark_stale()
+
+    @_screen_api
+    @_requires_active
     async def set_ready(self, *, ready: bool = True) -> RoomState:
         self_account_id, previous = await self._prepare_room_operation()
         await self._ensure_set_ready_allowed(previous)
@@ -329,6 +383,24 @@ class RoomScreen(Screen):
         screenshot = await self.context.browser.screenshot()
         raise RoomOperationNotAllowedError(
             RoomOperation.ADD_AI,
+            reason,
+            screenshot,
+        )
+
+    async def _ensure_start_match_allowed(self, state: RoomState) -> None:
+        reason = None
+        if not state.self_is_host:
+            reason = RoomOperationNotAllowedReason.NOT_HOST
+        elif state.available_slots != 0:
+            reason = RoomOperationNotAllowedReason.ROOM_NOT_FULL
+        elif not state.all_guests_ready:
+            reason = RoomOperationNotAllowedReason.GUEST_NOT_READY
+        if reason is None:
+            return
+
+        screenshot = await self.context.browser.screenshot()
+        raise RoomOperationNotAllowedError(
+            RoomOperation.START_MATCH,
             reason,
             screenshot,
         )

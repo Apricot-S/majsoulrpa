@@ -6,6 +6,7 @@ from majsoulrpa.screens.errors import ScreenError, ScreenInvalidOperationError
 class RoomOperation(StrEnum):
     ADD_AI = "add_ai"
     LEAVE = "leave"
+    START_MATCH = "start_match"
     SET_READY = "set_ready"
 
 
@@ -17,6 +18,8 @@ class RoomOperationNotAllowedReason(StrEnum):
     NOT_HOST = "not_host"
     NOT_GUEST = "not_guest"
     ROOM_FULL = "room_full"
+    ROOM_NOT_FULL = "room_not_full"
+    GUEST_NOT_READY = "guest_not_ready"
 
 
 class RoomOperationNotAllowedError(ScreenInvalidOperationError):

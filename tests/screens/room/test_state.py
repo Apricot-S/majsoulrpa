@@ -60,10 +60,46 @@ def test_decode_waiting_room_state() -> None:
     )
     assert state.self_is_host is False
     assert state.self_is_ready is True
+    assert state.all_guests_ready is True
     assert state.participant_count == 3
     assert state.available_slots == 1
     with pytest.raises(FrozenInstanceError):
         state.ai_count = 2  # ty: ignore[invalid-assignment]
+
+
+def test_all_guests_ready_is_false_when_any_guest_is_not_ready() -> None:
+    room = _room()
+    room["persons"] = [
+        {"account_id": 100001, "nickname": "host"},
+        {"account_id": 100002, "nickname": "ready-guest"},
+        {"account_id": 100003, "nickname": "unready-guest"},
+    ]
+    room["robots"] = []
+
+    state = decode_room_state(
+        room,
+        version=1,
+        self_account_id=100001,
+    )
+
+    assert state.all_guests_ready is False
+
+
+def test_all_guests_ready_is_true_without_human_guests() -> None:
+    room = _room()
+    room["persons"] = [
+        {"account_id": 100001, "nickname": "host"},
+    ]
+    room["ready_list"] = []
+    room["robots"] = [{}, {}, {}]
+
+    state = decode_room_state(
+        room,
+        version=1,
+        self_account_id=100001,
+    )
+
+    assert state.all_guests_ready is True
 
 
 def test_room_player_rejects_non_positive_account_id() -> None:
