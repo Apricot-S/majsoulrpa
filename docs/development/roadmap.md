@@ -1,0 +1,268 @@
+# 開発計画
+
+## 原則
+
+実装は小さな縦切りで進めます。高レベル API は一度に 1 つだけ実装し、
+その API が関連テスト、Ruff、format、ty を通過したあとで、ユーザーに
+実際の雀魂での確認を依頼します。
+
+自動テストから実際の雀魂、AWS、実メール、実ブラウザネットワークへは
+アクセスしません。外部接続が必要な確認は、手動確認として明示します。
+
+## 完了条件
+
+各実装単位の完了条件は以下です。
+
+- テストリストが更新されている
+- 追加した振る舞いに対応するテストがある
+- 関連する `python -m pytest ...` が通る
+- `python -m ruff check .` が通る
+- `python -m ruff format --check .` が通る
+- `python -m ty check` が通る
+- 例外を広く握りつぶしていない
+- 成功していない処理を成功のように見せるフォールバックがない
+- 秘密情報、実メール、Cookie、アクセストークンが追加されていない
+- 実通信 payload がテスト、フィクスチャ、examples、docs、コミットに
+  追加されていない
+
+## Phase 0: 計画とリポジトリ整理
+
+目的: プロジェクトの判断基準を固め、実装に入る前の土台を作る。
+
+作業:
+
+- `AGENTS.md` を短い入口として書き直す
+- `docs/` を資料の役割ごとに構成し、設計・開発資料を作成する
+- 公開 API で重視する利用体験を整理する
+- 安全性、秘密情報、外部資産の取り扱いを決める
+- 開発工程と品質ゲートを明文化する
+
+この Phase では実装しません。
+
+## Phase 1: 空のプロジェクト骨格
+
+目的: 最小限の Python パッケージ骨格と自動テスト環境を作る。
+
+作業:
+
+- `pyproject.toml` に package metadata、依存関係、開発ツールを定義する
+- `src/majsoulrpa/` に公開 API の空骨格だけを置く
+- `tests/` に最初のテストリストと smoke test を置く
+- README に開発状況と安全な利用範囲を明示する
+
+注意:
+
+- スクリーンショット画像、`.proto`、実通信ログは追加しない
+- 削除で判断が必要な資産が出た場合はユーザーに確認する
+
+## Phase 2: 設定とランタイム境界
+
+目的: 実ブラウザに触れずに、設定とライフサイクルの最小単位を固める。
+
+候補 API:
+
+- 設定入力を Python object と TOML から作る
+- browser host と client の endpoint を表現する
+- 起動、停止、異常終了の結果を明確に返す
+
+テスト:
+
+- TOML のデフォルト値と明示値
+- 不正値のエラー
+- secret を repr/log に出さないこと
+- ランタイム停止が二重実行されても状態をごまかさないこと
+
+## Phase 3: ブラウザホストの最小起動
+
+目的: CLI と Python からブラウザホストを起動する最小 API を作る。
+
+候補 API:
+
+- browser host を CLI で起動する
+- Python から同じ host を起動する
+- headless、viewport、user data dir などを設定する
+- Playwright backend 起動後に雀魂ページへ遷移する
+- 雀魂ページの canvas selector が現れるまで、上限 1 分で待機する
+
+テスト:
+
+- 実 Playwright を使わない lifecycle test
+- CLI 引数から設定への変換
+- 起動失敗時の例外と終了コード
+- fake page による URL 遷移と selector 待機
+
+優先順:
+
+1. Playwright backend 起動後の雀魂ページ遷移と canvas selector 待機
+2. `majsoulrpa-browser` CLI から `run_browser_host()` を起動する
+3. remote command transport/server と CLI の常駐動作をつなぐ
+
+手動確認:
+
+- ここで初めて Playwright のローカル起動をユーザーに依頼する
+- 雀魂ページへのアクセスは自動テストでは行わず、必要になった時点で手動確認する
+
+## Phase 4: Presentation 検出ループ
+
+目的: callback 登録と Presentation 選択の利用感を作る。
+
+候補 API:
+
+- Presentation class ごとの async callback 登録
+- 登録された Presentation だけを検出対象にする
+- data を callback 間で受け渡す
+- detection timeout を明示する
+
+テスト:
+
+- fake screenshot / fake detector による Presentation 選択
+- callback の戻り値が次の data になること
+- 未登録 Presentation が無視されること
+- timeout と例外伝播
+
+手動確認:
+
+- 実ゲームではなく fake Presentation で examples を確認する
+
+## Phase 5: ログイン画面検出と最初の高レベル API
+
+目的: `LoginScreen` の画面到達判定をテンプレート照合で実装し、その後で
+最初の画面 API を 1 つだけ実装する。
+
+候補 API:
+
+- メールアドレス入力
+- 認証コード入力
+
+進め方:
+
+- まずテストリストを作る
+- `LoginScreen.enter_email_address()` には入らず、先にテンプレート照合による
+  `LoginScreen.detection_spec()` を作る
+- テンプレート照合は OpenCV と numpy を使い、synthetic array で自動テストする
+- 照合結果は score と `Region` を返す
+- 片方の API だけを実装する
+- 関連テストと品質ゲートを通す
+- ユーザーに実際の雀魂での確認を依頼する
+- 確認後に次の API へ進む
+
+注意:
+
+- 実メール本文や認証コードをログに出さない
+- AWS S3 連携は別 Phase として扱う
+
+## Phase 5.6: Controller runtime wiring
+
+目的: browser host が完成した前提で、`RPAApp.run()` の既定経路から
+remote browser host へ接続し、Screen 検出と Screen 操作に同じ
+controller を渡す。
+
+作業:
+
+- controller 側は `AppConfig.endpoint.browser_host` から接続先 endpoint を作る
+- browser host 側は `AppConfig.endpoint.client_host` に bind する
+- controller 側で ZeroMQ REQ socket を作成する
+- `BrowserZmqClientTransport` と `RemoteBrowserController` を組み立てる
+- `ScreenContext` に controller、viewport、stop request を渡す
+- Screen 検出用 screenshot provider を controller の screenshot API へ接続する
+- runtime 終了時、callback 例外時、cancellation 時に transport を cleanup する
+
+テスト:
+
+- 既定 `RPAApp.run()` が実 network なしで controller runtime を組み立てる
+- controller 側の `browser_host` と browser host 側の `client_host` で、
+  IPv4、hostname、IPv6 literal の endpoint 文字列を確認する
+- screenshot command が Screen 検出に使われる
+- 検出 Screen に controller 入りの `ScreenContext` が注入される
+- Screen helper から click / text input command が送られる
+- timeout、callback 例外、cancellation で cleanup される
+- remote error response が成功扱いにならない
+
+注意:
+
+- この Phase でも自動テストから実ブラウザ、実雀魂、実 network へはアクセスしない
+- controller は低レベル操作 API に留め、`fill_region` などの画面 API は Screen 側に置く
+
+## Phase 6: Home / room / match / tournament API
+
+目的: 合意済み友人戦・大会に必要な画面操作を、1 API ずつ追加する。
+
+候補 API:
+
+- Home 画面の安定化処理
+- RPA 終了と browser close
+- 友人戦 room 参加
+- 友人戦 room 作成
+- 友人戦 room 状態取得
+- 友人戦 room 退出、AI 追加、ready、対局開始
+- 対局中の `MatchScreen`
+- 大会 lobby 参加
+
+### MatchScreen の再設計
+
+`MatchScreen` は [v1-develop branch](https://github.com/Apricot-S/majsoulrpa/tree/v1-develop)
+を出発点として再設計する。同 branch で確認できる利用者向けの振る舞いと対局進行の知見は
+参照するが、内部構造や private API をそのまま移植する前提にはしない。現在の Screen、
+Sniffer、browser controller の境界に合わせ、テストリストを先に作成して API ごとに実装する。
+
+進め方:
+
+- API ごとにテストリストを作る
+- 実装する高レベル API は常に 1 つに絞る
+- 各 API ごとにユーザーへ実ゲーム確認を依頼する
+- RoomScreen は [RoomScreen 設計](../design/screens/room.md) の state cache と message source 処理を
+  先に実装し、
+  `get_state()`、状態待機、退出、AI 追加、ready、対局開始の順に 1 API ずつ進める
+
+対象外:
+
+- 段位戦や不特定多数のオープン対局への参加
+- 検出回避のための操作
+
+## Phase 7: WebSocket キャプチャと保存拡張
+
+目的: 牌譜バイナリ保存のような用途に使える通信キャプチャ拡張点を設計する。
+
+作業:
+
+- Playwright と mitmproxy の spike を行う
+- raw frame、decoded metadata、request/response 対応付けの可否を確認する
+- ユーザーが保存処理を差し込める hook を決める
+- 自動テストは synthetic frame のみで行う
+
+手動確認:
+
+- 実通信キャプチャが必要になった場合は、保存先、削除手順、コミット禁止を
+  明示してユーザー確認を依頼する
+- raw payload はデバッグ用ログへ出してよい
+
+## Phase 8: examples とドキュメント整備
+
+目的: MajsoulRPA の利用方法を、秘密情報を含まない形で説明する。
+
+作業:
+
+- callback 登録だけで使う最小 example
+- custom Presentation example
+- synthetic data を使った capture sink example
+- browser host CLI example
+- TOML config example
+
+注意:
+
+- sample email は placeholder のみ
+- AWS credential、実メール、実 log id、実通信 payload は含めない
+
+## Phase 9: リリース前確認
+
+目的: 最初の安定版に必要な品質を確認する。
+
+作業:
+
+- 全体テスト
+- Ruff check
+- Ruff format check
+- ty check
+- README と docs の整合性確認
+- examples の import 確認
+- 安全性と対象外機能の再確認

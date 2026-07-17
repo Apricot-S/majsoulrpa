@@ -1,46 +1,55 @@
-"""Provides presentation classes.
+import importlib
+from typing import TYPE_CHECKING, Any
 
-In this context, a *presentation* refers to a specific screen state of
-the game. Each presentation acts as both the View and Controller in the
-MVC (Model-View-Controller) pattern. As the View, it is tasked with
-detecting and recognizing the screen state. As the Controller, it
-manages interactions with widgets on the screen.
-"""
+from majsoulrpa.presentation.region import Region
 
-from .auth import AuthPresentation
-from .exceptions import (
-    BaseError,
-    BrowserRefreshRequest,
-    InconsistentMessageError,
-    InvalidOperationError,
-    NotImplementedOperationError,
-    PresentationNotDetectedError,
-    PresentationTimeoutError,
-    UnexpectedStateError,
-)
-from .home import HomePresentation, JoinRoomFailureReason, RoomLength, RoomMode
-from .login import LoginPresentation
-from .presentation_base import PresentationBase
-from .room import RoomGuestPresentation, RoomHostPresentation
-from .tournament import TournamentPresentation
+_TEMPLATE_EXPORTS = {
+    "load_png_template_matcher",
+    "PngTemplateMatcher",
+    "TemplateMatcher",
+    "TemplateMatchResult",
+    "TemplateMatchSettings",
+}
+
+if TYPE_CHECKING:
+    from majsoulrpa.presentation.template import (
+        PngTemplateMatcher,
+        TemplateMatcher,
+        TemplateMatchResult,
+        TemplateMatchSettings,
+        load_png_template_matcher,
+    )
 
 __all__ = [
-    "BaseError",
-    "BrowserRefreshRequest",
-    "InconsistentMessageError",
-    "InvalidOperationError",
-    "NotImplementedOperationError",
-    "PresentationNotDetectedError",
-    "PresentationTimeoutError",
-    "UnexpectedStateError",
-    "PresentationBase",
-    "LoginPresentation",
-    "AuthPresentation",
-    "HomePresentation",
-    "JoinRoomFailureReason",
-    "RoomLength",
-    "RoomMode",
-    "RoomHostPresentation",
-    "RoomGuestPresentation",
-    "TournamentPresentation",
+    "PngTemplateMatcher",
+    "Region",
+    "TemplateMatchResult",
+    "TemplateMatchSettings",
+    "TemplateMatcher",
+    "load_png_template_matcher",
 ]
+
+
+def __getattr__(name: str) -> Any:  # noqa: ANN401
+    if name in _TEMPLATE_EXPORTS:
+        try:
+            template = importlib.import_module(
+                "majsoulrpa.presentation.template",
+            )
+        except ModuleNotFoundError as error:
+            msg = (
+                f"{name} requires the 'rpa' optional dependency. "
+                "Install it with: pip install 'majsoulrpa[rpa]'"
+            )
+            raise ModuleNotFoundError(msg) from error
+
+        value = getattr(template, name)
+        globals()[name] = value
+        return value
+
+    msg = f"module {__name__!r} has no attribute {name!r}"
+    raise AttributeError(msg)
+
+
+def __dir__() -> list[str]:
+    return sorted({*globals(), *__all__})

@@ -1,0 +1,83 @@
+import tomllib
+from pathlib import Path
+from typing import Annotated
+
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field
+
+from majsoulrpa.constants import (
+    DEFAULT_BROWSER_HOST,
+    DEFAULT_CLIENT_HOST,
+    DEFAULT_REMOTE_PORT,
+    DEFAULT_SNIFFER_PORT,
+    DEFAULT_VIEWPORT_HEIGHT,
+    DEFAULT_WINDOW_LEFT,
+    DEFAULT_WINDOW_TOP,
+    SUPPORTED_VIEWPORT_HEIGHTS,
+    USER_PORT_MAX,
+    USER_PORT_MIN,
+)
+
+UserPort = Annotated[int, Field(ge=USER_PORT_MIN, le=USER_PORT_MAX)]
+
+Host = Annotated[str, Field(min_length=1)]
+
+
+def _validate_viewport_height(value: int) -> int:
+    if value not in SUPPORTED_VIEWPORT_HEIGHTS:
+        msg = "viewport_height must be one of supported viewport heights."
+        raise ValueError(msg)
+    return value
+
+
+ViewportHeight = Annotated[int, AfterValidator(_validate_viewport_height)]
+
+
+class EndpointConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    browser_host: Host = DEFAULT_BROWSER_HOST
+    client_host: Host = DEFAULT_CLIENT_HOST
+    remote_port: UserPort = DEFAULT_REMOTE_PORT
+    sniffer_port: UserPort = DEFAULT_SNIFFER_PORT
+
+
+class BrowserConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    window_left: int = DEFAULT_WINDOW_LEFT
+    window_top: int = DEFAULT_WINDOW_TOP
+    viewport_height: ViewportHeight = DEFAULT_VIEWPORT_HEIGHT
+    headless: bool = False
+    user_data_dir: Path | None = None
+
+
+class YostarEmailS3Config(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    bucket_name: Annotated[str, Field(min_length=1)]
+    key_prefix: str = ""
+    aws_profile: Annotated[str, Field(min_length=1)] | None = None
+
+
+class YostarEmailConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    email_address: Annotated[str, Field(min_length=1, repr=False)]
+    s3: YostarEmailS3Config | None = None
+
+
+class AppConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    endpoint: EndpointConfig = Field(default_factory=EndpointConfig)
+    browser: BrowserConfig = Field(default_factory=BrowserConfig)
+    yostar_email: YostarEmailConfig | None = None
+
+    @classmethod
+    def from_toml_text(cls, text: str) -> "AppConfig":
+        return cls.model_validate(tomllib.loads(text))
+
+    @classmethod
+    def from_toml_file(cls, path: Path) -> "AppConfig":
+        with path.open("rb") as fp:
+            return cls.model_validate(tomllib.load(fp))

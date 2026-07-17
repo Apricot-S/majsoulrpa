@@ -1,0 +1,80 @@
+# MajsoulRPA configuration example.
+# Every uncommented value below is the current default.
+# Copy this file to config.toml, then use it from the browser host with:
+#   majsoulrpa-browser --config config.toml
+# Python clients can load the same file with AppConfig.from_toml_file().
+
+[endpoint]
+
+# Browser host address used by the RPA client for controller and Sniffer
+# connections. Use the browser host's reachable address for a remote setup.
+# Default: "127.0.0.1"
+browser_host = "127.0.0.1"
+
+# Address on which the browser host binds the controller server and Sniffer
+# publisher. For a remote setup this may need to be a reachable bind address.
+# Default: "127.0.0.1"
+client_host = "127.0.0.1"
+
+# TCP port for browser commands such as screenshot, click, and text input.
+# Valid range: 1024..49151
+# Default: 19222
+remote_port = 19222
+
+# TCP port for WebSocket Sniffer PUB/SUB messages.
+# Valid range: 1024..49151
+# Default: 37247
+sniffer_port = 37247
+
+[browser]
+
+# Initial horizontal position of the headed browser window in screen pixels.
+# Negative values are allowed; for example, use a negative value for a monitor
+# positioned to the left of the primary display. This has no visible effect in
+# headless mode.
+# Default: 0
+window_left = 0
+
+# Initial vertical position of the headed browser window in screen pixels.
+# Negative values are allowed; for example, use a negative value for a monitor
+# positioned above the primary display. This has no visible effect in headless
+# mode.
+# Default: 0
+window_top = 0
+
+# Browser viewport height. The width is derived using a 16:9 aspect ratio.
+# Supported values: 720, 1080, 1440
+# Default: 1080
+viewport_height = 1080
+
+# Start Chromium in headless mode instead of headed mode. Chromium does not
+# display a browser window while running in headless mode.
+# Default: false
+headless = false
+
+# Directory for a persistent Chromium profile, including cookies and local
+# storage. When omitted, MajsoulRPA creates an ephemeral browser context and
+# does not reuse login state on the next run. Relative paths are resolved from
+# the process working directory.
+# Default: omitted (Python value: None)
+# user_data_dir = "user-data"
+
+[yostar_email]
+
+# Email address registered with Yostar. When mail is forwarded to SES, use the
+# original address in the message's To header, not the SES forwarding address.
+email_address = "user@example.com"
+
+[yostar_email.s3]
+
+# S3 bucket where an Amazon SES receipt rule stores raw MIME messages.
+bucket_name = "example-bucket"
+
+# Only objects below this key prefix are considered.
+# Default: ""
+key_prefix = "example-prefix/"
+
+# Optional AWS shared-config profile. When omitted, boto3 uses its normal
+# credential provider chain.
+# Default: omitted (Python value: None)
+# aws_profile = "example-profile"

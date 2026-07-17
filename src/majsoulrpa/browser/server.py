@@ -1,0 +1,40 @@
+from typing import Protocol
+
+from majsoulrpa.browser.messages import (
+    BrowserCommand,
+    BrowserResponse,
+    StopBrowserHostCommand,
+)
+from majsoulrpa.browser.transport import BrowserServerTransport
+
+
+class BrowserCommandExecutor(Protocol):
+    async def execute(self, command: BrowserCommand) -> BrowserResponse: ...
+
+
+class BrowserRequestServer(Protocol):
+    async def bind(self) -> None: ...
+    async def serve_forever(self) -> None: ...
+    async def stop(self) -> None: ...
+
+
+class BrowserRequestHandler:
+    def __init__(
+        self,
+        transport: BrowserServerTransport,
+        executor: BrowserCommandExecutor,
+    ) -> None:
+        self._transport = transport
+        self._executor = executor
+
+    async def handle_once(self) -> bool:
+        command = await self._transport.recv_command()
+        response = await self._executor.execute(command)
+        await self._transport.send_response(response)
+        return isinstance(command, StopBrowserHostCommand)
+
+    async def serve_forever(self) -> None:
+        while True:
+            should_stop = await self.handle_once()
+            if should_stop:
+                return

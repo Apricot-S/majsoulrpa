@@ -1,0 +1,203 @@
+from typing import Annotated, Literal
+
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+
+PositiveDelay = Annotated[float, Field(gt=0)]
+NonEmptyKey = Annotated[str, Field(min_length=1)]
+NonEmptyUrl = Annotated[str, Field(min_length=1)]
+
+
+class ClickCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["click"] = "click"
+    x: float
+    y: float
+    hover_delay_seconds: PositiveDelay | None
+    mouse_down_up_delay_seconds: PositiveDelay
+
+
+class MoveMouseCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["move_mouse"] = "move_mouse"
+    x: float
+    y: float
+
+
+class TextInputCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["text_input"] = "text_input"
+    text: str
+    character_delay_seconds: PositiveDelay
+
+
+class PressKeyCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["press_key"] = "press_key"
+    key: NonEmptyKey
+    key_down_up_delay_seconds: PositiveDelay
+
+
+class ScreenshotCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["screenshot"] = "screenshot"
+
+
+class GotoUrlCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["goto_url"] = "goto_url"
+    url: NonEmptyUrl
+
+
+class ReloadCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["reload"] = "reload"
+
+
+class StopBrowserHostCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["stop_browser_host"] = "stop_browser_host"
+
+
+class ClickAndWaitForYostarAuthCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["click_and_wait_for_yostar_auth"] = (
+        "click_and_wait_for_yostar_auth"
+    )
+    x: float
+    y: float
+    mouse_down_up_delay_seconds: PositiveDelay
+    timeout_seconds: PositiveDelay
+
+
+BrowserCommand = Annotated[
+    ClickCommand
+    | MoveMouseCommand
+    | TextInputCommand
+    | PressKeyCommand
+    | ScreenshotCommand
+    | GotoUrlCommand
+    | ReloadCommand
+    | StopBrowserHostCommand
+    | ClickAndWaitForYostarAuthCommand,
+    Field(discriminator="type"),
+]
+
+
+class ClickResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["click"] = "click"
+    x: float
+    y: float
+
+
+class MoveMouseResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["move_mouse"] = "move_mouse"
+    x: float
+    y: float
+
+
+class TextInputResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["text_input"] = "text_input"
+    text: str
+
+
+class PressKeyResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["press_key"] = "press_key"
+    key: str
+
+
+class ScreenshotResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["screenshot"] = "screenshot"
+    screenshot_base64: str
+
+
+class GotoUrlResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["goto_url"] = "goto_url"
+    url: str
+
+
+class ReloadResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["reload"] = "reload"
+
+
+class StopBrowserHostResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["stop_browser_host"] = "stop_browser_host"
+
+
+class YostarAuthAcceptedResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["yostar_auth_accepted"] = "yostar_auth_accepted"
+
+
+class YostarAuthRejectedResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["yostar_auth_rejected"] = "yostar_auth_rejected"
+    application_code: int
+
+
+class BrowserErrorResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    type: Literal["error"] = "error"
+    message: str
+
+
+BrowserResponse = Annotated[
+    ClickResponse
+    | MoveMouseResponse
+    | TextInputResponse
+    | PressKeyResponse
+    | ScreenshotResponse
+    | GotoUrlResponse
+    | ReloadResponse
+    | StopBrowserHostResponse
+    | YostarAuthAcceptedResponse
+    | YostarAuthRejectedResponse
+    | BrowserErrorResponse,
+    Field(discriminator="type"),
+]
+
+_BROWSER_COMMAND_ADAPTER = TypeAdapter(BrowserCommand)
+_BROWSER_RESPONSE_ADAPTER = TypeAdapter(BrowserResponse)
+
+
+def dump_browser_command_json(command: BrowserCommand) -> bytes:
+    return _BROWSER_COMMAND_ADAPTER.dump_json(command)
+
+
+def dump_browser_response_json(response: BrowserResponse) -> bytes:
+    return _BROWSER_RESPONSE_ADAPTER.dump_json(response)
+
+
+def parse_browser_command_json(payload: str | bytes) -> BrowserCommand:
+    return _BROWSER_COMMAND_ADAPTER.validate_json(payload)
+
+
+def parse_browser_response_json(payload: str | bytes) -> BrowserResponse:
+    return _BROWSER_RESPONSE_ADAPTER.validate_json(payload)

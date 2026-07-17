@@ -1,0 +1,13 @@
+from typing import Protocol
+
+from majsoulrpa.browser.messages import BrowserCommand, BrowserResponse
+
+
+class BrowserClientTransport(Protocol):
+    async def send_command(self, command: BrowserCommand) -> None: ...
+    async def recv_response(self) -> BrowserResponse: ...
+
+
+class BrowserServerTransport(Protocol):
+    async def recv_command(self) -> BrowserCommand: ...
+    async def send_response(self, response: BrowserResponse) -> None: ...

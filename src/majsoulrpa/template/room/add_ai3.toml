@@ -1,7 +1,0 @@
-# Room - Add AI 3
-left = 1310
-top = 604
-width = 206
-height = 53
-threshold = 0.95
-path = "./add_ai.png"

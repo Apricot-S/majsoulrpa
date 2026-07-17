@@ -1,0 +1,14 @@
+[region]
+left = 1612
+top = 174
+width = 32
+height = 32
+
+[margin]
+left = 30
+right = 30
+top = 30
+bottom = 30
+
+[match]
+threshold = 0.95

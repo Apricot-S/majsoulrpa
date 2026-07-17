@@ -1,13 +1,10 @@
-"""Provides an RPA framework for Mahjong Soul."""
-
 from logging import NullHandler, getLogger
 
-from ._rpa import RPA
-from ._version import __version__
+from majsoulrpa.app import RPAApp
+from majsoulrpa.config import AppConfig
 
 getLogger(__name__).addHandler(NullHandler())
 
-__all__ = [
-    "__version__",
-    "RPA",
-]
+__version__ = "0.1.0.dev1"
+
+__all__ = ["AppConfig", "RPAApp", "__version__"]
