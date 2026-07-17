@@ -11,7 +11,12 @@ from majsoulrpa.sniffer import DecodedRequestResponse, Direction
 
 FETCH_GAME_LIVE_LIST_API_NAME = ".lq.Lobby.fetchGameLiveList"
 OUTPUT_DIRECTORY = Path(__file__).resolve().parent / "game-ids"
-SCREENSHOT_PATH = Path(__file__).resolve().parent / "spectating-screen.png"
+ROOM_MENU_SCREENSHOT_PATH = (
+    Path(__file__).resolve().parent / "spectating-room-menu.png"
+)
+MODE_MENU_SCREENSHOT_PATH = (
+    Path(__file__).resolve().parent / "spectating-mode-menu.png"
+)
 
 
 @dataclass(frozen=True)
@@ -46,15 +51,15 @@ class FetchIDScreen(HomeScreen):
     ROOMS: ClassVar[tuple[RoomSelection, ...]] = (
         RoomSelection(
             name="gold",
-            region=Region(left=144, top=286, width=322, height=72),
+            region=Region(left=143, top=281, width=322, height=71),
         ),
         RoomSelection(
             name="jade",
-            region=Region(left=144, top=360, width=322, height=72),
+            region=Region(left=143, top=354, width=322, height=71),
         ),
         RoomSelection(
             name="throne",
-            region=Region(left=144, top=437, width=322, height=72),
+            region=Region(left=143, top=426, width=322, height=71),
         ),
     )
     MODE_MENU_REGION = Region(left=575, top=210, width=380, height=71)
@@ -190,13 +195,27 @@ async def fetch_id(screen: FetchIDScreen, data: Any) -> list[Path]:
     _ = data
     async with asyncio.timeout(30.0):
         await screen.enter_spectating()
-        screenshot = await screen.screenshot()
-    await asyncio.to_thread(SCREENSHOT_PATH.write_bytes, screenshot)
-    print(f"Saved: {SCREENSHOT_PATH}")
+        await screen.click_region(screen.ROOM_MENU_REGION)
+        await asyncio.sleep(2.0)
+        room_menu_screenshot = await screen.screenshot()
+        await asyncio.to_thread(
+            ROOM_MENU_SCREENSHOT_PATH.write_bytes,
+            room_menu_screenshot,
+        )
+        print(f"Saved: {ROOM_MENU_SCREENSHOT_PATH}")
+
+        await screen.click_region(screen.MODE_MENU_REGION)
+        await asyncio.sleep(2.0)
+        mode_menu_screenshot = await screen.screenshot()
+        await asyncio.to_thread(
+            MODE_MENU_SCREENSHOT_PATH.write_bytes,
+            mode_menu_screenshot,
+        )
+        print(f"Saved: {MODE_MENU_SCREENSHOT_PATH}")
 
     await screen.stop_browser_host()
     await screen.stop_rpa()
-    return [SCREENSHOT_PATH]
+    return [ROOM_MENU_SCREENSHOT_PATH, MODE_MENU_SCREENSHOT_PATH]
 
 
 async def main() -> None:
