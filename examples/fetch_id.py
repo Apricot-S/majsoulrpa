@@ -11,7 +11,7 @@ FETCH_GAME_LIVE_LIST_API_NAME = ".lq.Lobby.fetchGameLiveList"
 
 
 class FetchIDScreen(HomeScreen):
-    WATCH_REGION = Region(left=1178, top=955, width=122, height=101)
+    WATCH_REGION = Region(left=1195, top=975, width=92, height=75)
     ROOM_MENU_REGION = Region(left=144, top=211, width=377, height=72)
     ROOM_REGIONS: ClassVar[tuple[Region, ...]] = (
         Region(left=144, top=286, width=322, height=72),  # Gold Room
