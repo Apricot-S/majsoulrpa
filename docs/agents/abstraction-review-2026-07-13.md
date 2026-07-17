@@ -21,12 +21,12 @@
 
 次の設計資料を判断基準とした。
 
-- `v3-charter.md`
+- `project-charter.md`
 - `development-plan.md`
 - `api-guidelines.md`
 - `public-api-draft.md`
 - `internal-design.md`
-- `v3-architecture.md`
+- `architecture.md`
 - `customization.md`
 - `websocket-capture.md`
 - `sniffer-design.md`

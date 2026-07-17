@@ -1,6 +1,6 @@
 # 初回テストリスト
 
-このテストリストは、v3 の実装開始前に用意する最初のリストです。
+このテストリストは、実装開始前に用意する最初のリストです。
 実装中に見つかった項目は追加します。TDD では、この中から 1 つだけ選んで
 テストを書き、そのテストを通す最小実装を行います。
 
@@ -8,7 +8,7 @@
 
 - [x] package を import できる
 - [x] `majsoulrpa.__version__` の扱いを決め、テストする
-- [x] README が v3 初期状態と安全スコープを説明している
+- [x] README が開発状況と安全スコープを説明している
 - [ ] Sphinx や古い API docs に依存しない
 - [x] `pyproject.toml` の optional dependency group が解決できる
 - [x] core import だけでは OpenCV と Playwright を import しない

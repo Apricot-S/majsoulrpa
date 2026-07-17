@@ -2,7 +2,7 @@
 
 ## 利用範囲
 
-MajsoulRPA v3 は、合意済みの友人戦・大会での利用を対象にします。
+MajsoulRPA は、合意済みの友人戦・大会での利用を対象にします。
 
 実装しないもの:
 
@@ -66,7 +66,7 @@ Screen 側で選んだ level のログへ出してよい。このログをコミ
 
 ## WebSocket payload
 
-raw WebSocket payload は、v2 と同様にデバッグ用ログへ出してよいものとします。
+raw WebSocket payload は、デバッグ用ログへ出してよいものとします。
 加工済みの要約だけでは原因調査が難しいため、ユーザーが必要に応じて raw
 payload を確認できる状態を優先します。
 

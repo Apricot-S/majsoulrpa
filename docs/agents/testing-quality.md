@@ -2,7 +2,7 @@
 
 ## TDD 手順
 
-v3 の実装は t_wada の TDD に従います。
+MajsoulRPA の実装は t_wada の TDD に従います。
 
 1. テストリストを作る
 2. ひとつテストを書く

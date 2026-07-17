@@ -2,7 +2,7 @@
 
 ## 要件
 
-v3 では、examples の牌譜バイナリ保存のように、ユーザーが通信 message を
+MajsoulRPA では、牌譜バイナリ保存のように、ユーザーが通信 message を
 観測して保存処理を差し込めることを目標にします。
 
 必要な性質:
@@ -50,7 +50,7 @@ HTTP 全般へ拡張したり、汎用 HTTP capture hook を公開したりし�
 - WebSocket の観測と保存に向いた独立した capture 層を作りやすい
 - browser 以外の通信も proxy 経由で一貫して扱える
 - ユーザー addon のモデルが作りやすい
-- v2 の牌譜保存 example に近い体験を維持しやすい
+- 通信保存処理を独立した addon として構成しやすい
 
 懸念:
 
@@ -62,7 +62,7 @@ HTTP 全般へ拡張したり、汎用 HTTP capture hook を公開したりし�
 ## 初期方針
 
 最初に Playwright capture の spike を行います。Playwright で要件を満たせるなら、
-v3 の初期実装は Playwright を優先します。
+初期実装は Playwright を優先します。
 
 ただし、capture は置換価値が明確な領域です。Playwright と mitmproxy を
 比較する間だけ、狭い capture backend 境界を設けることは許容します。

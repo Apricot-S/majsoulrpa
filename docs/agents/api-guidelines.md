@@ -2,13 +2,13 @@
 
 ## 基本方針
 
-v3 は v2 の API 名や互換性を維持しません。ただし、v2 の README と examples
-にある利用感は尊重します。公開 API はユーザーの作業量を減らし、
-カスタマイズしたいユーザーには明確な差し込み口を提供します。
+公開 API はユーザーの作業量を減らし、カスタマイズしたいユーザーには明確な
+差し込み口を提供します。API 名や互換性は、現在の利用要件と明文化された設計理由に
+基づいて判断します。
 
-## v2 から拾う利用感
+## 公開 API が提供する利用感
 
-v2 の公開利用例では、以下が中心でした。
+公開 API では、以下の利用体験を中心にします。
 
 - browser host を CLI で起動する
 - Python から browser host を起動する
@@ -88,7 +88,7 @@ structured concurrency の考え方に合わせる。framework 全体の
 
 ## callback と data
 
-callback は v3 の主 API です。
+callback は MajsoulRPA の主 API です。
 
 - callback は Presentation class に紐づける
 - 同じ Presentation への複数 callback を許すかは、設計時に明示する

@@ -24,10 +24,10 @@ transitive dependency に頼らず、互換範囲を確認した `protobuf` を 
 直接依存へ追加する。host と client の両方が `Wrapper` を検証するため、Sniffer
 だけを片側の optional dependency にしない。protocol asset の再生成は今回行わない。
 
-## v2 実装から引き継ぐ知見
+## wire format と処理順
 
-`references/sniffer/` の mitmdump addon から、次の wire format と処理順を
-参考にする。
+調査用の `references/sniffer/` にある mitmdump addon で確認した、次の wire format と
+処理順を設計の前提にする。
 
 - `0x01`: Notice。続く protobuf `Wrapper` に API 名と本文がある
 - `0x02`: Request。続く 2 byte の番号と `Wrapper` に API 名と本文がある
@@ -35,10 +35,9 @@ transitive dependency に頼らず、互換範囲を確認した `protobuf` を 
 - Response の具体的な型と API 名は、対応する Request から決める
 - Notice は単独で扱い、Request は Response が到着するまで保留する
 
-v2 の class 構成や正規表現による header 抽出は維持しない。特に request
-番号は 1 byte ではなく、wire format 上の 2 byte を little endian の符号なし
-整数として読む。`Wrapper` は生成済み protobuf class で parse し、可変長の
-field を正規表現で切り出さない。
+class 構成は wire format と現在の責務分割に基づいて設計する。特に request 番号は
+1 byte ではなく、wire format 上の 2 byte を little endian の符号なし整数として読む。
+`Wrapper` は生成済み protobuf class で parse し、可変長の field を正規表現で切り出さない。
 
 ## 全体構成
 
@@ -214,8 +213,8 @@ response_payload_base64
 ```
 
 raw field には envelope を含む WebSocket payload 全体を入れる。client decoder は
-再検証のうえ本文を取り出す。これにより user hook とデバッグログは v2 と同様に
-raw payload を利用できる。
+再検証のうえ本文を取り出す。これにより user hook とデバッグログから raw payload を
+利用できる。
 
 ZMQ は 2-part message とする。
 

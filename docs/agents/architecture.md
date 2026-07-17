@@ -1,7 +1,7 @@
-# v3 アーキテクチャ草案
+# アーキテクチャ草案
 
-この文書は v3 の内部構成候補です。実装前の設計メモであり、v2 の
-パッケージ構造を維持するためのものではありません。
+この文書は MajsoulRPA の内部構成候補を整理する設計メモです。パッケージ構造は
+現在の要件、テスト容易性、ライフサイクル管理に基づいて決定します。
 
 ## 方針
 
@@ -214,16 +214,13 @@ testing package は、実ブラウザや実通信なしで TDD を進めるた�
 testing helper は public API として安定化させる必要はありません。ただし、
 examples が testing helper に依存しないようにします。
 
-## 削除前提の v2 資産
+## 外部由来の資産
 
-v2 の以下は削除前提です。
+以下の資産は必要性と安全性を確認してから導入します。
 
-- 既存の `src/` 実装
-- 既存の `tests/`
-- 古い examples
-- 古い Sphinx API docs
-- 既存の screenshot template
-- 既存の generated protocol files
+- screenshot template
+- `.proto` ファイル
+- generated protocol files
 
-必要になった screenshot、template、`.proto`、生成物は、その時点で目的を
-明記してユーザーにコミットを依頼します。
+必要になった screenshot、template、`.proto`、生成物は、その時点で目的を明記し、
+ユーザーにコミットを依頼します。

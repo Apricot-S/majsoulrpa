@@ -1,17 +1,17 @@
 # AGENTS.md
 
-MajsoulRPA v3 は、v2 の README と examples にある利用感を出発点にしつつ、
-内部設計と実装を一から作り直すブランチです。既存のプライベートな実装構造は、
-単に存在しているという理由では維持しません。
+MajsoulRPA は、合意済みの友人戦・大会で利用する RPA フレームワークです。
+公開 API の使いやすさ、安全性、テスト容易性を優先し、内部構造は明確な設計理由が
+ある場合にだけ抽象化します。
 
 このリポジトリで作業するエージェントは、まず以下の資料を確認してください。
 
-- [v3 の方針](docs/agents/v3-charter.md)
+- [プロジェクト方針](docs/agents/project-charter.md)
 - [開発計画](docs/agents/development-plan.md)
 - [API 設計方針](docs/agents/api-guidelines.md)
 - [公開 API 草案](docs/agents/public-api-draft.md)
 - [内部設計方針](docs/agents/internal-design.md)
-- [v3 アーキテクチャ草案](docs/agents/v3-architecture.md)
+- [アーキテクチャ草案](docs/agents/architecture.md)
 - [カスタマイズ方針](docs/agents/customization.md)
 - [WebSocket キャプチャ方針](docs/agents/websocket-capture.md)
 - [WebSocket Sniffer 設計](docs/agents/sniffer-design.md)
@@ -48,10 +48,10 @@ managed sandbox の実行権限で失敗した場合は、この uv command の�
 - Sniffer ログだけは API 調査のための例外です。decode 済み message は raw
   payload bytes を除き、認証情報を含めて Screen 側で選んだ level のログへ
   出してよいものとします。
-- raw WebSocket payload は v2 同様デバッグ用ログへ出してよいですが、
+- raw WebSocket payload はデバッグ用ログへ出してよいですが、
   テスト、フィクスチャ、サンプル、ドキュメント、コミットには含めません。
-- v2 のコードや資産は一度削除する前提です。スクリーンショット画像や
-  `.proto` ファイルが必要になった場合は、ユーザーにコミットを依頼します。
+- スクリーンショット画像や `.proto` ファイルが必要になった場合は、ユーザーに
+  コミットを依頼します。
 - t_wada の TDD 手順に従います。まずテストリストを作り、ひとつずつ
   テストを書いて実装し、必要に応じてリファクタリングします。
 - 高レベル API は一度に複数実装しません。1 つ実装するごとに、
