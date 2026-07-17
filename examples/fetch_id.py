@@ -55,7 +55,7 @@ class FetchIDScreen(HomeScreen):
         ),
         RoomSelection(
             name="jade",
-            region=Region(left=143, top=354, width=322, height=71),
+            region=Region(left=143, top=355, width=322, height=69),
         ),
         RoomSelection(
             name="throne",
