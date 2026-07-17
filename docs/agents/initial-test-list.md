@@ -748,3 +748,6 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] S3 provider の AWS profile は optional とする
 - [x] S3 provider は boto3 がなければ必要な extra が分かるエラーにする
 - [x] 自動テストは fake S3 client と synthetic MIME message だけを使う
+- [x] code provider のメール削除 option は default で無効とする
+- [x] S3 provider は削除 option が有効なら読んだ認証メールを有効期限によらず削除する
+- [x] S3 provider は指定宛先または認証メール件名と一致しないメールを削除しない

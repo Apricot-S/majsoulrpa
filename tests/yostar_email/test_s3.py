@@ -26,11 +26,16 @@ def _accepts_code_provider(_provider: VerificationCodeProvider) -> None:
     pass
 
 
-def _message(*, sender: str = "info@passport.yostar.co.jp") -> bytes:
+def _message(
+    *,
+    sender: str = "info@passport.yostar.co.jp",
+    recipient: str = "user@example.com",
+    subject: str = "【Yostar】メールアドレスの認証コードは　012345",
+) -> bytes:
     message = EmailMessage()
     message["From"] = sender
-    message["To"] = "user@example.com"
-    message["Subject"] = "【Yostar】メールアドレスの認証コードは　012345"
+    message["To"] = recipient
+    message["Subject"] = subject
     message.set_content("Synthetic test message.")
     return message.as_bytes()
 
@@ -43,6 +48,7 @@ class S3ClientFake:
         self.bodies = bodies
         self.list_calls: list[dict[str, str]] = []
         self.get_calls: list[dict[str, str]] = []
+        self.delete_calls: list[dict[str, str]] = []
 
     def list_objects_v2(self, **kwargs: str) -> dict[str, Any]:
         self.list_calls.append(kwargs)
@@ -51,6 +57,9 @@ class S3ClientFake:
     def get_object(self, **kwargs: str) -> dict[str, BytesIO]:
         self.get_calls.append(kwargs)
         return {"Body": BytesIO(self.bodies[kwargs["Key"]])}
+
+    def delete_object(self, **kwargs: str) -> None:
+        self.delete_calls.append(kwargs)
 
 
 class DelayedS3ClientFake(S3ClientFake):
@@ -102,7 +111,54 @@ def test_fetches_latest_valid_email_below_prefix() -> None:
         "mail/invalid",
         "mail/valid",
     ]
+    assert client.delete_calls == []
     assert "user@example.com" not in repr(provider)
+
+
+def test_fetch_deletes_read_matching_emails_when_requested() -> None:
+    client = S3ClientFake(
+        [
+            {"Key": "mail/valid", "LastModified": NOW},
+            {
+                "Key": "mail/older",
+                "LastModified": NOW - timedelta(minutes=5),
+            },
+            {
+                "Key": "mail/expired",
+                "LastModified": NOW - timedelta(hours=1),
+            },
+            {
+                "Key": "mail/other-recipient",
+                "LastModified": NOW - timedelta(minutes=1),
+            },
+            {
+                "Key": "mail/other-subject",
+                "LastModified": NOW - timedelta(minutes=2),
+            },
+        ],
+        {
+            "mail/valid": _message(),
+            "mail/older": _message(sender="attacker@example.com"),
+            "mail/expired": _message(),
+            "mail/other-recipient": _message(recipient="other@example.com"),
+            "mail/other-subject": _message(subject="Synthetic subject"),
+        },
+    )
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: NOW,
+    )
+
+    assert (
+        asyncio.run(provider.fetch_nowait(delete_read_emails=True)) == "012345"
+    )
+    assert client.delete_calls == [
+        {"Bucket": "example-bucket", "Key": "mail/valid"},
+        {"Bucket": "example-bucket", "Key": "mail/older"},
+        {"Bucket": "example-bucket", "Key": "mail/expired"},
+    ]
 
 
 def test_fetch_fails_when_no_valid_email_exists() -> None:
@@ -132,8 +188,19 @@ def test_fetch_retries_until_email_is_available() -> None:
         clock=lambda: NOW,
     )
 
-    assert asyncio.run(provider.fetch(poll_interval=0.001)) == "012345"
+    assert (
+        asyncio.run(
+            provider.fetch(
+                poll_interval=0.001,
+                delete_read_emails=True,
+            )
+        )
+        == "012345"
+    )
     assert client.attempts == 2
+    assert client.delete_calls == [
+        {"Bucket": "example-bucket", "Key": "mail/valid"},
+    ]
 
 
 def test_fetch_rejects_nonpositive_poll_interval() -> None:

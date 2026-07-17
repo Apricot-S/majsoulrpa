@@ -4,10 +4,14 @@ from typing import Protocol
 class VerificationCodeProvider(Protocol):
     """Obtain a Yostar verification code from a user-selected source."""
 
-    async def fetch(self) -> str:
-        """Wait for and return a current six-digit verification code."""
+    async def fetch(self, *, delete_read_emails: bool = False) -> str:
+        """Wait for a code; optionally delete matching emails read."""
         ...
 
-    async def fetch_nowait(self) -> str:
-        """Return an available code without waiting for arrival."""
+    async def fetch_nowait(
+        self,
+        *,
+        delete_read_emails: bool = False,
+    ) -> str:
+        """Fetch once and optionally delete matching emails read."""
         ...

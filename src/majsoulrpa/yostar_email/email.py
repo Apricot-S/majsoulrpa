@@ -54,3 +54,21 @@ def extract_verification_code(
         msg = "The message subject is not a Yostar verification subject."
         raise InvalidYostarVerificationEmailError(msg)
     return match.group("code")
+
+
+def is_verification_email_for_recipient(
+    message_bytes: bytes,
+    *,
+    recipient: str,
+) -> bool:
+    """Check the To address and verification-email subject."""
+    message = BytesParser(policy=policy.default).parsebytes(message_bytes)
+    recipients = {
+        address.casefold()
+        for _, address in getaddresses(message.get_all("To", []))
+    }
+    subject = message.get("Subject")
+    return (
+        recipient.casefold() in recipients
+        and YOSTAR_EMAIL_SUBJECT_PATTERN.fullmatch(subject or "") is not None
+    )

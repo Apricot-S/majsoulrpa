@@ -5,7 +5,10 @@ import importlib
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from majsoulrpa.yostar_email.email import extract_verification_code
+from majsoulrpa.yostar_email.email import (
+    extract_verification_code,
+    is_verification_email_for_recipient,
+)
 from majsoulrpa.yostar_email.errors import (
     InvalidYostarVerificationEmailError,
     YostarVerificationEmailError,
@@ -41,23 +44,37 @@ class S3VerificationCodeProvider:
         self._client = client
         self._clock = clock or _utc_now
 
-    async def fetch(self, *, poll_interval: float = 5.0) -> str:
-        """Poll S3 until a current matching email is available."""
+    async def fetch(
+        self,
+        *,
+        poll_interval: float = 5.0,
+        delete_read_emails: bool = False,
+    ) -> str:
+        """Poll S3 and optionally delete matching emails read."""
         if poll_interval <= 0.0:
             msg = "poll_interval must be greater than zero."
             raise ValueError(msg)
 
         while True:
             try:
-                return await self.fetch_nowait()
+                return await self.fetch_nowait(
+                    delete_read_emails=delete_read_emails,
+                )
             except VerificationEmailNotFoundError:
                 await asyncio.sleep(poll_interval)
 
-    async def fetch_nowait(self) -> str:
-        """Check S3 once and return a current matching email's code."""
-        return await asyncio.to_thread(self._fetch_once)
+    async def fetch_nowait(
+        self,
+        *,
+        delete_read_emails: bool = False,
+    ) -> str:
+        """Check S3 once and optionally delete matching emails read."""
+        return await asyncio.to_thread(
+            self._fetch_once,
+            delete_read_emails=delete_read_emails,
+        )
 
-    def _fetch_once(self) -> str:
+    def _fetch_once(self, *, delete_read_emails: bool) -> str:
         client = self._client or _create_s3_client(self._aws_profile)
         now = self._clock()
         objects = _list_objects(
@@ -70,6 +87,8 @@ class S3VerificationCodeProvider:
             key=lambda item: item["LastModified"],
             reverse=True,
         )
+        verification_code: str | None = None
+        keys_to_delete: list[str] = []
         for item in candidates:
             received_at = item.get("LastModified")
             key = item.get("Key")
@@ -81,15 +100,23 @@ class S3VerificationCodeProvider:
             if received_at.tzinfo is None:
                 continue
             age = now - received_at
-            if age < timedelta(0) or age >= timedelta(minutes=30):
+            is_current = timedelta(0) <= age < timedelta(minutes=30)
+            if not delete_read_emails and not is_current:
                 continue
             response = client.get_object(Bucket=self._bucket_name, Key=key)
             body = response["Body"].read()
             if not isinstance(body, bytes):
                 msg = "S3 verification email body is not bytes."
                 raise TypeError(msg)
+            if delete_read_emails and is_verification_email_for_recipient(
+                body,
+                recipient=self._email_address,
+            ):
+                keys_to_delete.append(key)
+            if verification_code is not None or not is_current:
+                continue
             try:
-                return extract_verification_code(
+                verification_code = extract_verification_code(
                     body,
                     recipient=self._email_address,
                     received_at=received_at,
@@ -97,6 +124,10 @@ class S3VerificationCodeProvider:
                 )
             except InvalidYostarVerificationEmailError:
                 continue
+        for key in keys_to_delete:
+            client.delete_object(Bucket=self._bucket_name, Key=key)
+        if verification_code is not None:
+            return verification_code
         msg = "No current Yostar verification email was found in S3."
         raise VerificationEmailNotFoundError(msg)
 
