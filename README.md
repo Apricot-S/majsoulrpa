@@ -15,9 +15,9 @@ While some API names and design ideas were borrowed, the architecture and codeba
 
 > 🚧 **Work in Progress**
 >
-> MajsoulRPA is currently in active development. Most features are not yet
-> available, although a small subset, such as fetching game records, can be
-> used.
+> MajsoulRPA is currently in active development. Login, Home screen operations, friendly-room management, and tournament-lobby entry are available.
+>
+> In-match gameplay and tournament-room operations are not yet implemented, so MajsoulRPA cannot yet automate a complete game from start to finish.
 
 ## Key differences from the original project
 
