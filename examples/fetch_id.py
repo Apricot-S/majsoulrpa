@@ -90,7 +90,7 @@ class FetchIDScreen(HomeScreen):
             await self.click_region(self.ROOM_MENU_REGION)
             await asyncio.sleep(0.5)
             await self.click_region(room.region)
-            await asyncio.sleep(1.0)
+            await asyncio.sleep(0.5)
 
             for mode in self.MODES:
                 await self.click_region(self.MODE_MENU_REGION)
@@ -109,7 +109,7 @@ class FetchIDScreen(HomeScreen):
                     ),
                 )
 
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(0.5)
 
         return batches
 
