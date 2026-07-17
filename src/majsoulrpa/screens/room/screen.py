@@ -5,8 +5,12 @@ from typing import NoReturn, override
 from majsoulrpa.assets.templates.room import (
     ADD_AI_SETTINGS_PATHS,
     ADD_AI_TEMPLATE_PATH,
+    CANCEL_SETTINGS_PATH,
+    CANCEL_TEMPLATE_PATH,
     LEAVE_SETTINGS_PATH,
     LEAVE_TEMPLATE_PATH,
+    READY_SETTINGS_PATH,
+    READY_TEMPLATE_PATH,
     ROOM_SIGN_SETTINGS_PATH,
     ROOM_SIGN_TEMPLATE_PATH,
 )
@@ -34,6 +38,7 @@ from majsoulrpa.screens.room.errors import (
 )
 from majsoulrpa.screens.room.state import RoomState, RoomStatus
 from majsoulrpa.sniffer.events import (
+    DecodedNotice,
     DecodedRequestResponse,
     DecodedSnifferMessage,
     Direction,
@@ -43,6 +48,8 @@ ROOM_STATE_INITIALIZATION_TIMEOUT_SECONDS = 5.0
 LEAVE_API_NAME = ".lq.Lobby.leaveRoom"
 ADD_AI_API_NAME = ".lq.Lobby.addRoomRobot"
 PLAYER_UPDATE_NOTICE_NAME = ".lq.NotifyRoomPlayerUpdate"
+SET_READY_API_NAME = ".lq.Lobby.readyPlay"
+PLAYER_READY_NOTICE_NAME = ".lq.NotifyRoomPlayerReady"
 
 _logger = getLogger(__name__)
 
@@ -62,6 +69,14 @@ class RoomScreen(Screen):
             settings_path=settings_path,
         )
         for settings_path in ADD_AI_SETTINGS_PATHS
+    )
+    READY_TEMPLATE = load_png_template_matcher(
+        template_path=READY_TEMPLATE_PATH,
+        settings_path=READY_SETTINGS_PATH,
+    )
+    CANCEL_TEMPLATE = load_png_template_matcher(
+        template_path=CANCEL_TEMPLATE_PATH,
+        settings_path=CANCEL_SETTINGS_PATH,
     )
 
     def __init__(self, context: ScreenContext | None = None) -> None:
@@ -198,6 +213,58 @@ class RoomScreen(Screen):
 
         return state
 
+    @_screen_api
+    @_requires_active
+    async def set_ready(self, *, ready: bool = True) -> RoomState:
+        self_account_id, previous = await self._prepare_room_operation()
+        await self._ensure_set_ready_allowed(previous)
+        if previous.self_is_ready is ready:
+            return previous
+
+        template = self.READY_TEMPLATE if ready else self.CANCEL_TEMPLATE
+        await self.click_template(
+            template,
+            message=f"{'ready' if ready else 'cancel'} was not found.",
+        )
+
+        response_succeeded = False
+        ready_update_succeeded = False
+        state = previous
+        while not (
+            response_succeeded
+            and ready_update_succeeded
+            and state.self_is_ready is ready
+        ):
+            message = await self._get_sniffer_message()
+            await self._apply_room_message(message, self_account_id)
+            await self._ensure_current_generation()
+            await self._ensure_waiting_state()
+            state = self._get_cached_state()
+
+            if message.raw.name == SET_READY_API_NAME:
+                response = await self._require_operation_response(message)
+                if response.request.get("ready") is not ready:
+                    screenshot = await self.context.browser.screenshot()
+                    msg = "readyPlay request does not match the target state."
+                    raise ScreenInconsistentMessageError(msg, screenshot)
+                if "error" in response.response:
+                    await self._raise_operation_rejection(
+                        response,
+                        RoomOperation.SET_READY,
+                    )
+                response_succeeded = True
+            elif message.raw.name == PLAYER_READY_NOTICE_NAME:
+                ready_update_succeeded = (
+                    ready_update_succeeded
+                    or self._is_self_ready_notice(
+                        message,
+                        self_account_id,
+                        ready=ready,
+                    )
+                )
+
+        return state
+
     async def _prepare_room_operation(self) -> tuple[int, RoomState]:
         self_account_id = await self._get_self_account_id()
         await self._drain_room_messages(self_account_id)
@@ -264,6 +331,30 @@ class RoomScreen(Screen):
             RoomOperation.ADD_AI,
             reason,
             screenshot,
+        )
+
+    async def _ensure_set_ready_allowed(self, state: RoomState) -> None:
+        if not state.self_is_host:
+            return
+
+        screenshot = await self.context.browser.screenshot()
+        raise RoomOperationNotAllowedError(
+            RoomOperation.SET_READY,
+            RoomOperationNotAllowedReason.NOT_GUEST,
+            screenshot,
+        )
+
+    @staticmethod
+    def _is_self_ready_notice(
+        message: DecodedSnifferMessage,
+        self_account_id: int,
+        *,
+        ready: bool,
+    ) -> bool:
+        return (
+            isinstance(message, DecodedNotice)
+            and message.message.get("account_id") == self_account_id
+            and message.message.get("ready") is ready
         )
 
     async def _click_add_ai_template(self) -> None:

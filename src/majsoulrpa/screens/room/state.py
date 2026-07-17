@@ -72,6 +72,14 @@ class RoomState:
         )
 
     @property
+    def self_is_ready(self) -> bool:
+        return next(
+            player.is_ready
+            for player in self.players
+            if player.account_id == self.self_account_id
+        )
+
+    @property
     def participant_count(self) -> int:
         return len(self.players) + self.ai_count
 

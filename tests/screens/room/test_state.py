@@ -59,6 +59,7 @@ def test_decode_waiting_room_state() -> None:
         self_account_id=100002,
     )
     assert state.self_is_host is False
+    assert state.self_is_ready is True
     assert state.participant_count == 3
     assert state.available_slots == 1
     with pytest.raises(FrozenInstanceError):

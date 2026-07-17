@@ -327,8 +327,8 @@ class RoomOperationFailureReason(Enum):
 
 
 class RoomOperationNotAllowedReason(StrEnum):
+    NOT_GUEST = "not_guest"
     NOT_HOST = "not_host"
-    HOST_CANNOT_READY = "host_cannot_ready"
     ROOM_FULL = "room_full"
     ROOM_NOT_FULL = "room_not_full"
     GUEST_NOT_READY = "guest_not_ready"
