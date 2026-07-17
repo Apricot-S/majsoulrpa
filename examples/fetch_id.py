@@ -1,4 +1,6 @@
 import asyncio
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, ClassVar
 
 from majsoulrpa import AppConfig, RPAApp
@@ -8,55 +10,111 @@ from majsoulrpa.screens.login import LoginScreen
 from majsoulrpa.sniffer import DecodedRequestResponse, Direction
 
 FETCH_GAME_LIVE_LIST_API_NAME = ".lq.Lobby.fetchGameLiveList"
+OUTPUT_DIRECTORY = Path(__file__).resolve().parent / "game-ids"
+
+
+@dataclass(frozen=True)
+class RoomSelection:
+    name: str
+    region: Region
+
+
+@dataclass(frozen=True)
+class ModeSelection:
+    player_count: int
+    name: str
+    region: Region
+
+
+@dataclass(frozen=True)
+class GameIDBatch:
+    room: RoomSelection
+    mode: ModeSelection
+    game_ids: tuple[str, ...]
+
+    @property
+    def filename(self) -> str:
+        return (
+            f"{self.mode.player_count}-{self.mode.name}-{self.room.name}.txt"
+        )
 
 
 class FetchIDScreen(HomeScreen):
     WATCH_REGION = Region(left=1195, top=975, width=92, height=75)
     ROOM_MENU_REGION = Region(left=144, top=211, width=377, height=72)
-    ROOM_REGIONS: ClassVar[tuple[Region, ...]] = (
-        Region(left=144, top=286, width=322, height=72),  # Gold Room
-        Region(left=144, top=360, width=322, height=72),  # Jade Room
-        Region(left=144, top=437, width=322, height=72),  # Throne Room
+    ROOMS: ClassVar[tuple[RoomSelection, ...]] = (
+        RoomSelection(
+            name="gold",
+            region=Region(left=144, top=286, width=322, height=72),
+        ),
+        RoomSelection(
+            name="jade",
+            region=Region(left=144, top=360, width=322, height=72),
+        ),
+        RoomSelection(
+            name="throne",
+            region=Region(left=144, top=437, width=322, height=72),
+        ),
     )
     MODE_MENU_REGION = Region(left=578, top=211, width=377, height=72)
-    MODE_REGIONS: ClassVar[tuple[Region, ...]] = (
-        Region(left=578, top=286, width=322, height=72),  # Four-player East
-        Region(left=578, top=360, width=322, height=72),  # Four-player South
+    MODES: ClassVar[tuple[ModeSelection, ...]] = (
+        ModeSelection(
+            player_count=4,
+            name="east",
+            region=Region(left=578, top=286, width=322, height=72),
+        ),
+        ModeSelection(
+            player_count=4,
+            name="south",
+            region=Region(left=578, top=360, width=322, height=72),
+        ),
+        ModeSelection(
+            player_count=3,
+            name="east",
+            region=Region(left=578, top=437, width=322, height=72),
+        ),
+        ModeSelection(
+            player_count=3,
+            name="south",
+            region=Region(left=578, top=511, width=322, height=72),
+        ),
     )
 
-    async def fetch_ids(self) -> list[str]:
+    async def enter_spectating(self) -> None:
         await self.click_region(self.WATCH_REGION)
         await asyncio.sleep(1.0)
 
-        log_ids: list[str] = []
-        seen_log_ids: set[str] = set()
-        for room_region in self.ROOM_REGIONS:
+    async def fetch_ids_once(self) -> list[GameIDBatch]:
+        batches: list[GameIDBatch] = []
+        for room in self.ROOMS:
             await self.click_region(self.ROOM_MENU_REGION)
             await asyncio.sleep(0.5)
-            await self.click_region(room_region)
+            await self.click_region(room.region)
             await asyncio.sleep(1.0)
 
-            for mode_region in self.MODE_REGIONS:
+            for mode in self.MODES:
                 await self.click_region(self.MODE_MENU_REGION)
                 await asyncio.sleep(0.5)
                 self._discard_sniffer_messages()
-                await self.click_region(mode_region)
+                await self.click_region(mode.region)
 
                 message = await self._wait_for_sniffer_message(
                     {FETCH_GAME_LIVE_LIST_API_NAME},
                 )
-                for log_id in self._extract_log_ids(message):
-                    if log_id in seen_log_ids:
-                        continue
-                    seen_log_ids.add(log_id)
-                    log_ids.append(log_id)
+                batches.append(
+                    GameIDBatch(
+                        room=room,
+                        mode=mode,
+                        game_ids=tuple(self._extract_game_ids(message)),
+                    ),
+                )
 
                 await asyncio.sleep(1.0)
 
-        return log_ids
+        return batches
 
     @staticmethod
-    def _extract_log_ids(message: object) -> list[str]:
+    def _extract_game_ids(message: object) -> list[str]:
         if not isinstance(message, DecodedRequestResponse):
             msg = "fetchGameLiveList did not produce a Req/Res message."
             raise RuntimeError(msg)
@@ -74,17 +132,40 @@ class FetchIDScreen(HomeScreen):
             msg = "fetchGameLiveList response has no live_list."
             raise RuntimeError(msg)
 
-        log_ids: list[str] = []
+        game_ids: list[str] = []
         for game_live in live_list:
             if not isinstance(game_live, dict):
                 msg = "fetchGameLiveList live_list item must be an object."
                 raise RuntimeError(msg)
-            log_id = game_live.get("uuid")
-            if not isinstance(log_id, str) or not log_id:
+            game_id = game_live.get("uuid")
+            if not isinstance(game_id, str) or not game_id:
                 msg = "fetchGameLiveList live_list item has no UUID."
                 raise RuntimeError(msg)
-            log_ids.append(log_id)
-        return log_ids
+            game_ids.append(game_id)
+        return game_ids
+
+
+def append_game_ids(
+    batch: GameIDBatch,
+    output_directory: Path = OUTPUT_DIRECTORY,
+) -> Path:
+    output_directory.mkdir(parents=True, exist_ok=True)
+    output_path = output_directory / batch.filename
+    with output_path.open("a", encoding="utf-8", newline="\n") as file:
+        file.writelines(f"{game_id}\n" for game_id in batch.game_ids)
+    return output_path
+
+
+async def fetch_another_round() -> bool:
+    while True:
+        answer = (
+            await asyncio.to_thread(input, "Fetch another round? [Y/n]: ")
+        ).strip()
+        if answer in {"", "y", "Y"}:
+            return True
+        if answer in {"n", "N"}:
+            return False
+        print("Please answer Y or n.")
 
 
 rpa = RPAApp()
@@ -104,17 +185,30 @@ async def login(screen: LoginScreen, data: Any) -> Any:
 
 
 @rpa.on(FetchIDScreen)
-async def fetch_id(screen: FetchIDScreen, data: Any) -> list[str]:
+async def fetch_id(screen: FetchIDScreen, data: Any) -> list[Path]:
     _ = data
-    async with asyncio.timeout(180.0):
-        log_ids = await screen.fetch_ids()
+    output_paths: list[Path] = []
+    async with asyncio.timeout(30.0):
+        await screen.enter_spectating()
 
-    for log_id in log_ids:
-        print(log_id)
+    while True:
+        async with asyncio.timeout(180.0):
+            batches = await screen.fetch_ids_once()
+
+        for batch in batches:
+            print(f"[{batch.filename}]")
+            for game_id in batch.game_ids:
+                print(game_id)
+            output_path = await asyncio.to_thread(append_game_ids, batch)
+            output_paths.append(output_path)
+            print(f"Appended: {output_path}")
+
+        if not await fetch_another_round():
+            break
 
     await screen.stop_browser_host()
     await screen.stop_rpa()
-    return log_ids
+    return output_paths
 
 
 async def main() -> None:

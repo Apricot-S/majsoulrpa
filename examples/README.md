@@ -3,7 +3,9 @@
 A configuration file template is available at `examples/config.example.toml`.
 Create `examples/config.toml` from it as needed and load it from both the browser host and the client.
 
-Local configuration and generated game records must not be committed. `examples/.gitignore` excludes `examples/config.toml` and `examples/game-records/`.
+Local configuration, generated game IDs, and game records must not be
+committed. `examples/.gitignore` excludes `examples/config.toml`,
+`examples/game-ids/`, and `examples/game-records/`.
 
 ## yostar_email_s3.py
 
@@ -34,9 +36,17 @@ majsoulrpa-browser --config examples/config.toml
 
 ## fetch_id.py
 
-Opens the spectating screen from Home, switches through the Gold, Jade, and Throne Room
-four-player East and South lists, and prints the unique game record IDs from
-`.lq.Lobby.fetchGameLiveList` in observation order.
+Opens the spectating screen from Home, then switches through the Gold, Jade, and Throne Room four-player and three-player East and South lists.
+It obtains game record IDs from `.lq.Lobby.fetchGameLiveList` and prints them in observation order.
+
+Each round also appends the IDs as UTF-8 text, one ID per line, to:
+
+```text
+examples/game-ids/<4|3>-<east|south>-<gold|jade|throne>.txt
+```
+
+After each complete round, `Fetch another round? [Y/n]:` is displayed.
+Press Enter or enter `Y` to fetch another round; enter `n` to finish.
 
 First, start the client example:
 
@@ -54,7 +64,7 @@ Starting them in this order reduces the chance of missing the initial WebSocket 
 
 Enter your email address and verification code if required.
 
-The collected IDs are printed one per line.
+The collected IDs are printed one per line and appended to their corresponding files.
 
 ## fetch_log.py
 
