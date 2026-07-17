@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from majsoulrpa.yostar_email.email import (
-    extract_verification_code,
-    is_verification_email_for_recipient,
-)
+from majsoulrpa.yostar_email.constants import VERIFICATION_EMAIL_EXPIRATION
+from majsoulrpa.yostar_email.email import VerificationEmail
 from majsoulrpa.yostar_email.errors import (
     InvalidYostarVerificationEmailError,
     YostarVerificationEmailError,
@@ -22,6 +21,12 @@ if TYPE_CHECKING:
 
 class VerificationEmailNotFoundError(YostarVerificationEmailError):
     """No current valid verification email was found."""
+
+
+@dataclass(frozen=True, slots=True)
+class _S3EmailCandidate:
+    key: str
+    received_at: datetime
 
 
 class S3VerificationCodeProvider:
@@ -77,55 +82,46 @@ class S3VerificationCodeProvider:
     def _fetch_once(self, *, delete_read_emails: bool) -> str:
         client = self._client or _create_s3_client(self._aws_profile)
         now = self._clock()
-        objects = _list_objects(
+        candidates = _list_email_candidates(
             client,
-            self._bucket_name,
-            self._key_prefix,
-        )
-        candidates = sorted(
-            objects,
-            key=lambda item: item["LastModified"],
-            reverse=True,
+            bucket_name=self._bucket_name,
+            key_prefix=self._key_prefix,
         )
         verification_code: str | None = None
         keys_to_delete: list[str] = []
-        for item in candidates:
-            received_at = item.get("LastModified")
-            key = item.get("Key")
-            if not isinstance(received_at, datetime) or not isinstance(
-                key,
-                str,
-            ):
-                continue
-            if received_at.tzinfo is None:
-                continue
-            age = now - received_at
-            is_current = timedelta(0) <= age < timedelta(minutes=30)
+        for candidate in candidates:
+            is_current = _is_current(candidate.received_at, now=now)
             if not delete_read_emails and not is_current:
                 continue
-            response = client.get_object(Bucket=self._bucket_name, Key=key)
-            body = response["Body"].read()
-            if not isinstance(body, bytes):
-                msg = "S3 verification email body is not bytes."
-                raise TypeError(msg)
-            if delete_read_emails and is_verification_email_for_recipient(
-                body,
+
+            email = VerificationEmail.parse(
+                _read_object(
+                    client,
+                    bucket_name=self._bucket_name,
+                    key=candidate.key,
+                )
+            )
+
+            if delete_read_emails and email.matches_deletion_condition(
                 recipient=self._email_address,
             ):
-                keys_to_delete.append(key)
+                keys_to_delete.append(candidate.key)
+
             if verification_code is not None or not is_current:
                 continue
+
             try:
-                verification_code = extract_verification_code(
-                    body,
+                verification_code = email.extract_code(
                     recipient=self._email_address,
-                    received_at=received_at,
-                    now=now,
                 )
             except InvalidYostarVerificationEmailError:
                 continue
-        for key in keys_to_delete:
-            client.delete_object(Bucket=self._bucket_name, Key=key)
+
+        _delete_objects(
+            client,
+            bucket_name=self._bucket_name,
+            keys=keys_to_delete,
+        )
         if verification_code is not None:
             return verification_code
         msg = "No current Yostar verification email was found in S3."
@@ -134,6 +130,60 @@ class S3VerificationCodeProvider:
 
 def _utc_now() -> datetime:
     return datetime.now(UTC)
+
+
+def _list_email_candidates(
+    client: S3Client,
+    *,
+    bucket_name: str,
+    key_prefix: str,
+) -> list[_S3EmailCandidate]:
+    candidates: list[_S3EmailCandidate] = []
+    for item in _list_objects(client, bucket_name, key_prefix):
+        received_at = item.get("LastModified")
+        key = item.get("Key")
+        if (
+            isinstance(received_at, datetime)
+            and received_at.tzinfo is not None
+            and isinstance(key, str)
+        ):
+            candidates.append(
+                _S3EmailCandidate(key=key, received_at=received_at)
+            )
+    return sorted(
+        candidates,
+        key=lambda candidate: candidate.received_at,
+        reverse=True,
+    )
+
+
+def _is_current(received_at: datetime, *, now: datetime) -> bool:
+    age = now - received_at
+    return timedelta(0) <= age < VERIFICATION_EMAIL_EXPIRATION
+
+
+def _read_object(
+    client: S3Client,
+    *,
+    bucket_name: str,
+    key: str,
+) -> bytes:
+    response = client.get_object(Bucket=bucket_name, Key=key)
+    body = response["Body"].read()
+    if not isinstance(body, bytes):
+        msg = "S3 verification email body is not bytes."
+        raise TypeError(msg)
+    return body
+
+
+def _delete_objects(
+    client: S3Client,
+    *,
+    bucket_name: str,
+    keys: list[str],
+) -> None:
+    for key in keys:
+        client.delete_object(Bucket=bucket_name, Key=key)
 
 
 def _list_objects(
