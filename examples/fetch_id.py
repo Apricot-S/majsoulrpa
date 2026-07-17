@@ -11,6 +11,7 @@ from majsoulrpa.sniffer import DecodedRequestResponse, Direction
 
 FETCH_GAME_LIVE_LIST_API_NAME = ".lq.Lobby.fetchGameLiveList"
 OUTPUT_DIRECTORY = Path(__file__).resolve().parent / "game-ids"
+SCREENSHOT_PATH = Path(__file__).resolve().parent / "spectating-screen.png"
 
 
 @dataclass(frozen=True)
@@ -41,7 +42,7 @@ class GameIDBatch:
 
 class FetchIDScreen(HomeScreen):
     WATCH_REGION = Region(left=1195, top=975, width=92, height=75)
-    ROOM_MENU_REGION = Region(left=144, top=211, width=377, height=72)
+    ROOM_MENU_REGION = Region(left=143, top=210, width=377, height=71)
     ROOMS: ClassVar[tuple[RoomSelection, ...]] = (
         RoomSelection(
             name="gold",
@@ -82,7 +83,7 @@ class FetchIDScreen(HomeScreen):
 
     async def enter_spectating(self) -> None:
         await self.click_region(self.WATCH_REGION)
-        await asyncio.sleep(1.0)
+        await asyncio.sleep(2.0)
 
     async def fetch_ids_once(self) -> list[GameIDBatch]:
         batches: list[GameIDBatch] = []
@@ -187,28 +188,15 @@ async def login(screen: LoginScreen, data: Any) -> Any:
 @rpa.on(FetchIDScreen)
 async def fetch_id(screen: FetchIDScreen, data: Any) -> list[Path]:
     _ = data
-    output_paths: list[Path] = []
     async with asyncio.timeout(30.0):
         await screen.enter_spectating()
-
-    while True:
-        async with asyncio.timeout(180.0):
-            batches = await screen.fetch_ids_once()
-
-        for batch in batches:
-            print(f"[{batch.filename}]")
-            for game_id in batch.game_ids:
-                print(game_id)
-            output_path = await asyncio.to_thread(append_game_ids, batch)
-            output_paths.append(output_path)
-            print(f"Appended: {output_path}")
-
-        if not await fetch_another_round():
-            break
+        screenshot = await screen.screenshot()
+    await asyncio.to_thread(SCREENSHOT_PATH.write_bytes, screenshot)
+    print(f"Saved: {SCREENSHOT_PATH}")
 
     await screen.stop_browser_host()
     await screen.stop_rpa()
-    return output_paths
+    return [SCREENSHOT_PATH]
 
 
 async def main() -> None:
