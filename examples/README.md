@@ -50,6 +50,8 @@ After the client begins waiting for the browser host, start the browser host in 
 majsoulrpa-browser
 ```
 
+Starting them in this order reduces the chance of missing the initial WebSocket communication, even when `LoginScreen` is skipped because saved cookies are available.
+
 Enter your email address and verification code if required.
 
 The collected IDs are printed one per line.
