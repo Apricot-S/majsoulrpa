@@ -60,9 +60,11 @@ class S3VerificationCodeProvider:
             msg = "poll_interval must be greater than zero."
             raise ValueError(msg)
 
+        client = await self._resolve_client()
         while True:
             try:
-                return await self.fetch_nowait(
+                return await self._run_fetch_once(
+                    client,
                     delete_read_emails=delete_read_emails,
                 )
             except VerificationEmailNotFoundError:
@@ -74,13 +76,35 @@ class S3VerificationCodeProvider:
         delete_read_emails: bool = False,
     ) -> str:
         """Check S3 once and optionally delete matching emails read."""
-        return await asyncio.to_thread(
-            self._fetch_once,
+        client = await self._resolve_client()
+        return await self._run_fetch_once(
+            client,
             delete_read_emails=delete_read_emails,
         )
 
-    def _fetch_once(self, *, delete_read_emails: bool) -> str:
-        client = self._client or _create_s3_client(self._aws_profile)
+    async def _resolve_client(self) -> S3Client:
+        if self._client is not None:
+            return self._client
+        return await asyncio.to_thread(_create_s3_client, self._aws_profile)
+
+    async def _run_fetch_once(
+        self,
+        client: S3Client,
+        *,
+        delete_read_emails: bool,
+    ) -> str:
+        return await asyncio.to_thread(
+            self._fetch_once,
+            client,
+            delete_read_emails=delete_read_emails,
+        )
+
+    def _fetch_once(
+        self,
+        client: S3Client,
+        *,
+        delete_read_emails: bool,
+    ) -> str:
         now = self._clock()
         candidates = _list_email_candidates(
             client,

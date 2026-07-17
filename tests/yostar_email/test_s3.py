@@ -203,6 +203,32 @@ def test_fetch_retries_until_email_is_available() -> None:
     ]
 
 
+def test_fetch_creates_s3_client_once_before_polling(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = DelayedS3ClientFake(
+        [{"Key": "mail/valid", "LastModified": NOW}],
+        {"mail/valid": _message()},
+    )
+    created_profiles: list[str | None] = []
+
+    def create_client(aws_profile: str | None) -> S3Client:
+        created_profiles.append(aws_profile)
+        return cast("S3Client", client)
+
+    monkeypatch.setattr(s3_module, "_create_s3_client", create_client)
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        aws_profile="example-profile",
+        clock=lambda: NOW,
+    )
+
+    assert asyncio.run(provider.fetch(poll_interval=0.001)) == "012345"
+    assert client.attempts == 2
+    assert created_profiles == ["example-profile"]
+
+
 def test_fetch_rejects_nonpositive_poll_interval() -> None:
     provider = S3VerificationCodeProvider(
         email_address="user@example.com",
