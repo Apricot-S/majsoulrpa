@@ -583,6 +583,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 各 `seat-indicator` を含む synthetic screenshot で `MatchScreen` を検出できる
 - [x] いずれの `seat-indicator` もない screenshot では `MatchScreen` を検出しない
 - [x] 自動テストでは synthetic screenshot だけを使う
+- [x] `before_callback()` は検出直後にマウスカーソルを手牌から離す
+- [x] マウスカーソルの移動先は基準座標 `(585, 790, 1000, 70)` の領域内とする
 
 ## Phase 7: WebSocket sniffer
 

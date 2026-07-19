@@ -28,6 +28,7 @@ def ScreenContext(**kwargs: Any) -> FrameworkScreenContext:  # noqa: N802, ANN40
 class BrowserControllerSpy:
     def __init__(self, screenshot: bytes, *screenshots: bytes) -> None:
         self.clicked_points: list[tuple[float, float]] = []
+        self.moved_points: list[tuple[float, float]] = []
         self.screenshot_bytes = screenshot
         self.screenshot_queue = [screenshot, *screenshots]
         self.screenshot_count = 0
@@ -38,7 +39,8 @@ class BrowserControllerSpy:
         self.clicked_points.append((x, y))
 
     async def move_mouse(self, x: float, y: float) -> None:
-        _ = (x, y)
+        self.moved_points.append((x, y))
+        self.events.append("move_mouse")
 
     async def goto_url(self, url: str) -> None:
         _ = url
