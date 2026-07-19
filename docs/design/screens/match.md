@@ -197,9 +197,10 @@ public event は標準 library の frozen dataclass とする。concrete event �
 `kw_only=True` とし、同じ module に全 concrete class を列挙した public type alias `MatchEvent` を置く。
 `type` discriminator は設けず、利用者は concrete event class に対する class pattern で型を絞り込む。
 
-型 annotation だけでは runtime の値を保証できないため、各 class の `__post_init__()` は共通 validator
-を使って型、範囲、tuple 要素、相互排他などを検証する。未知 keyword は dataclass constructor が拒否
-する。nested value も frozen dataclass と tuple だけで構成し、構築後に内容を変更できないようにする。
+field の型は annotation と静的型検査で保証する。各 class の `__post_init__()` は共通 validator を使い、
+値域、tuple 要素間の関係、相互排他など、型だけでは表せない不変条件を検証する。未知 keyword は
+dataclass constructor が拒否する。nested value も frozen dataclass と tuple だけで構成し、構築後に
+内容を変更できないようにする。
 
 ```python
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -397,9 +398,12 @@ Sniffer の共通 decoder は outer Liqi message の protobuf decode に留め�
 - live adapter: `.lq.ActionPrototype` の obfuscated `data` を unmask して decode する
 - restore adapter: `syncGame.response.game_restore.actions` の plain `data` を decode する
 
+unknown protobuf field に Match action 固有の検査は設けず、共通 protobuf parser と同様に既知 field
+だけを利用する。
+
 両 adapter は action 名から concrete event class を選び、protobuf field を keyword argument として
-constructor へ渡す。dataclass の `__post_init__()` が共通 validator を通じて runtime の型と値を検証
-する。`ActionMJStart` は `StartMatchEvent`、
+constructor へ渡す。外部入力の型は adapter で検証し、dataclass の `__post_init__()` は値域や相互関係
+などの不変条件を検証する。`ActionMJStart` は `StartMatchEvent`、
 `ActionNewRound` は `NewRoundEvent`、
 `ActionDealTile` は `ZimoEvent`、`ActionDiscardTile` は `DapaiEvent` のように、protocol action と
 event object を 1 対 1 に対応させる。`ActionChiPengGang` と `ActionAnGangAddGang` は protocol 内の

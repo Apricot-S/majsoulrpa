@@ -598,13 +598,14 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] `syncGame.game_restore.actions` の plain data を同じ public `MatchEvent` へ decode できる
 - [ ] live / restore adapter は同じ action data に対して observed_at 以外が同じ event を返す
 - [ ] 対応対象の protobuf action 1 件から `MatchEvent` 1 件を生成し、internal action union を作らない
-- [ ] event ごとの必須 field、runtime 型、値域、相互関係を dataclass constructor で検証する
+- [ ] event ごとの値域と相互関係を dataclass constructor で検証する
 - [ ] event constructor は未知 keyword を拒否し、collection field を tuple に限定する
 - [ ] generic な mutable `data` dict を event や state に保持しない
 - [ ] live adapter は inbound DecodedNotice、restore adapter は outbound syncGame response だけを受理する
 - [ ] nested action type は protocol descriptor と初期化用 allowlist の両方から解決する
 - [ ] live action の observed_at は観測時刻、restore action / event の observed_at は None にする
 - [ ] 未知 action 名、壊れた data、不正 step は明示的な decode error にする
+- [x] 既知 action の unknown protobuf field は独自検査せず、既知 field だけを利用する
 - [ ] nested action decode を共通 Sniffer decoder の責務へ追加しない
 
 ### immutable state / reducer
