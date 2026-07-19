@@ -119,14 +119,27 @@ cache しない。詳しい状態遷移、操作との相関、失敗モデル�
 ### Match state
 
 `MatchScreen` は通常の局遷移では作り直さず、同じ callback invocation と instance を使う。state は
-Room と同様に instance-local な具体的 store が immutable snapshot として保持し、
-`ScreenContext` 共有 cache、
-Match 専用 observer、background reducer は追加しない。
+Room と同様に instance-local な具体的 store が immutable snapshot として保持し、`ScreenContext`
+共有 cache、Match 専用 observer、background reducer は追加しない。restore replay は temporary
+store で完了させ、検証済み snapshot と operation を atomic に current store へ commit する。
 
-live `ActionPrototype` と `syncGame` 内の restore action は Match 固有 adapter で同じ normalized
-action へ変換し、同じ reducer へ渡す。新規開始、途中復帰、active 中の再同期は同じ bootstrap /
+live `ActionPrototype` と `syncGame` 内の restore action は Match 固有 adapter で同じ public
+`MatchEvent` へ変換し、同じ reducer へ渡す。新規開始、途中復帰、active 中の再同期は同じ bootstrap /
 replay 処理を使う。`ActionNewRound` は current round snapshot を置き換えるが Screen を stale に
 しない。
+
+対応対象の action と `MatchEvent` は 1 対 1 とし、同じ意味を持つ internal action union は作らない。
+concrete event は final frozen dataclass、`MatchEvent` は全 concrete class を列挙する明示的 union とする。
+reducer が適用した同じ event object を current `RoundState` の局内 event 列に保持する。restore replay
+でも同じ event 列を再構築するが、新着 event としては通知しない。field の runtime invariant は
+dataclass constructor の `__post_init__()` と共通 validator で保証する。
+
+`ActionMJStart` も state を変更しない `StartMatchEvent` として正規化し、最初の `NewRoundEvent` より前に
+保存する。これにより機械学習 AI が match の BOS feature として利用できる。
+
+初期化 milestone の公開 API は `get_state()` だけとする。蓄積済み message を drain した最新の
+immutable snapshot を返し、network request や click は行わない。状態待機と operation 詳細・操作
+API は別の高レベル API として 1 つずつ追加する。
 
 Room / tournament が確定済みの fresh entry marker を消費した場合は、Screen 遷移直前に decoded
 message 自体を一度だけ `put_back()` する。`ScreenContext` に Match entry hint は追加しない。

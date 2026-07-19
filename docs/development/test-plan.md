@@ -592,42 +592,95 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 詳細は [MatchScreen 設計](../design/screens/match.md) に従う。
 
-### normalized action decode
+### protobuf action / MatchEvent decode
 
 - [ ] live `ActionPrototype` の obfuscated data を synthetic bytes から decode できる
-- [ ] `syncGame.game_restore.actions` の plain data を同じ `MatchAction` へ decode できる
-- [ ] live / restore adapter は同じ action data に対して同じ normalized data を返す
+- [ ] `syncGame.game_restore.actions` の plain data を同じ public `MatchEvent` へ decode できる
+- [ ] live / restore adapter は同じ action data に対して observed_at 以外が同じ event を返す
+- [ ] 対応対象の protobuf action 1 件から `MatchEvent` 1 件を生成し、internal action union を作らない
+- [ ] event ごとの必須 field、runtime 型、値域、相互関係を dataclass constructor で検証する
+- [ ] event constructor は未知 keyword を拒否し、collection field を tuple に限定する
+- [ ] generic な mutable `data` dict を event や state に保持しない
+- [ ] live adapter は inbound DecodedNotice、restore adapter は outbound syncGame response だけを受理する
+- [ ] nested action type は protocol descriptor と初期化用 allowlist の両方から解決する
+- [ ] live action の observed_at は観測時刻、restore action / event の observed_at は None にする
 - [ ] 未知 action 名、壊れた data、不正 step は明示的な decode error にする
 - [ ] nested action decode を共通 Sniffer decoder の責務へ追加しない
 
 ### immutable state / reducer
 
-- [ ] synthetic `authGame` から match identity、self seat、player metadata を decode できる
+- [ ] MatchRank、MatchPlayer、MatchDapai、MatchFulu、RoundState、MatchState は frozen で collection を tuple にする
+- [ ] human player の四麻 `level4` と三麻 `level3` の AccountLevel ID / score を失わず decode する
+- [ ] CPU seat は robots の有効な level4 / level3 を保持し、欠ける場合だけ None にする
+- [ ] synthetic `authGame` から match identity、origin、self seat、player metadata を decode できる
+- [ ] authGame request account ID と session account ID が一致し、token を state / error / 通常 log に残さない
+- [ ] 友人戦 / tournament metadata だけを MatchOrigin へ decode し、対象外 match を拒否する
 - [ ] self account が seat list にない、重複 ID、3/4 人以外は不整合にする
+- [ ] human player と seat_list を一対一に対応させ、CPU sentinel は account_id が None の seat にする
+- [ ] 未対応特殊 mode は ScreenUnexpectedStateError として初期化を成功させない
 - [ ] `ActionNewRound` から最初の immutable `MatchState` / `RoundState` を構築できる
+- [ ] 14 枚の ActionNewRound.tiles は全体を sort し、右端を zimopai、残り 13 枚を shoupai にする
+- [ ] 13 枚の ActionNewRound.tiles は全体を shoupai にし、zimopai を None にする
+- [ ] scores、seat ごとの collection、tile、chang / ju / ben、dora、left count の不変条件を検証する
+- [ ] operation data は内部 immutable snapshot に保持し、公開 state には has_pending_operation だけを出す
 - [ ] 初回は `ActionMJStart` step 0 の有無に応じて `ActionNewRound` step 1 / step 0 を受理する
-- [ ] match version は試合全体で単調増加し、round step は局ごとに 0 から始まる
+- [ ] `ActionMJStart` を state を変更しない `StartMatchEvent` として decode する
+- [ ] 最初の RoundState ができるまで StartMatchEvent を temporary prelude に保持する
+- [ ] match version は同じ Screen instance 内で単調増加し、round step は局ごとに 0 から始まる
 - [ ] 次局の `ActionNewRound` は同じ store の round generation を増やす
 - [ ] 次局へ移っても match identity、self seat、player metadata を維持する
+- [ ] DealTile、DiscardTile、ChiPengGang、AnGangAddGang、BaBei を immutable state へ reduce できる
+- [ ] concrete MatchEvent は `@final`、`frozen=True`、`slots=True`、`kw_only=True` の dataclass である
+- [ ] public `MatchEvent` type alias はすべての concrete event class を列挙する
+- [ ] MatchEvent に type discriminator を設けない
+- [ ] event の canonical class / field は zimo、dapai、chi、peng、gang、liqi の語彙を使う
+- [ ] 利用者は event の具体 class を pattern matching して型を絞り込める
+- [ ] 各 case を terminal にして match 後に `assert_never(event)` を置くと全 variant で ty が成功する
+- [ ] MatchEvent union に未処理 variant があると `assert_never(event)` を ty が失敗にする
+- [ ] ActionMJStart がある最初の RoundState.events は StartMatchEvent、NewRoundEvent の順で始まる
+- [ ] ActionMJStart がない局の RoundState.events は NewRoundEvent から始まる
+- [ ] RoundState.events の tuple 順と action_step が protobuf action の順序に一致する
+- [ ] liqi / wliqi 宣言は DapaiEvent の field に含め、独立 event を生成しない
+- [ ] 後続 action の LiQiSuccess は対応する event の nested field に含め、独立 event を生成しない
+- [ ] 次局の ActionNewRound で event 列を新しい NewRoundEvent から開始する
+- [ ] restore replay は temporary store で行い、成功後に version 1 の snapshot を一度だけ publish する
+- [ ] restore replay も live と同じ reducer で RoundState.events を再構築する
+- [ ] active resync の replay が途中で失敗した場合、以前の state と operation を変更しない
 - [ ] action step の欠落、巻き戻り、内容が異なる duplicate を成功扱いにしない
 - [ ] 観測順が前後した live action は bounded buffer から step 順に apply する
+
+### state API
+
+- [ ] `before_callback()` 完了時には version 1 の active MatchState が必ず存在する
+- [ ] `get_state()` は request / click を行わず、蓄積済み message を drain して最新 snapshot を返す
+- [ ] `get_state()` の info log に match ID、account ID、player、牌、operation を含めない
+- [ ] MatchScreen、public state 型、public MatchEvent 型だけを majsoulrpa.screens.match から export する
+- [ ] state 待機 API と operation 詳細 API は初期化 milestone に含めない
 
 ### unified bootstrap
 
 - [ ] host / guest / tournament の実通信ログから fresh entry marker と順序を確認する
 - [ ] marker が reload / 途中復帰では fresh evidence として現れないことを確認する
+- [ ] 各 entry 経路で bootstrap 中に現れる state 非関連 API 名だけを allowlist として固定する
 - [ ] Room / tournament が消費した marker を Screen 遷移直前に一度だけ put_back する
 - [ ] direct / put-back marker、authGame、live ActionNewRound で同じ fresh state を初期化できる
 - [ ] Login / reload からは recovery entry evidence、authGame、syncGame replay で初期化できる
 - [ ] authGame と action source の到着順に依存しない
+- [ ] entry kind は UNKNOWN から FRESH / RECOVERY の一方向にだけ遷移する
+- [ ] fresh marker と restore syncGame が同じ bootstrap generation に現れた場合は失敗する
+- [ ] identical な authGame 再送は no-op、metadata が異なる再送は失敗する
 - [ ] marker が match ID を持つ場合、authGame の match ID との矛盾は失敗にする
 - [ ] consume 済み marker と以前の Room terminal state を reload 時に fresh evidence として再利用しない
 - [ ] public な `restore` flag を使わず message から初期化経路を判定する
 - [ ] restore replay は live と同じ reducer を使う
-- [ ] restore replay の過去 action を新着 event として callback へ通知しない
+- [ ] restore replay の event は完成 snapshot に含めるが、新着 event として callback へ通知しない
 - [ ] recovery entry では restore 完了前の live action を初期 snapshot の代用にしない
 - [ ] reload 中に進んだ action を含む syncGame snapshot から current state を復元できる
-- [ ] metadata と active round の両方が揃うまで callback を開始しない
+- [ ] restore request sentinel、is_end、game_state、response.step、action 件数と連番を検証する
+- [ ] entry kind、metadata、active round のすべてが揃うまで callback を開始しない
+- [ ] pending live / restore / reorder action が 1024 件を超えた場合は捨てずに失敗する
+- [ ] 初期化は framework-owned 5 秒で timeout し、screenshot 付き不整合エラーにする
+- [ ] source failure と cancellation を初期化エラーへ変換しない
 - [ ] 未知 message や矛盾した初期化 message は screenshot 付き不整合エラーにする
 
 ### single callback / resync

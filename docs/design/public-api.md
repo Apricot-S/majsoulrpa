@@ -225,6 +225,25 @@ instance へ room state を引き継ぐ利用方法はサポートしない。
 対局終了後に同じ友人戦へ戻る場合は例外ではなく、`fetchRoom` の authoritative な完全 snapshot
 から新しい `RoomScreen` instance を初期化できる、明示的な画面遷移境界である。
 
+`MatchScreen` の初期化 milestone:
+
+```python
+async def get_state(self) -> MatchState: ...
+```
+
+`before_callback()` は `authGame` と fresh action または restore `syncGame` から immutable な
+`MatchState` を構築してから callback を開始する。`get_state()` は request や click を行わず、
+蓄積済み message を reduce して最新 snapshot を返す。player state は四麻・三麻の段位を保持し、
+current `RoundState` は final frozen dataclass の明示的 union で表す局内 `MatchEvent` 列を含む。
+状態待機と operation
+詳細・操作 API は、初期化の実ゲーム確認後に 1 つずつ追加する。state と lifecycle の詳細は
+[MatchScreen 設計](screens/match.md) に従う。
+
+`MatchEvent` に `type` discriminator は設けない。利用者は `DapaiEvent`、`ZimoEvent` などの具体 class
+に対する `match` で型を絞り込み、各 case を terminal にした後の `assert_never(event)` で未対応
+variant を型検査エラーにできる。
+最初の event 列には `StartMatchEvent` も保持し、機械学習 AI は match の BOS として利用できる。
+
 `TournamentLobbyScreen` 候補:
 
 ```python
