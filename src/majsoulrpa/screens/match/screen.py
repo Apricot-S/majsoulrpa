@@ -61,15 +61,12 @@ class MatchScreen(Screen):
         timeout = asyncio.timeout(MATCH_INITIALIZATION_TIMEOUT_SECONDS)
         try:
             async with timeout:
-                while self._start_match_event is None:
-                    message = await self._get_sniffer_message()
-                    try:
-                        self._apply_initialization_message(message)
-                    except MatchActionDecodeError as error:
-                        await self._raise_inconsistent_message(
-                            "A match action is inconsistent.",
-                            cause=error,
-                        )
+                await self._initialize()
+        except MatchActionDecodeError as error:
+            await self._raise_inconsistent_message(
+                "A match action is inconsistent.",
+                cause=error,
+            )
         except TimeoutError as error:
             if not timeout.expired():
                 raise
@@ -78,24 +75,26 @@ class MatchScreen(Screen):
                 cause=error,
             )
 
+    async def _initialize(self) -> None:
+        while self._start_match_event is None:
+            message = await self._get_sniffer_message()
+            self._apply_initialization_message(message)
+
     def _apply_initialization_message(
         self,
         message: DecodedSnifferMessage,
     ) -> None:
         name = message.raw.name
-        if name == ACTION_PROTOTYPE_NAME:
-            if not isinstance(message, DecodedNotice):
-                msg = "ActionPrototype must be a Notice."
-                raise MatchActionDecodeError(msg)
-            event, decoded_message = decode_live_action(message)
-            if event.action_step != 0:
-                msg = "ActionMJStart must be step 0."
-                raise MatchActionDecodeError(msg)
-            _logger.info(_format_sniffer_message(decoded_message))
-            self._start_match_event = event
+        if name != ACTION_PROTOTYPE_NAME:
+            self._log_initialization_message(message)
             return
 
-        self._log_initialization_message(message)
+        if not isinstance(message, DecodedNotice):
+            msg = "ActionPrototype must be a Notice."
+            raise MatchActionDecodeError(msg)
+        event, decoded_message = decode_live_action(message)
+        _logger.info(_format_sniffer_message(decoded_message))
+        self._start_match_event = event
 
     @staticmethod
     def _log_initialization_message(

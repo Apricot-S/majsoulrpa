@@ -1,6 +1,6 @@
 import base64
 import binascii
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.message import DecodeError
@@ -14,10 +14,18 @@ from majsoulrpa.sniffer.events import DecodedNotice, Direction
 ACTION_PROTOTYPE_NAME = ".lq.ActionPrototype"
 START_MATCH_ACTION_NAME = "ActionMJStart"
 _ACTION_DATA_KEYS = (132, 94, 78, 66, 57, 162, 31, 96, 28)
-_SUPPORTED_ACTION_NAMES = frozenset({START_MATCH_ACTION_NAME})
 _ACTION_MESSAGE_TYPE_MAP = {
     f".{descriptor.full_name}": GetMessageClass(descriptor)
     for descriptor in liqi_pb2.DESCRIPTOR.message_types_by_name.values()
+}
+
+type _EventDecoder = Callable[
+    [int, Mapping[str, JsonValue]],
+    MatchEvent,
+]
+
+_EVENT_DECODERS: dict[str, _EventDecoder] = {
+    START_MATCH_ACTION_NAME: StartMatchEvent.from_dict,
 }
 
 
@@ -55,7 +63,11 @@ def _decode_action(
     if isinstance(step, bool) or not isinstance(step, int) or step < 0:
         msg = "Action step must be a nonnegative int."
         raise MatchActionDecodeError(msg)
-    if not isinstance(name, str) or name not in _SUPPORTED_ACTION_NAMES:
+    if not isinstance(name, str):
+        msg = "Action name must be a string."
+        raise MatchActionDecodeError(msg)
+    event_decoder = _EVENT_DECODERS.get(name)
+    if event_decoder is None:
         msg = "Action name is not supported."
         raise MatchActionDecodeError(msg)
     if not isinstance(encoded_data, str):
@@ -92,17 +104,12 @@ def _decode_action(
         "data": decoded_data,
     }
 
-    match name:
-        case "ActionMJStart":
-            try:
-                return (
-                    StartMatchEvent.from_dict(step, decoded_data),
-                    decoded_action,
-                )
-            except (TypeError, ValueError) as error:
-                msg = "ActionMJStart fields are invalid."
-                raise MatchActionDecodeError(msg) from error
-    raise AssertionError(name)
+    try:
+        event = event_decoder(step, decoded_data)
+    except (TypeError, ValueError) as error:
+        msg = f"{name} fields are invalid."
+        raise MatchActionDecodeError(msg) from error
+    return event, decoded_action
 
 
 def _deobfuscate_action_data(data: bytes) -> bytes:

@@ -399,9 +399,9 @@ Sniffer の共通 decoder は outer Liqi message の protobuf decode に留め�
 unknown protobuf field に Match action 固有の検査は設けず、共通 protobuf parser と同様に既知 field
 だけを利用する。
 
-両 adapter は action 名から concrete event class を選び、protobuf field を keyword argument として
-constructor へ渡す。外部入力の型は adapter で検証し、dataclass の `__post_init__()` は値域や相互関係
-などの不変条件を検証する。`ActionMJStart` は `StartMatchEvent`、
+両 adapter は action 名をkeyとするdecoder registryからevent classmethodを選び、decoded dataを渡す。
+外部入力の共通fieldはadapter、event固有のfieldと不変条件はclassmethodとdataclassが検証する。
+`ActionMJStart` は `StartMatchEvent`、
 `ActionNewRound` は `NewRoundEvent`、
 `ActionDealTile` は `ZimoEvent`、`ActionDiscardTile` は `DapaiEvent` のように、protocol action と
 event object を 1 対 1 に対応させる。`ActionChiPengGang` と `ActionAnGangAddGang` は protocol 内の
@@ -652,7 +652,7 @@ decode、Sniffer transport、stream gap は元の infrastructure error を伝播
 - `screens/match/event/_base.py`: event 共通の action step と不変条件
 - `screens/match/event/<event>.py`: concrete event ごとの final frozen dataclass と `from_dict()`
 - `screens/match/event/__init__.py`: concrete event と明示的な `MatchEvent` union の export
-- `screens/match/_action.py`: live unmask、restore adapter、nested decode、public event への 1 対 1 変換
+- `screens/match/_action.py`: live unmask、restore adapter、nested decode、event decoder registry
 - `screens/match/store.py`: metadata、step、round reducer、temporary replay と atomic commit
 - `screens/match/screen.py`: message classifier、初期化期限、Screen error への変換、`get_state()`
 - `screens/match/__init__.py`: `MatchScreen`、public state 型、public event 型だけを export

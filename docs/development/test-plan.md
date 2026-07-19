@@ -601,6 +601,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] event ごとの値域と相互関係を dataclass constructor で検証する
 - [x] event ごとの decoded dict 変換は位置引数の `from_dict()` classmethod に置く
 - [x] concrete event class は event ごとの実装 module に分ける
+- [x] action名からevent classmethodへのdispatchはdecoder registryに集約する
 - [ ] event constructor は未知 keyword を拒否し、collection field を tuple に限定する
 - [ ] generic な mutable `data` dict を event や state に保持しない
 - [ ] live adapter は inbound DecodedNotice、restore adapter は outbound syncGame response だけを受理する
@@ -629,6 +630,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] operation data は内部 immutable snapshot に保持し、公開 state には has_pending_operation だけを出す
 - [ ] 初回は `ActionMJStart` step 0 の有無に応じて `ActionNewRound` step 1 / step 0 を受理する
 - [ ] `ActionMJStart` を state を変更しない `StartMatchEvent` として decode する
+- [x] `StartMatchEvent.from_dict()` は `ActionMJStart` のstep 0制約を検証する
 - [ ] 最初の RoundState ができるまで StartMatchEvent を temporary prelude に保持する
 - [ ] match version は同じ Screen instance 内で単調増加し、round step は局ごとに 0 から始まる
 - [ ] 次局の `ActionNewRound` は同じ store の round generation を増やす

@@ -16,6 +16,9 @@ class StartMatchEvent(_MatchEventBase):
         action_step: int,
         data: Mapping[str, JsonValue],
     ) -> Self:
+        if action_step != 0:
+            msg = "ActionMJStart must be step 0."
+            raise ValueError(msg)
         if data:
             msg = "ActionMJStart must not contain known fields."
             raise ValueError(msg)

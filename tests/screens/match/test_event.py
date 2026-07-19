@@ -22,3 +22,8 @@ def test_start_match_event_from_decoded_dict() -> None:
     event = StartMatchEvent.from_dict(0, {})
 
     assert event == StartMatchEvent(action_step=0)
+
+
+def test_start_match_event_from_dict_requires_step_zero() -> None:
+    with pytest.raises(ValueError, match="step 0"):
+        StartMatchEvent.from_dict(1, {})
