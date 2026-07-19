@@ -88,7 +88,9 @@ def test_match_screen_logs_only_special_message_levels(
         for record in caplog.records
         if "ActionMJStart" in record.message
     )
-    assert '"data"' not in action_log
+    assert (
+        '"message":{"step":0,"name":"ActionMJStart","data":{}}' in action_log
+    )
 
 
 def test_match_screen_requires_action_mj_start_at_step_zero() -> None:

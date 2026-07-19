@@ -3,6 +3,7 @@ import binascii
 import datetime
 from collections.abc import Mapping
 
+from google.protobuf.json_format import MessageToDict
 from google.protobuf.message import DecodeError
 from google.protobuf.message_factory import GetMessageClass
 from pydantic import JsonValue
@@ -25,23 +26,26 @@ class MatchActionDecodeError(ValueError):
     pass
 
 
-def decode_live_action(message: DecodedNotice) -> MatchEvent:
+def decode_live_action(
+    message: DecodedNotice,
+) -> tuple[MatchEvent, DecodedNotice]:
     if message.raw.direction is not Direction.INBOUND:
         msg = "A live action must be an inbound Notice."
         raise MatchActionDecodeError(msg)
     if message.raw.name != ACTION_PROTOTYPE_NAME:
         msg = "A live action must use .lq.ActionPrototype."
         raise MatchActionDecodeError(msg)
-    return _decode_action(
+    event, decoded_action = _decode_action(
         message.message,
         observed_at=message.raw.observed_at,
         obfuscated=True,
     )
+    return event, DecodedNotice(raw=message.raw, message=decoded_action)
 
 
 def decode_restore_action(
     action: Mapping[str, JsonValue],
-) -> MatchEvent:
+) -> tuple[MatchEvent, dict[str, JsonValue]]:
     return _decode_action(action, observed_at=None, obfuscated=False)
 
 
@@ -50,7 +54,7 @@ def _decode_action(
     *,
     observed_at: datetime.datetime | None,
     obfuscated: bool,
-) -> MatchEvent:
+) -> tuple[MatchEvent, dict[str, JsonValue]]:
     step = action.get("step")
     name = action.get("name")
     encoded_data = action.get("data")
@@ -82,13 +86,27 @@ def _decode_action(
     except DecodeError as error:
         msg = "Action protobuf data is malformed."
         raise MatchActionDecodeError(msg) from error
+    decoded_data = MessageToDict(
+        protobuf_message,
+        always_print_fields_with_no_presence=True,
+        preserving_proto_field_name=True,
+    )
+
+    decoded_action: dict[str, JsonValue] = {
+        "step": step,
+        "name": name,
+        "data": decoded_data,
+    }
 
     match name:
         case "ActionMJStart":
             try:
-                return StartMatchEvent(
-                    action_step=step,
-                    observed_at=observed_at,
+                return (
+                    StartMatchEvent(
+                        action_step=step,
+                        observed_at=observed_at,
+                    ),
+                    decoded_action,
                 )
             except (TypeError, ValueError) as error:
                 msg = "ActionMJStart fields are invalid."

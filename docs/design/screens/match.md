@@ -640,9 +640,10 @@ decode、Sniffer transport、stream gap は元の infrastructure error を伝播
 
 ## ログと秘密情報
 
-- info log は Screen 名、API 名、action 名、step など秘密でない構造情報に限定する。
-- match ID、account ID、player name、hand tiles、operation 内容を通常ログへ出さない。
-- Sniffer 調査ログは既存の例外に従うが、docs、fixture、sample、chat、commit へ転記しない。
+- 公開 API の info log は Screen 名と API 名など秘密でない構造情報に限定する。
+- Sniffer 調査ログは decoded message を Screen が選んだ level へ出す既存の例外に従う。
+  `ActionPrototype` は難読化された `data` を protobuf decode 済みの辞書へ差し替えて info log に出す。
+- Sniffer 調査ログを docs、fixture、sample、chat、commit へ転記しない。
 - 自動テストは synthetic decoded message、synthetic nested protobuf、fake browser だけを使う。
 
 ## module 配置

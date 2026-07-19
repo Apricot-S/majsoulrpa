@@ -87,11 +87,11 @@ class MatchScreen(Screen):
             if not isinstance(message, DecodedNotice):
                 msg = "ActionPrototype must be a Notice."
                 raise MatchActionDecodeError(msg)
-            event = decode_live_action(message)
+            event, decoded_message = decode_live_action(message)
             if event.action_step != 0:
                 msg = "ActionMJStart must be step 0."
                 raise MatchActionDecodeError(msg)
-            _logger.info("ActionMJStart step=%d", event.action_step)
+            _logger.info(_format_sniffer_message(decoded_message))
             self._start_match_event = event
             return
 

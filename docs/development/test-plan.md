@@ -606,6 +606,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] live action の observed_at は観測時刻、restore action / event の observed_at は None にする
 - [ ] 未知 action 名、壊れた data、不正 step は明示的な decode error にする
 - [x] 既知 action の unknown protobuf field は独自検査せず、既知 field だけを利用する
+- [x] live ActionPrototype の info log は難読化 data を protobuf decode 済み辞書へ差し替える
 - [ ] nested action decode を共通 Sniffer decoder の責務へ追加しない
 
 ### immutable state / reducer
