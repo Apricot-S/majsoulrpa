@@ -7,12 +7,10 @@ from tests.screens._support import BrowserControllerSpy, ScreenContext
 
 
 def test_match_screen_before_callback_moves_mouse_away_from_hand() -> None:
-    assert Region(
-        left=585,
-        top=790,
-        width=1000,
-        height=70,
-    ) == MatchScreen.MOUSE_SAFE_REGION
+    assert (
+        Region(left=585, top=790, width=1000, height=70)
+        == MatchScreen.MOUSE_SAFE_REGION
+    )
     browser = BrowserControllerSpy(b"synthetic-screenshot")
     screen = MatchScreen(
         context=ScreenContext(browser=browser, rng=Random(0)),
