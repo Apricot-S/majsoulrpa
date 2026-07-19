@@ -15,6 +15,10 @@ ACTION_PROTOTYPE_NAME = ".lq.ActionPrototype"
 START_MATCH_ACTION_NAME = "ActionMJStart"
 _ACTION_DATA_KEYS = (132, 94, 78, 66, 57, 162, 31, 96, 28)
 _SUPPORTED_ACTION_NAMES = frozenset({START_MATCH_ACTION_NAME})
+_ACTION_MESSAGE_TYPE_MAP = {
+    f".{descriptor.full_name}": GetMessageClass(descriptor)
+    for descriptor in liqi_pb2.DESCRIPTOR.message_types_by_name.values()
+}
 
 
 class MatchActionDecodeError(ValueError):
@@ -68,11 +72,11 @@ def _decode_action(
     if obfuscated:
         data = _deobfuscate_action_data(data)
 
-    descriptor = liqi_pb2.DESCRIPTOR.message_types_by_name.get(name)
-    if descriptor is None:
+    message_type = _ACTION_MESSAGE_TYPE_MAP.get(f".lq.{name}")
+    if message_type is None:
         msg = "Action type is absent from the protocol descriptor."
         raise MatchActionDecodeError(msg)
-    protobuf_message = GetMessageClass(descriptor)()
+    protobuf_message = message_type()
     try:
         protobuf_message.ParseFromString(data)
     except DecodeError as error:

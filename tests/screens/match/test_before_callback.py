@@ -52,6 +52,7 @@ def test_match_screen_logs_only_special_message_levels(
             rng=Random(0),
             sniffer_messages=_message_queue(
                 ".lq.Lobby.fetchServerTime",
+                ".lq.Unknown",
                 ".lq.Lobby.heatbeat",
                 ".lq.Lobby.loginBeat",
                 _live_action(),
@@ -67,6 +68,7 @@ def test_match_screen_logs_only_special_message_levels(
             name
             for name in (
                 ".lq.Lobby.fetchServerTime",
+                ".lq.Unknown",
                 ".lq.Lobby.heatbeat",
                 ".lq.Lobby.loginBeat",
                 "ActionMJStart",
@@ -77,6 +79,7 @@ def test_match_screen_logs_only_special_message_levels(
         if record.name == "majsoulrpa.screens.match.screen"
     }
     assert levels[".lq.Lobby.fetchServerTime"] == logging.INFO
+    assert levels[".lq.Unknown"] == logging.INFO
     assert levels[".lq.Lobby.heatbeat"] == logging.DEBUG
     assert levels[".lq.Lobby.loginBeat"] == logging.WARNING
     assert levels["ActionMJStart"] == logging.INFO
@@ -86,23 +89,6 @@ def test_match_screen_logs_only_special_message_levels(
         if "ActionMJStart" in record.message
     )
     assert '"data"' not in action_log
-
-
-def test_match_screen_rejects_unknown_initialization_message() -> None:
-    browser = BrowserControllerSpy(b"inconsistent-screenshot")
-    screen = MatchScreen(
-        context=ScreenContext(
-            browser=browser,
-            rng=Random(0),
-            sniffer_messages=_message_queue(".lq.Unknown"),
-        ),
-    )
-
-    with pytest.raises(ScreenInconsistentMessageError) as exc_info:
-        asyncio.run(screen.before_callback())
-
-    assert exc_info.value.screenshot == b"inconsistent-screenshot"
-    assert browser.events == ["move_mouse", "screenshot"]
 
 
 def test_match_screen_requires_action_mj_start_at_step_zero() -> None:

@@ -29,44 +29,6 @@ if TYPE_CHECKING:
 
 MATCH_INITIALIZATION_TIMEOUT_SECONDS = 5.0
 
-_INITIALIZATION_MESSAGE_NAMES = frozenset(
-    {
-        ".lq.Lobby.fetchCustomizedContestOnlineInfo",
-        ".lq.Lobby.startCustomizedContest",
-        ".lq.Lobby.stopCustomizedContest",
-        ".lq.NotifyCustomContestSystemMsg",
-        ".lq.Lobby.leaveCustomizedContestChatRoom",
-        ".lq.Lobby.modifyRoom",
-        ".lq.NotifyRoomPlayerUpdate",
-        ".lq.NotifyRoomPlayerReady",
-        ".lq.NotifyRoomGameStart",
-        ".lq.Lobby.startRoom",
-        ".lq.FastTest.authGame",
-        ".lq.FastTest.enterGame",
-        ".lq.NotifyPlayerLoadGameReady",
-        ".lq.Lobby.heatbeat",
-        ".lq.Lobby.loginBeat",
-        ".lq.Lobby.fetchServerTime",
-        ".lq.NotifyReviveCoinUpdate",
-        ".lq.NotifyGiftSendRefresh",
-        ".lq.NotifyDailyTaskUpdate",
-        ".lq.NotifyShopUpdate",
-        ".lq.NotifyAccountChallengeTaskUpdate",
-        ".lq.NotifyAccountUpdate",
-        ".lq.Lobby.fetchShopInterval",
-        ".lq.Lobby.fetchActivityInterval",
-        ".lq.NotifyActivityChange",
-        ".lq.NotifyActivityTaskUpdate",
-        ".lq.NotifyAccountRandomTaskUpdate",
-        ".lq.NotifyAnnouncementUpdate",
-        ".lq.Lobby.oauth2Login",
-        ".lq.FastTest.checkNetworkDelay",
-        ".lq.FastTest.fetchGamePlayerState",
-        ".lq.NotifyPlayerConnectionState",
-        ".lq.NotifyGameBroadcast",
-        ".lq.PlayerLeaving",
-    }
-)
 _DEBUG_MESSAGE_NAMES = frozenset(
     {".lq.Lobby.heatbeat", ".lq.FastTest.checkNetworkDelay"}
 )
@@ -109,7 +71,7 @@ class MatchScreen(Screen):
                         self._apply_initialization_message(message)
                     except MatchActionDecodeError as error:
                         await self._raise_inconsistent_message(
-                            "A match initialization message is inconsistent.",
+                            "A match action is inconsistent.",
                             cause=error,
                         )
         except TimeoutError as error:
@@ -137,9 +99,6 @@ class MatchScreen(Screen):
             self._start_match_event = event
             return
 
-        if name not in _INITIALIZATION_MESSAGE_NAMES:
-            msg = f"Unexpected match initialization message: {name}."
-            raise MatchActionDecodeError(msg)
         self._log_initialization_message(message)
 
     @staticmethod
