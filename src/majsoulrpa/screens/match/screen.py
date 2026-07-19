@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 import asyncio
 from logging import getLogger
-from typing import TYPE_CHECKING, NoReturn, override
+from typing import NoReturn, override
 
 from majsoulrpa.assets.templates.match import (
     SEAT_INDICATOR_SETTINGS_PATH,
@@ -22,10 +20,8 @@ from majsoulrpa.screens.match._action import (
     MatchActionDecodeError,
     decode_live_action,
 )
+from majsoulrpa.screens.match.event import StartMatchEvent  # noqa: TC001
 from majsoulrpa.sniffer.events import DecodedNotice, DecodedSnifferMessage
-
-if TYPE_CHECKING:
-    from majsoulrpa.screens.match.event import StartMatchEvent
 
 MATCH_INITIALIZATION_TIMEOUT_SECONDS = 5.0
 
