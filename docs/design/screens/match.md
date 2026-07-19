@@ -206,11 +206,9 @@ dataclass constructor が拒否する。nested value も frozen dataclass と tu
 @dataclass(frozen=True, slots=True, kw_only=True)
 class _MatchEventBase:
     action_step: int
-    observed_at: datetime | None
 
     def __post_init__(self) -> None:
         validate_action_step(self.action_step)
-        validate_observed_at(self.observed_at)
 
 
 @final
@@ -321,10 +319,10 @@ def event_name(event: MatchEvent) -> str:
 保ち、Kanachan の打牌 feature へ変換しやすくするためである。Mjai の `reach` / `reach_accepted` への
 分離が必要な adapter は、`DapaiEvent` と後続 event の `liqi_success` から外部境界で生成する。
 
-live event の `observed_at` は Sniffer で action を観測した時刻とする。restore action には実際の
-発生時刻がないため `observed_at=None` とし、`syncGame` response の観測時刻を過去 event の発生時刻
-として偽装しない。event の順序は `RoundState.events` の tuple 順を正本とし、`action_step` で
-protobuf action との対応を検証できる。1 action 1 event なので別の event index は持たせない。
+Sniffer の観測時刻は transport metadata であり、public event には保持しない。live message の
+`observed_at` は Sniffer 調査ログに残す。event の順序は `RoundState.events` の tuple 順を正本とし、
+`action_step` で protobuf action との対応を検証できる。1 action 1 event なので別の event index は
+持たせない。
 
 ### instance-local store
 
@@ -415,15 +413,15 @@ event は常に 1 件である。
 `RoundState.events` に入れる。reducer 上は state を変更しない event だが、機械学習 AI が match の
 BOS feature として利用できる。不要な利用者は `StartMatchEvent` を読み飛ばせばよい。
 
-generic な `dict[str, JsonValue]` は event 構築の中間表現にも使わず、decoded protobuf message から
-型付き field を取り出して concrete constructor を直接呼ぶ。action に付随する現在の選択可能 operation
-は発生済み event ではないため、
+protobuf decode 後の `dict[str, JsonValue]` はログ用 action data と event class 固有の `from_dict()`
+classmethod への入力に使う。classmethod が外部入力から型付き field を取り出し、値の正規化を行って
+concrete constructor を呼ぶ。raw dict を constructor へそのまま展開せず、型付き API は維持する。
+action に付随する現在の選択可能 operation は発生済み event ではないため、
 event と重複する action model を作らず、adapter が immutable な内部 operation snapshot として
 別に返す。後続の操作 API ではこれを public `MatchOperation` として別途設計する。
 
-`restore: bool` は reducer や state model まで伝播させない。live action の `observed_at` は Sniffer
-観測時刻、restore event は `None` とする。この差は event timestamp を正しく扱うための source
-metadata であり、state transition の分岐条件には使わない。
+`restore: bool` は reducer や state model まで伝播させない。live / restore の encoding 差は action
+adapter 内で解消し、同じ decoded data と event classmethod から同じ public event を生成する。
 
 nested message type は `liqi_pb2.DESCRIPTOR` から action 名で解決する。ただし descriptor に存在する
 任意の action を暗黙に受理せず、初期化時の allowlist を次に限定する。
@@ -651,9 +649,10 @@ decode、Sniffer transport、stream gap は元の infrastructure error を伝播
 初期化実装は次の責務で配置する。bootstrap loop を早期に汎用 framework へ抽象化しない。
 
 - `screens/match/state.py`: public immutable state と invariant
-- `screens/match/event.py`: public final frozen dataclass と明示的な `MatchEvent` union
+- `screens/match/event/_base.py`: event 共通の action step と不変条件
+- `screens/match/event/<event>.py`: concrete event ごとの final frozen dataclass と `from_dict()`
+- `screens/match/event/__init__.py`: concrete event と明示的な `MatchEvent` union の export
 - `screens/match/_action.py`: live unmask、restore adapter、nested decode、public event への 1 対 1 変換
-- `screens/match/_decode.py`: authGame、ActionNewRound、各 action field の strict decode
 - `screens/match/store.py`: metadata、step、round reducer、temporary replay と atomic commit
 - `screens/match/screen.py`: message classifier、初期化期限、Screen error への変換、`get_state()`
 - `screens/match/__init__.py`: `MatchScreen`、public state 型、public event 型だけを export

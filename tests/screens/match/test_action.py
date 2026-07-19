@@ -9,13 +9,13 @@ from majsoulrpa.screens.match._action import (
     decode_live_action,
     decode_restore_action,
 )
-from tests.screens.match._support import OBSERVED_AT, _live_action
+from tests.screens.match._support import _live_action
 
 
 def test_live_action_mj_start_decodes_to_start_match_event() -> None:
     event, _ = decode_live_action(_live_action())
 
-    assert event == StartMatchEvent(action_step=0, observed_at=OBSERVED_AT)
+    assert event == StartMatchEvent(action_step=0)
 
 
 def test_live_action_replaces_obfuscated_data_with_decoded_message() -> None:
@@ -23,7 +23,7 @@ def test_live_action_replaces_obfuscated_data_with_decoded_message() -> None:
 
     event, decoded_message = decode_live_action(message)
 
-    assert event == StartMatchEvent(action_step=0, observed_at=OBSERVED_AT)
+    assert event == StartMatchEvent(action_step=0)
     assert decoded_message.raw is message.raw
     assert decoded_message.message == {
         "step": 0,
@@ -37,7 +37,7 @@ def test_restore_action_mj_start_decodes_to_start_match_event() -> None:
         {"step": 0, "name": "ActionMJStart", "data": ""}
     )
 
-    assert event == StartMatchEvent(action_step=0, observed_at=None)
+    assert event == StartMatchEvent(action_step=0)
     assert decoded_action == {
         "step": 0,
         "name": "ActionMJStart",
@@ -54,7 +54,7 @@ def test_restore_action_ignores_unknown_protobuf_fields() -> None:
         }
     )
 
-    assert event == StartMatchEvent(action_step=0, observed_at=None)
+    assert event == StartMatchEvent(action_step=0)
     assert decoded_action["data"] == {}
 
 

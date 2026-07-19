@@ -1,6 +1,5 @@
 import base64
 import binascii
-import datetime
 from collections.abc import Mapping
 
 from google.protobuf.json_format import MessageToDict
@@ -35,24 +34,19 @@ def decode_live_action(
     if message.raw.name != ACTION_PROTOTYPE_NAME:
         msg = "A live action must use .lq.ActionPrototype."
         raise MatchActionDecodeError(msg)
-    event, decoded_action = _decode_action(
-        message.message,
-        observed_at=message.raw.observed_at,
-        obfuscated=True,
-    )
+    event, decoded_action = _decode_action(message.message, obfuscated=True)
     return event, DecodedNotice(raw=message.raw, message=decoded_action)
 
 
 def decode_restore_action(
     action: Mapping[str, JsonValue],
 ) -> tuple[MatchEvent, dict[str, JsonValue]]:
-    return _decode_action(action, observed_at=None, obfuscated=False)
+    return _decode_action(action, obfuscated=False)
 
 
 def _decode_action(
     action: Mapping[str, JsonValue],
     *,
-    observed_at: datetime.datetime | None,
     obfuscated: bool,
 ) -> tuple[MatchEvent, dict[str, JsonValue]]:
     step = action.get("step")
@@ -102,10 +96,7 @@ def _decode_action(
         case "ActionMJStart":
             try:
                 return (
-                    StartMatchEvent(
-                        action_step=step,
-                        observed_at=observed_at,
-                    ),
+                    StartMatchEvent.from_dict(step, decoded_data),
                     decoded_action,
                 )
             except (TypeError, ValueError) as error:

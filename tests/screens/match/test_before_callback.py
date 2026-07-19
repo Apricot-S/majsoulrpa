@@ -13,7 +13,7 @@ from tests.screens._support import (
     ScreenContext,
     _message_queue,
 )
-from tests.screens.match._support import OBSERVED_AT, _live_action
+from tests.screens.match._support import _live_action
 
 
 def test_match_screen_before_callback_moves_mouse_away_from_hand() -> None:
@@ -36,10 +36,7 @@ def test_match_screen_before_callback_moves_mouse_away_from_hand() -> None:
     assert 585 < x < 1585
     assert 790 < y < 860
     assert browser.events == ["move_mouse"]
-    assert screen._start_match_event == StartMatchEvent(
-        action_step=0,
-        observed_at=OBSERVED_AT,
-    )
+    assert screen._start_match_event == StartMatchEvent(action_step=0)
 
 
 def test_match_screen_logs_only_special_message_levels(
