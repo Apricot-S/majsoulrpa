@@ -28,7 +28,7 @@ from majsoulrpa.screens.errors import (
 from majsoulrpa.screens.home import (
     HomeScreen,
 )
-from tests.screens.home._support import (
+from tests.screens._support import (
     _synthetic_blank_screenshot,
     _synthetic_template_screenshot,
 )

@@ -4,7 +4,7 @@ from majsoulrpa.assets.templates.room import (
 )
 from majsoulrpa.screens import Screen, ScreenDetectionSpec
 from majsoulrpa.screens.room import RoomScreen
-from tests.screens.home._support import (
+from tests.screens._support import (
     _synthetic_blank_screenshot,
     _synthetic_template_screenshot,
 )

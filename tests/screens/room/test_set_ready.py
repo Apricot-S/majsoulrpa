@@ -34,7 +34,7 @@ from majsoulrpa.sniffer.events import (
     DecodedRequestResponse,
     Direction,
 )
-from tests.screens.home._support import (
+from tests.screens._support import (
     BrowserControllerSpy,
     _request_response,
     _synthetic_blank_screenshot,

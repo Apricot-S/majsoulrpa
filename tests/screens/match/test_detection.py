@@ -8,7 +8,7 @@ from majsoulrpa.assets.templates.match import (
 )
 from majsoulrpa.screens import Screen, ScreenDetectionSpec
 from majsoulrpa.screens.match import MatchScreen
-from tests.screens.home._support import (
+from tests.screens._support import (
     _synthetic_blank_screenshot,
     _synthetic_template_screenshot,
 )

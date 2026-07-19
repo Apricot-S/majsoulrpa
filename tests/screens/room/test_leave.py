@@ -26,7 +26,7 @@ from majsoulrpa.screens.room import (
     RoomStatus,
 )
 from majsoulrpa.sniffer.events import DecodedSnifferMessage, Direction
-from tests.screens.home._support import (
+from tests.screens._support import (
     BrowserControllerSpy,
     _notice,
     _request_response,

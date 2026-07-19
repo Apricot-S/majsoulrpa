@@ -26,7 +26,7 @@ from majsoulrpa.sniffer.events import (
     Direction,
     RawNotice,
 )
-from tests.screens.home._support import (
+from tests.screens._support import (
     BrowserControllerSpy,
     _message_queue,
     _request_response,

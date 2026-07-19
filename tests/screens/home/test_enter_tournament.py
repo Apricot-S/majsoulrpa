@@ -36,15 +36,15 @@ from majsoulrpa.screens.home import (
     EnterTournamentFailureReason,
     HomeScreen,
 )
-from tests.screens.home._support import (
+from tests.screens._support import (
     BrowserControllerSpy,
     ScreenContext,
     _message_queue,
     _request_response,
     _synthetic_blank_screenshot,
-    _synthetic_home_ready_screenshot,
     _synthetic_template_screenshot,
 )
+from tests.screens.home._support import _synthetic_home_ready_screenshot
 
 
 def _tournament_browser(
