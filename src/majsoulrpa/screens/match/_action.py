@@ -8,7 +8,11 @@ from google.protobuf.message_factory import GetMessageClass
 from pydantic import JsonValue
 
 from majsoulrpa.assets.protocol import liqi_pb2
-from majsoulrpa.screens.match.event import MatchEvent, StartMatchEvent
+from majsoulrpa.screens.match.event import (
+    MatchEvent,
+    NewRoundEvent,
+    StartMatchEvent,
+)
 from majsoulrpa.sniffer.events import DecodedNotice, Direction
 
 ACTION_PROTOTYPE_NAME = ".lq.ActionPrototype"
@@ -26,6 +30,7 @@ type _EventDecoder = Callable[
 
 _EVENT_DECODERS: dict[str, _EventDecoder] = {
     START_MATCH_ACTION_NAME: StartMatchEvent.from_dict,
+    "ActionNewRound": NewRoundEvent.from_dict,
 }
 
 

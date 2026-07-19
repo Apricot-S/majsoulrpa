@@ -624,8 +624,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] human player と seat_list を一対一に対応させ、CPU sentinel は account_id が None の seat にする
 - [ ] 未対応特殊 mode は ScreenUnexpectedStateError として初期化を成功させない
 - [ ] `ActionNewRound` から最初の immutable `MatchState` / `RoundState` を構築できる
-- [ ] 14 枚の ActionNewRound.tiles は全体を sort し、右端を zimopai、残り 13 枚を shoupai にする
-- [ ] 13 枚の ActionNewRound.tiles は全体を shoupai にし、zimopai を None にする
+- [x] `ActionNewRound` を immutable `NewRoundEvent` として live / restore の両方から decode する
+- [x] 14 枚の ActionNewRound.tiles は全体を sort し、右端を zimopai、残り 13 枚を shoupai にする
+- [x] 13 枚の ActionNewRound.tiles は全体を shoupai にし、zimopai を None にする
 - [ ] scores、seat ごとの collection、tile、chang / ju / ben、dora、left count の不変条件を検証する
 - [ ] operation data は内部 immutable snapshot に保持し、公開 state には has_pending_operation だけを出す
 - [ ] 初回は `ActionMJStart` step 0 の有無に応じて `ActionNewRound` step 1 / step 0 を受理する

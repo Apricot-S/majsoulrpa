@@ -1,11 +1,20 @@
 from typing import TYPE_CHECKING
 
-from majsoulrpa.screens.match.event import MatchEvent, StartMatchEvent
+from majsoulrpa.screens.match.event import (
+    MatchEvent,
+    NewRoundEvent,
+    StartMatchEvent,
+)
 
 if TYPE_CHECKING:
     from majsoulrpa.screens.match.screen import MatchScreen
 
-__all__ = ["MatchEvent", "MatchScreen", "StartMatchEvent"]
+__all__ = [
+    "MatchEvent",
+    "MatchScreen",
+    "NewRoundEvent",
+    "StartMatchEvent",
+]
 
 
 def __getattr__(name: str) -> object:

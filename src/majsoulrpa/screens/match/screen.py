@@ -20,7 +20,7 @@ from majsoulrpa.screens.match._action import (
     MatchActionDecodeError,
     decode_live_action,
 )
-from majsoulrpa.screens.match.event import StartMatchEvent  # noqa: TC001
+from majsoulrpa.screens.match.event import StartMatchEvent
 from majsoulrpa.sniffer.events import DecodedNotice, DecodedSnifferMessage
 
 MATCH_INITIALIZATION_TIMEOUT_SECONDS = 5.0
@@ -93,6 +93,9 @@ class MatchScreen(Screen):
             msg = "ActionPrototype must be a Notice."
             raise MatchActionDecodeError(msg)
         event, decoded_message = decode_live_action(message)
+        if not isinstance(event, StartMatchEvent):
+            msg = "ActionMJStart must arrive before ActionNewRound."
+            raise MatchActionDecodeError(msg)
         _logger.info(_format_sniffer_message(decoded_message))
         self._start_match_event = event
 

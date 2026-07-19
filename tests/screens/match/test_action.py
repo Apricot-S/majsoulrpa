@@ -3,7 +3,8 @@ import base64
 import pytest
 from pydantic import JsonValue
 
-from majsoulrpa.screens.match import StartMatchEvent
+from majsoulrpa.assets.protocol import liqi_pb2
+from majsoulrpa.screens.match import NewRoundEvent, StartMatchEvent
 from majsoulrpa.screens.match._action import (
     MatchActionDecodeError,
     decode_live_action,
@@ -56,6 +57,55 @@ def test_restore_action_ignores_unknown_protobuf_fields() -> None:
 
     assert event == StartMatchEvent(action_step=0)
     assert decoded_action["data"] == {}
+
+
+def test_live_and_restore_action_new_round_decode_to_same_event() -> None:
+    data = liqi_pb2.ActionNewRound(
+        chang=0,
+        ju=1,
+        ben=0,
+        tiles=["1m"] * 13,
+        scores=[25000] * 4,
+        liqibang=0,
+        left_tile_count=69,
+        doras=["3p"],
+    ).SerializeToString()
+    live_event, _ = decode_live_action(
+        _live_action(step=0, name="ActionNewRound", data=data)
+    )
+    restore_event, _ = decode_restore_action(
+        {
+            "step": 0,
+            "name": "ActionNewRound",
+            "data": base64.b64encode(data).decode(),
+        }
+    )
+
+    expected = NewRoundEvent.from_dict(
+        0,
+        {
+            "chang": 0,
+            "ju": 1,
+            "ben": 0,
+            "tiles": ["1m"] * 13,
+            "dora": "",
+            "scores": [25000] * 4,
+            "liqibang": 0,
+            "tingpais0": [],
+            "tingpais1": [],
+            "al": False,
+            "md5": "",
+            "left_tile_count": 69,
+            "doras": ["3p"],
+            "opens": [],
+            "ju_count": 0,
+            "field_spell": 0,
+            "sha256": "",
+            "saltSha256": "",
+        },
+    )
+    assert live_event == expected
+    assert restore_event == expected
 
 
 @pytest.mark.parametrize(
