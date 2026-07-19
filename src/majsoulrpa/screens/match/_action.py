@@ -16,7 +16,6 @@ from majsoulrpa.screens.match.event import (
 from majsoulrpa.sniffer.events import DecodedNotice, Direction
 
 ACTION_PROTOTYPE_NAME = ".lq.ActionPrototype"
-START_MATCH_ACTION_NAME = "ActionMJStart"
 _ACTION_DATA_KEYS = (132, 94, 78, 66, 57, 162, 31, 96, 28)
 _ACTION_MESSAGE_TYPE_MAP = {
     f".{descriptor.full_name}": GetMessageClass(descriptor)
@@ -29,7 +28,7 @@ type _EventDecoder = Callable[
 ]
 
 _EVENT_DECODERS: dict[str, _EventDecoder] = {
-    START_MATCH_ACTION_NAME: StartMatchEvent.from_dict,
+    "ActionMJStart": StartMatchEvent.from_dict,
     "ActionNewRound": NewRoundEvent.from_dict,
 }
 
