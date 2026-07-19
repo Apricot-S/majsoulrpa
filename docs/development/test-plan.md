@@ -576,6 +576,14 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] Room / room notice の `seq` 増加規則を確認する
 - [ ] 実 payload を tests、fixtures、docs、chat、commit へ含めないことを継続的に監査する
 
+## Phase 6.11: MatchScreen 画面検出
+
+- [x] `MatchScreen` は `Screen` の具象 subclass である
+- [x] 4 種類の `seat-indicator` template と共通 settings を package asset として参照できる
+- [x] 各 `seat-indicator` を含む synthetic screenshot で `MatchScreen` を検出できる
+- [x] いずれの `seat-indicator` もない screenshot では `MatchScreen` を検出しない
+- [x] 自動テストでは synthetic screenshot だけを使う
+
 ## Phase 7: WebSocket sniffer
 
 - [x] sniffer backend の start に失敗した場合に browser を閉じる

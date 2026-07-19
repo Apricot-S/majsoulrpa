@@ -1,0 +1,12 @@
+from majsoulrpa.assets import TEMPLATES_DIR
+
+SEAT_INDICATOR_SETTINGS_PATH = TEMPLATES_DIR / "match" / "seat-indicator.toml"
+SEAT_INDICATOR_TEMPLATE_PATHS = tuple(
+    TEMPLATES_DIR / "match" / f"seat-indicator-{index}.png"
+    for index in range(4)
+)
+
+__all__ = [
+    "SEAT_INDICATOR_SETTINGS_PATH",
+    "SEAT_INDICATOR_TEMPLATE_PATHS",
+]
