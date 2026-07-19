@@ -7,15 +7,12 @@ from dataclasses import dataclass, field
 from functools import wraps
 from logging import getLogger
 from random import Random
-from typing import TYPE_CHECKING, Concatenate, Protocol
+from typing import Concatenate, Protocol
 
 from majsoulrpa.constants import BASE_VIEWPORT_WIDTH, DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens.errors import ScreenDetectionError, ScreenStaleError
 from majsoulrpa.sniffer.events import DecodedNotice, DecodedSnifferMessage
-
-if TYPE_CHECKING:
-    from majsoulrpa.screens.room.cache import RoomStateCache
 
 SCREEN_ACTION_INTERVAL_SECONDS = 0.5
 TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
@@ -159,23 +156,14 @@ class ScreenContext:
         self,
         browser: BrowserController,
         sniffer_messages: SnifferMessageSource,
-        room_state_cache: "RoomStateCache | None" = None,
         request_stop: StopRequester | None = None,
         viewport_width: int = BASE_VIEWPORT_WIDTH,
         viewport_height: int = DEFAULT_VIEWPORT_HEIGHT,
         rng: Random | None = None,
         account_state: AccountState = _EMPTY_ACCOUNT_STATE,
     ) -> None:
-        if room_state_cache is None:
-            from majsoulrpa.screens.room.cache import (  # noqa: PLC0415
-                RoomStateCache,
-            )
-
-            room_state_cache = RoomStateCache()
-
         self._browser = browser
         self._sniffer_messages = sniffer_messages
-        self._room_state_cache = room_state_cache
         self._request_stop = request_stop or _ignore_stop_request
         self._viewport_width = viewport_width
         self._viewport_height = viewport_height
@@ -198,10 +186,6 @@ class ScreenContext:
     @property
     def sniffer_messages(self) -> SnifferMessageSource:
         return self._sniffer_messages
-
-    @property
-    def room_state_cache(self) -> "RoomStateCache":
-        return self._room_state_cache
 
     @property
     def rng(self) -> Random | None:

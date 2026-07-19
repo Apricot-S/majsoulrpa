@@ -37,18 +37,15 @@ class RoomStateTransitionError(ValueError):
     """Raised when room messages describe an invalid transition."""
 
 
-class RoomStateCache:
+class RoomStateStore:
+    """Reduce room messages into one RoomScreen instance's state."""
+
     def __init__(self) -> None:
         self._state: RoomState | None = None
-        self._generation = 0
 
     @property
     def state(self) -> RoomState | None:
         return self._state
-
-    @property
-    def generation(self) -> int:
-        return self._generation
 
     def apply(
         self,
@@ -117,15 +114,16 @@ class RoomStateCache:
             self_account_id=self_account_id,
         )
 
-        if previous is not None and previous.status is RoomStatus.WAITING:
+        if previous is not None and previous.status is not RoomStatus.WAITING:
+            msg = "A terminal room state store cannot be reinitialized."
+            raise RoomStateTransitionError(msg)
+
+        if previous is not None:
             if previous.room_id != state.room_id:
-                msg = "An active room generation cannot change room ID."
+                msg = "An active RoomScreen instance cannot change room ID."
                 raise RoomStateTransitionError(msg)
             if replace(state, version=previous.version) == previous:
                 return previous
-
-        if previous is None or previous.status is not RoomStatus.WAITING:
-            self._generation += 1
 
         self._state = state
         return state

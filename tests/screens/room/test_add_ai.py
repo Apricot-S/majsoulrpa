@@ -402,8 +402,8 @@ def test_kick_interrupts_add_ai_wait() -> None:
     with pytest.raises(ScreenStaleError):
         asyncio.run(screen.add_ai())
 
-    assert context.room_state_cache.state is not None
-    assert context.room_state_cache.state.status is RoomStatus.KICKED
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is RoomStatus.KICKED
 
 
 def test_add_ai_has_no_timeout_argument_and_safe_api_log(

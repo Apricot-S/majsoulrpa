@@ -122,8 +122,8 @@ def test_start_match_clicks_start_and_stales_after_response_and_notice(
     assert result is None
     assert len(browser.clicked_points) == 1
     assert messages.get_count == 2
-    assert context.room_state_cache.state is not None
-    assert context.room_state_cache.state.status is RoomStatus.MATCH_STARTED
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is RoomStatus.MATCH_STARTED
     assert sleeps == [room_module.TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS]
     with pytest.raises(ScreenStaleError):
         asyncio.run(screen.get_state())
@@ -167,8 +167,8 @@ def test_start_match_waits_while_room_screen_remains_visible() -> None:
     with pytest.raises(TimeoutError):
         asyncio.run(start_match_with_timeout())
 
-    assert context.room_state_cache.state is not None
-    assert context.room_state_cache.state.status is RoomStatus.MATCH_STARTED
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is RoomStatus.MATCH_STARTED
     with pytest.raises(ScreenStaleError):
         asyncio.run(screen.get_state())
 
@@ -243,8 +243,8 @@ def test_start_match_accepts_game_start_notice_before_response() -> None:
     asyncio.run(screen.start_match())
 
     assert messages.get_count == 2
-    assert context.room_state_cache.state is not None
-    assert context.room_state_cache.state.status is RoomStatus.MATCH_STARTED
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is RoomStatus.MATCH_STARTED
 
 
 @pytest.mark.parametrize(
@@ -297,8 +297,8 @@ def test_start_match_waits_for_response_and_game_start_notice(
     with pytest.raises(TimeoutError):
         asyncio.run(start_match_with_timeout())
 
-    assert context.room_state_cache.state is not None
-    assert context.room_state_cache.state.status is expected_status
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is expected_status
     if expected_stale:
         with pytest.raises(ScreenStaleError):
             asyncio.run(screen.get_state())
@@ -587,8 +587,8 @@ def test_kick_interrupts_start_match_wait() -> None:
         asyncio.run(screen.start_match())
 
     assert len(browser.clicked_points) == 1
-    assert context.room_state_cache.state is not None
-    assert context.room_state_cache.state.status is RoomStatus.KICKED
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is RoomStatus.KICKED
 
 
 def test_start_match_has_no_arguments_and_safe_api_log(

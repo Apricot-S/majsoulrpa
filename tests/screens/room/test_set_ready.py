@@ -495,8 +495,8 @@ def test_kick_interrupts_set_ready_wait() -> None:
         asyncio.run(screen.set_ready())
 
     assert len(browser.clicked_points) == 1
-    assert context.room_state_cache.state is not None
-    assert context.room_state_cache.state.status is RoomStatus.KICKED
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is RoomStatus.KICKED
 
 
 @pytest.mark.parametrize(

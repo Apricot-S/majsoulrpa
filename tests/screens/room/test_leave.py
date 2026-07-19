@@ -102,7 +102,7 @@ def test_leave_clicks_ui_and_stales_after_success(
     assert sleeps == [1.0]
     assert len(browser.clicked_points) == 1
     assert messages.get_count == 1
-    state = context.room_state_cache.state
+    state = screen._room_state_store.state
     assert state is not None
     assert state.status is RoomStatus.LEFT
     with pytest.raises(ScreenStaleError):
@@ -134,8 +134,8 @@ def test_leave_does_not_use_historical_leave_response() -> None:
 
     assert browser.clicked_points == []
     assert messages.get_count == 0
-    assert context.room_state_cache.state is not None
-    assert context.room_state_cache.state.status is RoomStatus.LEFT
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is RoomStatus.LEFT
 
 
 def test_leave_server_rejection_keeps_screen_active(
@@ -261,8 +261,8 @@ def test_kick_interrupts_leave_wait() -> None:
         asyncio.run(screen.leave())
 
     assert len(browser.clicked_points) == 1
-    assert context.room_state_cache.state is not None
-    assert context.room_state_cache.state.status is RoomStatus.KICKED
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is RoomStatus.KICKED
 
 
 def test_leave_requires_outbound_request_response() -> None:
