@@ -429,11 +429,11 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] AI を正の account ID を持つ human player として公開しない
 - [x] terminal state でも最後に確定した room 情報を保持する
 
-### Room state cache / SnifferMessageSource
+### Room state store / SnifferMessageSource
 
 - [x] 成功した `.lq.Lobby.createRoom` response から host の初期 snapshot を作る
 - [x] 成功した `.lq.Lobby.joinRoom` response から guest の初期 snapshot を作る
-- [x] 成功した `.lq.Lobby.fetchRoom` response から reload 後の snapshot を作る
+- [x] 成功した `.lq.Lobby.fetchRoom` response から対局終了後の Room snapshot を作る
 - [x] error を持つ create / join / fetch response では active room を初期化しない
 - [x] `.lq.NotifyRoomPlayerUpdate` で owner、human、AI を同じ version へ原子的に更新する
 - [x] host 退出後の owner 更新で `self_is_host` を再導出する
@@ -443,18 +443,20 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `.lq.NotifyRoomKickOut` で `KICKED` にする
 - [x] 成功した `.lq.Lobby.leaveRoom` response で `LEFT` にする
 - [x] terminal 後の古い room notice を active state として復活させない
-- [x] terminal 後の新しい完全 snapshot は新しい room generation を開始する
 - [x] active 中に別 room ID の完全 snapshot が来たら不整合にする
-- [x] 古い RoomScreen generation は新しい room で stale になる
 - [x] room 状態用の decode 直後 observer や background task を追加しない
 - [x] RoomScreen は `SnifferMessageSource.get_nowait()` で蓄積済み message を順番に処理する
 - [x] RoomScreen は `SnifferMessageSource.get()` で新しい message を待機する
-- [x] callback ごとに RoomScreen instance が変わっても共有 cache から最新 snapshot を得られる
-- [x] cache は最新 snapshot と room generation 以外の raw message 履歴を保持しない
+- [ ] `RoomStateStore` は `RoomScreen` instance が所有する
+- [ ] `ScreenContext` と controller runtime は Room state cache を所有しない
+- [ ] store は最新 snapshot 以外の raw message 履歴、operation response、waiter を保持しない
+- [ ] active 中に callback が早期 return した後の再検出を、過去の state で初期化成功にしない
+- [ ] `.lq.Lobby.fetchRoom` は対局終了後の Room 再入場だけに使い、Room 内の browser reload / restart
+      や active 中の callback 早期 return の復元には使わない
 - [x] `HomeScreen.create_room()` は成功した createRoom message を RoomScreen 用に source へ残す
 - [x] `HomeScreen.join_room()` は成功確認後に元の joinRoom message を 1 回だけ差し戻す
 - [x] joinRoom の失敗 message は RoomScreen 用に差し戻さない
-- [x] wait は cache が渡された snapshot の version より新しければ即時に返せる
+- [x] wait は store が渡された snapshot の version より新しければ即時に返せる
 - [x] wait は source の `get()` を使い sleep polling しない
 - [x] wait 中の cancellation で適用済み snapshot を壊さない
 - [x] Sniffer decode、stream gap、queue overflow を room state で成功扱いにしない
@@ -467,7 +469,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] threshold 未満の screenshot では検出しない
 - [x] `before_callback()` は active room snapshot が得られるまで framework 内部の既定期限で待つ
 - [x] 画像だけ room で snapshot がなければ状態を推測せず失敗する
-- [x] `before_callback()` は source の蓄積済み message を処理して cache を最新化する
+- [x] `before_callback()` は source の蓄積済み message を処理して store を最新化する
 - [x] `get_state()` は network request や click を行わず最新 immutable snapshot を返す
 - [x] RoomScreen の全高レベル API は `timeout` 引数を持たない
 - [x] 呼び出し側の `asyncio.timeout()` で待機を伴う RoomScreen API を中断できる
@@ -640,6 +642,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] Login を挟む復帰も同じ recovery bootstrap から新しい MatchScreen を復元する
 - [ ] reload 後の再検出、bootstrap、timeout、cancellation 失敗を成功扱いにしない
 - [ ] callback が active 中に source を読まない場合の queue overflow を隠さない
+- [ ] 友人戦の対局終了後に先読みした `.lq.Lobby.fetchRoom` response を 1 回だけ put_back し、
+      新しい `RoomScreen` が完全 snapshot として消費できる
 - [ ] 自動テストでは synthetic decoded message と synthetic nested protobuf だけを使う
 
 ## Phase 7: WebSocket sniffer

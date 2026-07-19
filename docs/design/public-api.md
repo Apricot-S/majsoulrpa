@@ -161,6 +161,17 @@ class Screen:
 
 操作 API は、その画面で意味があるものだけに限定します。
 
+callback が return すると、runtime は現在の Screen instance を破棄し、画面検出からやり直す。
+同じ種類の画面が続いていても、新しい instance が現在の authoritative な画像または message だけで
+完全に初期化できる場合に限って callback を return できる。認証途中の `LoginScreen`、active な
+`RoomScreen`、active な `MatchScreen` のように instance-local state が必要な Screen では、terminal
+遷移または明示された recovery 境界まで同じ callback invocation を継続する。framework は早期
+return で失われた state を共有 cache や推測で補完しない。
+
+`HomeScreen` のように操作完了後が別画面または画像から再初期化できる安定状態になる Screen は、
+同じ種類の画面に留まっていても callback を return できる。Screen ごとの recovery 境界は各設計
+資料に明記する。
+
 `LoginScreen` 候補:
 
 ```python
@@ -207,6 +218,12 @@ async with asyncio.timeout(10.0):
 プレイヤーには account ID、名前、host、ready を含める。server rejection は Enum 戻り値
 ではなく、機械判定用 Enum を属性に持つ型付き例外にする。観測方式と状態遷移の詳細は
 [RoomScreen 設計](screens/room.md) を参照する。
+
+Room callback は room が active な間、同じ `RoomScreen` instance で状態待機と操作を継続する。
+`LEFT`、`KICKED`、`MATCH_STARTED` などの terminal 遷移前に callback を return して、新しい
+instance へ room state を引き継ぐ利用方法はサポートしない。
+対局終了後に同じ友人戦へ戻る場合は例外ではなく、`fetchRoom` の authoritative な完全 snapshot
+から新しい `RoomScreen` instance を初期化できる、明示的な画面遷移境界である。
 
 `TournamentLobbyScreen` 候補:
 

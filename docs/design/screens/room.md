@@ -122,6 +122,30 @@ RoomScreen 内部の message 待機は cancellation をそのまま伝播する�
 他の Screen API と同様に、同じ Screen instance に対する複数 API の並行呼び出しは
 サポートしない。RPA runtime は callback を逐次実行するため、通常利用で操作が競合しない。
 
+## Callback lifecycle
+
+Room callback は room が active な間、同じ callback invocation と `RoomScreen` instance を維持する。
+callback が return すると runtime は現在の instance を破棄して画面検出からやり直すが、消費済みの
+完全 snapshot や途中状態を次の instance へ引き継がない。次の API が非 terminal な状態を返した後も、
+callback 内で状態待機または別の操作を続ける。
+
+- `get_state()`
+- 非 terminal な state を返した `wait_for_state_change()`
+- `add_ai()`
+- `set_ready()`
+
+`LEFT`、`KICKED`、`MATCH_STARTED`、RPA 停止、または失敗によって現在の RoomScreen を終了するときに
+callback を return する。active 中の早期 return を runtime hook で検出する処理は、必要性が
+確認されるまで追加せず、利用契約として明記する。誤って早期 return した後に RoomScreen が
+再検出されても、差分 notice や過去の instance state から初期化成功を推測しない。
+
+雀魂の友人戦では Room 内で browser を reload または再起動すると host、guest ともに退出するため、
+reload を RoomScreen の recovery 境界として扱わない。一方、対局終了後に同じ友人戦へ戻る画面
+遷移では `.lq.Lobby.fetchRoom` response を新しい RoomScreen の完全 snapshot として使う。
+この lifecycle 判断は
+[ADR-0007: Room状態をcallback invocation内で管理する](../../adr/0007-room-state-lifecycle.md)
+に記録する。
+
 `get_state()` は新しい network request を送らず、`SnifferMessageSource` に蓄積された
 message をその時点まで読み進めて最新 snapshot を返す。
 `wait_for_state_change()` は polling 用 sleep を利用者に書かせず、渡された snapshot の
@@ -209,18 +233,18 @@ callback と API は逐次実行され、`SnifferMessageSource` がその間の 
 処理できる。`wait_for_state_change()` は source の `get()` を直接 await する。
 
 この状態管理方式の判断は
-[ADR-0004: Room状態をmessage sourceと共有cacheで管理する](../../adr/0004-room-state-message-source-and-cache.md)
-に記録する。
+[ADR-0007: Room状態をcallback invocation内で管理する](../../adr/0007-room-state-lifecycle.md)
+に記録する。以前の共有 cache 方針は
+[ADR-0004](../../adr/0004-room-state-message-source-and-cache.md) で履歴として参照できる。
 
-ただし、現在の runtime は callback loop ごとに新しい Screen instance を生成する。最初の
-RoomScreen instance が完全 snapshot を消費したあとで callback が return しても状態を失わない
-よう、最新 snapshot と room generation だけは `ScreenContext` から共有される具体的な
-`RoomStateCache` に保持する。これは message を常時観測する service ではなく、RoomScreen が
-source を読んだときだけ更新する小さな cache である。raw message の履歴、operation response、
-waiter は保持しない。
+最新 snapshot は `RoomScreen` instance が所有する具体的な `RoomStateStore` に保持する。これは
+message を常時観測する service ではなく、同じ RoomScreen が source を読んだときだけ更新する。
+raw message の履歴、operation response、waiter は保持せず、`ScreenContext` や別の Screen
+instance と共有しない。
 
 `RoomScreen.before_callback()` と各公開 API の先頭は、まず `get_nowait()` でその時点の queue を
-drain し、room message を cache へ反映する。待機が必要な API は続けて `get()` で到着順に読む。
+drain し、room message を instance-local store へ反映する。待機が必要な API は続けて `get()` で
+到着順に読む。
 Sniffer の stream gap、decode error、queue overflow は従来どおり runtime 全体の失敗とし、
 Room state を推測で補完しない。長時間 callback が source を読まず queue 上限へ達した場合も、
 常駐 observer を追加しても queue 自体は残るため解決しない。従来どおり黙って破棄せず
@@ -231,6 +255,12 @@ runtime error にする。
 message を消費するため、RoomScreen 実装時に response dict だけでなく元の decoded message を
 保持し、成功確認後に 1 回だけ `put_back()` する。失敗 response は RoomScreen へ渡さない。
 
+対局終了後に同じ友人戦へ戻る場合、新しい `RoomScreen` は `.lq.Lobby.fetchRoom` response の完全
+snapshot から instance-local store を初期化する。`MatchScreen` がこの message を画面遷移の確認中に
+先読みした場合は、次の Screen に属する decoded message として 1 回だけ `put_back()` する。
+`fetchRoom` は対局から Room への再入場 evidence であり、Room 内の reload recovery や active 中の
+callback 早期 return を補完する evidence として扱わない。
+
 ### 初期 snapshot と更新 message
 
 現行 protocol から次の対応を設計の出発点とする。実装前に synthetic message で固定し、
@@ -240,7 +270,7 @@ message を消費するため、RoomScreen 実装時に response dict だけで�
 |---|---|
 | `.lq.Lobby.createRoom` response | ホスト側の最初の完全な `Room` snapshot |
 | `.lq.Lobby.joinRoom` response | ゲスト側の最初の完全な `Room` snapshot |
-| `.lq.Lobby.fetchRoom` response | reload / session 復元時の完全な `Room` snapshot |
+| `.lq.Lobby.fetchRoom` response | 対局終了後に同じ友人戦へ戻るときの完全な `Room` snapshot |
 | `.lq.NotifyRoomPlayerUpdate` | owner、人間、AI、位置情報の更新。ホスト交代もここで扱う |
 | `.lq.NotifyRoomPlayerReady` | 個別プレイヤーの ready 更新 |
 | `.lq.NotifyRoomGameStart` | `MATCH_STARTED` への terminal 遷移 |
@@ -264,7 +294,7 @@ protocol / design を更新する。
 各操作は次の順序で行う。
 
 1. `get_nowait()` で現在の source を空になるまで読み、room state を最新化する。
-2. active room generation、権限、満員・ready 条件を確認する。
+2. active room state、権限、満員・ready 条件を確認する。
 3. template または確定した `Region` を使って画面を click する。
 4. source の `get()` で到着 message を順に処理し、期待する outbound Req/Res と notice を待つ。
 5. response を観測したら `error` を検証し、server rejection なら例外にする。
@@ -291,13 +321,13 @@ message 不整合として失敗させる。
 - active room の owner ID と self account ID は human player list に存在する。
 - ready 対象の account ID は human player list に存在する。
 - 人間と AI の合計は最大人数を超えない。
-- 同じ active room generation の途中で room ID が変化しない。
+- active な同じ RoomScreen instance の途中で room ID が変化しない。
 - terminal 後の古い room update を新しい active state として扱わない。
 
-新しい `createRoom` / `joinRoom` / `fetchRoom` の完全 snapshot を terminal state 後に観測した
-場合は、新しい room generation を開始できる。古い `RoomScreen` は generation が一致しない
-ため stale になる。active 中に別 room ID の完全 snapshot を観測した場合は暗黙に切り替えず
-不整合とする。
+terminal state になった現在の `RoomScreen` は stale とし、同じ instance で新しい room を開始しない。
+新しい room へ入る場合は `HomeScreen.create_room()` / `join_room()`、対局終了後に同じ友人戦へ
+戻る場合は `fetchRoom` から、新しい `RoomScreen` callback と store を開始する。active 中に別
+room ID の完全 snapshot を観測した場合は暗黙に切り替えず不整合とする。
 
 実通信では `robot_count` は AI 追加後も `0` のままで、`robots` に追加順の AI が入り、各 AI の
 `account_id` は `1`、`2`、`3` と増える。`positions` は画面左から並ぶ player slot ごとに、その
@@ -374,7 +404,7 @@ class RoomOperationRejectedError(ScreenError):
 | 未知 code | 上記例外 + `UNRECOGNIZED_ERROR_CODE`。数値 code は属性に保持 |
 | response / notice が到着しない | API 内では待機を継続。呼び出し側の timeout / cancellation に委ねる |
 | message field の欠落・型不正・矛盾 | `ScreenInconsistentMessageError` |
-| kick 済み、対局開始済み、別 room generation | `ScreenStaleError` の Room 用派生 |
+| kick 済み、対局開始済み、退出済み | `ScreenStaleError` の Room 用派生 |
 | template / 操作対象が見つからない | `ScreenDetectionError` |
 | browser / Sniffer / decode / stream gap | 元の infrastructure error を変換せず伝播 |
 | cancellation | cleanup 後にそのまま伝播 |
@@ -413,7 +443,7 @@ framework hook である `before_callback()` の初期化上限は public 引数
 実装を始める前に、次を合意済み友人戦でユーザーに確認してもらう。payload の値は文書へ
 貼らず、API 名、field の意味、error code の意味、画面遷移という設計結果だけを反映する。
 
-1. 四人部屋と三人部屋の create / join / fetch snapshot。
+1. 四人部屋と三人部屋の create / join、および対局終了後の fetch snapshot。
 2. `persons`、`robots`、`robot_count`、`positions` の関係。
 3. ready 通知の `account_id`、`ready`、`account_list`、`seq` の意味。
 4. host 退出時の player update と owner の選ばれ方。
@@ -433,7 +463,7 @@ framework hook である `before_callback()` の初期化上限は public 引数
 完了してから次へ進む。
 
 1. `RoomState` / `RoomPlayer` の純粋な decode と不変条件。
-2. `RoomStateCache` と `SnifferMessageSource` からの snapshot 更新、terminal、instance 間共有。
+2. instance-local `RoomStateStore` と `SnifferMessageSource` からの snapshot 更新、terminal。
 3. `RoomScreen` の画像検出と `get_state()`。
 4. `wait_for_state_change()` と外部 host 交代 / kick の扱い。
 5. `leave()`。

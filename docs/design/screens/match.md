@@ -74,7 +74,8 @@ framework が試合終了として補完しない。早期 return を検出す�
 ### instance-local store
 
 `MatchStateStore` は `MatchScreen` instance が所有し、normalized action を immutable snapshot へ
-reduce する。Room と異なり局ごとに Screen instance を作り直さないため、`ScreenContext` に
+reduce する。Room と同様に active 中は同じ callback invocation と Screen instance を維持するため、
+`ScreenContext` に
 共有 `MatchStateCache` は追加しない。
 
 画面遷移を伴わない network reconnect で `syncGame` を受信した場合は、同じ store を再構築する。
@@ -255,6 +256,11 @@ Room / tournament / Home への遷移が完了するまでは、必要な Match 
 次の Screen に属する message を先読みした場合は 1 回だけ `put_back()` し、画面遷移を確認して
 から stale にする。terminal 後に新しい match の auth/action を観測しても、同じ instance を
 暗黙に別試合へ転用しない。
+
+友人戦の対局終了後に `.lq.Lobby.fetchRoom` response を観測した場合は、Room へ戻るための
+authoritative な完全 snapshot として 1 回だけ `put_back()` する。runtime が新しく検出した
+`RoomScreen` はこの response から instance-local store を初期化する。以前の RoomScreen instance
+や terminal snapshot は引き継がない。
 
 ## 整合性と失敗モデル
 

@@ -100,13 +100,18 @@ RoomScreen の callback と API は同時実行されず、source が未処理 m
 host 交代や kick も操作前 refresh または状態待機で処理できる。Room 専用 thread や Screen
 instance ごとの background task は追加しない。
 
-runtime は callback loop ごとに新しい Screen instance を生成するため、最新の immutable room
-snapshot と room generation だけは具体的な `RoomStateCache` として `ScreenContext` 経由で共有
-する。cache は RoomScreen が source を読んだときだけ更新し、raw message 履歴、operation
-response、waiter を保持しない。汎用 event sourcing store や Screen state registry は作らない。
-`ScreenContext` は protobuf object や ZMQ socket の具体型を `RoomScreen` へ公開しない。
+`RoomScreen` は active な room の間、同じ callback invocation と instance を維持する。callback が
+return すると runtime は新しい Screen instance を生成するが、消費済みの完全 snapshot を共有
+cache で引き継ぐ処理は行わない。room state は `RoomScreen` instance が所有する具体的な store に
+immutable snapshot として保持し、raw message 履歴、operation response、waiter は保持しない。
+汎用 event sourcing store や Screen state registry も作らない。`ScreenContext` は Room state
+store、protobuf object、ZMQ socket の具体型を `RoomScreen` へ公開しない。
 
-初期 snapshot は `createRoom`、`joinRoom`、`fetchRoom` response、更新は room notice から得る。
+初期 snapshot は、Home からの新規入室では `createRoom` / `joinRoom` response、対局終了後に同じ
+友人戦へ戻る場合は `fetchRoom` response から得る。更新は room notice から得る。Room 内での
+browser reload / restart は退出になるため、`fetchRoom` を reload recovery の根拠には使わない。
+active 中の callback 早期 return はサポートせず、terminal 遷移または失敗まで同じ instance が
+source を読み続ける。
 host 権限は owner ID と session account ID から snapshot ごとに導出し、Screen instance へ
 cache しない。詳しい状態遷移、操作との相関、失敗モデルは
 [RoomScreen 設計](screens/room.md) に従う。
@@ -114,7 +119,8 @@ cache しない。詳しい状態遷移、操作との相関、失敗モデル�
 ### Match state
 
 `MatchScreen` は通常の局遷移では作り直さず、同じ callback invocation と instance を使う。state は
-instance-local な具体的 store が immutable snapshot として保持し、`ScreenContext` 共有 cache、
+Room と同様に instance-local な具体的 store が immutable snapshot として保持し、
+`ScreenContext` 共有 cache、
 Match 専用 observer、background reducer は追加しない。
 
 live `ActionPrototype` と `syncGame` 内の restore action は Match 固有 adapter で同じ normalized
