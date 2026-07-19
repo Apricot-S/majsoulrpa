@@ -152,6 +152,13 @@ Screen base は、custom screen を書くための最小 surface にします。
 - AWS / email 設定
 - raw credential
 
+`RoomStateCache` は callback loop 間で room snapshot を共有する具体的な例外である。
+`MatchScreen` は通常の局遷移では同じ instance を維持する。reload / 再ログイン後は新しい instance
+が decoded `authGame` / `syncGame` message から state を再構築するため、`ScreenContext` に Match
+state cache や entry hint は追加しない。Room / tournament が確定済みの fresh entry marker を先に
+消費した場合は、既存 message source の `put_back()` で decoded message 自体を一度だけ次の Screen
+へ引き渡す。
+
 ## `browser/runner.py` / `browser/server.py`
 
 browser host の起動関数と request server は browser lifecycle と

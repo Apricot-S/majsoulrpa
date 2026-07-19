@@ -586,6 +586,62 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `before_callback()` は検出直後にマウスカーソルを手牌から離す
 - [x] マウスカーソルの移動先は基準座標 `(585, 790, 1000, 70)` の領域内とする
 
+## Phase 6.12: MatchScreen 状態初期化
+
+詳細は [MatchScreen 設計](../design/screens/match.md) に従う。
+
+### normalized action decode
+
+- [ ] live `ActionPrototype` の obfuscated data を synthetic bytes から decode できる
+- [ ] `syncGame.game_restore.actions` の plain data を同じ `MatchAction` へ decode できる
+- [ ] live / restore adapter は同じ action data に対して同じ normalized data を返す
+- [ ] 未知 action 名、壊れた data、不正 step は明示的な decode error にする
+- [ ] nested action decode を共通 Sniffer decoder の責務へ追加しない
+
+### immutable state / reducer
+
+- [ ] synthetic `authGame` から match identity、self seat、player metadata を decode できる
+- [ ] self account が seat list にない、重複 ID、3/4 人以外は不整合にする
+- [ ] `ActionNewRound` から最初の immutable `MatchState` / `RoundState` を構築できる
+- [ ] 初回は `ActionMJStart` step 0 の有無に応じて `ActionNewRound` step 1 / step 0 を受理する
+- [ ] match version は試合全体で単調増加し、round step は局ごとに 0 から始まる
+- [ ] 次局の `ActionNewRound` は同じ store の round generation を増やす
+- [ ] 次局へ移っても match identity、self seat、player metadata を維持する
+- [ ] action step の欠落、巻き戻り、内容が異なる duplicate を成功扱いにしない
+- [ ] 観測順が前後した live action は bounded buffer から step 順に apply する
+
+### unified bootstrap
+
+- [ ] host / guest / tournament の実通信ログから fresh entry marker と順序を確認する
+- [ ] marker が reload / 途中復帰では fresh evidence として現れないことを確認する
+- [ ] Room / tournament が消費した marker を Screen 遷移直前に一度だけ put_back する
+- [ ] direct / put-back marker、authGame、live ActionNewRound で同じ fresh state を初期化できる
+- [ ] Login / reload からは recovery entry evidence、authGame、syncGame replay で初期化できる
+- [ ] authGame と action source の到着順に依存しない
+- [ ] marker が match ID を持つ場合、authGame の match ID との矛盾は失敗にする
+- [ ] consume 済み marker と以前の Room terminal state を reload 時に fresh evidence として再利用しない
+- [ ] public な `restore` flag を使わず message から初期化経路を判定する
+- [ ] restore replay は live と同じ reducer を使う
+- [ ] restore replay の過去 action を新着 event として callback へ通知しない
+- [ ] recovery entry では restore 完了前の live action を初期 snapshot の代用にしない
+- [ ] reload 中に進んだ action を含む syncGame snapshot から current state を復元できる
+- [ ] metadata と active round の両方が揃うまで callback を開始しない
+- [ ] 未知 message や矛盾した初期化 message は screenshot 付き不整合エラーにする
+
+### single callback / resync
+
+- [ ] `ActionNewRound` で `MatchScreen` を stale にせず同じ callback を継続する
+- [ ] active 中の syncGame は同じ instance の state を authoritative replay で置き換える
+- [ ] active 中の syncGame でも match version を巻き戻さない
+- [ ] 別 match ID の syncGame を暗黙に受け入れない
+- [ ] MatchScreen は generic `Screen.reload()` を継承し、成功後に stale になる
+- [ ] Match callback は reload 後に user data を return して runtime の再検出へ戻れる
+- [ ] cookie が有効な reload は Login を挟まず、新しい MatchScreen を syncGame から復元する
+- [ ] Login を挟む復帰も同じ recovery bootstrap から新しい MatchScreen を復元する
+- [ ] reload 後の再検出、bootstrap、timeout、cancellation 失敗を成功扱いにしない
+- [ ] callback が active 中に source を読まない場合の queue overflow を隠さない
+- [ ] 自動テストでは synthetic decoded message と synthetic nested protobuf だけを使う
+
 ## Phase 7: WebSocket sniffer
 
 - [x] sniffer backend の start に失敗した場合に browser を閉じる

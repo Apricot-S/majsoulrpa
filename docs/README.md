@@ -19,6 +19,7 @@
 - [テンプレート照合](design/screens/template-matching.md)
 - [ログイン認証フロー](design/screens/login-verification.md)
 - [RoomScreen](design/screens/room.md)
+- [MatchScreen](design/screens/match.md)
 - [WebSocket キャプチャ方針](design/network/websocket-capture.md)
 - [WebSocket Sniffer](design/network/sniffer.md)
 

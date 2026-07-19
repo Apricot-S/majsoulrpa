@@ -111,6 +111,26 @@ host 権限は owner ID と session account ID から snapshot ごとに導出�
 cache しない。詳しい状態遷移、操作との相関、失敗モデルは
 [RoomScreen 設計](screens/room.md) に従う。
 
+### Match state
+
+`MatchScreen` は通常の局遷移では作り直さず、同じ callback invocation と instance を使う。state は
+instance-local な具体的 store が immutable snapshot として保持し、`ScreenContext` 共有 cache、
+Match 専用 observer、background reducer は追加しない。
+
+live `ActionPrototype` と `syncGame` 内の restore action は Match 固有 adapter で同じ normalized
+action へ変換し、同じ reducer へ渡す。新規開始、途中復帰、active 中の再同期は同じ bootstrap /
+replay 処理を使う。`ActionNewRound` は current round snapshot を置き換えるが Screen を stale に
+しない。
+
+Room / tournament が確定済みの fresh entry marker を消費した場合は、Screen 遷移直前に decoded
+message 自体を一度だけ `put_back()` する。`ScreenContext` に Match entry hint は追加しない。
+
+Match 中も generic `Screen.reload()` を使う。reload 後は current instance を stale にし、callback
+利用者が user data を return して runtime の Screen 検出へ戻す。cookie により直接 Match へ戻る
+場合と `LoginScreen` を経る場合のどちらも、新しい instance が同じ recovery bootstrap で
+`authGame` と `syncGame` から state を再構築する。詳細は [MatchScreen 設計](screens/match.md) に
+従う。
+
 ## 高レベル Screen API のログ
 
 通常ユーザーが callback から直接利用する高レベル Screen API は、呼び出し時に
