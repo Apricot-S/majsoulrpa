@@ -6,14 +6,19 @@ import pytest
 
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens.errors import ScreenInconsistentMessageError
-from majsoulrpa.screens.match import MatchScreen, StartMatchEvent
+from majsoulrpa.screens.match import (
+    MatchScreen,
+    NewRoundEvent,
+    StartMatchEvent,
+)
 from majsoulrpa.screens.match import screen as match_screen_module
+from majsoulrpa.sniffer.events import DecodedSnifferMessage
 from tests.screens._support import (
     BrowserControllerSpy,
     ScreenContext,
     _message_queue,
 )
-from tests.screens.match._support import _live_action
+from tests.screens.match._support import _live_action, _live_new_round_action
 
 
 def test_match_screen_before_callback_moves_mouse_away_from_hand() -> None:
@@ -26,7 +31,10 @@ def test_match_screen_before_callback_moves_mouse_away_from_hand() -> None:
         context=ScreenContext(
             browser=browser,
             rng=Random(0),
-            sniffer_messages=_message_queue(_live_action()),
+            sniffer_messages=_message_queue(
+                _live_action(),
+                _live_new_round_action(step=1),
+            ),
         ),
     )
 
@@ -37,6 +45,27 @@ def test_match_screen_before_callback_moves_mouse_away_from_hand() -> None:
     assert 790 < y < 860
     assert browser.events == ["move_mouse"]
     assert screen._start_match_event == StartMatchEvent(action_step=0)
+    assert isinstance(screen._new_round_event, NewRoundEvent)
+    assert screen._new_round_event.action_step == 1
+
+
+def test_match_screen_accepts_action_new_round_at_step_zero() -> None:
+    browser = BrowserControllerSpy(b"synthetic-screenshot")
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=browser,
+            rng=Random(0),
+            sniffer_messages=_message_queue(
+                _live_new_round_action(step=0),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+
+    assert screen._start_match_event is None
+    assert isinstance(screen._new_round_event, NewRoundEvent)
+    assert screen._new_round_event.action_step == 0
 
 
 def test_match_screen_logs_only_special_message_levels(
@@ -53,6 +82,7 @@ def test_match_screen_logs_only_special_message_levels(
                 ".lq.Lobby.heatbeat",
                 ".lq.Lobby.loginBeat",
                 _live_action(),
+                _live_new_round_action(step=1),
             ),
         ),
     )
@@ -69,6 +99,7 @@ def test_match_screen_logs_only_special_message_levels(
                 ".lq.Lobby.heatbeat",
                 ".lq.Lobby.loginBeat",
                 "ActionMJStart",
+                "ActionNewRound",
             )
             if name in record.message
         ): record.levelno
@@ -80,6 +111,7 @@ def test_match_screen_logs_only_special_message_levels(
     assert levels[".lq.Lobby.heatbeat"] == logging.DEBUG
     assert levels[".lq.Lobby.loginBeat"] == logging.WARNING
     assert levels["ActionMJStart"] == logging.INFO
+    assert levels["ActionNewRound"] == logging.INFO
     action_log = next(
         record.message
         for record in caplog.records
@@ -97,6 +129,29 @@ def test_match_screen_requires_action_mj_start_at_step_zero() -> None:
             browser=browser,
             rng=Random(0),
             sniffer_messages=_message_queue(_live_action(step=1)),
+        ),
+    )
+
+    with pytest.raises(ScreenInconsistentMessageError):
+        asyncio.run(screen.before_callback())
+
+
+@pytest.mark.parametrize(
+    "messages",
+    [
+        (_live_new_round_action(step=1),),
+        (_live_action(), _live_new_round_action(step=0)),
+    ],
+)
+def test_match_screen_rejects_inconsistent_initial_action_sequence(
+    messages: tuple[DecodedSnifferMessage, ...],
+) -> None:
+    browser = BrowserControllerSpy(b"inconsistent-screenshot")
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=browser,
+            rng=Random(0),
+            sniffer_messages=_message_queue(*messages),
         ),
     )
 

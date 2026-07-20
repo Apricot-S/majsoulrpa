@@ -1,6 +1,6 @@
 import asyncio
 from logging import getLogger
-from typing import NoReturn, override
+from typing import NoReturn, assert_never, override
 
 from majsoulrpa.assets.templates.match import (
     SEAT_INDICATOR_SETTINGS_PATH,
@@ -20,7 +20,11 @@ from majsoulrpa.screens.match._action import (
     MatchActionDecodeError,
     decode_live_action,
 )
-from majsoulrpa.screens.match.event import StartMatchEvent
+from majsoulrpa.screens.match.event import (
+    MatchEvent,
+    NewRoundEvent,
+    StartMatchEvent,
+)
 from majsoulrpa.sniffer.events import DecodedNotice, DecodedSnifferMessage
 
 MATCH_INITIALIZATION_TIMEOUT_SECONDS = 5.0
@@ -49,6 +53,7 @@ class MatchScreen(Screen):
     def __init__(self, context: ScreenContext | None = None) -> None:
         super().__init__(context=context)
         self._start_match_event: StartMatchEvent | None = None
+        self._new_round_event: NewRoundEvent | None = None
 
     @classmethod
     @override
@@ -71,12 +76,12 @@ class MatchScreen(Screen):
             if not timeout.expired():
                 raise
             await self._raise_inconsistent_message(
-                "ActionMJStart did not arrive during match initialization.",
+                "ActionNewRound did not arrive during match initialization.",
                 cause=error,
             )
 
     async def _initialize(self) -> None:
-        while self._start_match_event is None:
+        while self._new_round_event is None:
             message = await self._get_sniffer_message()
             self._apply_initialization_message(message)
 
@@ -93,11 +98,30 @@ class MatchScreen(Screen):
             msg = "ActionPrototype must be a Notice."
             raise MatchActionDecodeError(msg)
         event, decoded_message = decode_live_action(message)
-        if not isinstance(event, StartMatchEvent):
-            msg = "ActionMJStart must arrive before ActionNewRound."
-            raise MatchActionDecodeError(msg)
         _logger.info(_format_sniffer_message(decoded_message))
-        self._start_match_event = event
+        self._apply_initialization_event(event)
+
+    def _apply_initialization_event(self, event: MatchEvent) -> None:
+        match event:
+            case StartMatchEvent():
+                if self._start_match_event is not None:
+                    msg = "ActionMJStart must not be repeated."
+                    raise MatchActionDecodeError(msg)
+                if self._new_round_event is not None:
+                    msg = "ActionMJStart must precede ActionNewRound."
+                    raise MatchActionDecodeError(msg)
+                self._start_match_event = event
+            case NewRoundEvent():
+                expected_step = 1 if self._start_match_event is not None else 0
+                if event.action_step != expected_step:
+                    msg = (
+                        "ActionNewRound must be step "
+                        f"{expected_step} during match initialization."
+                    )
+                    raise MatchActionDecodeError(msg)
+                self._new_round_event = event
+            case _ as unreachable:
+                assert_never(unreachable)
 
     @staticmethod
     def _log_initialization_message(

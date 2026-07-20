@@ -1,6 +1,7 @@
 import base64
 import datetime
 
+from majsoulrpa.assets.protocol import liqi_pb2
 from majsoulrpa.sniffer.events import DecodedNotice, Direction, RawNotice
 
 OBSERVED_AT = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
@@ -33,3 +34,17 @@ def _live_action(
         ),
         message={"step": step, "name": name, "data": encoded_data},
     )
+
+
+def _live_new_round_action(*, step: int) -> DecodedNotice:
+    data = liqi_pb2.ActionNewRound(
+        chang=0,
+        ju=0,
+        ben=0,
+        tiles=["1m"] * 13,
+        scores=[25000] * 4,
+        liqibang=0,
+        left_tile_count=69,
+        doras=["3p"],
+    ).SerializeToString()
+    return _live_action(step=step, name="ActionNewRound", data=data)

@@ -629,7 +629,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 13 枚の ActionNewRound.tiles は全体を shoupai にし、zimopai を None にする
 - [ ] scores、seat ごとの collection、tile、chang / ju / ben、dora、left count の不変条件を検証する
 - [ ] operation data は内部 immutable snapshot に保持し、公開 state には has_pending_operation だけを出す
-- [ ] 初回は `ActionMJStart` step 0 の有無に応じて `ActionNewRound` step 1 / step 0 を受理する
+- [x] 初回は `ActionMJStart` step 0 の有無に応じて `ActionNewRound` step 1 / step 0 を受理する
 - [ ] `ActionMJStart` を state を変更しない `StartMatchEvent` として decode する
 - [x] `StartMatchEvent.from_dict()` は `ActionMJStart` のstep 0制約を検証する
 - [ ] 最初の RoundState ができるまで StartMatchEvent を temporary prelude に保持する
