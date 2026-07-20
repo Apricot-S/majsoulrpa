@@ -265,6 +265,7 @@ class DapaiEvent(_MatchEventBase):
     moqie: bool
     liqi: bool
     wliqi: bool
+    dora_indicators: tuple[str, ...]
 
     def __post_init__(self) -> None:
         _MatchEventBase.__post_init__(self)
@@ -327,6 +328,12 @@ def event_name(event: MatchEvent) -> str:
 保持し、reducer が同じ event の適用中に点数と `liqibang` を更新する。これは雀魂の action 境界を
 保ち、Kanachan の打牌 feature へ変換しやすくするためである。Mjai の `reach` / `reach_accepted` への
 分離が必要な adapter は、`DapaiEvent` と後続 event の `liqi_success` から外部境界で生成する。
+
+`ActionNewRound.tiles` が14枚の場合は全体をsortして右端を便宜上 `zimopai` に分離しているため、親の
+第一打牌では `moqie == false` でも打牌が `shoupai` ではなく `zimopai` と一致する場合がある。
+`DapaiEvent` reducer は、自分が親、当該 seat の第一打牌、打牌が `zimopai` と一致するという条件を
+すべて満たす場合に限り、この牌を `zimopai` から除く。通常の手出しは `shoupai` から牌を除いた後、
+残っている `zimopai` を手牌へ取り込んでsortする。ツモ切りは打牌と `zimopai` の一致を要求する。
 
 Sniffer の観測時刻は transport metadata であり、public event には保持しない。live message の
 `observed_at` は Sniffer 調査ログに残す。event の順序は `RoundState.events` の tuple 順を正本とし、

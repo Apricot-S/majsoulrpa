@@ -1,6 +1,17 @@
+from dataclasses import replace
+
 from majsoulrpa.screens.match._metadata import MatchMetadata
-from majsoulrpa.screens.match.event import NewRoundEvent, StartMatchEvent
-from majsoulrpa.screens.match.state import MatchState, RoundState
+from majsoulrpa.screens.match.event import (
+    DapaiEvent,
+    NewRoundEvent,
+    StartMatchEvent,
+)
+from majsoulrpa.screens.match.event.new_round import _tile_sort_key
+from majsoulrpa.screens.match.state import (
+    MatchDapai,
+    MatchState,
+    RoundState,
+)
 
 
 class MatchStateStore:
@@ -62,4 +73,120 @@ class MatchStateStore:
             players=metadata.players,
             round=round_state,
         )
+        return self._state
+
+    def apply_dapai(
+        self,
+        event: DapaiEvent,
+        *,
+        has_pending_operation: bool,
+    ) -> MatchState:
+        state = self._require_state()
+        round_state = state.round
+        if event.action_step != round_state.step + 1:
+            msg = "ActionDiscardTile step must follow the current round step."
+            raise ValueError(msg)
+        if event.seat >= len(state.players):
+            msg = "ActionDiscardTile seat must identify a player."
+            raise ValueError(msg)
+        if round_state.previous_dapai_seat is not None:
+            msg = "A discard cannot follow an unresolved discard."
+            raise ValueError(msg)
+
+        shoupai = list(round_state.shoupai)
+        zimopai = round_state.zimopai
+        if event.seat == state.self_seat:
+            shoupai, zimopai = self._apply_self_dapai(
+                event,
+                round_state,
+                shoupai,
+                zimopai,
+            )
+
+        he = [list(dapai) for dapai in round_state.he]
+        he[event.seat].append(
+            MatchDapai(
+                tile=event.tile,
+                moqie=event.moqie,
+                liqi=event.liqi,
+                wliqi=event.wliqi,
+            ),
+        )
+        liqi = list(round_state.liqi)
+        wliqi = list(round_state.wliqi)
+        first_draw = list(round_state.first_draw)
+        yifa = list(round_state.yifa)
+        lingshang_zimo = list(round_state.lingshang_zimo)
+        if event.liqi:
+            liqi[event.seat] = True
+            yifa[event.seat] = True
+        elif event.wliqi:
+            wliqi[event.seat] = True
+            yifa[event.seat] = True
+        else:
+            yifa[event.seat] = False
+        first_draw[event.seat] = False
+        lingshang_zimo[event.seat] = False
+
+        next_round = replace(
+            round_state,
+            step=event.action_step,
+            dora_indicators=(
+                event.dora_indicators or round_state.dora_indicators
+            ),
+            shoupai=tuple(shoupai),
+            zimopai=zimopai,
+            he=tuple(tuple(dapai) for dapai in he),
+            liqi=tuple(liqi),
+            wliqi=tuple(wliqi),
+            first_draw=tuple(first_draw),
+            yifa=tuple(yifa),
+            lingshang_zimo=tuple(lingshang_zimo),
+            previous_dapai_seat=event.seat,
+            previous_dapai_tile=event.tile,
+            has_pending_operation=has_pending_operation,
+            events=(*round_state.events, event),
+        )
+        self._state = replace(
+            state,
+            version=state.version + 1,
+            round=next_round,
+        )
+        return self._state
+
+    @staticmethod
+    def _apply_self_dapai(
+        event: DapaiEvent,
+        round_state: RoundState,
+        shoupai: list[str],
+        zimopai: str | None,
+    ) -> tuple[list[str], str | None]:
+        if event.moqie:
+            if zimopai != event.tile:
+                msg = "A self moqie tile must match zimopai."
+                raise ValueError(msg)
+            return shoupai, None
+
+        try:
+            shoupai.remove(event.tile)
+        except ValueError:
+            if not (
+                event.seat == round_state.ju
+                and round_state.first_draw[event.seat]
+                and zimopai == event.tile
+            ):
+                msg = "A self dapai tile must be in the hand."
+                raise ValueError(msg) from None
+            return shoupai, None
+
+        if zimopai is not None:
+            shoupai.append(zimopai)
+            shoupai.sort(key=_tile_sort_key)
+            zimopai = None
+        return shoupai, zimopai
+
+    def _require_state(self) -> MatchState:
+        if self._state is None:
+            msg = "Match state store is not initialized."
+            raise RuntimeError(msg)
         return self._state

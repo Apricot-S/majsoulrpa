@@ -9,6 +9,7 @@ from pydantic import JsonValue
 
 from majsoulrpa.assets.protocol import liqi_pb2
 from majsoulrpa.screens.match.event import (
+    DapaiEvent,
     MatchEvent,
     NewRoundEvent,
     StartMatchEvent,
@@ -30,6 +31,7 @@ type _EventDecoder = Callable[
 _EVENT_DECODERS: dict[str, _EventDecoder] = {
     "ActionMJStart": StartMatchEvent.from_dict,
     "ActionNewRound": NewRoundEvent.from_dict,
+    "ActionDiscardTile": DapaiEvent.from_dict,
 }
 
 

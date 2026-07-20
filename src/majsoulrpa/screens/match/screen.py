@@ -33,6 +33,7 @@ from majsoulrpa.screens.match._metadata import (
     decode_match_metadata,
 )
 from majsoulrpa.screens.match.event import (
+    DapaiEvent,
     MatchEvent,
     NewRoundEvent,
     StartMatchEvent,
@@ -108,7 +109,7 @@ class MatchScreen(Screen):
     async def get_state(self) -> MatchState:
         while (message := self._get_sniffer_message_nowait()) is not None:
             try:
-                self._apply_initialization_message(message)
+                self._apply_match_message(message)
             except MatchMetadataUnsupportedError as error:
                 await self._raise_unsupported_match(cause=error)
             except (MatchActionDecodeError, MatchMetadataDecodeError) as error:
@@ -125,9 +126,9 @@ class MatchScreen(Screen):
     async def _initialize(self) -> None:
         while self._state_store.state is None:
             message = await self._get_sniffer_message()
-            self._apply_initialization_message(message)
+            self._apply_match_message(message)
 
-    def _apply_initialization_message(
+    def _apply_match_message(
         self,
         message: DecodedSnifferMessage,
     ) -> None:
@@ -146,12 +147,15 @@ class MatchScreen(Screen):
             raise MatchActionDecodeError(msg)
         event, decoded_message = decode_live_action(message)
         _logger.info(_format_sniffer_message(decoded_message))
-        self._apply_initialization_event(event)
-        if isinstance(event, NewRoundEvent):
-            self._new_round_has_pending_operation = (
-                self._has_pending_operation(decoded_message)
-            )
-        self._try_initialize_state()
+        if self._state_store.state is None:
+            self._apply_initialization_event(event)
+            if isinstance(event, NewRoundEvent):
+                self._new_round_has_pending_operation = (
+                    self._has_pending_operation(decoded_message)
+                )
+            self._try_initialize_state()
+            return
+        self._apply_active_event(event, decoded_message)
 
     def _apply_auth_game(self, message: DecodedSnifferMessage) -> None:
         if not isinstance(message, DecodedRequestResponse):
@@ -205,8 +209,34 @@ class MatchScreen(Screen):
                     )
                     raise MatchActionDecodeError(msg)
                 self._new_round_event = event
+            case DapaiEvent():
+                msg = "ActionDiscardTile must follow ActionNewRound."
+                raise MatchActionDecodeError(msg)
             case _ as unreachable:
                 assert_never(unreachable)
+
+    def _apply_active_event(
+        self,
+        event: MatchEvent,
+        decoded_message: DecodedNotice,
+    ) -> None:
+        match event:
+            case DapaiEvent():
+                try:
+                    self._state_store.apply_dapai(
+                        event,
+                        has_pending_operation=(
+                            self._has_pending_operation(decoded_message)
+                        ),
+                    )
+                except ValueError as error:
+                    msg = "ActionDiscardTile is inconsistent with match state."
+                    raise MatchActionDecodeError(msg) from error
+                return
+            case StartMatchEvent() | NewRoundEvent():
+                msg = "A match initialization action must not be repeated."
+                raise MatchActionDecodeError(msg)
+        assert_never(event)
 
     @staticmethod
     def _has_pending_operation(message: DecodedNotice) -> bool:

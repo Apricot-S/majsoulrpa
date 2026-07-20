@@ -11,6 +11,8 @@ from majsoulrpa.screens.errors import (
     ScreenUnexpectedStateError,
 )
 from majsoulrpa.screens.match import (
+    DapaiEvent,
+    MatchDapai,
     MatchOrigin,
     MatchRank,
     MatchScreen,
@@ -26,6 +28,7 @@ from tests.screens.match._support import (
     SELF_ACCOUNT_ID,
     _auth_game,
     _live_action,
+    _live_discard_action,
     _live_new_round_action,
 )
 
@@ -265,3 +268,46 @@ def test_get_state_logs_only_screen_and_api_name(
     assert record.message == (
         "screen API called: screen=MatchScreen api=get_state"
     )
+
+
+def test_get_state_applies_dealers_first_discard() -> None:
+    browser = BrowserControllerSpy(b"synthetic-screenshot")
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=browser,
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(),
+                _live_action(),
+                _live_new_round_action(
+                    step=1,
+                    tiles=["1m"] * 13 + ["9s"],
+                ),
+                _live_discard_action(
+                    step=2,
+                    seat=0,
+                    tile="9s",
+                    moqie=False,
+                    doras=["4p"],
+                ),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+    state = asyncio.run(screen.get_state())
+
+    assert state.version == 2
+    assert state.round.step == 2
+    assert state.round.shoupai == ("1m",) * 13
+    assert state.round.zimopai is None
+    assert state.round.dora_indicators == ("4p",)
+    assert state.round.he[0] == (
+        MatchDapai(tile="9s", moqie=False, liqi=False, wliqi=False),
+    )
+    assert state.round.first_draw[0] is False
+    assert state.round.previous_dapai_seat == 0
+    assert state.round.previous_dapai_tile == "9s"
+    assert isinstance(state.round.events[-1], DapaiEvent)
+    assert state.round.events[-1].action_step == 2

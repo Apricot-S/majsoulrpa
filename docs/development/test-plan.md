@@ -645,6 +645,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] 次局の `ActionNewRound` は同じ store の round generation を増やす
 - [ ] 次局へ移っても match identity、self seat、player metadata を維持する
 - [ ] DealTile、DiscardTile、ChiPengGang、AnGangAddGang、BaBei を immutable state へ reduce できる
+- [x] ActionDiscardTile を immutable DapaiEvent へ decode し、event 列と河へ追加する
+- [x] 親の第一打牌は moqie=false でも便宜上分離した zimopai と一致すれば正しく除去する
+- [x] DapaiEvent で first_draw、previous dapai、dora、version / step を更新する
 - [ ] concrete MatchEvent は `@final`、`frozen=True`、`slots=True`、`kw_only=True` の dataclass である
 - [ ] public `MatchEvent` type alias はすべての concrete event class を列挙する
 - [ ] MatchEvent に type discriminator を設けない
@@ -655,7 +658,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] ActionMJStart がある最初の RoundState.events は StartMatchEvent、NewRoundEvent の順で始まる
 - [x] ActionMJStart がない局の RoundState.events は NewRoundEvent から始まる
 - [x] RoundState.events の tuple 順と action_step が protobuf action の順序に一致する
-- [ ] liqi / wliqi 宣言は DapaiEvent の field に含め、独立 event を生成しない
+- [x] liqi / wliqi 宣言は DapaiEvent の field に含め、独立 event を生成しない
 - [ ] 後続 action の LiQiSuccess は対応する event の nested field に含め、独立 event を生成しない
 - [ ] 次局の ActionNewRound で event 列を新しい NewRoundEvent から開始する
 - [ ] restore replay は temporary store で行い、成功後に version 1 の snapshot を一度だけ publish する

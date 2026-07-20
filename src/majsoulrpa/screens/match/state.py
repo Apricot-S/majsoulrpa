@@ -63,6 +63,11 @@ class MatchDapai:
     liqi: bool
     wliqi: bool
 
+    def __post_init__(self) -> None:
+        if self.liqi and self.wliqi:
+            msg = "liqi and wliqi must not both be true."
+            raise ValueError(msg)
+
 
 class MatchFuluKind(StrEnum):
     CHI = "chi"
