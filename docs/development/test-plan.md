@@ -616,10 +616,15 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 - [ ] MatchRank、MatchPlayer、MatchDapai、MatchFulu、RoundState、MatchState は frozen で collection を tuple にする
 - [ ] human player の四麻 `level4` と三麻 `level3` の AccountLevel ID / score を失わず decode する
-- [ ] CPU seat は robots の有効な level4 / level3 を保持し、欠ける場合だけ None にする
+- [x] authGame response の players は human のみ、robots は CPU のみであることを実通信で確認する
+- [x] 観測した robots の account_id は 1 / 2 / 3、nickname は空文字列、level / level3 は field 自体がない
+- [ ] CPU seat は robot ID を human account ID と解釈せず、account_id / 空の name / 欠けた level4 / level3 を None に正規化する
+- [ ] seat_list の CPU 表現と robots の各要素を seat へ対応付ける規則を実通信で確認する
 - [ ] synthetic `authGame` から match identity、origin、self seat、player metadata を decode できる
 - [ ] authGame request account ID と session account ID が一致し、token を state / error / 通常 log に残さない
-- [ ] 友人戦 / tournament metadata だけを MatchOrigin へ decode し、対象外 match を拒否する
+- [x] 友人戦は meta.room_id に友人戦 ID が入り、mode_id / contest_uid は 0 であることを実通信で確認する
+- [ ] tournament metadata を実通信で確認して MatchOrigin.TOURNAMENT へ decode する
+- [ ] room_id / contest_uid が両方 0 の match は open match の可能性を推測で確定せず対象外として拒否する
 - [ ] self account が seat list にない、重複 ID、3/4 人以外は不整合にする
 - [ ] human player と seat_list を一対一に対応させ、CPU sentinel は account_id が None の seat にする
 - [ ] 未対応特殊 mode は ScreenUnexpectedStateError として初期化を成功させない

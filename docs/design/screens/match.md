@@ -154,10 +154,13 @@ class MatchState:
 human player は正の `account_id`、`name`、四麻段位 `level4`、三麻段位 `level3` を必須とする。
 `MatchRank` は `AccountLevel.id` と `score` を失わず保持する。段位名への変換表を state の正本に
 すると雀魂側の追加段位へ追従できず、Kanachan などの categorical feature にも再変換が必要になる
-ため、protocol の数値を正本とする。表示名が必要なら別 adapter で変換する。CPU seat は protocol
-上の表現を手動 spike で確認した後、`account_id=None` に正規化する。`robots` に有効な name、level、
-level3 が含まれる場合は捨てずに保持し、protocol 上欠ける場合だけ対応 field を `None` にする。CPU
-向けの架空段位は補わない。character などの cosmetic metadata は実需要が出るまで公開しない。
+ため、protocol の数値を正本とする。表示名が必要なら別 adapter で変換する。実通信では human player
+だけが response `players` に入り、CPU は `robots` に分離されていた。観測した CPU の `account_id` は
+1、2、3、`nickname` は空文字列であり、`level` / `level3` field は存在しなかった。これらの robot ID を
+human account ID と解釈せず、公開 state では `account_id=None`、空の nickname は `name=None`、欠けた
+段位は `level4=None` / `level3=None` に正規化する。CPU 向けの架空名や架空段位は補わない。
+将来 `robots` に有効な name、level、level3 が観測された場合は捨てずに保持する。character などの
+cosmetic metadata は実需要が出るまで公開しない。
 
 `RoundState.shoupai` は自分の配牌を昇順の tuple で保持する。雀魂の `ActionNewRound.tiles` が 14 枚の
 場合、その 14 枚すべてが手積み麻雀と同様の配牌である。14 枚全体を sort し、右端の 1 枚を表示上
@@ -371,14 +374,17 @@ session account ID と一致し、`game_uuid` は空でないことを要求す�
 保存せず、通常 log と例外 message に含めない。
 
 response の `seat_list` は 3 または 4 seat とし、session account ID が一度だけ現れることを要求する。
-正の seat account ID は重複せず、`players` 内の human player と一対一に対応しなければならない。
-`players` / `robots` と `seat_list` の CPU 対応は手動 spike で確認し、CPU の protocol sentinel を公開
-state の `None` へ正規化する。
+`players` は human player だけを含み、その account ID は `seat_list` の human seat と一対一に対応
+しなければならない。`robots` は CPU metadata だけを含む。観測された robot ID 1、2、3 は human
+account ID とは別の値として扱い、公開 state の CPU `account_id` は `None` に正規化する。
+`seat_list` 内の CPU 表現と `robots` の各要素を seat へ対応付ける規則は、引き続き実通信で確認する。
 
 対象 match は合意済み友人戦または大会だけである。`game_config.meta.room_id` と `contest_uid` の
-実通信上の関係を確認し、exactly one の正の ID から `MatchOrigin.FRIENDLY` /
-`MatchOrigin.TOURNAMENT` と `origin_id` を構築する。両方が 0、両方が正、または対象外 category の
-match は推測で受理せず `ScreenUnexpectedStateError` にする。
+うち、友人戦では `room_id` に友人戦 ID が入り、`mode_id` と `contest_uid` は 0 になることを実通信で
+確認した。この組み合わせから `MatchOrigin.FRIENDLY` と `origin_id=room_id` を構築する。大会の
+組み合わせは実通信確認後に `MatchOrigin.TOURNAMENT` へ固定する。`room_id` と `contest_uid` が両方
+0 の場合は、段位戦やイベント戦などのオープン対局である可能性が高い。ただし現時点では推測であり、
+分類を確定せず対象外 match として `ScreenUnexpectedStateError` にする。両方が正の場合も受理しない。
 
 初期対応は通常の三人戦 / 四人戦 action に限定する。`game_config.mode` と `detail_rule` から特殊 mode
 を識別できる field は手動 spike で固定し、血戦、換三張、open hand など reducer が未対応の mode は
@@ -631,7 +637,8 @@ authoritative な完全 snapshot として 1 回だけ `put_back()` する。run
 - match ID が空でなく、同じ instance 内で変化しないこと
 - self account ID が seat list に一度だけ存在すること
 - player 数と seat 数が 3 または 4 で一致すること
-- player account ID が重複しないこと。CPU seat の表現は実通信確認後に固定すること
+- human player account ID が重複しないこと。robot ID は human account ID と別に扱うこと
+- `seat_list` の CPU 表現と `robots` の対応が、実通信で確認した規則に一致すること
 - restore batch が任意の `ActionMJStart` と `ActionNewRound` から current step まで連続すること
 - current round の live step が欠落、重複、巻き戻りしないこと
 - action data が schema と state 不変条件を満たすこと
@@ -676,8 +683,11 @@ outer protobuf decode、queue overflow、cancellation は元の infrastructure e
    `authGame` / `syncGame` が届くこと。
 3. `ReqSyncGame.round_id == "-1"`、`step == 1000000`、`game_restore.game_state == 1`、
    `response.step == len(actions)` の意味。
-4. 四人戦 / 三人戦の `seat_list`、`players`、`robots` と CPU sentinel の対応。
-5. 友人戦 / tournament の `game_config.meta.room_id`、`contest_uid`、`category` の対応。
+4. 四人戦 / 三人戦の `seat_list` における CPU 表現と、`robots` の各要素を seat に対応付ける規則。
+   `players` が human のみ、`robots` が CPU のみであることと、観測した robot field は確認済み。
+5. tournament の `game_config.meta.room_id`、`mode_id`、`contest_uid`、`category` の対応。
+   友人戦の `room_id > 0`、`mode_id == 0`、`contest_uid == 0` は確認済み。両 ID が 0 の match が
+   open match であるという推測も、必要なら分類 field と合わせて確認する。
 6. standard mode と未対応特殊 mode を識別する `game_config.mode` / `detail_rule` field。
 7. dealer / non-dealer の `ActionNewRound.tiles` が 13 / 14 枚になる条件。
    `dora` / `doras` と optional `operation` の実際の presence も確認する。
