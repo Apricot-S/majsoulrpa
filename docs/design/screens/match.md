@@ -139,10 +139,6 @@ class RoundState:
     operation_candidates: OperationCandidates | None
     events: tuple[MatchEvent, ...]
 
-    @property
-    def has_pending_operation(self) -> bool:
-        return self.operation_candidates is not None
-
 
 @dataclass(frozen=True, slots=True)
 class MatchState:
@@ -290,9 +286,9 @@ class OperationCandidates:
 live action の singular `operation` は受信者である自家用なので、protobuf の `seat` は公開 model に
 重複して保持しない。restore / record にある複数人分の `operations` を扱う段階で seat 付き model を
 別途設計する。`OperationCandidates.operations` は非空、時間は非負の millisecond として検証する。
-`RoundState.operation_candidates` は候補がないときだけ `None` とし、既存の
-`has_pending_operation` は保存 field ではなく `operation_candidates is not None` から導出する
-read-only property として維持する。
+`RoundState.operation_candidates` は候補がないときだけ `None` とし、
+`has_pending_operation` は設けない。候補の有無は `operation_candidates is None` または
+`operation_candidates is not None` で直接判定し、同じ状態を表す API を重複させない。
 
 type と concrete class の対応は次のとおりとする。
 

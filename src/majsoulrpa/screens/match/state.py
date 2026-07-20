@@ -104,7 +104,6 @@ class RoundState:
     lingshang_zimo: tuple[bool, ...]
     previous_dapai_seat: Seat | None
     previous_dapai_tile: Tile | None
-    has_pending_operation: bool
     events: tuple[MatchEvent, ...]
 
     def __post_init__(self) -> None:

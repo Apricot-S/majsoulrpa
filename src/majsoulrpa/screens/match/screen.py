@@ -74,7 +74,6 @@ class MatchScreen(Screen):
         self._metadata: MatchMetadata | None = None
         self._start_match_event: StartMatchEvent | None = None
         self._new_round_event: NewRoundEvent | None = None
-        self._new_round_has_pending_operation = False
         self._state_store = MatchStateStore()
 
     @classmethod
@@ -149,13 +148,9 @@ class MatchScreen(Screen):
         _logger.info(_format_sniffer_message(decoded_message))
         if self._state_store.state is None:
             self._apply_initialization_event(event)
-            if isinstance(event, NewRoundEvent):
-                self._new_round_has_pending_operation = (
-                    self._has_pending_operation(decoded_message)
-                )
             self._try_initialize_state()
             return
-        self._apply_active_event(event, decoded_message)
+        self._apply_active_event(event)
 
     def _apply_auth_game(self, message: DecodedSnifferMessage) -> None:
         if not isinstance(message, DecodedRequestResponse):
@@ -181,7 +176,6 @@ class MatchScreen(Screen):
                 self._metadata,
                 self._start_match_event,
                 self._new_round_event,
-                has_pending_operation=(self._new_round_has_pending_operation),
             )
         except ValueError as error:
             msg = "Initial match state is inconsistent."
@@ -215,47 +209,20 @@ class MatchScreen(Screen):
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def _apply_active_event(
-        self,
-        event: MatchEvent,
-        decoded_message: DecodedNotice,
-    ) -> None:
+    def _apply_active_event(self, event: MatchEvent) -> None:
         match event:
             case StartMatchEvent() | NewRoundEvent():
                 msg = "A match initialization action must not be repeated."
                 raise MatchActionDecodeError(msg)
             case _:
                 try:
-                    self._state_store.apply_event(
-                        event,
-                        has_pending_operation=(
-                            self._has_pending_operation(decoded_message)
-                        ),
-                    )
+                    self._state_store.apply_event(event)
                 except ValueError as error:
                     msg = (
                         f"{type(event).__name__} is inconsistent with "
                         "match state."
                     )
                     raise MatchActionDecodeError(msg) from error
-
-    @staticmethod
-    def _has_pending_operation(message: DecodedNotice) -> bool:
-        data = message.message.get("data")
-        if not isinstance(data, dict):
-            msg = "Decoded ActionNewRound data must be an object."
-            raise MatchActionDecodeError(msg)
-        operation = data.get("operation")
-        if operation is None:
-            return False
-        if not isinstance(operation, dict):
-            msg = "ActionNewRound operation must be an object."
-            raise MatchActionDecodeError(msg)
-        operation_list = operation.get("operation_list")
-        if not isinstance(operation_list, list):
-            msg = "ActionNewRound operation list must be a list."
-            raise MatchActionDecodeError(msg)
-        return bool(operation_list)
 
     @staticmethod
     def _log_initialization_message(

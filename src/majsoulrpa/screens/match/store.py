@@ -30,8 +30,6 @@ class MatchStateStore:
         metadata: MatchMetadata,
         start_match_event: StartMatchEvent | None,
         new_round_event: NewRoundEvent,
-        *,
-        has_pending_operation: bool,
     ) -> MatchState:
         if self._state is not None:
             msg = "Match state store is already initialized."
@@ -64,7 +62,6 @@ class MatchStateStore:
             lingshang_zimo=(False,) * player_count,
             previous_dapai_seat=None,
             previous_dapai_tile=None,
-            has_pending_operation=has_pending_operation,
             events=events,
         )
         self._state = MatchState(
@@ -78,29 +75,16 @@ class MatchStateStore:
         )
         return self._state
 
-    def apply_event(
-        self,
-        event: MatchEvent,
-        *,
-        has_pending_operation: bool,
-    ) -> MatchState:
+    def apply_event(self, event: MatchEvent) -> MatchState:
         match event:
             case DapaiEvent():
-                return self._apply_dapai(
-                    event,
-                    has_pending_operation=has_pending_operation,
-                )
+                return self._apply_dapai(event)
             case StartMatchEvent() | NewRoundEvent():
                 msg = "A match initialization event cannot be applied again."
                 raise ValueError(msg)
         assert_never(event)
 
-    def _apply_dapai(
-        self,
-        event: DapaiEvent,
-        *,
-        has_pending_operation: bool,
-    ) -> MatchState:
+    def _apply_dapai(self, event: DapaiEvent) -> MatchState:
         state = self._require_state()
         round_state = state.round
         if event.action_step != round_state.step + 1:
@@ -164,7 +148,6 @@ class MatchStateStore:
             lingshang_zimo=tuple(lingshang_zimo),
             previous_dapai_seat=event.seat,
             previous_dapai_tile=event.tile,
-            has_pending_operation=has_pending_operation,
             events=(*round_state.events, event),
         )
         self._state = replace(

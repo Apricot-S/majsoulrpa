@@ -667,7 +667,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] store は Event 適用後の手牌と内部 specification から `OperationCandidates | None` を生成する
 - [ ] action decoder は `MatchEvent` と operation specification を別に返し、operation event を生成しない
 - [ ] event 適用時に以前の operation 候補を必ず置き換え、候補がない action では `None` に戻す
-- [ ] `has_pending_operation` は operation 候補の有無と常に一致する
+- [ ] operation 候補の有無は `operation_candidates is None` / `is not None` で直接判定できる
 - [ ] operation の concrete class を class pattern で網羅すると ty が成功し、variant 追加時は `assert_never()` が失敗する
 
 ### immutable state / reducer
@@ -692,7 +692,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 14 枚の ActionNewRound.tiles は全体を sort し、右端を zimopai、残り 13 枚を shoupai にする
 - [x] 13 枚の ActionNewRound.tiles は全体を shoupai にし、zimopai を None にする
 - [ ] scores、seat ごとの collection、tile、chang / ju / ben、dora、left count の不変条件を検証する
-- [ ] `RoundState` は `OperationCandidates | None` を保持し、`has_pending_operation` をそこから導出する
+- [ ] `RoundState` は `OperationCandidates | None` を保持し、同じ状態を表す bool field / property を持たない
 - [x] 初回は `ActionMJStart` step 0 の有無に応じて `ActionNewRound` step 1 / step 0 を受理する
 - [ ] `ActionMJStart` を state を変更しない `StartMatchEvent` として decode する
 - [x] `StartMatchEvent.from_dict()` は `ActionMJStart` のstep 0制約を検証する
