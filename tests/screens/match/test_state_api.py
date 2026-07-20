@@ -119,8 +119,8 @@ def test_get_state_normalizes_observed_cpu_metadata() -> None:
         assert player.is_cpu
         assert player.account_id == account_id
         assert player.name == ""
-        assert player.level4 is None
-        assert player.level3 is None
+        assert player.level4 == MatchRank(id=10101, score=0)
+        assert player.level3 == MatchRank(id=20101, score=0)
 
 
 def test_match_screen_rejects_metadata_without_supported_origin() -> None:

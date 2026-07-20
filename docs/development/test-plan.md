@@ -618,7 +618,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] human player の四麻 `level4` と三麻 `level3` の AccountLevel ID / score を失わず decode する
 - [x] authGame response の players は human のみ、robots は CPU のみであることを実通信で確認する
 - [x] 観測した robots の account_id は 1 / 2 / 3、nickname は空文字列、level / level3 は field 自体がない
-- [x] CPU seat は正の robot ID と空の name を保持し、欠けた level4 / level3 だけを None に正規化する
+- [x] CPU seat は正の robot ID と空の name を保持し、画面表示に合わせ level4=10101 / level3=20101、score=0 を補う
 - [x] seat_list に human / CPU の全 ID が seat 順で入り、CPU ID が robots の ID と対応することを実通信で確認する
 - [x] synthetic `authGame` から match identity、origin、self seat、player metadata を decode できる
 - [ ] authGame request account ID と session account ID が一致し、token を state / error / 通常 log に残さない

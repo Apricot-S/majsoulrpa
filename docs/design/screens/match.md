@@ -83,8 +83,8 @@ class MatchPlayer:
     seat: int
     account_id: int
     name: str
-    level4: MatchRank | None
-    level3: MatchRank | None
+    level4: MatchRank
+    level3: MatchRank
 
     @property
     def is_cpu(self) -> bool: ...
@@ -158,11 +158,15 @@ human player は正の `account_id`、`name`、四麻段位 `level4`、三麻段
 だけが response `players` に入り、CPU は `robots` に分離されていた。観測した CPU の `account_id` は
 1、2、3、`nickname` は空文字列であり、`level` / `level3` field は存在しなかった。これらの robot ID を
 human account ID と同じ公開 field に保持しても実用上重複しないため、公開 state でも wire の正の
-`account_id` をそのまま保持する。CPU の空の nickname も `name=""` のまま保持し、欠けた段位だけを
-`level4=None` / `level3=None` に正規化する。human の name は空文字列にならず両段位を必須とするため、
-`MatchPlayer.is_cpu` は `name == ""` から判定できる。これにより利用者は account ID や name を使うたびに
-`None` を分岐する必要がない。CPU 向けの架空名や架空段位は補わない。character などの cosmetic
-metadata は実需要が出るまで公開しない。
+`account_id` をそのまま保持する。CPU の空の nickname も `name=""` のまま保持する。human の name は
+空文字列にならないため、`MatchPlayer.is_cpu` は `name == ""` から判定できる。
+
+CPU の `level` / `level3` は wire 上存在しないが、画面にはどちらも初心 1 と表示される。公開 state も
+画面表示に合わせ、四人麻雀 `level4=MatchRank(id=10101, score=0)`、三人麻雀
+`level3=MatchRank(id=20101, score=0)` を設定する。`CPU(簡単)` / `CPU(普通)` は実際に取得可能な human
+player name なので CPU の補完名には使わない。これにより `account_id`、`name`、両段位はいずれも
+非 optional となり、利用者が `None` を分岐する必要をなくす。character などの cosmetic metadata は
+実需要が出るまで公開しない。
 
 `RoundState.shoupai` は自分の配牌を昇順の tuple で保持する。雀魂の `ActionNewRound.tiles` が 14 枚の
 場合、その 14 枚すべてが手積み麻雀と同様の配牌である。14 枚全体を sort し、右端の 1 枚を表示上

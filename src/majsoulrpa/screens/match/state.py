@@ -4,6 +4,8 @@ from enum import StrEnum
 from majsoulrpa.screens.match.event import MatchEvent
 
 _MAX_PLAYER_COUNT = 4
+_CPU_LEVEL4_ID = 10101
+_CPU_LEVEL3_ID = 20101
 
 
 class MatchOrigin(StrEnum):
@@ -30,8 +32,8 @@ class MatchPlayer:
     seat: int
     account_id: int
     name: str
-    level4: MatchRank | None
-    level3: MatchRank | None
+    level4: MatchRank
+    level3: MatchRank
 
     def __post_init__(self) -> None:
         if not 0 <= self.seat < _MAX_PLAYER_COUNT:
@@ -40,8 +42,13 @@ class MatchPlayer:
         if self.account_id <= 0:
             msg = "Match player account ID must be positive."
             raise ValueError(msg)
-        if self.name and (self.level4 is None or self.level3 is None):
-            msg = "A human match player must have a name and both ranks."
+        if not self.name and (
+            self.level4.id != _CPU_LEVEL4_ID
+            or self.level4.score != 0
+            or self.level3.id != _CPU_LEVEL3_ID
+            or self.level3.score != 0
+        ):
+            msg = "A CPU match player must use the displayed beginner ranks."
             raise ValueError(msg)
 
     @property

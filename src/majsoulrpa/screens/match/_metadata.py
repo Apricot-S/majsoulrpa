@@ -10,6 +10,8 @@ from majsoulrpa.screens.match.state import (
 from majsoulrpa.sniffer.events import DecodedRequestResponse, Direction
 
 AUTH_GAME_NAME = ".lq.FastTest.authGame"
+_CPU_LEVEL4 = MatchRank(id=10101, score=0)
+_CPU_LEVEL3 = MatchRank(id=20101, score=0)
 
 
 class MatchMetadataDecodeError(ValueError):
@@ -137,12 +139,16 @@ def _decode_robot_player(
     account_id: int,
     value: dict[str, JsonValue],
 ) -> MatchPlayer:
+    name = _get_str(value, "nickname")
+    if name:
+        msg = "authGame robot nickname must be empty."
+        raise MatchMetadataDecodeError(msg)
     return MatchPlayer(
         seat=seat,
         account_id=account_id,
-        name=_get_str(value, "nickname"),
-        level4=_decode_optional_rank(value.get("level")),
-        level3=_decode_optional_rank(value.get("level3")),
+        name=name,
+        level4=_CPU_LEVEL4,
+        level3=_CPU_LEVEL3,
     )
 
 
@@ -174,15 +180,6 @@ def _decode_rank(value: dict[str, JsonValue]) -> MatchRank:
         msg = "authGame rank score must be nonnegative."
         raise MatchMetadataDecodeError(msg)
     return MatchRank(id=rank_id, score=score)
-
-
-def _decode_optional_rank(value: JsonValue | None) -> MatchRank | None:
-    if value is None:
-        return None
-    if not isinstance(value, dict):
-        msg = "authGame robot rank must be an object."
-        raise MatchMetadataDecodeError(msg)
-    return _decode_rank(value)
 
 
 def _get_dict(
