@@ -5,7 +5,7 @@ from typing import Self, final
 from pydantic import JsonValue
 
 from majsoulrpa.screens.match.event._base import _MatchEventBase
-from majsoulrpa.screens.match.event.new_round import _validate_tile
+from majsoulrpa.screens.match.event._common import validate_tile
 
 _MAX_SEAT = 3
 
@@ -25,12 +25,12 @@ class DapaiEvent(_MatchEventBase):
         if not 0 <= self.seat <= _MAX_SEAT:
             msg = "Dapai seat must be between 0 and 3."
             raise ValueError(msg)
-        _validate_tile(self.tile)
+        validate_tile(self.tile)
         if self.liqi and self.wliqi:
             msg = "liqi and wliqi must not both be true."
             raise ValueError(msg)
         for tile in self.dora_indicators:
-            _validate_tile(tile)
+            validate_tile(tile)
 
     @classmethod
     def from_dict(
@@ -73,10 +73,7 @@ def _get_bool(data: Mapping[str, JsonValue], name: str) -> bool:
     return value
 
 
-def _get_str_list(
-    data: Mapping[str, JsonValue],
-    name: str,
-) -> list[str]:
+def _get_str_list(data: Mapping[str, JsonValue], name: str) -> list[str]:
     value = data.get(name)
     if not isinstance(value, list) or not all(
         isinstance(item, str) for item in value

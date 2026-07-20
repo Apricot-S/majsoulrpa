@@ -1,12 +1,14 @@
 from dataclasses import replace
+from typing import assert_never
 
 from majsoulrpa.screens.match._metadata import MatchMetadata
 from majsoulrpa.screens.match.event import (
     DapaiEvent,
+    MatchEvent,
     NewRoundEvent,
     StartMatchEvent,
 )
-from majsoulrpa.screens.match.event.new_round import _tile_sort_key
+from majsoulrpa.screens.match.event._common import tile_sort_key
 from majsoulrpa.screens.match.state import (
     MatchDapai,
     MatchState,
@@ -75,7 +77,24 @@ class MatchStateStore:
         )
         return self._state
 
-    def apply_dapai(
+    def apply_event(
+        self,
+        event: MatchEvent,
+        *,
+        has_pending_operation: bool,
+    ) -> MatchState:
+        match event:
+            case DapaiEvent():
+                return self._apply_dapai(
+                    event,
+                    has_pending_operation=has_pending_operation,
+                )
+            case StartMatchEvent() | NewRoundEvent():
+                msg = "A match initialization event cannot be applied again."
+                raise ValueError(msg)
+        assert_never(event)
+
+    def _apply_dapai(
         self,
         event: DapaiEvent,
         *,
@@ -170,6 +189,10 @@ class MatchStateStore:
         try:
             shoupai.remove(event.tile)
         except ValueError:
+            # ActionNewRound sorts all 14 dealt tiles and places the
+            # rightmost tile in zimopai for presentation. On the
+            # dealer's first discard, that tile may therefore be a hand
+            # discard even though it is stored separately from shoupai.
             if not (
                 event.seat == round_state.ju
                 and round_state.first_draw[event.seat]
@@ -181,7 +204,7 @@ class MatchStateStore:
 
         if zimopai is not None:
             shoupai.append(zimopai)
-            shoupai.sort(key=_tile_sort_key)
+            shoupai.sort(key=tile_sort_key)
             zimopai = None
         return shoupai, zimopai
 

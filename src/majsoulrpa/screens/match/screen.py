@@ -223,7 +223,7 @@ class MatchScreen(Screen):
         match event:
             case DapaiEvent():
                 try:
-                    self._state_store.apply_dapai(
+                    self._state_store.apply_event(
                         event,
                         has_pending_operation=(
                             self._has_pending_operation(decoded_message)
