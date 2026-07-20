@@ -221,7 +221,10 @@ class MatchScreen(Screen):
         decoded_message: DecodedNotice,
     ) -> None:
         match event:
-            case DapaiEvent():
+            case StartMatchEvent() | NewRoundEvent():
+                msg = "A match initialization action must not be repeated."
+                raise MatchActionDecodeError(msg)
+            case _:
                 try:
                     self._state_store.apply_event(
                         event,
@@ -230,13 +233,11 @@ class MatchScreen(Screen):
                         ),
                     )
                 except ValueError as error:
-                    msg = "ActionDiscardTile is inconsistent with match state."
+                    msg = (
+                        f"{type(event).__name__} is inconsistent with "
+                        "match state."
+                    )
                     raise MatchActionDecodeError(msg) from error
-                return
-            case StartMatchEvent() | NewRoundEvent():
-                msg = "A match initialization action must not be repeated."
-                raise MatchActionDecodeError(msg)
-        assert_never(event)
 
     @staticmethod
     def _has_pending_operation(message: DecodedNotice) -> bool:

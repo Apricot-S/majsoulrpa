@@ -9,6 +9,11 @@ from majsoulrpa.screens.match.event._common import (
     tile_sort_key,
     validate_tile,
 )
+from majsoulrpa.screens.match.event._decode import (
+    _get_int,
+    _get_int_list,
+    _get_str_list,
+)
 
 _NUM_CHANG = 3
 _MAX_DORA_INDICATORS = 5
@@ -70,7 +75,7 @@ class NewRoundEvent(_MatchEventBase):
         action_step: int,
         data: Mapping[str, JsonValue],
     ) -> Self:
-        tiles = _get_str_list(data, "tiles")
+        tiles = _get_str_list(data, "ActionNewRound.tiles")
         if len(tiles) not in _DEALT_TILE_COUNTS:
             msg = (
                 "ActionNewRound.tiles must contain thirteen or fourteen tiles."
@@ -86,41 +91,16 @@ class NewRoundEvent(_MatchEventBase):
 
         return cls(
             action_step=action_step,
-            chang=_get_int(data, "chang"),
-            ju=_get_int(data, "ju"),
-            ben=_get_int(data, "ben"),
-            liqibang=_get_int(data, "liqibang"),
-            dora_indicators=tuple(_get_str_list(data, "doras")),
-            left_tile_count=_get_int(data, "left_tile_count"),
-            scores=tuple(_get_int_list(data, "scores")),
+            chang=_get_int(data, "ActionNewRound.chang"),
+            ju=_get_int(data, "ActionNewRound.ju"),
+            ben=_get_int(data, "ActionNewRound.ben"),
+            liqibang=_get_int(data, "ActionNewRound.liqibang"),
+            dora_indicators=tuple(_get_str_list(data, "ActionNewRound.doras")),
+            left_tile_count=_get_int(
+                data,
+                "ActionNewRound.left_tile_count",
+            ),
+            scores=tuple(_get_int_list(data, "ActionNewRound.scores")),
             shoupai=shoupai,
             zimopai=zimopai,
         )
-
-
-def _get_int(data: Mapping[str, JsonValue], name: str) -> int:
-    value = data.get(name)
-    if isinstance(value, bool) or not isinstance(value, int):
-        msg = f"ActionNewRound.{name} must be an int."
-        raise TypeError(msg)
-    return value
-
-
-def _get_str_list(data: Mapping[str, JsonValue], name: str) -> list[str]:
-    value = data.get(name)
-    if not isinstance(value, list) or not all(
-        isinstance(item, str) for item in value
-    ):
-        msg = f"ActionNewRound.{name} must be a list of strings."
-        raise TypeError(msg)
-    return value
-
-
-def _get_int_list(data: Mapping[str, JsonValue], name: str) -> list[int]:
-    value = data.get(name)
-    if not isinstance(value, list) or not all(
-        isinstance(item, int) and not isinstance(item, bool) for item in value
-    ):
-        msg = f"ActionNewRound.{name} must be a list of ints."
-        raise TypeError(msg)
-    return value

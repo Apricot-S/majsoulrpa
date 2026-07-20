@@ -6,6 +6,12 @@ from pydantic import JsonValue
 
 from majsoulrpa.screens.match.event._base import _MatchEventBase
 from majsoulrpa.screens.match.event._common import validate_tile
+from majsoulrpa.screens.match.event._decode import (
+    _get_bool,
+    _get_int,
+    _get_str,
+    _get_str_list,
+)
 
 _MAX_SEAT = 3
 
@@ -40,44 +46,12 @@ class DapaiEvent(_MatchEventBase):
     ) -> Self:
         return cls(
             action_step=action_step,
-            seat=_get_int(data, "seat"),
-            tile=_get_str(data, "tile"),
-            moqie=_get_bool(data, "moqie"),
-            liqi=_get_bool(data, "is_liqi"),
-            wliqi=_get_bool(data, "is_wliqi"),
-            dora_indicators=tuple(_get_str_list(data, "doras")),
+            seat=_get_int(data, "ActionDiscardTile.seat"),
+            tile=_get_str(data, "ActionDiscardTile.tile"),
+            moqie=_get_bool(data, "ActionDiscardTile.moqie"),
+            liqi=_get_bool(data, "ActionDiscardTile.is_liqi"),
+            wliqi=_get_bool(data, "ActionDiscardTile.is_wliqi"),
+            dora_indicators=tuple(
+                _get_str_list(data, "ActionDiscardTile.doras")
+            ),
         )
-
-
-def _get_int(data: Mapping[str, JsonValue], name: str) -> int:
-    value = data.get(name)
-    if isinstance(value, bool) or not isinstance(value, int):
-        msg = f"ActionDiscardTile.{name} must be an int."
-        raise TypeError(msg)
-    return value
-
-
-def _get_str(data: Mapping[str, JsonValue], name: str) -> str:
-    value = data.get(name)
-    if not isinstance(value, str):
-        msg = f"ActionDiscardTile.{name} must be a string."
-        raise TypeError(msg)
-    return value
-
-
-def _get_bool(data: Mapping[str, JsonValue], name: str) -> bool:
-    value = data.get(name)
-    if not isinstance(value, bool):
-        msg = f"ActionDiscardTile.{name} must be a bool."
-        raise TypeError(msg)
-    return value
-
-
-def _get_str_list(data: Mapping[str, JsonValue], name: str) -> list[str]:
-    value = data.get(name)
-    if not isinstance(value, list) or not all(
-        isinstance(item, str) for item in value
-    ):
-        msg = f"ActionDiscardTile.{name} must be a list of strings."
-        raise TypeError(msg)
-    return value
