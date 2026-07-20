@@ -416,7 +416,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `RoomPlayer` と `RoomState` は immutable である
 - [x] `RoomState.version` は client 内の更新ごとに単調増加する
 - [x] `room_id`、owner ID、self account ID、player account ID が正でなければ拒否する
-- [x] `max_player_count` は 3 または 4 だけを許す
+- [x] `max_player_count` は通常 room の 3 / 4 に加えて VS_AI の 1 を許す
 - [x] human player の account ID 重複を拒否する
 - [x] active room の owner と self が human player list にいなければ拒否する
 - [x] ready list に未知 account ID があれば拒否する
@@ -508,6 +508,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### `add_ai()`
 
+- [x] VS_AI は満員として扱い、存在しない AI 追加 UI を探索・操作しない
 - [x] 最新 snapshot で host の場合だけ AI 追加 UI を操作する
 - [x] participant が満員なら UI を操作しない
 - [x] source refresh 後の最新 host / capacity を使って事前条件を検証する
@@ -539,6 +540,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### `start_match()`
 
+- [x] VS_AI は host 1 人の room snapshot から start UI を操作できる
 - [x] 最新 snapshot で host の場合だけ start UI を操作する
 - [x] human guest が 1 人でも未 ready なら UI を操作しない
 - [x] AI を含む participant が最大人数未満なら UI を操作しない
@@ -616,10 +618,11 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 - [ ] MatchRank、MatchPlayer、MatchDapai、MatchFulu、RoundState、MatchState は frozen で collection を tuple にする
 - [x] human player の四麻 `level4` と三麻 `level3` の AccountLevel ID / score を失わず decode する
-- [x] authGame response の players は human のみ、robots は CPU のみであることを実通信で確認する
+- [x] 通常友人戦の authGame response は players が human のみ、robots が CPU のみであることを実通信で確認する
 - [x] 観測した robots の account_id は 1 / 2 / 3、nickname は空文字列、level / level3 は field 自体がない
 - [x] CPU seat は正の robot ID と空の name を保持し、画面表示に合わせ level4=10101 / level3=20101、score=0 を補う
-- [x] seat_list に human / CPU の全 ID が seat 順で入り、CPU ID が robots の ID と対応することを実通信で確認する
+- [x] 通常友人戦の seat_list は human / CPU の全 ID を seat 順に持ち、CPU ID が robots の ID と対応する
+- [x] VS_AI の authGame は空の robots と ready_id_list にある CPU seat ID から player metadata を構築する
 - [x] synthetic `authGame` から match identity、origin、self seat、player metadata を decode できる
 - [ ] authGame request account ID と session account ID が一致し、token を state / error / 通常 log に残さない
 - [x] 友人戦は meta.room_id に友人戦 ID が入り、mode_id / contest_uid は 0 であることを実通信で確認する

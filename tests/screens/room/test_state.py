@@ -102,6 +102,27 @@ def test_all_guests_ready_is_true_without_human_guests() -> None:
     assert state.all_guests_ready is True
 
 
+def test_decode_vs_ai_room_state_with_host_as_only_participant() -> None:
+    room = _room()
+    room["max_player_count"] = 1
+    room["persons"] = [
+        {"account_id": 100001, "nickname": "host"},
+    ]
+    room["ready_list"] = []
+    room["robots"] = []
+
+    state = decode_room_state(
+        room,
+        version=1,
+        self_account_id=100001,
+    )
+
+    assert state.max_player_count == 1
+    assert state.participant_count == 1
+    assert state.available_slots == 0
+    assert state.all_guests_ready is True
+
+
 def test_room_player_rejects_non_positive_account_id() -> None:
     with pytest.raises(ValueError, match="account ID must be positive"):
         RoomPlayer(
@@ -207,13 +228,16 @@ def test_terminal_state_keeps_last_room_information(
     assert terminal.self_account_id == waiting.self_account_id
 
 
-def test_room_state_rejects_invalid_max_player_count() -> None:
+@pytest.mark.parametrize("max_player_count", [2, True, 1.0])
+def test_room_state_rejects_invalid_max_player_count(
+    max_player_count: int,
+) -> None:
     with pytest.raises(ValueError, match="maximum player count"):
         RoomState(
             version=1,
             status=RoomStatus.WAITING,
             room_id=12345,
-            max_player_count=2,
+            max_player_count=max_player_count,
             players=(
                 RoomPlayer(100001, "host", is_host=True, is_ready=False),
             ),

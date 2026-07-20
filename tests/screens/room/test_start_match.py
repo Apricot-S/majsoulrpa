@@ -50,6 +50,17 @@ def _startable_room() -> dict[str, JsonValue]:
     return room
 
 
+def _vs_ai_room() -> dict[str, JsonValue]:
+    room = _room()
+    room["max_player_count"] = 1
+    room["persons"] = [
+        {"account_id": 100001, "nickname": "host"},
+    ]
+    room["ready_list"] = []
+    room["robots"] = []
+    return room
+
+
 def _player_update(
     *,
     owner_id: int = 100001,
@@ -127,6 +138,43 @@ def test_start_match_clicks_start_and_stales_after_response_and_notice(
     assert sleeps == [room_module.TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS]
     with pytest.raises(ScreenStaleError):
         asyncio.run(screen.get_state())
+
+
+def test_start_match_allows_vs_ai_room_with_host_as_only_participant() -> None:
+    messages = _OperationMessageSource(
+        queued=(
+            _request_response(
+                ".lq.Lobby.createRoom",
+                {"room": _vs_ai_room()},
+            ),
+        ),
+        waiting=(
+            _request_response(".lq.Lobby.startRoom", {}),
+            _notice(".lq.NotifyRoomGameStart"),
+        ),
+    )
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=START_TEMPLATE_PATH,
+            settings_path=START_SETTINGS_PATH,
+        ),
+        _synthetic_blank_screenshot(),
+    )
+    screen = RoomScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=messages,
+            account_state=_AccountState(100001),
+        ),
+    )
+    asyncio.run(screen.before_callback())
+
+    asyncio.run(screen.start_match())
+
+    assert len(browser.clicked_points) == 1
+    assert messages.get_count == 2
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is RoomStatus.MATCH_STARTED
 
 
 def test_start_match_waits_while_room_screen_remains_visible() -> None:

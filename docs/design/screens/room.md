@@ -70,7 +70,10 @@ class RoomState:
   `Room.seq` をそのまま公開する値ではない。
 - `room_id` は protocol の正の整数をそのまま公開する。`HomeScreen.join_room()` の文字列入力
   とは型が異なる。
-- `max_player_count` は `3` または `4` だけを許す。それ以外は protocol 不整合とする。
+- `max_player_count` は通常 room の `3` / `4` に加えて、VS_AI の `1` を許す。
+  VS_AI は `createRoom` だけで作られ、人間の host 1 人が Room 内の全参加者となる。
+  対局開始後に残りの席へ入る CPU は Room 内の `players` / `ai_count` へ先取りして加えない。
+  それ以外の値は protocol 不整合とする。
 - `players` は人間のプレイヤーだけを含む。`Room.persons` / `player_list` の順序を維持し、
   seat の意味が実通信で確認できるまでは seat API を追加しない。
 - AI は人間として扱わず、`robots` の要素数を `ai_count` として公開する。`robot_count` は
@@ -168,6 +171,8 @@ error になる。
 
 - 最新 snapshot で自分がホストの場合だけ利用できる。
 - `participant_count < max_player_count` を事前条件とする。
+- VS_AI は `participant_count == max_player_count == 1` の満員 room として扱う。画面に
+  `add_ai` ボタンが存在しないため、template の探索や click を行わない。
 - UI が選ぶ空き位置へ 1 体だけ追加する。位置指定 API は実需要が出るまで追加しない。
 - `.lq.Lobby.addRoomRobot` の成功 response と、
   `.lq.NotifyRoomPlayerUpdate` で AI 数が 1 増えた snapshot の両方を待つ。実通信では
@@ -179,8 +184,8 @@ error になる。
 
 - 最新 snapshot で自分がホストの場合だけ利用できる。
 - 人間のゲスト全員が `is_ready` でなければ click しない。
-- AI を含めた参加人数が `max_player_count` に達していることも事前条件とする。この条件が
-  実際の UI / server と異なる場合は手動確認結果に基づいて設計を更新する。
+- AI を含めた Room 内の参加人数が `max_player_count` に達していることも事前条件とする。
+  VS_AI では host 1 人でこの条件を満たし、対局開始後に残りの席へ CPU が入る。
 - `.lq.Lobby.startRoom` の成功 response に加えて `.lq.NotifyRoomGameStart` を待つ。
 - game start notice を観測して `MATCH_STARTED` にした後、`room-sign` が画面から消えるまで
   待ってから Screen を stale にする。ローディング画面のイラストは設定により異なるため、
@@ -316,7 +321,7 @@ message 不整合として失敗させる。
 従来どおり background task から元の infrastructure error として伝播する。
 
 - active snapshot の room ID、owner ID、self account ID、各人間の account ID は正である。
-- `max_player_count` は 3 または 4 である。
+- `max_player_count` は通常 room の 3 / 4、または VS_AI の 1 である。
 - 人間の account ID は重複しない。
 - active room の owner ID と self account ID は human player list に存在する。
 - ready 対象の account ID は human player list に存在する。

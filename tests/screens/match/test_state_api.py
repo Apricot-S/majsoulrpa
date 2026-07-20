@@ -123,6 +123,63 @@ def test_get_state_normalizes_observed_cpu_metadata() -> None:
         assert player.level3 == MatchRank(id=20101, score=0)
 
 
+def test_get_state_normalizes_vs_ai_cpu_seats_without_robot_metadata() -> None:
+    auth_game = _auth_game(
+        cpu_count=3,
+        seat_list=(102, SELF_ACCOUNT_ID, 101, 103),
+    )
+    auth_game.response["robots"] = []
+    auth_game.response["ready_id_list"] = [102, 101, 103]
+    auth_game.response["is_game_start"] = False
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"synthetic-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                auth_game,
+                _live_new_round_action(step=0),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+    state = asyncio.run(screen.get_state())
+
+    assert state.self_seat == 1
+    assert state.players[1].account_id == SELF_ACCOUNT_ID
+    for seat, account_id in ((0, 102), (2, 101), (3, 103)):
+        player = state.players[seat]
+        assert player.seat == seat
+        assert player.is_cpu
+        assert player.account_id == account_id
+        assert player.name == ""
+        assert player.level4 == MatchRank(id=10101, score=0)
+        assert player.level3 == MatchRank(id=20101, score=0)
+
+
+def test_match_screen_rejects_missing_robot_metadata_outside_vs_ai() -> None:
+    auth_game = _auth_game(
+        cpu_count=3,
+        seat_list=(102, SELF_ACCOUNT_ID, 101, 103),
+    )
+    auth_game.response["robots"] = []
+    auth_game.response["ready_id_list"] = [102, 101]
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"inconsistent-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(auth_game),
+        ),
+    )
+
+    with pytest.raises(ScreenInconsistentMessageError) as exc_info:
+        asyncio.run(screen.before_callback())
+
+    assert exc_info.value.screenshot == b"inconsistent-screenshot"
+
+
 def test_match_screen_rejects_metadata_without_supported_origin() -> None:
     screen = MatchScreen(
         context=ScreenContext(

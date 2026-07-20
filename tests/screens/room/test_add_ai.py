@@ -167,6 +167,37 @@ def test_add_ai_rejects_failed_precondition_without_clicking(
     assert messages.get_count == 0
 
 
+def test_add_ai_rejects_vs_ai_room_without_looking_for_button() -> None:
+    room = _room()
+    room["max_player_count"] = 1
+    room["persons"] = [
+        {"account_id": 100001, "nickname": "host"},
+    ]
+    room["ready_list"] = []
+    room["robots"] = []
+    messages = _OperationMessageSource(
+        queued=(_request_response(".lq.Lobby.createRoom", {"room": room}),),
+        waiting=(),
+    )
+    browser = BrowserControllerSpy(b"synthetic-screenshot")
+    screen = RoomScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=messages,
+            account_state=_AccountState(100001),
+        ),
+    )
+    asyncio.run(screen.before_callback())
+
+    with pytest.raises(RoomOperationNotAllowedError) as exc_info:
+        asyncio.run(screen.add_ai())
+
+    assert exc_info.value.operation is RoomOperation.ADD_AI
+    assert exc_info.value.reason is RoomOperationNotAllowedReason.ROOM_FULL
+    assert browser.clicked_points == []
+    assert messages.get_count == 0
+
+
 def test_add_ai_uses_latest_host_state_before_clicking() -> None:
     messages = _OperationMessageSource(
         queued=(_request_response(".lq.Lobby.createRoom", {"room": _room()}),),

@@ -154,12 +154,12 @@ class MatchState:
 human player は正の `account_id`、`name`、四麻段位 `level4`、三麻段位 `level3` を必須とする。
 `MatchRank` は `AccountLevel.id` と `score` を失わず保持する。段位名への変換表を state の正本に
 すると雀魂側の追加段位へ追従できず、Kanachan などの categorical feature にも再変換が必要になる
-ため、protocol の数値を正本とする。表示名が必要なら別 adapter で変換する。実通信では human player
-だけが response `players` に入り、CPU は `robots` に分離されていた。観測した CPU の `account_id` は
-1、2、3、`nickname` は空文字列であり、`level` / `level3` field は存在しなかった。これらの robot ID を
-human account ID と同じ公開 field に保持しても実用上重複しないため、公開 state でも wire の正の
-`account_id` をそのまま保持する。CPU の空の nickname も `name=""` のまま保持する。human の name は
-空文字列にならないため、`MatchPlayer.is_cpu` は `name == ""` から判定できる。
+ため、protocol の数値を正本とする。表示名が必要なら別 adapter で変換する。通常の友人戦では human
+player だけが response `players` に入り、CPU は `robots` に分離される。一方 VS_AI では human は
+自分 1 人だけ、`robots` は空で、`seat_list` の残りの participant ID がすべて `ready_id_list` に入る。
+どちらの形式でも CPU の participant ID を human account ID と同じ公開 field に保持し、CPU の name は
+空文字列とする。human の name は空文字列にならないため、`MatchPlayer.is_cpu` は `name == ""` から
+判定できる。
 
 CPU の `level` / `level3` は wire 上存在しないが、画面にはどちらも初心 1 と表示される。公開 state も
 画面表示に合わせ、四人麻雀 `level4=MatchRank(id=10101, score=0)`、三人麻雀
@@ -381,12 +381,14 @@ session account ID と一致し、`game_uuid` は空でないことを要求す�
 
 response の `seat_list` は 3 または 4 seat とし、session account ID が一度だけ現れることを要求する。
 `players` は human player だけを含み、その account ID は `seat_list` の human seat と一対一に対応
-しなければならない。`robots` は CPU metadata だけを含む。観測された robot ID 1、2、3 は human
-account ID と実用上重複せず、公開 state にもそのまま保持する。
-`seat_list` には human account ID と CPU の robot ID 1、2、3 がともに入り、その長さは対局人数と
-一致する。metadata decoder は `players` と `robots` をそれぞれ wire `account_id` で索引し、
-`seat_list` の各 participant ID を両方の索引へ照合して seat を決める。human / robot 間の ID 重複、
-どちらにも存在しない seat ID、seat に現れない余剰 metadata は不整合にする。
+しなければならない。通常の友人戦では `robots` が CPU metadata を含み、metadata decoder は
+`players` と `robots` をそれぞれ wire `account_id` で索引して seat を決める。
+
+VS_AI では `players` が session account 1 人だけで `robots` が空になる。`seat_list` から human ID を
+除いたすべての participant ID が、重複なく `ready_id_list` と完全一致する場合に限り、それらを
+metadata の省略された CPU として扱う。CPU は wire の participant ID、空の name、画面表示に合わせた
+既定段位を持つ `MatchPlayer` へ正規化する。この条件を満たさない未知 seat ID、human / robot 間の
+ID 重複、seat に現れない余剰 metadata は不整合にする。
 
 対象 match は合意済み友人戦または大会だけである。`game_config.meta.room_id` と `contest_uid` の
 うち、友人戦では `room_id` に友人戦 ID が入り、`mode_id` と `contest_uid` は 0 になることを実通信で

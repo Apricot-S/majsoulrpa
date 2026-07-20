@@ -91,6 +91,22 @@ def decode_match_metadata(
     if set(humans_by_id) & set(robots_by_id):
         msg = "authGame human and robot IDs must not overlap."
         raise MatchMetadataDecodeError(msg)
+
+    # Vs AI omits robot metadata and lists its CPU seat IDs as ready
+    # instead.
+    if not robots_by_id and len(humans_by_id) == 1:
+        ready_ids = _get_int_list(message.response, "ready_id_list")
+        implicit_robot_ids = set(seat_list) - set(humans_by_id)
+        if (
+            len(ready_ids) == len(set(ready_ids))
+            and set(ready_ids) == implicit_robot_ids
+        ):
+            implicit_robots: dict[int, dict[str, JsonValue]] = {
+                robot_id: {"account_id": robot_id, "nickname": ""}
+                for robot_id in implicit_robot_ids
+            }
+            robots_by_id = implicit_robots
+
     if set(seat_list) != set(humans_by_id) | set(robots_by_id):
         msg = "authGame seats must match all human and robot IDs."
         raise MatchMetadataDecodeError(msg)
