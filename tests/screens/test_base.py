@@ -234,10 +234,11 @@ def test_screen_formats_decoded_notice_without_raw_payload_bytes() -> None:
         message={"nested": {"value": 1}},
     )
 
-    formatted = screens_base._format_sniffer_message(message)
+    formatted = screens_base._format_sniffer_message_for_log(message)
 
     assert formatted == (
-        '{"raw":{"direction":"inbound","name":".lq.Test.notice",'
+        'Sniffer message: {"raw":{"direction":"inbound",'
+        '"name":".lq.Test.notice",'
         '"observed_at":"2026-01-02T00:00:00+00:00"},'
         '"message":{"nested":{"value":1}}}'
     )
@@ -274,10 +275,10 @@ def test_screen_formats_decoded_exchange_without_raw_payload_bytes() -> None:
         response={"responseValue": 2},
     )
 
-    formatted = screens_base._format_sniffer_message(message)
+    formatted = screens_base._format_sniffer_message_for_log(message)
 
     assert formatted == (
-        '{"raw":{"request_direction":"outbound",'
+        'Sniffer message: {"raw":{"request_direction":"outbound",'
         '"name":".lq.Test.exchange",'
         '"request_observed_at":"2026-01-02T03:04:05+00:00",'
         '"response_observed_at":"2026-01-02T03:04:06+00:00"},'

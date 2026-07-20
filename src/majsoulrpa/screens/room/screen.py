@@ -22,7 +22,7 @@ from majsoulrpa.screens.base import (
     Screen,
     ScreenContext,
     ScreenDetectionSpec,
-    _format_sniffer_message,
+    _format_sniffer_message_for_log,
     _requires_active,
     _screen_api,
 )
@@ -499,10 +499,7 @@ class RoomScreen(Screen):
         message: DecodedSnifferMessage,
         self_account_id: int,
     ) -> None:
-        _logger.info(
-            "Sniffer message: %s",
-            _format_sniffer_message(message),
-        )
+        _logger.info(_format_sniffer_message_for_log(message))
         try:
             self._room_state_store.apply(message, self_account_id)
         except Exception as error:

@@ -126,6 +126,11 @@ def test_match_screen_logs_only_special_message_levels(
     assert levels[".lq.FastTest.authGame"] == logging.INFO
     assert levels["ActionMJStart"] == logging.INFO
     assert levels["ActionNewRound"] == logging.INFO
+    assert all(
+        record.getMessage().startswith("Sniffer message: ")
+        for record in caplog.records
+        if record.name == "majsoulrpa.screens.match.screen"
+    )
     action_log = next(
         record.message
         for record in caplog.records

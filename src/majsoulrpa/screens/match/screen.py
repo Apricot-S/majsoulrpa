@@ -12,7 +12,7 @@ from majsoulrpa.screens.base import (
     Screen,
     ScreenContext,
     ScreenDetectionSpec,
-    _format_sniffer_message,
+    _format_sniffer_message_for_log,
     _requires_active,
     _screen_api,
 )
@@ -146,7 +146,7 @@ class MatchScreen(Screen):
             msg = "ActionPrototype must be a Notice."
             raise MatchActionDecodeError(msg)
         event, decoded_message = decode_live_action(message)
-        _logger.info(_format_sniffer_message(decoded_message))
+        _logger.info(_format_sniffer_message_for_log(decoded_message))
         if self._state_store.state is None:
             self._apply_initialization_event(event)
             self._try_initialize_state()
@@ -230,7 +230,7 @@ class MatchScreen(Screen):
         message: DecodedSnifferMessage,
     ) -> None:
         name = message.raw.name
-        formatted_message = _format_sniffer_message(message)
+        formatted_message = _format_sniffer_message_for_log(message)
         if name in _DEBUG_MESSAGE_NAMES:
             # Heartbeats and network probes are frequent and carry no
             # match state, so keep them out of the information log.

@@ -123,7 +123,7 @@ async def _ignore_stop_request() -> None:
     pass
 
 
-def _format_sniffer_message(message: DecodedSnifferMessage) -> str:
+def _format_sniffer_message_for_log(message: DecodedSnifferMessage) -> str:
     if isinstance(message, DecodedNotice):
         value = {
             "raw": {
@@ -148,7 +148,8 @@ def _format_sniffer_message(message: DecodedSnifferMessage) -> str:
             "request": message.request,
             "response": message.response,
         }
-    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    serialized = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    return f"Sniffer message: {serialized}"
 
 
 class ScreenContext:

@@ -59,7 +59,7 @@ from majsoulrpa.presentation.template import load_png_template_matcher
 from majsoulrpa.screens.base import (
     Screen,
     ScreenDetectionSpec,
-    _format_sniffer_message,
+    _format_sniffer_message_for_log,
     _requires_active,
     _screen_api,
 )
@@ -333,10 +333,7 @@ class HomeScreen(Screen):
 
     def _discard_sniffer_messages(self) -> None:
         while (message := self._get_sniffer_message_nowait()) is not None:
-            _logger.info(
-                "Sniffer message: %s",
-                _format_sniffer_message(message),
-            )
+            _logger.info(_format_sniffer_message_for_log(message))
 
     def _require_match_buttons(self, screenshot: bytes) -> None:
         match_templates = {
@@ -425,10 +422,7 @@ class HomeScreen(Screen):
     async def _get_enter_tournament_response(self) -> dict[str, JsonValue]:
         enter_tournament_message = None
         while (message := self._get_sniffer_message_nowait()) is not None:
-            _logger.info(
-                "Sniffer message: %s",
-                _format_sniffer_message(message),
-            )
+            _logger.info(_format_sniffer_message_for_log(message))
             if message.raw.name == FETCH_CUSTOMIZED_CONTEST_API_NAME:
                 enter_tournament_message = message
                 break
@@ -554,10 +548,7 @@ class HomeScreen(Screen):
             self._mark_stale()
             return None
 
-        _logger.info(
-            "Sniffer message: %s",
-            _format_sniffer_message(message),
-        )
+        _logger.info(_format_sniffer_message_for_log(message))
         _logger.warning(
             "Failed to join a friendly room: %s.",
             failure_reason.name,
@@ -580,10 +571,7 @@ class HomeScreen(Screen):
             if message.raw.name == JOIN_ROOM_API_NAME:
                 join_room_message = message
                 break
-            _logger.info(
-                "Sniffer message: %s",
-                _format_sniffer_message(message),
-            )
+            _logger.info(_format_sniffer_message_for_log(message))
 
         if join_room_message is None:
             msg = f"{JOIN_ROOM_API_NAME} message was not found."
