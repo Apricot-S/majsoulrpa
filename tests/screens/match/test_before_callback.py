@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from random import Random
+from types import SimpleNamespace
 
 import pytest
 
@@ -18,7 +19,12 @@ from tests.screens._support import (
     ScreenContext,
     _message_queue,
 )
-from tests.screens.match._support import _live_action, _live_new_round_action
+from tests.screens.match._support import (
+    SELF_ACCOUNT_ID,
+    _auth_game,
+    _live_action,
+    _live_new_round_action,
+)
 
 
 def test_match_screen_before_callback_moves_mouse_away_from_hand() -> None:
@@ -31,7 +37,9 @@ def test_match_screen_before_callback_moves_mouse_away_from_hand() -> None:
         context=ScreenContext(
             browser=browser,
             rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
             sniffer_messages=_message_queue(
+                _auth_game(),
                 _live_action(),
                 _live_new_round_action(step=1),
             ),
@@ -55,7 +63,9 @@ def test_match_screen_accepts_action_new_round_at_step_zero() -> None:
         context=ScreenContext(
             browser=browser,
             rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
             sniffer_messages=_message_queue(
+                _auth_game(),
                 _live_new_round_action(step=0),
             ),
         ),
@@ -76,11 +86,13 @@ def test_match_screen_logs_only_special_message_levels(
         context=ScreenContext(
             browser=browser,
             rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
             sniffer_messages=_message_queue(
                 ".lq.Lobby.fetchServerTime",
                 ".lq.Unknown",
                 ".lq.Lobby.heatbeat",
                 ".lq.Lobby.loginBeat",
+                _auth_game(),
                 _live_action(),
                 _live_new_round_action(step=1),
             ),
@@ -98,6 +110,7 @@ def test_match_screen_logs_only_special_message_levels(
                 ".lq.Unknown",
                 ".lq.Lobby.heatbeat",
                 ".lq.Lobby.loginBeat",
+                ".lq.FastTest.authGame",
                 "ActionMJStart",
                 "ActionNewRound",
             )
@@ -110,6 +123,7 @@ def test_match_screen_logs_only_special_message_levels(
     assert levels[".lq.Unknown"] == logging.INFO
     assert levels[".lq.Lobby.heatbeat"] == logging.DEBUG
     assert levels[".lq.Lobby.loginBeat"] == logging.WARNING
+    assert levels[".lq.FastTest.authGame"] == logging.INFO
     assert levels["ActionMJStart"] == logging.INFO
     assert levels["ActionNewRound"] == logging.INFO
     action_log = next(

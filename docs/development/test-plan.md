@@ -623,7 +623,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] self account が seat list にない、重複 ID、3/4 人以外は不整合にする
 - [ ] human player と seat_list を一対一に対応させ、CPU sentinel は account_id が None の seat にする
 - [ ] 未対応特殊 mode は ScreenUnexpectedStateError として初期化を成功させない
-- [ ] `ActionNewRound` から最初の immutable `MatchState` / `RoundState` を構築できる
+- [x] `ActionNewRound` から最初の immutable `MatchState` / `RoundState` を構築できる
 - [x] `ActionNewRound` を immutable `NewRoundEvent` として live / restore の両方から decode する
 - [x] 14 枚の ActionNewRound.tiles は全体を sort し、右端を zimopai、残り 13 枚を shoupai にする
 - [x] 13 枚の ActionNewRound.tiles は全体を shoupai にし、zimopai を None にする
@@ -632,7 +632,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 初回は `ActionMJStart` step 0 の有無に応じて `ActionNewRound` step 1 / step 0 を受理する
 - [ ] `ActionMJStart` を state を変更しない `StartMatchEvent` として decode する
 - [x] `StartMatchEvent.from_dict()` は `ActionMJStart` のstep 0制約を検証する
-- [ ] 最初の RoundState ができるまで StartMatchEvent を temporary prelude に保持する
+- [x] 最初の RoundState ができるまで StartMatchEvent を temporary prelude に保持する
 - [ ] match version は同じ Screen instance 内で単調増加し、round step は局ごとに 0 から始まる
 - [ ] 次局の `ActionNewRound` は同じ store の round generation を増やす
 - [ ] 次局へ移っても match identity、self seat、player metadata を維持する
@@ -644,9 +644,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] 利用者は event の具体 class を pattern matching して型を絞り込める
 - [ ] 各 case を terminal にして match 後に `assert_never(event)` を置くと全 variant で ty が成功する
 - [ ] MatchEvent union に未処理 variant があると `assert_never(event)` を ty が失敗にする
-- [ ] ActionMJStart がある最初の RoundState.events は StartMatchEvent、NewRoundEvent の順で始まる
-- [ ] ActionMJStart がない局の RoundState.events は NewRoundEvent から始まる
-- [ ] RoundState.events の tuple 順と action_step が protobuf action の順序に一致する
+- [x] ActionMJStart がある最初の RoundState.events は StartMatchEvent、NewRoundEvent の順で始まる
+- [x] ActionMJStart がない局の RoundState.events は NewRoundEvent から始まる
+- [x] RoundState.events の tuple 順と action_step が protobuf action の順序に一致する
 - [ ] liqi / wliqi 宣言は DapaiEvent の field に含め、独立 event を生成しない
 - [ ] 後続 action の LiQiSuccess は対応する event の nested field に含め、独立 event を生成しない
 - [ ] 次局の ActionNewRound で event 列を新しい NewRoundEvent から開始する
@@ -659,10 +659,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### state API
 
-- [ ] `before_callback()` 完了時には version 1 の active MatchState が必ず存在する
-- [ ] `get_state()` は request / click を行わず、蓄積済み message を drain して最新 snapshot を返す
-- [ ] `get_state()` の info log に match ID、account ID、player、牌、operation を含めない
-- [ ] MatchScreen、public state 型、public MatchEvent 型だけを majsoulrpa.screens.match から export する
+- [x] `before_callback()` 完了時には version 1 の active MatchState が必ず存在する
+- [x] `get_state()` は request / click を行わず、蓄積済み message を drain して最新 snapshot を返す
+- [x] `get_state()` の info log に match ID、account ID、player、牌、operation を含めない
+- [x] MatchScreen、public state 型、public MatchEvent 型だけを majsoulrpa.screens.match から export する
 - [ ] state 待機 API と operation 詳細 API は初期化 milestone に含めない
 
 ### unified bootstrap
