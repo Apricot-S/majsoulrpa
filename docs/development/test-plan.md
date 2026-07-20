@@ -655,6 +655,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] active resync の replay が途中で失敗した場合、以前の state と operation を変更しない
 - [ ] action step の欠落、巻き戻り、内容が異なる duplicate を成功扱いにしない
 - [ ] 観測順が前後した live action は bounded buffer から step 順に apply する
+- [x] 初期化時の ActionMJStart / ActionNewRound は並べ替えず、step 1 の ActionNewRound が先行したら失敗する
 
 ### state API
 

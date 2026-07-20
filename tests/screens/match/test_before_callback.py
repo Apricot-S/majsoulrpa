@@ -136,6 +136,23 @@ def test_match_screen_requires_action_mj_start_at_step_zero() -> None:
         asyncio.run(screen.before_callback())
 
 
+def test_match_screen_does_not_reorder_initial_actions() -> None:
+    browser = BrowserControllerSpy(b"inconsistent-screenshot")
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=browser,
+            rng=Random(0),
+            sniffer_messages=_message_queue(
+                _live_new_round_action(step=1),
+                _live_action(step=0),
+            ),
+        ),
+    )
+
+    with pytest.raises(ScreenInconsistentMessageError):
+        asyncio.run(screen.before_callback())
+
+
 @pytest.mark.parametrize(
     "messages",
     [

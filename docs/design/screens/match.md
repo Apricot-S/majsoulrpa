@@ -550,10 +550,15 @@ TDD で追加する。
 まま `RoundState` と operation を構築する。current round がある場合は round generation を増やし、
 同じ `MatchScreen` を active のままにする。
 
-live action の step が観測順と異なる可能性は v1-develop の知見として残す。current round 内に
-step を key とする bounded reorder buffer を置き、期待 step から連続して apply できる action だけを
+live action の step が観測順と異なる可能性は v1-develop の知見として残す。round 初期化後の通常処理には
+step を key とする bounded reorder buffer が必要であり、期待 step から連続して apply できる action だけを
 reducer へ渡す。適用済み step、内容が異なる duplicate、別 round と矛盾する action は失敗にする。
 欠けた step を推測したり飛ばしたりせず、呼び出し側 timeout または queue failure に委ねる。
+
+一方、v1-develop には試合開始時の `ActionMJStart` と最初の `ActionNewRound` が逆順で観測された記録はなく、
+同実装の初期化経路も両 action を並べ替えていない。この二つについては現時点で reorder buffer の対象に
+せず、受信順に step 0、step 1 と検証する。`ActionNewRound` step 1 が先行した場合は不整合として扱い、
+実際の観測結果が得られたときに対象範囲を再検討する。
 
 restore batch は step 0 から current step までを検証する。先頭が `ActionMJStart` なら、その次の
 step 1 の `ActionNewRound` とともに `StartMatchEvent` を最初の event 列へ保存する。先頭が
