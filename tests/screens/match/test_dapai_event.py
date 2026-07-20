@@ -1,7 +1,11 @@
 import pytest
 from pydantic import JsonValue
 
-from majsoulrpa.screens.match import DapaiEvent
+from majsoulrpa.screens.match import (
+    DapaiEvent,
+    validate_seat,
+    validate_tile,
+)
 
 
 def test_dapai_event_from_dict() -> None:
@@ -19,12 +23,12 @@ def test_dapai_event_from_dict() -> None:
 
     assert event == DapaiEvent(
         action_step=2,
-        seat=0,
-        tile="9s",
+        seat=validate_seat(0),
+        tile=validate_tile("9s"),
         moqie=False,
         liqi=False,
         wliqi=False,
-        dora_indicators=("3p",),
+        dora_indicators=(validate_tile("3p"),),
     )
 
 

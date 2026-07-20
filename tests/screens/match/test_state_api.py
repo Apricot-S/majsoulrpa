@@ -18,6 +18,7 @@ from majsoulrpa.screens.match import (
     MatchScreen,
     NewRoundEvent,
     StartMatchEvent,
+    validate_tile,
 )
 from tests.screens._support import (
     BrowserControllerSpy,
@@ -304,7 +305,12 @@ def test_get_state_applies_dealers_first_discard() -> None:
     assert state.round.zimopai is None
     assert state.round.dora_indicators == ("4p",)
     assert state.round.he[0] == (
-        MatchDapai(tile="9s", moqie=False, liqi=False, wliqi=False),
+        MatchDapai(
+            tile=validate_tile("9s"),
+            moqie=False,
+            liqi=False,
+            wliqi=False,
+        ),
     )
     assert state.round.first_draw[0] is False
     assert state.round.previous_dapai_seat == 0

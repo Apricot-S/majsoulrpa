@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from majsoulrpa.screens.match.event import MatchEvent
+from majsoulrpa.screens.match.types import Seat, Tile
 
-_MAX_PLAYER_COUNT = 4
 _CPU_LEVEL4_ID = 10101  # 初心1
 _CPU_LEVEL3_ID = 20101  # 初心1
 
@@ -29,16 +29,13 @@ class MatchRank:
 
 @dataclass(frozen=True, slots=True)
 class MatchPlayer:
-    seat: int
+    seat: Seat
     account_id: int
     name: str
     level4: MatchRank
     level3: MatchRank
 
     def __post_init__(self) -> None:
-        if not 0 <= self.seat < _MAX_PLAYER_COUNT:
-            msg = "Match player seat must be between 0 and 3."
-            raise ValueError(msg)
         if self.account_id <= 0:
             msg = "Match player account ID must be positive."
             raise ValueError(msg)
@@ -58,7 +55,7 @@ class MatchPlayer:
 
 @dataclass(frozen=True, slots=True)
 class MatchDapai:
-    tile: str
+    tile: Tile
     moqie: bool
     liqi: bool
     wliqi: bool
@@ -80,8 +77,8 @@ class MatchFuluKind(StrEnum):
 @dataclass(frozen=True, slots=True)
 class MatchFulu:
     kind: MatchFuluKind
-    tiles: tuple[str, ...]
-    from_seat: int | None
+    tiles: tuple[Tile, ...]
+    from_seat: Seat | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,14 +86,14 @@ class RoundState:
     generation: int
     step: int
     chang: int
-    ju: int
+    ju: Seat
     ben: int
     liqibang: int
-    dora_indicators: tuple[str, ...]
+    dora_indicators: tuple[Tile, ...]
     left_tile_count: int
     scores: tuple[int, ...]
-    shoupai: tuple[str, ...]
-    zimopai: str | None
+    shoupai: tuple[Tile, ...]
+    zimopai: Tile | None
     he: tuple[tuple[MatchDapai, ...], ...]
     fulu: tuple[tuple[MatchFulu, ...], ...]
     num_babei: tuple[int, ...]
@@ -105,8 +102,8 @@ class RoundState:
     first_draw: tuple[bool, ...]
     yifa: tuple[bool, ...]
     lingshang_zimo: tuple[bool, ...]
-    previous_dapai_seat: int | None
-    previous_dapai_tile: str | None
+    previous_dapai_seat: Seat | None
+    previous_dapai_tile: Tile | None
     has_pending_operation: bool
     events: tuple[MatchEvent, ...]
 
@@ -144,7 +141,7 @@ class MatchState:
     match_id: str
     origin: MatchOrigin
     origin_id: int
-    self_seat: int
+    self_seat: Seat
     players: tuple[MatchPlayer, ...]
     round: RoundState
 

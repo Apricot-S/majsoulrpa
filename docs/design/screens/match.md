@@ -80,7 +80,7 @@ class MatchRank:
 
 @dataclass(frozen=True, slots=True)
 class MatchPlayer:
-    seat: int
+    seat: Seat
     account_id: int
     name: str
     level4: MatchRank
@@ -92,7 +92,7 @@ class MatchPlayer:
 
 @dataclass(frozen=True, slots=True)
 class MatchDapai:
-    tile: str
+    tile: Tile
     moqie: bool
     liqi: bool
     wliqi: bool
@@ -109,8 +109,8 @@ class MatchFuluKind(StrEnum):
 @dataclass(frozen=True, slots=True)
 class MatchFulu:
     kind: MatchFuluKind
-    tiles: tuple[str, ...]
-    from_seat: int | None
+    tiles: tuple[Tile, ...]
+    from_seat: Seat | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,14 +118,14 @@ class RoundState:
     generation: int
     step: int
     chang: int
-    ju: int
+    ju: Seat
     ben: int
     liqibang: int
-    dora_indicators: tuple[str, ...]
+    dora_indicators: tuple[Tile, ...]
     left_tile_count: int
     scores: tuple[int, ...]
-    shoupai: tuple[str, ...]
-    zimopai: str | None
+    shoupai: tuple[Tile, ...]
+    zimopai: Tile | None
     he: tuple[tuple[MatchDapai, ...], ...]
     fulu: tuple[tuple[MatchFulu, ...], ...]
     num_babei: tuple[int, ...]
@@ -134,8 +134,8 @@ class RoundState:
     first_draw: tuple[bool, ...]
     yifa: tuple[bool, ...]
     lingshang_zimo: tuple[bool, ...]
-    previous_dapai_seat: int | None
-    previous_dapai_tile: str | None
+    previous_dapai_seat: Seat | None
+    previous_dapai_tile: Tile | None
     operation_candidates: OperationCandidates | None
     events: tuple[MatchEvent, ...]
 
@@ -150,7 +150,7 @@ class MatchState:
     match_id: str
     origin: MatchOrigin
     origin_id: int
-    self_seat: int
+    self_seat: Seat
     players: tuple[MatchPlayer, ...]
     round: RoundState
 ```
@@ -171,6 +171,13 @@ CPU の `level` / `level3` は wire 上存在しないが、画面にはどち�
 player name なので CPU の補完名には使わない。これにより `account_id`、`name`、両段位はいずれも
 非 optional となり、利用者が `None` を分岐する必要をなくす。character などの cosmetic metadata は
 実需要が出るまで公開しない。
+
+match 内の seat index と牌は、それぞれ `Seat = NewType("Seat", int)`、
+`Tile = NewType("Tile", str)` で意味を区別する。JSON / protobuf などの外部入力境界で
+`validate_seat()` / `validate_tile()` を一度だけ通し、検証済みの戻り値を Event、State、Store、
+operation へ渡す。内部処理は `Seat` / `Tile` を受け取るため、同じ値域・牌形式の検証を各 model や
+reducer で繰り返さない。`NewType` 自体には runtime validation がないため、生の `int` / `str` を
+直接 `Seat()` / `Tile()` で包む処理は decoder 境界に置かず、必ず共通 validator を使用する。
 
 `RoundState.shoupai` は自分の配牌を昇順の tuple で保持する。雀魂の `ActionNewRound.tiles` が 14 枚の
 場合、その 14 枚すべてが手積み麻雀と同様の配牌である。14 枚全体を sort し、右端の 1 枚を表示上
@@ -201,53 +208,53 @@ action の候補だけが残る。
 ```python
 @dataclass(frozen=True, slots=True, kw_only=True)
 class DapaiOperation:
-    tile: str
+    tile: Tile
     moqie: bool
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ChiOperation:
-    claimed_tile: str
-    consumed_tiles: tuple[str, str]
+    claimed_tile: Tile
+    consumed_tiles: tuple[Tile, Tile]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PengOperation:
-    claimed_tile: str
-    consumed_tiles: tuple[str, str]
+    claimed_tile: Tile
+    consumed_tiles: tuple[Tile, Tile]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class AngangOperation:
-    consumed_tiles: tuple[str, str, str, str]
+    consumed_tiles: tuple[Tile, Tile, Tile, Tile]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class DaminggangOperation:
-    claimed_tile: str
-    consumed_tiles: tuple[str, str, str]
+    claimed_tile: Tile
+    consumed_tiles: tuple[Tile, Tile, Tile]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class JiagangOperation:
-    consumed_tiles: tuple[str, str, str]
-    added_tile: str
+    consumed_tiles: tuple[Tile, Tile, Tile]
+    added_tile: Tile
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class LiqiOperation:
-    tile: str
+    tile: Tile
     moqie: bool
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ZimohuOperation:
-    tile: str
+    tile: Tile
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RongOperation:
-    tile: str
+    tile: Tile
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -404,7 +411,7 @@ class StartMatchEvent(_MatchEventBase):
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class LiqiSuccess:
-    seat: int
+    seat: Seat
     score: int
     liqibang: int
     failed: bool
@@ -419,15 +426,13 @@ class LiqiSuccess:
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ZimoEvent(_MatchEventBase):
-    seat: int
-    tile: str | None
+    seat: Seat
+    tile: Tile | None
     left_tile_count: int
     liqi_success: LiqiSuccess | None = None
 
     def __post_init__(self) -> None:
         _MatchEventBase.__post_init__(self)
-        validate_seat(self.seat)
-        validate_optional_tile(self.tile)
         validate_left_tile_count(self.left_tile_count)
         validate_optional_instance("liqi_success", self.liqi_success, LiqiSuccess)
 
@@ -435,17 +440,15 @@ class ZimoEvent(_MatchEventBase):
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class DapaiEvent(_MatchEventBase):
-    seat: int
-    tile: str
+    seat: Seat
+    tile: Tile
     moqie: bool
     liqi: bool
     wliqi: bool
-    dora_indicators: tuple[str, ...]
+    dora_indicators: tuple[Tile, ...]
 
     def __post_init__(self) -> None:
         _MatchEventBase.__post_init__(self)
-        validate_seat(self.seat)
-        validate_tile(self.tile)
         validate_bool("moqie", self.moqie)
         validate_bool("liqi", self.liqi)
         validate_bool("wliqi", self.wliqi)
@@ -857,6 +860,7 @@ decode、Sniffer transport、stream gap は元の infrastructure error を伝播
 初期化実装は次の責務で配置する。bootstrap loop を早期に汎用 framework へ抽象化しない。
 
 - `screens/match/state.py`: public immutable state と invariant
+- `screens/match/types.py`: 検証済みの `Seat` / `Tile` NewType と境界 validator
 - `screens/match/event/_base.py`: event 共通の action step と不変条件
 - `screens/match/event/<event>.py`: concrete event ごとの final frozen dataclass と `from_dict()`
 - `screens/match/event/__init__.py`: concrete event と明示的な `MatchEvent` union の export

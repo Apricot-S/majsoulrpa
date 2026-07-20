@@ -16,6 +16,12 @@ from majsoulrpa.screens.match.state import (
     MatchState,
     RoundState,
 )
+from majsoulrpa.screens.match.types import (
+    Seat,
+    Tile,
+    validate_seat,
+    validate_tile,
+)
 
 if TYPE_CHECKING:
     from majsoulrpa.screens.match.screen import MatchScreen
@@ -33,7 +39,11 @@ __all__ = [
     "MatchState",
     "NewRoundEvent",
     "RoundState",
+    "Seat",
     "StartMatchEvent",
+    "Tile",
+    "validate_seat",
+    "validate_tile",
 ]
 
 

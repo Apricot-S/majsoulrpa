@@ -7,6 +7,7 @@ from majsoulrpa.screens.match.state import (
     MatchPlayer,
     MatchRank,
 )
+from majsoulrpa.screens.match.types import Seat, validate_seat
 from majsoulrpa.sniffer.events import DecodedRequestResponse, Direction
 
 AUTH_GAME_NAME = ".lq.FastTest.authGame"
@@ -27,7 +28,7 @@ class MatchMetadata:
     match_id: str
     origin: MatchOrigin
     origin_id: int
-    self_seat: int
+    self_seat: Seat
     players: tuple[MatchPlayer, ...]
 
 
@@ -111,8 +112,9 @@ def decode_match_metadata(
         msg = "authGame seats must match all human and robot IDs."
         raise MatchMetadataDecodeError(msg)
 
+    seats = tuple(validate_seat(value) for value in range(len(seat_list)))
     players: list[MatchPlayer] = []
-    for seat, participant_id in enumerate(seat_list):
+    for seat, participant_id in zip(seats, seat_list, strict=True):
         human = humans_by_id.get(participant_id)
         if human is not None:
             players.append(
@@ -131,7 +133,7 @@ def decode_match_metadata(
         match_id=match_id,
         origin=origin,
         origin_id=origin_id,
-        self_seat=seat_list.index(self_account_id),
+        self_seat=seats[seat_list.index(self_account_id)],
         players=tuple(players),
     )
 
@@ -139,7 +141,7 @@ def decode_match_metadata(
 def _decode_human_player(
     value: dict[str, JsonValue],
     account_id: int,
-    seat: int,
+    seat: Seat,
 ) -> MatchPlayer:
     return MatchPlayer(
         seat=seat,
@@ -151,7 +153,7 @@ def _decode_human_player(
 
 
 def _decode_robot_player(
-    seat: int,
+    seat: Seat,
     account_id: int,
     value: dict[str, JsonValue],
 ) -> MatchPlayer:

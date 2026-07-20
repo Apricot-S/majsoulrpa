@@ -3,7 +3,11 @@ from dataclasses import FrozenInstanceError
 import pytest
 from pydantic import JsonValue
 
-from majsoulrpa.screens.match import NewRoundEvent
+from majsoulrpa.screens.match import (
+    NewRoundEvent,
+    validate_seat,
+    validate_tile,
+)
 
 
 def _new_round_data(*, tiles: list[str]) -> dict[str, JsonValue]:
@@ -46,28 +50,31 @@ def test_new_round_event_sorts_fourteen_tiles_before_separating_zimopai() -> (
     assert event == NewRoundEvent(
         action_step=0,
         chang=0,
-        ju=1,
+        ju=validate_seat(1),
         ben=2,
         liqibang=1,
-        dora_indicators=("3p",),
+        dora_indicators=(validate_tile("3p"),),
         left_tile_count=69,
         scores=(25000, 24000, 26000, 25000),
-        shoupai=(
-            "1m",
-            "2m",
-            "3m",
-            "4m",
-            "0m",
-            "5m",
-            "6m",
-            "7m",
-            "8m",
-            "9m",
-            "2p",
-            "9s",
-            "1z",
+        shoupai=tuple(
+            validate_tile(tile)
+            for tile in (
+                "1m",
+                "2m",
+                "3m",
+                "4m",
+                "0m",
+                "5m",
+                "6m",
+                "7m",
+                "8m",
+                "9m",
+                "2p",
+                "9s",
+                "1z",
+            )
         ),
-        zimopai="7z",
+        zimopai=validate_tile("7z"),
     )
     with pytest.raises(FrozenInstanceError):
         event.ben = 3  # ty: ignore[invalid-assignment]

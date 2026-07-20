@@ -5,14 +5,17 @@ from typing import Self, final
 from pydantic import JsonValue
 
 from majsoulrpa.screens.match.event._base import _MatchEventBase
-from majsoulrpa.screens.match.event._common import (
-    tile_sort_key,
-    validate_tile,
-)
+from majsoulrpa.screens.match.event._common import tile_sort_key
 from majsoulrpa.screens.match.event._decode import (
     _get_int,
     _get_int_list,
     _get_str_list,
+)
+from majsoulrpa.screens.match.types import (
+    Seat,
+    Tile,
+    validate_seat,
+    validate_tile,
 )
 
 _NUM_CHANG = 3
@@ -26,14 +29,14 @@ _DEALT_TILE_COUNTS = (13, 14)
 @dataclass(frozen=True, slots=True, kw_only=True)
 class NewRoundEvent(_MatchEventBase):
     chang: int
-    ju: int
+    ju: Seat
     ben: int
     liqibang: int
-    dora_indicators: tuple[str, ...]
+    dora_indicators: tuple[Tile, ...]
     left_tile_count: int
     scores: tuple[int, ...]
-    shoupai: tuple[str, ...]
-    zimopai: str | None
+    shoupai: tuple[Tile, ...]
+    zimopai: Tile | None
 
     def __post_init__(self) -> None:
         _MatchEventBase.__post_init__(self)
@@ -64,10 +67,6 @@ class NewRoundEvent(_MatchEventBase):
         if len(self.shoupai) != _SHOUPAI_SIZE:
             msg = "shoupai must contain thirteen tiles."
             raise ValueError(msg)
-        for tile in (*self.dora_indicators, *self.shoupai):
-            validate_tile(tile)
-        if self.zimopai is not None:
-            validate_tile(self.zimopai)
 
     @classmethod
     def from_dict(
@@ -75,7 +74,10 @@ class NewRoundEvent(_MatchEventBase):
         action_step: int,
         data: Mapping[str, JsonValue],
     ) -> Self:
-        tiles = _get_str_list(data, "ActionNewRound.tiles")
+        tiles = tuple(
+            validate_tile(tile)
+            for tile in _get_str_list(data, "ActionNewRound.tiles")
+        )
         if len(tiles) not in _DEALT_TILE_COUNTS:
             msg = (
                 "ActionNewRound.tiles must contain thirteen or fourteen tiles."
@@ -92,10 +94,13 @@ class NewRoundEvent(_MatchEventBase):
         return cls(
             action_step=action_step,
             chang=_get_int(data, "ActionNewRound.chang"),
-            ju=_get_int(data, "ActionNewRound.ju"),
+            ju=validate_seat(_get_int(data, "ActionNewRound.ju")),
             ben=_get_int(data, "ActionNewRound.ben"),
             liqibang=_get_int(data, "ActionNewRound.liqibang"),
-            dora_indicators=tuple(_get_str_list(data, "ActionNewRound.doras")),
+            dora_indicators=tuple(
+                validate_tile(tile)
+                for tile in _get_str_list(data, "ActionNewRound.doras")
+            ),
             left_tile_count=_get_int(
                 data,
                 "ActionNewRound.left_tile_count",

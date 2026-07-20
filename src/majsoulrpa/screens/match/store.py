@@ -14,6 +14,7 @@ from majsoulrpa.screens.match.state import (
     MatchState,
     RoundState,
 )
+from majsoulrpa.screens.match.types import Tile
 
 
 class MatchStateStore:
@@ -177,9 +178,9 @@ class MatchStateStore:
     def _apply_self_dapai(
         event: DapaiEvent,
         round_state: RoundState,
-        shoupai: list[str],
-        zimopai: str | None,
-    ) -> tuple[list[str], str | None]:
+        shoupai: list[Tile],
+        zimopai: Tile | None,
+    ) -> tuple[list[Tile], Tile | None]:
         if event.moqie:
             if zimopai != event.tile:
                 msg = "A self moqie tile must match zimopai."

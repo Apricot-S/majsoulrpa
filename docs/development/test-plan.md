@@ -596,6 +596,11 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### protobuf action / MatchEvent decode
 
+- [x] Match内のseatと牌は、検証済み値を表す`Seat` / `Tile` NewTypeとして保持する
+- [x] `validate_seat()`はintの0〜3だけを`Seat`として返し、boolと範囲外を拒否する
+- [x] `validate_tile()`は有効な牌文字列だけを`Tile`として返す
+- [x] JSON / protobuf境界で一度変換した`Seat` / `Tile`をEvent、State、Store内で再検証しない
+- [x] `Seat` / `Tile`はmajsoulrpa.screens.matchから通常exportする
 - [ ] live `ActionPrototype` の obfuscated data を synthetic bytes から decode できる
 - [ ] `syncGame.game_restore.actions` の plain data を同じ public `MatchEvent` へ decode できる
 - [ ] live / restore adapter は同じ action data に対して同じ event を返す
