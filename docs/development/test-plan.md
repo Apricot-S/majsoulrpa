@@ -614,6 +614,57 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] live ActionPrototype の info log は難読化 data を protobuf decode 済み辞書へ差し替える
 - [ ] nested action decode を共通 Sniffer decoder の責務へ追加しない
 
+### OptionalOperation / MatchOperation decode
+
+- [ ] concrete operation は `@final`、`frozen=True`、`slots=True`、`kw_only=True` の dataclass である
+- [ ] public `MatchOperation` type alias はすべての concrete operation class を列挙し、type discriminator を持たない
+- [ ] `OperationCandidates` は非負の millisecond 単位の fixed / add time、非空 tuple の operation を保持する
+- [ ] operation field の欠落と空の `operation_list` はどちらも `None` に正規化する
+- [ ] operation field が object でない、time / type が bool または int 以外、operation_list が list でない場合は拒否する
+- [ ] type 1 の `combination` を禁止牌として解釈し、禁止されていない手牌を 1 打牌 1 `DapaiOperation` に展開する
+- [ ] type 2 は直前の取得牌と `combination` の手牌 2 枚を持つ `ChiOperation` 1 instance へ変換する
+- [ ] type 3 は直前の取得牌と `combination` の手牌 2 枚を持つ `PengOperation` 1 instance へ変換する
+- [ ] type 4 は `combination` 1 要素ごとに消費牌 4 枚を持つ `AngangOperation` 1 instance へ変換する
+- [ ] type 5 は直前の取得牌と `combination` の手牌 3 枚を持つ `DaminggangOperation` 1 instance へ変換する
+- [ ] type 6 は先頭3枚を consumed_tiles、4枚目を added_tile とする `JiagangOperation` 1 instance へ変換する
+- [ ] type 7 の各候補牌を 1 打牌 1 `LiqiOperation` に展開する
+- [ ] type 8 は空の `combination` と発生元 Event のツモ牌から `ZimohuOperation` を生成する
+- [ ] type 9 は空の `combination` と発生元 Event の対象牌から `RongOperation` を生成する
+- [ ] type 10 は空の `combination` から field のない `JiuzhongjiupaiOperation` を生成する
+- [ ] v1-develop の type 11 / `BabeiOperation` 対応を三人戦の実通信で再確認してから固定する
+- [ ] type 2〜6 の区切り後の牌数が operation ごとの枚数と異なる場合は拒否する
+- [ ] AngangOperation は4枚を consumed_tiles として保持する
+- [ ] JiagangOperation は wire 順を sort せず、4枚目が通常牌か赤牌かを added_tile に保持する
+- [ ] JiagangOperation の consumed_tiles は先頭3枚のポン牌とし、ポンの表示形を model に含めない
+- [ ] `DapaiOperation` / `LiqiOperation` は tile と moqie を保持し、手出しとツモ切りを別 instance にする
+- [ ] 同じ tile / moqie の物理牌が複数あっても同じ打牌 operation は重複させない
+- [ ] 手牌と実ツモ牌の両方に同じ候補牌があれば、moqie=false / true の両 operation を生成する
+- [ ] type 1 で 5m / 5p / 5s が禁止されている場合、combination にない対応する 0m / 0p / 0s も禁止する
+- [ ] type 1 で通常五が禁止されていない場合、対応する赤五を独自に禁止しない
+- [ ] 親の ActionNewRound の14枚はすべて moqie=false の DapaiOperation に展開する
+- [ ] 親の ActionNewRound の presentation zimopai にある立直候補も moqie=false の LiqiOperation にする
+- [ ] 親の初期打牌でツモ牌位置を click する必要があっても operation を moqie=true に変換しない
+- [ ] type 8〜11 の `combination` が空でない場合は拒否する
+- [ ] operation 内の不正な牌表現を拒否する
+- [ ] 未知 type を無視したり generic operation として保持したりせず decode error にする
+- [ ] protobuf の `seat`、`change_tiles`、`change_tile_states`、`gap_type` と unknown field の存在だけでは拒否しない
+- [ ] operation の並びと各 combination の並びを protobuf の順序どおり tuple に保持する
+- [ ] 副露・槓 operation は候補一覧を内部に持たず、各 instance が operate API に渡せる単一の牌組を表す
+- [ ] Chi / Peng / Daminggang operation は claimed_tile と consumed_tiles だけで選択内容を完全に表す
+- [ ] claimed_tile は候補が付随した DapaiEvent.tile と一致し、赤牌を通常牌へ正規化しない
+- [ ] 直前の打牌がない状態で type 2 / 3 / 5 を public operation へ展開しない
+- [ ] ZimohuOperation.tile は ActionDealTile のツモ牌と一致し、赤牌を通常牌へ正規化しない
+- [ ] ActionNewRound の天和候補は presentation zimopai を ZimohuOperation.tile に保持する
+- [ ] 天和の ZimohuOperation.tile を決めても、同じ牌の打牌 operation は moqie=false のままにする
+- [ ] RongOperation.tile は放銃牌または搶槓対象牌と一致し、赤牌を通常牌へ正規化しない
+- [ ] 和了対象牌を特定できない Event に type 8 / 9 が付随した場合は public operation へ展開しない
+- [ ] live / restore action adapter は同じ decoded operation から等しい immutable な内部 specification を返す
+- [ ] store は Event 適用後の手牌と内部 specification から `OperationCandidates | None` を生成する
+- [ ] action decoder は `MatchEvent` と operation specification を別に返し、operation event を生成しない
+- [ ] event 適用時に以前の operation 候補を必ず置き換え、候補がない action では `None` に戻す
+- [ ] `has_pending_operation` は operation 候補の有無と常に一致する
+- [ ] operation の concrete class を class pattern で網羅すると ty が成功し、variant 追加時は `assert_never()` が失敗する
+
 ### immutable state / reducer
 
 - [ ] MatchRank、MatchPlayer、MatchDapai、MatchFulu、RoundState、MatchState は frozen で collection を tuple にする
@@ -636,7 +687,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 14 枚の ActionNewRound.tiles は全体を sort し、右端を zimopai、残り 13 枚を shoupai にする
 - [x] 13 枚の ActionNewRound.tiles は全体を shoupai にし、zimopai を None にする
 - [ ] scores、seat ごとの collection、tile、chang / ju / ben、dora、left count の不変条件を検証する
-- [ ] operation data は内部 immutable snapshot に保持し、公開 state には has_pending_operation だけを出す
+- [ ] `RoundState` は `OperationCandidates | None` を保持し、`has_pending_operation` をそこから導出する
 - [x] 初回は `ActionMJStart` step 0 の有無に応じて `ActionNewRound` step 1 / step 0 を受理する
 - [ ] `ActionMJStart` を state を変更しない `StartMatchEvent` として decode する
 - [x] `StartMatchEvent.from_dict()` は `ActionMJStart` のstep 0制約を検証する
@@ -673,8 +724,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `before_callback()` 完了時には version 1 の active MatchState が必ず存在する
 - [x] `get_state()` は request / click を行わず、蓄積済み message を drain して最新 snapshot を返す
 - [x] `get_state()` の info log に match ID、account ID、player、牌、operation を含めない
-- [x] MatchScreen、public state 型、public MatchEvent 型だけを majsoulrpa.screens.match から export する
-- [ ] state 待機 API と operation 詳細 API は初期化 milestone に含めない
+- [x] MatchScreen、public state 型、public MatchEvent 型を majsoulrpa.screens.match から export する
+- [ ] public operation 型は lazy export を使わず majsoulrpa.screens.match から通常 export する
+- [ ] state 待機 API と operation 送信 API は operation model / decoder milestone に含めない
 
 ### unified bootstrap
 

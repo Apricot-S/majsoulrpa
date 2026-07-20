@@ -136,8 +136,12 @@ class RoundState:
     lingshang_zimo: tuple[bool, ...]
     previous_dapai_seat: int | None
     previous_dapai_tile: str | None
-    has_pending_operation: bool
+    operation_candidates: OperationCandidates | None
     events: tuple[MatchEvent, ...]
+
+    @property
+    def has_pending_operation(self) -> bool:
+        return self.operation_candidates is not None
 
 
 @dataclass(frozen=True, slots=True)
@@ -180,9 +184,180 @@ player name なので CPU の補完名には使わない。これにより `acco
 protocol adapter と public model の間に恒常的な別名が生じるため、API でも `liqi` を採用し、
 `lizhi` alias は設けない。Mjai の `reach` など外部 protocol の語彙は、その adapter 境界で変換する。
 
-operation の protocol data は immutable な内部 snapshot として同時に保持するが、operation type と
-操作 API を設計する前に生の数値を公開しない。初期 `MatchState` では
-`RoundState.has_pending_operation` だけを公開し、operation 詳細は最初の操作 API と同時に公開する。
+### operation 候補
+
+operation は発生済みの event ではなく、その event を適用した直後に自家が選択できる行動候補である。
+`ActionNewRound`、`ActionDealTile`、`ActionDiscardTile`、副露や槓に対応する action のいずれにも
+`OptionalOperationList` が付随し得るため、event class ごとに decode せず共通 decoder で正規化する。
+各 event を reduce するたびに以前の候補を置き換え、field がない場合と `operation_list` が空の場合は
+どちらも `None` とする。restore replay でも action ごとに置き換えるため、完成 snapshot には最後の
+action の候補だけが残る。
+
+公開 operation は `@final`、`frozen=True`、`slots=True`、`kw_only=True` の dataclass とし、数値の
+`type` discriminator は公開しない。`MatchOperation` は全 concrete class を列挙する明示的 union とし、
+利用者は event と同様に class pattern で型を絞り込む。protobuf の `combination` 文字列は decoder
+境界で牌 tuple へ変換し、raw string や mutable list を公開 model に保持しない。
+
+```python
+@dataclass(frozen=True, slots=True, kw_only=True)
+class DapaiOperation:
+    tile: str
+    moqie: bool
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ChiOperation:
+    claimed_tile: str
+    consumed_tiles: tuple[str, str]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PengOperation:
+    claimed_tile: str
+    consumed_tiles: tuple[str, str]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AngangOperation:
+    consumed_tiles: tuple[str, str, str, str]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class DaminggangOperation:
+    claimed_tile: str
+    consumed_tiles: tuple[str, str, str]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class JiagangOperation:
+    consumed_tiles: tuple[str, str, str]
+    added_tile: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class LiqiOperation:
+    tile: str
+    moqie: bool
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ZimohuOperation:
+    tile: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class RongOperation:
+    tile: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class JiuzhongjiupaiOperation: ...
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class BabeiOperation: ...
+
+
+type MatchOperation = (
+    DapaiOperation
+    | ChiOperation
+    | PengOperation
+    | AngangOperation
+    | DaminggangOperation
+    | JiagangOperation
+    | LiqiOperation
+    | ZimohuOperation
+    | RongOperation
+    | JiuzhongjiupaiOperation
+    | BabeiOperation
+)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class OperationCandidates:
+    time_fixed_ms: int
+    time_add_ms: int
+    operations: tuple[MatchOperation, ...]
+```
+
+live action の singular `operation` は受信者である自家用なので、protobuf の `seat` は公開 model に
+重複して保持しない。restore / record にある複数人分の `operations` を扱う段階で seat 付き model を
+別途設計する。`OperationCandidates.operations` は非空、時間は非負の millisecond として検証する。
+`RoundState.operation_candidates` は候補がないときだけ `None` とし、既存の
+`has_pending_operation` は保存 field ではなく `operation_candidates is not None` から導出する
+read-only property として維持する。
+
+type と concrete class の対応は次のとおりとする。
+
+| type | public class | `combination` の意味 |
+|---:|---|---|
+| 1 | `DapaiOperation` | 鳴き後の食い替えで禁止される打牌。通常は空配列。現在の手牌から選択可能な打牌へ展開する |
+| 2 | `ChiOperation` | 手牌 2 枚を `|` で区切った組合せ |
+| 3 | `PengOperation` | 手牌 2 枚を `|` で区切った組合せ |
+| 4 | `AngangOperation` | 消費する対象牌 4 枚を `|` で区切った組合せ |
+| 5 | `DaminggangOperation` | 手牌 3 枚を `|` で区切った組合せ |
+| 6 | `JiagangOperation` | 既存のポン牌 3 枚と加える牌 1 枚を `|` で区切った組合せ |
+| 7 | `LiqiOperation` | 立直宣言牌の候補。各要素は単独の牌で、手出し／ツモ切りの選択肢へ展開する |
+| 8 | `ZimohuOperation` | 空配列。和了対象のツモ牌は Event から補う |
+| 9 | `RongOperation` | 空配列。和了対象牌は Event から補う |
+| 10 | `JiuzhongjiupaiOperation` | 空配列 |
+| 11 | `BabeiOperation` | 空配列。v1-develop の対応であり実通信で再確認する |
+
+type 1 の `combination` は選択可能な牌ではなく、食い替えによる禁止牌である。Event 適用後の
+`shoupai` と実際の `zimopai` から禁止牌を除いた打牌を列挙し、牌 1 種類と
+`moqie` 1 値の組を `DapaiOperation` 1 instance として公開する。同じ牌が手牌とツモ牌の両方に
+存在して手出しとツモ切りを選べる場合は、`moqie=False` と `moqie=True` の 2 instance にする。
+同じ `tile` / `moqie` の物理牌が複数ある場合は同じ操作なので 1 instance に正規化する。
+
+雀魂の食い替え禁止牌には赤五牌に関する欠落がある。`5m`、`5p`、`5s` のいずれかが禁止されても、
+対応する `0m`、`0p`、`0s` が `combination` に含まれない場合がある。type 1 の変換時は通常五が
+禁止されていれば対応する赤五も追加で禁止し、選択可能な `DapaiOperation` を生成しない。この
+workaround は Kanachan の `src/annotation/annotation.cpp` に残された知見と実通信確認に基づく。
+
+type 2〜6 の各 encoded combination は表の枚数と完全に一致させ、各要素を通常の牌表現として検証する。
+protobuf の `combination` 1 要素を public operation 1 instance へ展開し、牌組の候補一覧を単一
+operation の中に保持しない。したがって、複数の鳴き方を選べる場合は `ChiOperation` などが候補数分
+並ぶ。チー、ポン、大明槓では `combination` から手牌側の `consumed_tiles` を生成し、候補が付随した
+`DapaiEvent` の牌を `claimed_tile` として補う。各 instance は取得する河の牌と手牌から消費する
+1 組の両方を持ち、それ自体で副露の選択内容を完全に表す。赤牌と通常牌は別の牌として保持し、
+`claimed_tile` も `DapaiEvent.tile` の表現を変更しない。
+
+暗槓は4枚すべてを `AngangOperation.consumed_tiles` とする。加槓は雀魂の並びを維持し、`|` で
+区切られた先頭3枚を既存のポン牌として `JiagangOperation.consumed_tiles`、4枚目を
+`JiagangOperation.added_tile` とする。加える牌が通常牌か赤牌かは4枚目の表現で区別し、牌を sort
+して位置を変えない。既存のポンがどの形で表示されているかは operation model では考慮しない。
+type 7 は `|` で分割せず、各要素を立直宣言牌として検証する。候補牌ごとに現在の `shoupai` から
+`moqie=False`、実際の `zimopai` から `moqie=True` の `LiqiOperation` を生成する。同じ牌について
+両方を選べる場合は 2 instance とする。type 8 の `ZimohuOperation.tile` は候補を発生させた
+`ActionDealTile` のツモ牌、または `ActionNewRound` の天和判定に使う牌から補う。type 9 の
+`ActionNewRound` の天和候補では、表示のため分離した `zimopai` を `ZimohuOperation.tile` として使う。
+これは和了 operation の対象牌を確定するための規約であり、同じ牌の打牌 operation を
+`moqie=True` に変更するものではない。`RongOperation.tile` は放銃牌、搶槓対象牌など、候補を
+発生させた Event の和了対象牌から補う。
+いずれも赤牌を通常牌へ正規化しない。type 8〜11 は `combination` が空でなければ不整合とする。
+未知 type は将来の候補として黙って保持せず decode error にする。`seat`、`change_tiles`、
+`change_tile_states`、`gap_type` および unknown protobuf field は今回の標準 operation model には
+取り込まず、既知 field の独自 whitelist 検査も追加しない。
+
+operation の変換は 2 段階に分ける。action adapter は `OptionalOperationList` の decoded dict を
+live / restore 共通の immutable な内部 specification へ decode する。store は Event を適用した後の
+手牌状態と適用した Event を使って、その specification を public `OperationCandidates | None` へ
+展開する。type 1 と type 7 は action decode 時点では選択可能な手出し／ツモ切りを確定できず、
+type 2、3、5 は取得する直前の打牌を確定できないため、いずれも public operation へ直接 decode
+しない。operation を event field に含めたり、同じ action を event と operation event の 2 件へ
+分割したりしない。操作を送信する browser API は operation model と decoder の実装範囲に含めず、
+候補を state へ接続した後に 1 API ずつ設計する。
+
+将来の operate API は `OperationCandidates.operations` から選んだ concrete operation instance を
+引数として受け取る。各 instance は追加の候補 index や牌組引数を要求せず、それ自体で選択内容を
+完全に表す。副露 operation も取得牌と消費牌を instance 内に持ち、呼び出し側が直前の河を参照して
+補完する必要はない。API は渡された instance が現在の候補に含まれることを確認してから画面操作へ
+変換する。
+
+親の `ActionNewRound.tiles` 14 枚はすべて配牌であり、表示の都合で右端の 1 枚を `zimopai` field に
+分離していても実ツモ牌ではない。`ActionNewRound` に付随する type 1 / type 7 を展開するときは
+14 枚すべてを `moqie=False` の手出し候補とし、`moqie=True` へ変換しない。ツモ牌位置の click が
+必要かどうかは後続の operate API が画面上の配置へ変換する責務であり、operation の意味を変更しない。
 
 `ActionNewRound` では match identity と player metadata を維持し、round generation を増やして
 新しい `RoundState` を設定する。局の step は局ごとに 0 から始め、instance の version とは
@@ -440,9 +615,8 @@ BOS feature として利用できる。不要な利用者は `StartMatchEvent` �
 protobuf decode 後の `dict[str, JsonValue]` はログ用 action data と event class 固有の `from_dict()`
 classmethod への入力に使う。classmethod が外部入力から型付き field を取り出し、値の正規化を行って
 concrete constructor を呼ぶ。raw dict を constructor へそのまま展開せず、型付き API は維持する。
-action に付随する現在の選択可能 operation は発生済み event ではないため、
-event と重複する action model を作らず、adapter が immutable な内部 operation snapshot として
-別に返す。後続の操作 API ではこれを public `MatchOperation` として別途設計する。
+action に付随する現在の選択可能 operation は発生済み event ではないため、event と重複する
+action model を作らず、adapter が public `OperationCandidates | None` として別に返す。
 
 `restore: bool` は reducer や state model まで伝播させない。live / restore の encoding 差は action
 adapter 内で解消し、同じ decoded data と event classmethod から同じ public event を生成する。
@@ -686,10 +860,14 @@ decode、Sniffer transport、stream gap は元の infrastructure error を伝播
 - `screens/match/event/_base.py`: event 共通の action step と不変条件
 - `screens/match/event/<event>.py`: concrete event ごとの final frozen dataclass と `from_dict()`
 - `screens/match/event/__init__.py`: concrete event と明示的な `MatchEvent` union の export
+- `screens/match/operation/<operation>.py`: concrete operation ごとの final frozen dataclass
+- `screens/match/operation/_decode.py`: `OptionalOperationList` の共通 wire decoder と type dispatch
+- `screens/match/operation/_materialize.py`: Event 適用後の手牌から public operation 候補への展開
+- `screens/match/operation/__init__.py`: concrete operation、`MatchOperation`、候補 container の export
 - `screens/match/_action.py`: live unmask、restore adapter、nested decode、event decoder registry
 - `screens/match/store.py`: metadata、step、round reducer、temporary replay と atomic commit
 - `screens/match/screen.py`: message classifier、初期化期限、Screen error への変換、`get_state()`
-- `screens/match/__init__.py`: `MatchScreen`、public state 型、public event 型だけを export
+- `screens/match/__init__.py`: `MatchScreen`、public state、event、operation 型を通常 export
 
 decode / transition の pure error は `ValueError` 派生の内部型とし、`screen.py` の境界で screenshot 付き
 `ScreenInconsistentMessageError` または `ScreenUnexpectedStateError` へ変換する。Sniffer transport、
@@ -718,6 +896,7 @@ outer protobuf decode、queue overflow、cancellation は元の infrastructure e
 9. `ActionPrototype` の局内 step、次局での reset、実際に観測順が前後する範囲。
 10. fresh / direct reload / Login recovery の bootstrap 中に現れる state 非関連 API 名。v1 の common
     message allowlist を一括移植せず、観測済み message だけを分類する。
+11. live `OptionalOperationList.seat` の意味と、三人戦で type 11 が北抜きを表すこと。
 
 実通信ログは一時ログだけに置き、コミットしない。
 
@@ -726,14 +905,15 @@ outer protobuf decode、queue overflow、cancellation は元の infrastructure e
 1. 実装前の手動 spike を完了し、fresh marker、origin、CPU、restore sentinel を固定する。
 2. public immutable state、final frozen event dataclass、段位を含む authGame / ActionNewRound の strict decode。
 3. 明示的 `MatchEvent` union、runtime validator、nested action の live / restore decoder と 1 対 1 変換。
-4. standard active-round event reducer、event 列、step / round generation の不変条件。
-5. temporary store への restore replay と atomic publish。
-6. bootstrapper の fresh / recovery 経路。
-7. `MatchScreen.before_callback()` と `get_state()` への接続。
-8. 同一 instance での次局 `ActionNewRound`。
-9. active 中の `syncGame` 再同期。
-10. generic reload 後の Screen 再検出と recovery bootstrap。
-11. 状態待機と操作 API を 1 種類ずつ追加する。
+4. public immutable operation、共通 decoder、state への接続を type 1 件ずつ追加する。
+5. standard active-round event reducer、event 列、step / round generation の不変条件。
+6. temporary store への restore replay と atomic publish。
+7. bootstrapper の fresh / recovery 経路。
+8. `MatchScreen.before_callback()` と `get_state()` への接続。
+9. 同一 instance での次局 `ActionNewRound`。
+10. active 中の `syncGame` 再同期。
+11. generic reload 後の Screen 再検出と recovery bootstrap。
+12. 状態待機と操作 API を 1 種類ずつ追加する。
 
 各段階で synthetic data の自動テストを完了し、高レベル API は 1 つずつ実ゲーム確認する。
 実 payload はテストや文書へ保存しない。
