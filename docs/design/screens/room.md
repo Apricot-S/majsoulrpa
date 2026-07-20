@@ -187,6 +187,8 @@ error になる。
 - AI を含めた Room 内の参加人数が `max_player_count` に達していることも事前条件とする。
   VS_AI では host 1 人でこの条件を満たし、対局開始後に残りの席へ CPU が入る。
 - `.lq.Lobby.startRoom` の成功 response に加えて `.lq.NotifyRoomGameStart` を待つ。
+- 実通信では `startRoom` の outbound request/response、game start notice の順に観測され、
+  その後に `authGame` と `enterGame` が続いた。
 - game start notice を観測して `MATCH_STARTED` にした後、`room-sign` が画面から消えるまで
   待ってから Screen を stale にする。ローディング画面のイラストは設定により異なるため、
   ローディング画面自体の template 検出は行わない。

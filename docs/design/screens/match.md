@@ -479,6 +479,10 @@ callback を開始するには次の情報が必要である。
 新規開始では 2 を live `.lq.ActionPrototype` から得る。途中復帰では `syncGame` の
 `game_restore.actions` から得る。public `MatchEvent` に正規化した後は同じ reducer を使う。
 
+友人戦の新規開始では、`.lq.Lobby.startRoom` の outbound request/response、
+`.lq.NotifyRoomGameStart`、`.lq.FastTest.authGame`、`.lq.FastTest.enterGame`、
+`ActionMJStart`、`ActionNewRound`、`ActionDiscardTile` の順に観測された。
+
 fresh entry marker は実通信ログで確定する。v1-develop では `.lq.NotifyRoomGameStart` が候補だが、
 友人戦の host / guest と tournament のすべてで一度だけ観測され、reload / 途中復帰では観測されない
 ことを確認してから固定する。marker を Room / tournament 側が先に消費する場合は、Screen を stale
