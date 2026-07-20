@@ -4,8 +4,8 @@ from enum import StrEnum
 from majsoulrpa.screens.match.event import MatchEvent
 
 _MAX_PLAYER_COUNT = 4
-_CPU_LEVEL4_ID = 10101
-_CPU_LEVEL3_ID = 20101
+_CPU_LEVEL4_ID = 10101  # 初心1
+_CPU_LEVEL3_ID = 20101  # 初心1
 
 
 class MatchOrigin(StrEnum):

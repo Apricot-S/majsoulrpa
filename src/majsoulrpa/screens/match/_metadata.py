@@ -10,8 +10,8 @@ from majsoulrpa.screens.match.state import (
 from majsoulrpa.sniffer.events import DecodedRequestResponse, Direction
 
 AUTH_GAME_NAME = ".lq.FastTest.authGame"
-_CPU_LEVEL4 = MatchRank(id=10101, score=0)
-_CPU_LEVEL3 = MatchRank(id=20101, score=0)
+_CPU_LEVEL4 = MatchRank(id=10101, score=0)  # 初心1
+_CPU_LEVEL3 = MatchRank(id=20101, score=0)  # 初心1
 
 
 class MatchMetadataDecodeError(ValueError):
