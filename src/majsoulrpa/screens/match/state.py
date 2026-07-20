@@ -28,8 +28,8 @@ class MatchRank:
 @dataclass(frozen=True, slots=True)
 class MatchPlayer:
     seat: int
-    account_id: int | None
-    name: str | None
+    account_id: int
+    name: str
     level4: MatchRank | None
     level3: MatchRank | None
 
@@ -37,18 +37,16 @@ class MatchPlayer:
         if not 0 <= self.seat < _MAX_PLAYER_COUNT:
             msg = "Match player seat must be between 0 and 3."
             raise ValueError(msg)
-        if self.account_id is None:
-            return
         if self.account_id <= 0:
-            msg = "Match player account ID must be positive or None."
+            msg = "Match player account ID must be positive."
             raise ValueError(msg)
-        if self.name is None or self.level4 is None or self.level3 is None:
+        if self.name and (self.level4 is None or self.level3 is None):
             msg = "A human match player must have a name and both ranks."
             raise ValueError(msg)
 
     @property
     def is_cpu(self) -> bool:
-        return self.account_id is None
+        return self.name == ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -155,6 +153,10 @@ class MatchState:
             range(len(self.players)),
         ):
             msg = "Match players must be ordered by seat."
+            raise ValueError(msg)
+        account_ids = tuple(player.account_id for player in self.players)
+        if len(account_ids) != len(set(account_ids)):
+            msg = "Match player account IDs must be unique."
             raise ValueError(msg)
         if not 0 <= self.self_seat < len(self.players):
             msg = "Self seat must identify a match player."

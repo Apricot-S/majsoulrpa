@@ -81,8 +81,8 @@ class MatchRank:
 @dataclass(frozen=True, slots=True)
 class MatchPlayer:
     seat: int
-    account_id: int | None
-    name: str | None
+    account_id: int
+    name: str
     level4: MatchRank | None
     level3: MatchRank | None
 
@@ -157,10 +157,12 @@ human player は正の `account_id`、`name`、四麻段位 `level4`、三麻段
 ため、protocol の数値を正本とする。表示名が必要なら別 adapter で変換する。実通信では human player
 だけが response `players` に入り、CPU は `robots` に分離されていた。観測した CPU の `account_id` は
 1、2、3、`nickname` は空文字列であり、`level` / `level3` field は存在しなかった。これらの robot ID を
-human account ID と解釈せず、公開 state では `account_id=None`、空の nickname は `name=None`、欠けた
-段位は `level4=None` / `level3=None` に正規化する。CPU 向けの架空名や架空段位は補わない。
-将来 `robots` に有効な name、level、level3 が観測された場合は捨てずに保持する。character などの
-cosmetic metadata は実需要が出るまで公開しない。
+human account ID と同じ公開 field に保持しても実用上重複しないため、公開 state でも wire の正の
+`account_id` をそのまま保持する。CPU の空の nickname も `name=""` のまま保持し、欠けた段位だけを
+`level4=None` / `level3=None` に正規化する。human の name は空文字列にならず両段位を必須とするため、
+`MatchPlayer.is_cpu` は `name == ""` から判定できる。これにより利用者は account ID や name を使うたびに
+`None` を分岐する必要がない。CPU 向けの架空名や架空段位は補わない。character などの cosmetic
+metadata は実需要が出るまで公開しない。
 
 `RoundState.shoupai` は自分の配牌を昇順の tuple で保持する。雀魂の `ActionNewRound.tiles` が 14 枚の
 場合、その 14 枚すべてが手積み麻雀と同様の配牌である。14 枚全体を sort し、右端の 1 枚を表示上
@@ -376,8 +378,11 @@ session account ID と一致し、`game_uuid` は空でないことを要求す�
 response の `seat_list` は 3 または 4 seat とし、session account ID が一度だけ現れることを要求する。
 `players` は human player だけを含み、その account ID は `seat_list` の human seat と一対一に対応
 しなければならない。`robots` は CPU metadata だけを含む。観測された robot ID 1、2、3 は human
-account ID とは別の値として扱い、公開 state の CPU `account_id` は `None` に正規化する。
-`seat_list` 内の CPU 表現と `robots` の各要素を seat へ対応付ける規則は、引き続き実通信で確認する。
+account ID と実用上重複せず、公開 state にもそのまま保持する。
+`seat_list` には human account ID と CPU の robot ID 1、2、3 がともに入り、その長さは対局人数と
+一致する。metadata decoder は `players` と `robots` をそれぞれ wire `account_id` で索引し、
+`seat_list` の各 participant ID を両方の索引へ照合して seat を決める。human / robot 間の ID 重複、
+どちらにも存在しない seat ID、seat に現れない余剰 metadata は不整合にする。
 
 対象 match は合意済み友人戦または大会だけである。`game_config.meta.room_id` と `contest_uid` の
 うち、友人戦では `room_id` に友人戦 ID が入り、`mode_id` と `contest_uid` は 0 になることを実通信で
@@ -683,8 +688,9 @@ outer protobuf decode、queue overflow、cancellation は元の infrastructure e
    `authGame` / `syncGame` が届くこと。
 3. `ReqSyncGame.round_id == "-1"`、`step == 1000000`、`game_restore.game_state == 1`、
    `response.step == len(actions)` の意味。
-4. 四人戦 / 三人戦の `seat_list` における CPU 表現と、`robots` の各要素を seat に対応付ける規則。
-   `players` が human のみ、`robots` が CPU のみであることと、観測した robot field は確認済み。
+4. 三人戦でも `seat_list`、`players`、`robots` と participant ID の関係が四人戦と同じであること。
+   四人戦では `seat_list` に human / CPU の全 ID が seat 順で入り、CPU ID が `robots` と対応することを
+   確認済み。
 5. tournament の `game_config.meta.room_id`、`mode_id`、`contest_uid`、`category` の対応。
    友人戦の `room_id > 0`、`mode_id == 0`、`contest_uid == 0` は確認済み。両 ID が 0 の match が
    open match であるという推測も、必要なら分類 field と合わせて確認する。

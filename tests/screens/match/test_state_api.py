@@ -6,8 +6,13 @@ from types import SimpleNamespace
 
 import pytest
 
+from majsoulrpa.screens.errors import (
+    ScreenInconsistentMessageError,
+    ScreenUnexpectedStateError,
+)
 from majsoulrpa.screens.match import (
     MatchOrigin,
+    MatchRank,
     MatchScreen,
     NewRoundEvent,
     StartMatchEvent,
@@ -55,6 +60,8 @@ def test_get_state_exposes_initial_match_events() -> None:
     assert state.origin_id == 12345
     assert state.self_seat == 0
     assert len(state.players) == 4
+    assert state.players[0].level4 == MatchRank(id=10101, score=0)
+    assert state.players[0].level3 == MatchRank(id=20101, score=10)
     assert state.round.events[0] == StartMatchEvent(action_step=0)
     assert isinstance(state.round.events[1], NewRoundEvent)
     assert state.round.events[1].action_step == 1
@@ -83,6 +90,73 @@ def test_get_state_starts_events_with_new_round_without_mj_start() -> None:
     assert len(state.round.events) == 1
     assert isinstance(state.round.events[0], NewRoundEvent)
     assert state.round.events[0].action_step == 0
+
+
+def test_get_state_normalizes_observed_cpu_metadata() -> None:
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"synthetic-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(
+                    cpu_count=3,
+                    seat_list=(1, SELF_ACCOUNT_ID, 2, 3),
+                ),
+                _live_new_round_action(step=0),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+    state = asyncio.run(screen.get_state())
+
+    assert state.self_seat == 1
+    assert state.players[1].account_id == SELF_ACCOUNT_ID
+    for seat, account_id in ((0, 1), (2, 2), (3, 3)):
+        player = state.players[seat]
+        assert player.seat == seat
+        assert player.is_cpu
+        assert player.account_id == account_id
+        assert player.name == ""
+        assert player.level4 is None
+        assert player.level3 is None
+
+
+def test_match_screen_rejects_metadata_without_supported_origin() -> None:
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"unsupported-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(room_id=0, contest_uid=0),
+            ),
+        ),
+    )
+
+    with pytest.raises(ScreenUnexpectedStateError) as exc_info:
+        asyncio.run(screen.before_callback())
+
+    assert exc_info.value.screenshot == b"unsupported-screenshot"
+
+
+def test_match_screen_rejects_nonzero_mode_id_for_friendly_match() -> None:
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"inconsistent-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(mode_id=1),
+            ),
+        ),
+    )
+
+    with pytest.raises(ScreenInconsistentMessageError) as exc_info:
+        asyncio.run(screen.before_callback())
+
+    assert exc_info.value.screenshot == b"inconsistent-screenshot"
 
 
 def test_initial_state_accepts_auth_game_after_initial_actions() -> None:

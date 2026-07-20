@@ -16,7 +16,10 @@ from majsoulrpa.screens.base import (
     _requires_active,
     _screen_api,
 )
-from majsoulrpa.screens.errors import ScreenInconsistentMessageError
+from majsoulrpa.screens.errors import (
+    ScreenInconsistentMessageError,
+    ScreenUnexpectedStateError,
+)
 from majsoulrpa.screens.match._action import (
     ACTION_PROTOTYPE_NAME,
     MatchActionDecodeError,
@@ -26,6 +29,7 @@ from majsoulrpa.screens.match._metadata import (
     AUTH_GAME_NAME,
     MatchMetadata,
     MatchMetadataDecodeError,
+    MatchMetadataUnsupportedError,
     decode_match_metadata,
 )
 from majsoulrpa.screens.match.event import (
@@ -84,6 +88,8 @@ class MatchScreen(Screen):
         try:
             async with timeout:
                 await self._initialize()
+        except MatchMetadataUnsupportedError as error:
+            await self._raise_unsupported_match(cause=error)
         except (MatchActionDecodeError, MatchMetadataDecodeError) as error:
             await self._raise_inconsistent_message(
                 "Match state initialization failed.",
@@ -103,6 +109,8 @@ class MatchScreen(Screen):
         while (message := self._get_sniffer_message_nowait()) is not None:
             try:
                 self._apply_initialization_message(message)
+            except MatchMetadataUnsupportedError as error:
+                await self._raise_unsupported_match(cause=error)
             except (MatchActionDecodeError, MatchMetadataDecodeError) as error:
                 await self._raise_inconsistent_message(
                     "Match state update failed.",
@@ -244,6 +252,15 @@ class MatchScreen(Screen):
     ) -> NoReturn:
         screenshot = await self.context.browser.screenshot()
         raise ScreenInconsistentMessageError(message, screenshot) from cause
+
+    async def _raise_unsupported_match(
+        self,
+        *,
+        cause: BaseException,
+    ) -> NoReturn:
+        screenshot = await self.context.browser.screenshot()
+        msg = "The detected match type is not supported."
+        raise ScreenUnexpectedStateError(msg, screenshot) from cause
 
     async def _move_mouse_away_from_hand(self) -> None:
         # Hovering over a tile in the hand can display winning-tile

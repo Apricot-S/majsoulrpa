@@ -16,6 +16,10 @@ class MatchMetadataDecodeError(ValueError):
     pass
 
 
+class MatchMetadataUnsupportedError(ValueError):
+    pass
+
+
 @dataclass(frozen=True, slots=True)
 class MatchMetadata:
     match_id: str
@@ -46,12 +50,23 @@ def decode_match_metadata(
 
     meta = _get_dict(_get_dict(message.response, "game_config"), "meta")
     room_id = _get_int(meta, "room_id")
+    mode_id = _get_int(meta, "mode_id")
     contest_uid = _get_int(meta, "contest_uid")
-    if (room_id > 0) == (contest_uid > 0):
-        msg = "authGame must identify one supported match origin."
+    if room_id < 0 or mode_id < 0 or contest_uid < 0:
+        msg = "authGame match origin IDs must be nonnegative."
         raise MatchMetadataDecodeError(msg)
-    origin = MatchOrigin.FRIENDLY if room_id > 0 else MatchOrigin.TOURNAMENT
-    origin_id = room_id if room_id > 0 else contest_uid
+    if room_id == 0 and contest_uid == 0:
+        msg = "authGame identifies an unsupported match origin."
+        raise MatchMetadataUnsupportedError(msg)
+    if room_id > 0:
+        if mode_id != 0 or contest_uid != 0:
+            msg = "Friendly authGame metadata is inconsistent."
+            raise MatchMetadataDecodeError(msg)
+        origin = MatchOrigin.FRIENDLY
+        origin_id = room_id
+    else:
+        origin = MatchOrigin.TOURNAMENT
+        origin_id = contest_uid
 
     seat_list = _get_int_list(message.response, "seat_list")
     if len(seat_list) not in (3, 4):
@@ -60,41 +75,39 @@ def decode_match_metadata(
     if seat_list.count(self_account_id) != 1:
         msg = "authGame seat list must contain the current account once."
         raise MatchMetadataDecodeError(msg)
-    positive_account_ids = [value for value in seat_list if value > 0]
-    if len(positive_account_ids) != len(set(positive_account_ids)):
-        msg = "authGame seat account IDs must be unique."
+    if any(value <= 0 for value in seat_list):
+        msg = "authGame seat participant IDs must be positive."
+        raise MatchMetadataDecodeError(msg)
+    if len(seat_list) != len(set(seat_list)):
+        msg = "authGame seat participant IDs must be unique."
         raise MatchMetadataDecodeError(msg)
 
     player_values = _get_dict_list(message.response, "players")
-    human_players = {
-        account_id: _decode_human_player(value, account_id)
-        for value in player_values
-        if (account_id := _get_int(value, "account_id")) > 0
-    }
-    if set(human_players) != set(positive_account_ids):
-        msg = "authGame players must match the positive seat account IDs."
+    robot_values = _get_dict_list(message.response, "robots")
+    humans_by_id = _index_participants(player_values, kind="player")
+    robots_by_id = _index_participants(robot_values, kind="robot")
+    if set(humans_by_id) & set(robots_by_id):
+        msg = "authGame human and robot IDs must not overlap."
+        raise MatchMetadataDecodeError(msg)
+    if set(seat_list) != set(humans_by_id) | set(robots_by_id):
+        msg = "authGame seats must match all human and robot IDs."
         raise MatchMetadataDecodeError(msg)
 
-    robot_values = iter(_get_dict_list(message.response, "robots"))
     players: list[MatchPlayer] = []
-    for seat, account_id in enumerate(seat_list):
-        if account_id > 0:
-            player = human_players[account_id]
+    for seat, participant_id in enumerate(seat_list):
+        human = humans_by_id.get(participant_id)
+        if human is not None:
             players.append(
-                MatchPlayer(
-                    seat=seat,
-                    account_id=player.account_id,
-                    name=player.name,
-                    level4=player.level4,
-                    level3=player.level3,
-                ),
+                _decode_human_player(human, participant_id, seat),
             )
             continue
-        robot = next(robot_values, None)
-        players.append(_decode_robot_player(seat, robot))
-    if next(robot_values, None) is not None:
-        msg = "authGame contains more robots than CPU seats."
-        raise MatchMetadataDecodeError(msg)
+        players.append(
+            _decode_robot_player(
+                seat,
+                participant_id,
+                robots_by_id[participant_id],
+            ),
+        )
 
     return MatchMetadata(
         match_id=match_id,
@@ -108,9 +121,10 @@ def decode_match_metadata(
 def _decode_human_player(
     value: dict[str, JsonValue],
     account_id: int,
+    seat: int,
 ) -> MatchPlayer:
     return MatchPlayer(
-        seat=0,
+        seat=seat,
         account_id=account_id,
         name=_get_str(value, "nickname"),
         level4=_decode_rank(_get_dict(value, "level")),
@@ -120,47 +134,55 @@ def _decode_human_player(
 
 def _decode_robot_player(
     seat: int,
-    value: dict[str, JsonValue] | None,
+    account_id: int,
+    value: dict[str, JsonValue],
 ) -> MatchPlayer:
-    if value is None:
-        return MatchPlayer(
-            seat=seat,
-            account_id=None,
-            name=None,
-            level4=None,
-            level3=None,
-        )
-    name = value.get("nickname")
-    if not isinstance(name, str) or not name:
-        name = None
     return MatchPlayer(
         seat=seat,
-        account_id=None,
-        name=name,
+        account_id=account_id,
+        name=_get_str(value, "nickname"),
         level4=_decode_optional_rank(value.get("level")),
         level3=_decode_optional_rank(value.get("level3")),
     )
 
 
+def _index_participants(
+    values: list[dict[str, JsonValue]],
+    *,
+    kind: str,
+) -> dict[int, dict[str, JsonValue]]:
+    result: dict[int, dict[str, JsonValue]] = {}
+    for value in values:
+        participant_id = _get_int(value, "account_id")
+        if participant_id <= 0:
+            msg = f"authGame {kind} ID must be positive."
+            raise MatchMetadataDecodeError(msg)
+        if participant_id in result:
+            msg = f"authGame {kind} IDs must be unique."
+            raise MatchMetadataDecodeError(msg)
+        result[participant_id] = value
+    return result
+
+
 def _decode_rank(value: dict[str, JsonValue]) -> MatchRank:
-    return MatchRank(id=_get_int(value, "id"), score=_get_int(value, "score"))
+    rank_id = _get_int(value, "id")
+    score = _get_int(value, "score")
+    if rank_id <= 0:
+        msg = "authGame rank ID must be positive."
+        raise MatchMetadataDecodeError(msg)
+    if score < 0:
+        msg = "authGame rank score must be nonnegative."
+        raise MatchMetadataDecodeError(msg)
+    return MatchRank(id=rank_id, score=score)
 
 
 def _decode_optional_rank(value: JsonValue | None) -> MatchRank | None:
+    if value is None:
+        return None
     if not isinstance(value, dict):
-        return None
-    rank_id = value.get("id")
-    score = value.get("score")
-    if (
-        isinstance(rank_id, bool)
-        or not isinstance(rank_id, int)
-        or rank_id <= 0
-        or isinstance(score, bool)
-        or not isinstance(score, int)
-        or score < 0
-    ):
-        return None
-    return MatchRank(id=rank_id, score=score)
+        msg = "authGame robot rank must be an object."
+        raise MatchMetadataDecodeError(msg)
+    return _decode_rank(value)
 
 
 def _get_dict(

@@ -57,7 +57,23 @@ def _live_new_round_action(*, step: int) -> DecodedNotice:
     return _live_action(step=step, name="ActionNewRound", data=data)
 
 
-def _auth_game() -> DecodedRequestResponse:
+def _auth_game(
+    *,
+    cpu_count: int = 0,
+    room_id: int = 12345,
+    mode_id: int = 0,
+    contest_uid: int = 0,
+    seat_list: tuple[int, ...] | None = None,
+) -> DecodedRequestResponse:
+    human_account_ids = (
+        SELF_ACCOUNT_ID,
+        100002,
+        100003,
+        100004,
+    )[: 4 - cpu_count]
+    robot_ids = tuple(range(1, cpu_count + 1))
+    if seat_list is None:
+        seat_list = (*human_account_ids, *robot_ids)
     return DecodedRequestResponse(
         raw=RawRequestResponse(
             request_direction=Direction.OUTBOUND,
@@ -81,13 +97,20 @@ def _auth_game() -> DecodedRequestResponse:
                     "level3": {"id": 20101 + seat, "score": seat + 10},
                 }
                 for seat, account_id in enumerate(
-                    (SELF_ACCOUNT_ID, 100002, 100003, 100004),
+                    human_account_ids,
                 )
             ],
-            "seat_list": [SELF_ACCOUNT_ID, 100002, 100003, 100004],
+            "seat_list": list(seat_list),
             "game_config": {
-                "meta": {"room_id": 12345, "contest_uid": 0},
+                "meta": {
+                    "room_id": room_id,
+                    "mode_id": mode_id,
+                    "contest_uid": contest_uid,
+                },
             },
-            "robots": [],
+            "robots": [
+                {"account_id": robot_id, "nickname": ""}
+                for robot_id in robot_ids
+            ],
         },
     )
