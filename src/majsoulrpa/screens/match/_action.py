@@ -23,10 +23,7 @@ _ACTION_MESSAGE_TYPE_MAP = {
     for descriptor in liqi_pb2.DESCRIPTOR.message_types_by_name.values()
 }
 
-type _EventDecoder = Callable[
-    [int, Mapping[str, JsonValue]],
-    MatchEvent,
-]
+type _EventDecoder = Callable[[int, Mapping[str, JsonValue]], MatchEvent]
 
 _EVENT_DECODERS: dict[str, _EventDecoder] = {
     "ActionMJStart": StartMatchEvent.from_dict,
