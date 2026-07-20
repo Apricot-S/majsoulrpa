@@ -6,6 +6,10 @@ from pydantic import JsonValue
 
 from majsoulrpa.screens.match.event._base import _MatchEventBase
 from majsoulrpa.screens.match.event._common import tile_sort_key
+from majsoulrpa.screens.match.event._constants import (
+    MAX_DORA_INDICATORS,
+    MAX_LEFT_TILE_COUNT,
+)
 from majsoulrpa.screens.match.event._decode import (
     _get_int,
     _get_int_list,
@@ -19,8 +23,6 @@ from majsoulrpa.screens.match.types import (
 )
 
 _NUM_CHANG = 3
-_MAX_DORA_INDICATORS = 5
-_MAX_LEFT_TILE_COUNT = 69
 _SHOUPAI_SIZE = 13
 _DEALT_TILE_COUNTS = (13, 14)
 
@@ -58,10 +60,10 @@ class NewRoundEvent(_MatchEventBase):
         if self.liqibang < 0:
             msg = "liqibang must be nonnegative."
             raise ValueError(msg)
-        if not 1 <= len(self.dora_indicators) <= _MAX_DORA_INDICATORS:
+        if not 1 <= len(self.dora_indicators) <= MAX_DORA_INDICATORS:
             msg = "dora_indicators must contain between one and five tiles."
             raise ValueError(msg)
-        if not 0 <= self.left_tile_count <= _MAX_LEFT_TILE_COUNT:
+        if not 0 <= self.left_tile_count <= MAX_LEFT_TILE_COUNT:
             msg = "left_tile_count must be between 0 and 69."
             raise ValueError(msg)
         if len(self.shoupai) != _SHOUPAI_SIZE:

@@ -5,6 +5,10 @@ from typing import Self, final
 from pydantic import JsonValue
 
 from majsoulrpa.screens.match.event._base import _MatchEventBase
+from majsoulrpa.screens.match.event._constants import (
+    MAX_DORA_INDICATORS,
+    MAX_LEFT_TILE_COUNT,
+)
 from majsoulrpa.screens.match.event._decode import (
     _get_int,
     _get_optional_dict,
@@ -19,9 +23,6 @@ from majsoulrpa.screens.match.types import (
     validate_tile,
 )
 
-_MAX_DORA_INDICATORS = 5
-_MAX_LEFT_TILE_COUNT = 69
-
 
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -34,10 +35,10 @@ class ZimoEvent(_MatchEventBase):
 
     def __post_init__(self) -> None:
         _MatchEventBase.__post_init__(self)
-        if not 0 <= self.left_tile_count <= _MAX_LEFT_TILE_COUNT:
+        if not 0 <= self.left_tile_count <= MAX_LEFT_TILE_COUNT:
             msg = "left_tile_count must be between 0 and 69."
             raise ValueError(msg)
-        if len(self.dora_indicators) > _MAX_DORA_INDICATORS:
+        if len(self.dora_indicators) > MAX_DORA_INDICATORS:
             msg = "dora_indicators must contain at most five tiles."
             raise ValueError(msg)
 
