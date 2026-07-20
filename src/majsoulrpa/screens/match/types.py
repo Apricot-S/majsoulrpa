@@ -18,8 +18,11 @@ def validate_seat(value: int) -> Seat:
 
 
 def validate_tile(value: str) -> Tile:
-    number = value[0] if len(value) == _TILE_LENGTH else ""
-    suit = value[1] if len(value) == _TILE_LENGTH else ""
+    if len(value) != _TILE_LENGTH:
+        msg = f"Invalid tile: {value!r}."
+        raise ValueError(msg)
+    number = value[0]
+    suit = value[1]
     if suit in {"m", "p", "s"} and number in "0123456789":
         return Tile(value)
     if suit == "z" and number in "1234567":
