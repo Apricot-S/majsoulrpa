@@ -8,7 +8,7 @@ _TILE_LENGTH = 2
 
 
 def validate_seat(value: int) -> Seat:
-    if isinstance(value, bool) or not isinstance(value, int):
+    if isinstance(value, bool):
         msg = "Seat must be an int."
         raise TypeError(msg)
     if not 0 <= value <= _MAX_SEAT:
@@ -18,9 +18,6 @@ def validate_seat(value: int) -> Seat:
 
 
 def validate_tile(value: str) -> Tile:
-    if not isinstance(value, str):
-        msg = "Tile must be a string."
-        raise TypeError(msg)
     number = value[0] if len(value) == _TILE_LENGTH else ""
     suit = value[1] if len(value) == _TILE_LENGTH else ""
     if suit in {"m", "p", "s"} and number in "0123456789":
