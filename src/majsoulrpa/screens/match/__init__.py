@@ -2,9 +2,11 @@ from typing import TYPE_CHECKING
 
 from majsoulrpa.screens.match.event import (
     DapaiEvent,
+    LiqiSuccess,
     MatchEvent,
     NewRoundEvent,
     StartMatchEvent,
+    ZimoEvent,
 )
 from majsoulrpa.screens.match.state import (
     MatchDapai,
@@ -28,6 +30,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "DapaiEvent",
+    "LiqiSuccess",
     "MatchDapai",
     "MatchEvent",
     "MatchFulu",
@@ -42,6 +45,7 @@ __all__ = [
     "Seat",
     "StartMatchEvent",
     "Tile",
+    "ZimoEvent",
     "validate_seat",
     "validate_tile",
 ]

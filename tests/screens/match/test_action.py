@@ -4,7 +4,7 @@ import pytest
 from pydantic import JsonValue
 
 from majsoulrpa.assets.protocol import liqi_pb2
-from majsoulrpa.screens.match import NewRoundEvent, StartMatchEvent
+from majsoulrpa.screens.match import NewRoundEvent, StartMatchEvent, ZimoEvent
 from majsoulrpa.screens.match._action import (
     MatchActionDecodeError,
     decode_live_action,
@@ -106,6 +106,28 @@ def test_live_and_restore_action_new_round_decode_to_same_event() -> None:
     )
     assert live_event == expected
     assert restore_event == expected
+
+
+def test_live_and_restore_action_deal_tile_decode_to_same_event() -> None:
+    data = liqi_pb2.ActionDealTile(
+        seat=0,
+        tile="5m",
+        left_tile_count=68,
+        doras=["3p"],
+    ).SerializeToString()
+    live_event, _ = decode_live_action(
+        _live_action(step=2, name="ActionDealTile", data=data)
+    )
+    restore_event, _ = decode_restore_action(
+        {
+            "step": 2,
+            "name": "ActionDealTile",
+            "data": base64.b64encode(data).decode(),
+        }
+    )
+
+    assert isinstance(live_event, ZimoEvent)
+    assert live_event == restore_event
 
 
 @pytest.mark.parametrize(

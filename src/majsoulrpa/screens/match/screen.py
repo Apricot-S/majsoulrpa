@@ -37,6 +37,7 @@ from majsoulrpa.screens.match.event import (
     MatchEvent,
     NewRoundEvent,
     StartMatchEvent,
+    ZimoEvent,
 )
 from majsoulrpa.screens.match.state import MatchState
 from majsoulrpa.screens.match.store import MatchStateStore
@@ -203,8 +204,8 @@ class MatchScreen(Screen):
                     )
                     raise MatchActionDecodeError(msg)
                 self._new_round_event = event
-            case DapaiEvent():
-                msg = "ActionDiscardTile must follow ActionNewRound."
+            case ZimoEvent() | DapaiEvent():
+                msg = f"{type(event).__name__} must follow ActionNewRound."
                 raise MatchActionDecodeError(msg)
             case _ as unreachable:
                 assert_never(unreachable)

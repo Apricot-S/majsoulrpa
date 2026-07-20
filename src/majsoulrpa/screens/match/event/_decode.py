@@ -47,5 +47,18 @@ def _get_int_list(data: Mapping[str, JsonValue], name: str) -> list[int]:
     return value
 
 
+def _get_optional_dict(
+    data: Mapping[str, JsonValue],
+    name: str,
+) -> dict[str, JsonValue] | None:
+    value = data.get(_field_key(name))
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        msg = f"{name} must be an object or None."
+        raise TypeError(msg)
+    return value
+
+
 def _field_key(name: str) -> str:
     return name.rpartition(".")[2]

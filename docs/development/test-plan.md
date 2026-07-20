@@ -704,6 +704,12 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] ActionDiscardTile を immutable DapaiEvent へ decode し、event 列と河へ追加する
 - [x] 親の第一打牌は moqie=false でも便宜上分離した zimopai と一致すれば正しく除去する
 - [x] DapaiEvent で first_draw、previous dapai、dora、version / step を更新する
+- [x] ActionDealTile を immutable ZimoEvent へ live / restore の両方から decode する
+- [x] ZimoEvent は自家の実牌を Tile、他家の空文字列を None として保持する
+- [x] ZimoEvent は残り枚数、新ドラ表示牌、nested LiQiSuccess を保持する
+- [x] ZimoEvent reducer は自家の zimopai、残り枚数、ドラ、立直成立時の点数と liqibang を更新する
+- [x] ZimoEvent reducer は他家の非公開ツモ牌を None のまま扱い、直前打牌を解決済みにする
+- [x] ZimoEvent reducer は action step、seat、自他と tile 公開範囲、既存 zimopai の不整合を拒否する
 - [ ] concrete MatchEvent は `@final`、`frozen=True`、`slots=True`、`kw_only=True` の dataclass である
 - [ ] public `MatchEvent` type alias はすべての concrete event class を列挙する
 - [ ] MatchEvent に type discriminator を設けない

@@ -47,10 +47,11 @@ def _live_new_round_action(
     *,
     step: int,
     tiles: list[str] | None = None,
+    ju: int = 0,
 ) -> DecodedNotice:
     data = liqi_pb2.ActionNewRound(
         chang=0,
-        ju=0,
+        ju=ju,
         ben=0,
         tiles=["1m"] * 13 if tiles is None else tiles,
         scores=[25000] * 4,
@@ -80,6 +81,25 @@ def _live_discard_action(
         doras=[] if doras is None else doras,
     ).SerializeToString()
     return _live_action(step=step, name="ActionDiscardTile", data=data)
+
+
+def _live_deal_action(
+    *,
+    step: int,
+    seat: int,
+    tile: str,
+    left_tile_count: int,
+    doras: list[str] | None = None,
+    liqi: liqi_pb2.LiQiSuccess | None = None,
+) -> DecodedNotice:
+    data = liqi_pb2.ActionDealTile(
+        seat=seat,
+        tile=tile,
+        left_tile_count=left_tile_count,
+        doras=[] if doras is None else doras,
+        liqi=liqi,
+    ).SerializeToString()
+    return _live_action(step=step, name="ActionDealTile", data=data)
 
 
 def _auth_game(

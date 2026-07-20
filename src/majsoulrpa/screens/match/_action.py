@@ -13,6 +13,7 @@ from majsoulrpa.screens.match.event import (
     MatchEvent,
     NewRoundEvent,
     StartMatchEvent,
+    ZimoEvent,
 )
 from majsoulrpa.sniffer.events import DecodedNotice, Direction
 
@@ -28,6 +29,7 @@ type _EventDecoder = Callable[[int, Mapping[str, JsonValue]], MatchEvent]
 _EVENT_DECODERS: dict[str, _EventDecoder] = {
     "ActionMJStart": StartMatchEvent.from_dict,
     "ActionNewRound": NewRoundEvent.from_dict,
+    "ActionDealTile": ZimoEvent.from_dict,
     "ActionDiscardTile": DapaiEvent.from_dict,
 }
 

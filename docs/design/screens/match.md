@@ -425,6 +425,7 @@ class ZimoEvent(_MatchEventBase):
     seat: Seat
     tile: Tile | None
     left_tile_count: int
+    dora_indicators: tuple[Tile, ...]
     liqi_success: LiqiSuccess | None = None
 
     def __post_init__(self) -> None:
@@ -502,6 +503,11 @@ def event_name(event: MatchEvent) -> str:
 保持し、reducer が同じ event の適用中に点数と `liqibang` を更新する。これは雀魂の action 境界を
 保ち、Kanachan の打牌 feature へ変換しやすくするためである。Mjai の `reach` / `reach_accepted` への
 分離が必要な adapter は、`DapaiEvent` と後続 event の `liqi_success` から外部境界で生成する。
+
+`ActionDealTile.tile` は自家のツモだけ実牌を含み、他家のツモでは空文字列になる。`ZimoEvent.tile` は
+空文字列を `None` に正規化し、reducer は自家なら実牌、他家なら `None` であることを検証する。
+`doras` が非空なら現在のドラ表示牌を置き換え、空なら以前の表示牌を維持する。ツモを適用した時点で
+直前の打牌は解決済みとして `previous_dapai_seat` / `previous_dapai_tile` を消去する。
 
 `ActionNewRound.tiles` が14枚の場合は全体をsortして右端を便宜上 `zimopai` に分離しているため、親の
 第一打牌では `moqie == false` でも打牌が `shoupai` ではなく `zimopai` と一致する場合がある。

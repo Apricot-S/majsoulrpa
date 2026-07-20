@@ -7,6 +7,7 @@ from majsoulrpa.screens.match.event import (
     MatchEvent,
     NewRoundEvent,
     StartMatchEvent,
+    ZimoEvent,
 )
 from majsoulrpa.screens.match.event._common import tile_sort_key
 from majsoulrpa.screens.match.state import (
@@ -77,12 +78,72 @@ class MatchStateStore:
 
     def apply_event(self, event: MatchEvent) -> MatchState:
         match event:
+            case ZimoEvent():
+                return self._apply_zimo(event)
             case DapaiEvent():
                 return self._apply_dapai(event)
             case StartMatchEvent() | NewRoundEvent():
                 msg = "A match initialization event cannot be applied again."
                 raise ValueError(msg)
         assert_never(event)
+
+    def _apply_zimo(self, event: ZimoEvent) -> MatchState:
+        state = self._require_state()
+        round_state = state.round
+        if event.action_step != round_state.step + 1:
+            msg = "ActionDealTile step must follow the current round step."
+            raise ValueError(msg)
+        if event.seat >= len(state.players):
+            msg = "ActionDealTile seat must identify a player."
+            raise ValueError(msg)
+        if round_state.previous_dapai_seat is None:
+            msg = "ActionDealTile must follow an unresolved discard."
+            raise ValueError(msg)
+
+        zimopai = round_state.zimopai
+        if event.seat == state.self_seat:
+            if event.tile is None:
+                msg = "A self draw must reveal its tile."
+                raise ValueError(msg)
+            if zimopai is not None:
+                msg = "A self draw cannot replace an unresolved drawn tile."
+                raise ValueError(msg)
+            zimopai = event.tile
+        elif event.tile is not None:
+            msg = "An opponent draw must conceal its tile."
+            raise ValueError(msg)
+
+        scores = round_state.scores
+        liqibang = round_state.liqibang
+        if event.liqi_success is not None:
+            if event.liqi_success.seat >= len(state.players):
+                msg = "LiQiSuccess seat must identify a player."
+                raise ValueError(msg)
+            mutable_scores = list(scores)
+            mutable_scores[event.liqi_success.seat] = event.liqi_success.score
+            scores = tuple(mutable_scores)
+            liqibang = event.liqi_success.liqibang
+
+        next_round = replace(
+            round_state,
+            step=event.action_step,
+            dora_indicators=(
+                event.dora_indicators or round_state.dora_indicators
+            ),
+            left_tile_count=event.left_tile_count,
+            scores=scores,
+            liqibang=liqibang,
+            zimopai=zimopai,
+            previous_dapai_seat=None,
+            previous_dapai_tile=None,
+            events=(*round_state.events, event),
+        )
+        self._state = replace(
+            state,
+            version=state.version + 1,
+            round=next_round,
+        )
+        return self._state
 
     def _apply_dapai(self, event: DapaiEvent) -> MatchState:
         state = self._require_state()
