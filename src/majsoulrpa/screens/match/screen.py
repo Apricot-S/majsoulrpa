@@ -65,9 +65,9 @@ from majsoulrpa.sniffer.events import (
 MATCH_INITIALIZATION_TIMEOUT_SECONDS = 5.0
 DEALER_FIRST_DISCARD_DELAY_SECONDS = 2.0
 DAPAI_CLICK_RETRY_INTERVAL_SECONDS = 0.5
-CHI_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
-CHI_PENG_COMBINATION_SELECTION_DELAY_SECONDS = 0.4
-CHI_HAND_SLIDE_DELAY_SECONDS = 1.0
+OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
+OPERATION_OPTION_DISPLAY_DELAY_SECONDS = 0.4
+HAND_SLIDE_DELAY_SECONDS = 1.0
 
 _SINGLE_CHI_CANDIDATE_COUNT = 1
 _MIN_MULTIPLE_CHI_CANDIDATE_COUNT = 2
@@ -476,7 +476,9 @@ class MatchScreen(Screen):
 
             if await self.click_template_if_present(self.CHI_BUTTON_TEMPLATE):
                 break
-            await asyncio.sleep(CHI_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS)
+            await asyncio.sleep(
+                OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
+            )
 
         if len(chi_operations) >= _MIN_MULTIPLE_CHI_CANDIDATE_COUNT:
             index = chi_operations.index(operation)
@@ -484,9 +486,9 @@ class MatchScreen(Screen):
                 len(chi_operations),
                 index,
             )
-            await asyncio.sleep(CHI_PENG_COMBINATION_SELECTION_DELAY_SECONDS)
+            await asyncio.sleep(OPERATION_OPTION_DISPLAY_DELAY_SECONDS)
             await self.click_region(selection_region)
-        await asyncio.sleep(CHI_HAND_SLIDE_DELAY_SECONDS)
+        await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
 
     @classmethod
     def _get_chi_peng_combination_region(

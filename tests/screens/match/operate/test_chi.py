@@ -410,7 +410,7 @@ def test_operate_puts_back_preemption_while_waiting_for_chi_button(
     )
     monkeypatch.setattr(
         match_screen_module,
-        "CHI_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS",
+        "OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS",
         0.001,
     )
 
@@ -603,7 +603,7 @@ def test_operate_does_not_succeed_without_button_or_preemption(
     )
     monkeypatch.setattr(
         match_screen_module,
-        "CHI_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS",
+        "OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS",
         0.001,
     )
 
