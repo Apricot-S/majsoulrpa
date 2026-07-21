@@ -14,15 +14,16 @@ from tests.screens.match._support import _live_action
 
 
 def test_live_action_mj_start_decodes_to_start_match_event() -> None:
-    event, _ = decode_live_action(_live_action())
+    event, operation, _ = decode_live_action(_live_action())
 
     assert event == StartMatchEvent(action_step=0)
+    assert operation is None
 
 
 def test_live_action_replaces_obfuscated_data_with_decoded_message() -> None:
     message = _live_action()
 
-    event, decoded_message = decode_live_action(message)
+    event, _, decoded_message = decode_live_action(message)
 
     assert event == StartMatchEvent(action_step=0)
     assert decoded_message.raw is message.raw
@@ -34,7 +35,7 @@ def test_live_action_replaces_obfuscated_data_with_decoded_message() -> None:
 
 
 def test_restore_action_mj_start_decodes_to_start_match_event() -> None:
-    event, decoded_action = decode_restore_action(
+    event, _, decoded_action = decode_restore_action(
         {"step": 0, "name": "ActionMJStart", "data": ""}
     )
 
@@ -47,7 +48,7 @@ def test_restore_action_mj_start_decodes_to_start_match_event() -> None:
 
 
 def test_restore_action_ignores_unknown_protobuf_fields() -> None:
-    event, decoded_action = decode_restore_action(
+    event, _, decoded_action = decode_restore_action(
         {
             "step": 0,
             "name": "ActionMJStart",
@@ -70,10 +71,10 @@ def test_live_and_restore_action_new_round_decode_to_same_event() -> None:
         left_tile_count=69,
         doras=["3p"],
     ).SerializeToString()
-    live_event, _ = decode_live_action(
+    live_event, _, _ = decode_live_action(
         _live_action(step=0, name="ActionNewRound", data=data)
     )
-    restore_event, _ = decode_restore_action(
+    restore_event, _, _ = decode_restore_action(
         {
             "step": 0,
             "name": "ActionNewRound",
@@ -114,11 +115,16 @@ def test_live_and_restore_action_deal_tile_decode_to_same_event() -> None:
         tile="5m",
         left_tile_count=68,
         doras=["3p"],
+        operation=liqi_pb2.OptionalOperationList(
+            time_fixed=5000,
+            time_add=20000,
+            operation_list=[liqi_pb2.OptionalOperation(type=1)],
+        ),
     ).SerializeToString()
-    live_event, _ = decode_live_action(
+    live_event, live_operation, _ = decode_live_action(
         _live_action(step=2, name="ActionDealTile", data=data)
     )
-    restore_event, _ = decode_restore_action(
+    restore_event, restore_operation, _ = decode_restore_action(
         {
             "step": 2,
             "name": "ActionDealTile",
@@ -128,6 +134,8 @@ def test_live_and_restore_action_deal_tile_decode_to_same_event() -> None:
 
     assert isinstance(live_event, ZimoEvent)
     assert live_event == restore_event
+    assert live_operation is not None
+    assert live_operation == restore_operation
 
 
 @pytest.mark.parametrize(

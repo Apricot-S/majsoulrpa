@@ -13,6 +13,7 @@ from majsoulrpa.screens.errors import (
 )
 from majsoulrpa.screens.match import (
     DapaiEvent,
+    DapaiOperation,
     MatchDapai,
     MatchOrigin,
     MatchRank,
@@ -538,3 +539,146 @@ def test_get_state_rejects_draw_tile_with_wrong_visibility(
         asyncio.run(screen.get_state())
 
     assert exc_info.value.screenshot == b"inconsistent-screenshot"
+
+
+def test_get_state_exposes_initial_dapai_operation_candidates() -> None:
+    tiles = [
+        "0m",
+        "5m",
+        "1p",
+        "1p",
+        "2p",
+        "3p",
+        "4p",
+        "5p",
+        "6p",
+        "7p",
+        "8p",
+        "9p",
+        "1z",
+        "2z",
+    ]
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"synthetic-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(),
+                _live_new_round_action(
+                    step=0,
+                    tiles=tiles,
+                    operation=liqi_pb2.OptionalOperationList(
+                        time_fixed=5000,
+                        time_add=20000,
+                        operation_list=[
+                            liqi_pb2.OptionalOperation(
+                                type=1,
+                                combination=["5m"],
+                            )
+                        ],
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+    state = asyncio.run(screen.get_state())
+
+    candidates = state.round.operation_candidates
+    assert candidates is not None
+    assert candidates.time_fixed_ms == 5000
+    assert candidates.time_add_ms == 20000
+    assert candidates.operations == tuple(
+        DapaiOperation(tile=validate_tile(tile), moqie=False)
+        for tile in (
+            "1p",
+            "2p",
+            "3p",
+            "4p",
+            "5p",
+            "6p",
+            "7p",
+            "8p",
+            "9p",
+            "1z",
+            "2z",
+        )
+    )
+
+
+def test_get_state_distinguishes_hand_and_drawn_dapai_operations() -> None:
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"synthetic-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(),
+                _live_new_round_action(step=0, ju=1),
+                _live_discard_action(
+                    step=1,
+                    seat=3,
+                    tile="9s",
+                    moqie=False,
+                ),
+                _live_deal_action(
+                    step=2,
+                    seat=0,
+                    tile="1m",
+                    left_tile_count=68,
+                    operation=liqi_pb2.OptionalOperationList(
+                        time_fixed=5000,
+                        time_add=20000,
+                        operation_list=[liqi_pb2.OptionalOperation(type=1)],
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+    state = asyncio.run(screen.get_state())
+
+    candidates = state.round.operation_candidates
+    assert candidates is not None
+    assert candidates.operations == (
+        DapaiOperation(tile=validate_tile("1m"), moqie=False),
+        DapaiOperation(tile=validate_tile("1m"), moqie=True),
+    )
+
+
+def test_get_state_clears_previous_operation_candidates() -> None:
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"synthetic-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(),
+                _live_new_round_action(
+                    step=0,
+                    tiles=["1m"] * 13 + ["9s"],
+                    operation=liqi_pb2.OptionalOperationList(
+                        operation_list=[liqi_pb2.OptionalOperation(type=1)],
+                    ),
+                ),
+                _live_discard_action(
+                    step=1,
+                    seat=0,
+                    tile="9s",
+                    moqie=False,
+                ),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+    initial = screen._state_store.state
+    assert initial is not None
+    assert initial.round.operation_candidates is not None
+
+    state = asyncio.run(screen.get_state())
+
+    assert state.round.operation_candidates is None

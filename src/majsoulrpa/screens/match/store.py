@@ -10,6 +10,12 @@ from majsoulrpa.screens.match.event import (
     ZimoEvent,
 )
 from majsoulrpa.screens.match.event._common import tile_sort_key
+from majsoulrpa.screens.match.operation._materialize import (
+    materialize_operation_candidates,
+)
+from majsoulrpa.screens.match.operation._specification import (
+    _OperationCandidatesSpecification,
+)
 from majsoulrpa.screens.match.state import (
     MatchDapai,
     MatchState,
@@ -31,6 +37,7 @@ class MatchStateStore:
         metadata: MatchMetadata,
         start_match_event: StartMatchEvent | None,
         new_round_event: NewRoundEvent,
+        operation_specification: _OperationCandidatesSpecification | None,
     ) -> MatchState:
         if self._state is not None:
             msg = "Match state store is already initialized."
@@ -41,6 +48,13 @@ class MatchStateStore:
             else (new_round_event,)
         )
         player_count = len(metadata.players)
+        operation_candidates = materialize_operation_candidates(
+            operation_specification,
+            new_round_event,
+            new_round_event.shoupai,
+            new_round_event.zimopai,
+            metadata.self_seat,
+        )
         round_state = RoundState(
             generation=1,
             step=new_round_event.action_step,
@@ -63,6 +77,7 @@ class MatchStateStore:
             lingshang_zimo=(False,) * player_count,
             previous_dapai_seat=None,
             previous_dapai_tile=None,
+            operation_candidates=operation_candidates,
             events=events,
         )
         self._state = MatchState(
@@ -76,18 +91,26 @@ class MatchStateStore:
         )
         return self._state
 
-    def apply_event(self, event: MatchEvent) -> MatchState:
+    def apply_event(
+        self,
+        event: MatchEvent,
+        operation_specification: _OperationCandidatesSpecification | None,
+    ) -> MatchState:
         match event:
             case ZimoEvent():
-                return self._apply_zimo(event)
+                return self._apply_zimo(event, operation_specification)
             case DapaiEvent():
-                return self._apply_dapai(event)
+                return self._apply_dapai(event, operation_specification)
             case StartMatchEvent() | NewRoundEvent():
                 msg = "A match initialization event cannot be applied again."
                 raise ValueError(msg)
         assert_never(event)
 
-    def _apply_zimo(self, event: ZimoEvent) -> MatchState:
+    def _apply_zimo(
+        self,
+        event: ZimoEvent,
+        operation_specification: _OperationCandidatesSpecification | None,
+    ) -> MatchState:
         state = self._require_state()
         round_state = state.round
         if event.action_step != round_state.step + 1:
@@ -124,6 +147,13 @@ class MatchStateStore:
             scores = tuple(mutable_scores)
             liqibang = event.liqi_success.liqibang
 
+        operation_candidates = materialize_operation_candidates(
+            operation_specification,
+            event,
+            round_state.shoupai,
+            zimopai,
+            state.self_seat,
+        )
         next_round = replace(
             round_state,
             step=event.action_step,
@@ -136,6 +166,7 @@ class MatchStateStore:
             zimopai=zimopai,
             previous_dapai_seat=None,
             previous_dapai_tile=None,
+            operation_candidates=operation_candidates,
             events=(*round_state.events, event),
         )
         self._state = replace(
@@ -145,7 +176,11 @@ class MatchStateStore:
         )
         return self._state
 
-    def _apply_dapai(self, event: DapaiEvent) -> MatchState:
+    def _apply_dapai(
+        self,
+        event: DapaiEvent,
+        operation_specification: _OperationCandidatesSpecification | None,
+    ) -> MatchState:
         state = self._require_state()
         round_state = state.round
         if event.action_step != round_state.step + 1:
@@ -193,13 +228,21 @@ class MatchStateStore:
         first_draw[event.seat] = False
         lingshang_zimo[event.seat] = False
 
+        next_shoupai = tuple(shoupai)
+        operation_candidates = materialize_operation_candidates(
+            operation_specification,
+            event,
+            next_shoupai,
+            zimopai,
+            state.self_seat,
+        )
         next_round = replace(
             round_state,
             step=event.action_step,
             dora_indicators=(
                 event.dora_indicators or round_state.dora_indicators
             ),
-            shoupai=tuple(shoupai),
+            shoupai=next_shoupai,
             zimopai=zimopai,
             he=tuple(tuple(dapai) for dapai in he),
             liqi=tuple(liqi),
@@ -209,6 +252,7 @@ class MatchStateStore:
             lingshang_zimo=tuple(lingshang_zimo),
             previous_dapai_seat=event.seat,
             previous_dapai_tile=event.tile,
+            operation_candidates=operation_candidates,
             events=(*round_state.events, event),
         )
         self._state = replace(

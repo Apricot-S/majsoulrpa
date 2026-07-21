@@ -342,6 +342,10 @@ type 7 は `|` で分割せず、各要素を立直宣言牌として検証す�
 `change_tile_states`、`gap_type` および unknown protobuf field は今回の標準 operation model には
 取り込まず、既知 field の独自 whitelist 検査も追加しない。
 
+operation 型を段階的に追加している間は、まだ public model を実装していない type も decode error に
+する。対応済み type だけを部分的な `OperationCandidates` として公開してはならない。各 milestone で
+decoder の対応 type と public `MatchOperation` union を同時に増やす。
+
 operation の変換は 2 段階に分ける。action adapter は `OptionalOperationList` の decoded dict を
 live / restore 共通の immutable な内部 specification へ decode する。store は Event を適用した後の
 手牌状態と適用した Event を使って、その specification を public `OperationCandidates | None` へ
@@ -863,11 +867,13 @@ decode、Sniffer transport、stream gap は元の infrastructure error を伝播
 
 - `screens/match/state.py`: public immutable state と invariant
 - `screens/match/types.py`: 検証済みの `Seat` / `Tile` NewType と境界 validator
+- `screens/match/_decode.py`: event と operation が共有する decoded JSON field getter
 - `screens/match/event/_base.py`: event 共通の action step と不変条件
 - `screens/match/event/<event>.py`: concrete event ごとの final frozen dataclass と `from_dict()`
 - `screens/match/event/__init__.py`: concrete event と明示的な `MatchEvent` union の export
 - `screens/match/operation/<operation>.py`: concrete operation ごとの final frozen dataclass
 - `screens/match/operation/_decode.py`: `OptionalOperationList` の共通 wire decoder と type dispatch
+- `screens/match/operation/_specification.py`: state 適用前の immutable な内部 operation specification
 - `screens/match/operation/_materialize.py`: Event 適用後の手牌から public operation 候補への展開
 - `screens/match/operation/__init__.py`: concrete operation、`MatchOperation`、候補 container の export
 - `screens/match/_action.py`: live unmask、restore adapter、nested decode、event decoder registry

@@ -15,6 +15,12 @@ from majsoulrpa.screens.match.event import (
     StartMatchEvent,
     ZimoEvent,
 )
+from majsoulrpa.screens.match.operation._decode import (
+    decode_operation_specification,
+)
+from majsoulrpa.screens.match.operation._specification import (
+    _OperationCandidatesSpecification,
+)
 from majsoulrpa.sniffer.events import DecodedNotice, Direction
 
 ACTION_PROTOTYPE_NAME = ".lq.ActionPrototype"
@@ -40,20 +46,35 @@ class MatchActionDecodeError(ValueError):
 
 def decode_live_action(
     message: DecodedNotice,
-) -> tuple[MatchEvent, DecodedNotice]:
+) -> tuple[
+    MatchEvent,
+    _OperationCandidatesSpecification | None,
+    DecodedNotice,
+]:
     if message.raw.direction is not Direction.INBOUND:
         msg = "A live action must be an inbound Notice."
         raise MatchActionDecodeError(msg)
     if message.raw.name != ACTION_PROTOTYPE_NAME:
         msg = "A live action must use .lq.ActionPrototype."
         raise MatchActionDecodeError(msg)
-    event, decoded_action = _decode_action(message.message, obfuscated=True)
-    return event, DecodedNotice(raw=message.raw, message=decoded_action)
+    event, operation, decoded_action = _decode_action(
+        message.message,
+        obfuscated=True,
+    )
+    return (
+        event,
+        operation,
+        DecodedNotice(raw=message.raw, message=decoded_action),
+    )
 
 
 def decode_restore_action(
     action: Mapping[str, JsonValue],
-) -> tuple[MatchEvent, dict[str, JsonValue]]:
+) -> tuple[
+    MatchEvent,
+    _OperationCandidatesSpecification | None,
+    dict[str, JsonValue],
+]:
     return _decode_action(action, obfuscated=False)
 
 
@@ -61,7 +82,11 @@ def _decode_action(
     action: Mapping[str, JsonValue],
     *,
     obfuscated: bool,
-) -> tuple[MatchEvent, dict[str, JsonValue]]:
+) -> tuple[
+    MatchEvent,
+    _OperationCandidatesSpecification | None,
+    dict[str, JsonValue],
+]:
     step = action.get("step")
     name = action.get("name")
     encoded_data = action.get("data")
@@ -111,10 +136,11 @@ def _decode_action(
 
     try:
         event = event_decoder(step, decoded_data)
+        operation = decode_operation_specification(decoded_data)
     except (TypeError, ValueError) as error:
         msg = f"{name} fields are invalid."
         raise MatchActionDecodeError(msg) from error
-    return event, decoded_action
+    return event, operation, decoded_action
 
 
 def _deobfuscate_action_data(data: bytes) -> bytes:

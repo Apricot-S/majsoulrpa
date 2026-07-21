@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from majsoulrpa.screens.match.event import MatchEvent
+from majsoulrpa.screens.match.operation import OperationCandidates
 from majsoulrpa.screens.match.types import Seat, Tile
 
 _CPU_LEVEL4_ID = 10101  # 初心1
@@ -104,6 +105,7 @@ class RoundState:
     lingshang_zimo: tuple[bool, ...]
     previous_dapai_seat: Seat | None
     previous_dapai_tile: Tile | None
+    operation_candidates: OperationCandidates | None
     events: tuple[MatchEvent, ...]
 
     def __post_init__(self) -> None:

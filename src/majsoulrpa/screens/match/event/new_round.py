@@ -4,16 +4,16 @@ from typing import Self, final
 
 from pydantic import JsonValue
 
+from majsoulrpa.screens.match._decode import (
+    _get_int,
+    _get_int_list,
+    _get_str_list,
+)
 from majsoulrpa.screens.match.event._base import _MatchEventBase
 from majsoulrpa.screens.match.event._common import tile_sort_key
 from majsoulrpa.screens.match.event._constants import (
     MAX_DORA_INDICATORS,
     MAX_LEFT_TILE_COUNT,
-)
-from majsoulrpa.screens.match.event._decode import (
-    _get_int,
-    _get_int_list,
-    _get_str_list,
 )
 from majsoulrpa.screens.match.types import (
     Seat,

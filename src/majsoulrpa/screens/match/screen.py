@@ -39,6 +39,9 @@ from majsoulrpa.screens.match.event import (
     StartMatchEvent,
     ZimoEvent,
 )
+from majsoulrpa.screens.match.operation._specification import (
+    _OperationCandidatesSpecification,
+)
 from majsoulrpa.screens.match.state import MatchState
 from majsoulrpa.screens.match.store import MatchStateStore
 from majsoulrpa.sniffer.events import (
@@ -75,6 +78,9 @@ class MatchScreen(Screen):
         self._metadata: MatchMetadata | None = None
         self._start_match_event: StartMatchEvent | None = None
         self._new_round_event: NewRoundEvent | None = None
+        self._new_round_operation_specification: (
+            _OperationCandidatesSpecification | None
+        ) = None
         self._state_store = MatchStateStore()
 
     @classmethod
@@ -145,13 +151,13 @@ class MatchScreen(Screen):
         if not isinstance(message, DecodedNotice):
             msg = "ActionPrototype must be a Notice."
             raise MatchActionDecodeError(msg)
-        event, decoded_message = decode_live_action(message)
+        event, operation, decoded_message = decode_live_action(message)
         _logger.info(_format_sniffer_message_for_log(decoded_message))
         if self._state_store.state is None:
-            self._apply_initialization_event(event)
+            self._apply_initialization_event(event, operation)
             self._try_initialize_state()
             return
-        self._apply_active_event(event)
+        self._apply_active_event(event, operation)
 
     def _apply_auth_game(self, message: DecodedSnifferMessage) -> None:
         if not isinstance(message, DecodedRequestResponse):
@@ -177,14 +183,22 @@ class MatchScreen(Screen):
                 self._metadata,
                 self._start_match_event,
                 self._new_round_event,
+                self._new_round_operation_specification,
             )
         except ValueError as error:
             msg = "Initial match state is inconsistent."
             raise MatchMetadataDecodeError(msg) from error
 
-    def _apply_initialization_event(self, event: MatchEvent) -> None:
+    def _apply_initialization_event(
+        self,
+        event: MatchEvent,
+        operation: _OperationCandidatesSpecification | None,
+    ) -> None:
         match event:
             case StartMatchEvent():
+                if operation is not None:
+                    msg = "ActionMJStart must not contain operations."
+                    raise MatchActionDecodeError(msg)
                 if self._start_match_event is not None:
                     msg = "ActionMJStart must not be repeated."
                     raise MatchActionDecodeError(msg)
@@ -204,20 +218,25 @@ class MatchScreen(Screen):
                     )
                     raise MatchActionDecodeError(msg)
                 self._new_round_event = event
+                self._new_round_operation_specification = operation
             case ZimoEvent() | DapaiEvent():
                 msg = f"{type(event).__name__} must follow ActionNewRound."
                 raise MatchActionDecodeError(msg)
             case _ as unreachable:
                 assert_never(unreachable)
 
-    def _apply_active_event(self, event: MatchEvent) -> None:
+    def _apply_active_event(
+        self,
+        event: MatchEvent,
+        operation: _OperationCandidatesSpecification | None,
+    ) -> None:
         match event:
             case StartMatchEvent() | NewRoundEvent():
                 msg = "A match initialization action must not be repeated."
                 raise MatchActionDecodeError(msg)
             case _:
                 try:
-                    self._state_store.apply_event(event)
+                    self._state_store.apply_event(event, operation)
                 except ValueError as error:
                     msg = (
                         f"{type(event).__name__} is inconsistent with "

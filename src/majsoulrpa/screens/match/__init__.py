@@ -8,6 +8,11 @@ from majsoulrpa.screens.match.event import (
     StartMatchEvent,
     ZimoEvent,
 )
+from majsoulrpa.screens.match.operation import (
+    DapaiOperation,
+    MatchOperation,
+    OperationCandidates,
+)
 from majsoulrpa.screens.match.state import (
     MatchDapai,
     MatchFulu,
@@ -30,17 +35,20 @@ if TYPE_CHECKING:
 
 __all__ = [
     "DapaiEvent",
+    "DapaiOperation",
     "LiqiSuccess",
     "MatchDapai",
     "MatchEvent",
     "MatchFulu",
     "MatchFuluKind",
+    "MatchOperation",
     "MatchOrigin",
     "MatchPlayer",
     "MatchRank",
     "MatchScreen",
     "MatchState",
     "NewRoundEvent",
+    "OperationCandidates",
     "RoundState",
     "Seat",
     "StartMatchEvent",

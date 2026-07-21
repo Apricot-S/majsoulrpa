@@ -48,6 +48,7 @@ def _live_new_round_action(
     step: int,
     tiles: list[str] | None = None,
     ju: int = 0,
+    operation: liqi_pb2.OptionalOperationList | None = None,
 ) -> DecodedNotice:
     data = liqi_pb2.ActionNewRound(
         chang=0,
@@ -58,6 +59,7 @@ def _live_new_round_action(
         liqibang=0,
         left_tile_count=69,
         doras=["3p"],
+        operation=operation,
     ).SerializeToString()
     return _live_action(step=step, name="ActionNewRound", data=data)
 
@@ -91,6 +93,7 @@ def _live_deal_action(
     left_tile_count: int,
     doras: list[str] | None = None,
     liqi: liqi_pb2.LiQiSuccess | None = None,
+    operation: liqi_pb2.OptionalOperationList | None = None,
 ) -> DecodedNotice:
     data = liqi_pb2.ActionDealTile(
         seat=seat,
@@ -98,6 +101,7 @@ def _live_deal_action(
         left_tile_count=left_tile_count,
         doras=[] if doras is None else doras,
         liqi=liqi,
+        operation=operation,
     ).SerializeToString()
     return _live_action(step=step, name="ActionDealTile", data=data)
 

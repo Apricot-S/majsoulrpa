@@ -4,13 +4,13 @@ from typing import Self, final
 
 from pydantic import JsonValue
 
-from majsoulrpa.screens.match.event._base import _MatchEventBase
-from majsoulrpa.screens.match.event._decode import (
+from majsoulrpa.screens.match._decode import (
     _get_bool,
     _get_int,
     _get_str,
     _get_str_list,
 )
+from majsoulrpa.screens.match.event._base import _MatchEventBase
 from majsoulrpa.screens.match.types import (
     Seat,
     Tile,
