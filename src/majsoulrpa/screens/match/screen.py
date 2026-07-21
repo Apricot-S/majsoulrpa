@@ -196,6 +196,13 @@ class MatchScreen(Screen):
             )
             raise ScreenInconsistentMessageError(msg, screenshot)
 
+    @classmethod
+    def _matches_seat_indicator(cls, screenshot: object) -> bool:
+        return any(
+            template.matches(screenshot)
+            for template in cls.SEAT_INDICATOR_TEMPLATES
+        )
+
     async def _initialize(self) -> None:
         while self._state_store.state is None:
             message = await self._get_sniffer_message()
@@ -417,11 +424,4 @@ class MatchScreen(Screen):
             top=cls.HAND_TILE_REGION.top,
             width=cls.HAND_TILE_REGION.width,
             height=cls.HAND_TILE_REGION.height,
-        )
-
-    @classmethod
-    def _matches_seat_indicator(cls, screenshot: object) -> bool:
-        return any(
-            template.matches(screenshot)
-            for template in cls.SEAT_INDICATOR_TEMPLATES
         )
