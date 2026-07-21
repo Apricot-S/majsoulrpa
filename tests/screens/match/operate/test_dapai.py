@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import logging
 from random import Random
 from types import SimpleNamespace
@@ -30,6 +31,7 @@ from tests.screens._support import (
     _request_response,
 )
 from tests.screens.match._support import (
+    OBSERVED_AT,
     SELF_ACCOUNT_ID,
     _auth_game,
     _live_deal_action,
@@ -155,6 +157,76 @@ def test_operate_discards_dealers_presented_fourteenth_tile(
     safe_x, safe_y = browser.moved_points[1]
     assert 585 < safe_x < 1585
     assert 790 < safe_y < 860
+
+
+@pytest.mark.parametrize(
+    ("elapsed_seconds", "expected_delay"),
+    [(0.1, 0.3), (0.4, None), (1.0, None)],
+)
+def test_operate_waits_only_until_discard_ui_is_ready(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    elapsed_seconds: float,
+    expected_delay: float | None,
+) -> None:
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(step=0, ju=1),
+        _live_discard_action(step=1, seat=3, tile="9s", moqie=False),
+        _live_deal_action(
+            step=2,
+            seat=0,
+            tile="9s",
+            left_tile_count=68,
+            operation=liqi_pb2.OptionalOperationList(
+                operation_list=[liqi_pb2.OptionalOperation(type=1)],
+            ),
+        ),
+    )
+    browser = _MessagesOnClickBrowser(
+        messages,
+        _live_discard_action(
+            step=3,
+            seat=0,
+            tile="9s",
+            moqie=True,
+        ),
+    )
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=browser,
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=messages,
+        ),
+    )
+    now = OBSERVED_AT + datetime.timedelta(seconds=elapsed_seconds)
+    monkeypatch.setattr(match_screen_module, "_utc_now", lambda: now)
+    sleep_delays: list[float] = []
+
+    async def record_sleep(delay: float) -> None:
+        sleep_delays.append(delay)
+
+    monkeypatch.setattr(asyncio, "sleep", record_sleep)
+
+    asyncio.run(screen.before_callback())
+    state = asyncio.run(screen.get_state())
+    candidates = state.round.operation_candidates
+    assert candidates is not None
+    operation = next(
+        operation
+        for operation in candidates.operations
+        if isinstance(operation, DapaiOperation)
+        and operation.tile == validate_tile("9s")
+        and operation.moqie
+    )
+
+    asyncio.run(screen.operate(operation))
+
+    if expected_delay is None:
+        assert sleep_delays == []
+    else:
+        assert sleep_delays == [pytest.approx(expected_delay)]
 
 
 @pytest.mark.parametrize(

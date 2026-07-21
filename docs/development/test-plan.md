@@ -698,6 +698,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 手牌と zimopai が同種でも moqie に応じた異なる位置をクリックする
 - [x] 親の初打で presentation zimopai を選んだ場合、moqie=false のまま分離表示位置をクリックする
 - [x] 親の初打では配牌演出が終わるまで待ってからクリックする
+- [x] 通常打牌は候補messageの観測から0.4秒経過するまで、残り時間だけ待ってからクリックする
+- [x] 通常打牌の候補message観測から0.4秒以上経過後に `operate()` を呼んだ場合は追加で待たない
+- [x] 打牌UIの準備時刻はScreen内部で管理し、public MatchEventには観測時刻を追加しない
 - [x] 対象牌への cursor 移動と hover 待機は browser click に任せ、Screen 側で重複させず、クリック後に `MOUSE_SAFE_REGION` へ退避する
 - [x] `operate()` は対応する自家の DapaiEvent まで message を log・reduce して更新後の MatchState を返す
 - [x] 自家の DapaiEvent の tile / moqie が指定と異なる場合は `ScreenInconsistentMessageError` にする

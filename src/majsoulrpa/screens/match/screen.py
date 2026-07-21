@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 from logging import getLogger
 from typing import NoReturn, assert_never, override
 
@@ -66,6 +67,7 @@ from majsoulrpa.sniffer.events import (
 
 MATCH_INITIALIZATION_TIMEOUT_SECONDS = 5.0
 DEALER_FIRST_DISCARD_DELAY_SECONDS = 2.0
+DAPAI_UI_READY_DELAY_SECONDS = 0.4
 DAPAI_CLICK_RETRY_INTERVAL_SECONDS = 0.5
 OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
 OPERATION_OPTION_DISPLAY_DELAY_SECONDS = 0.4
@@ -92,6 +94,10 @@ _WARNING_MESSAGE_NAMES = frozenset(
 )
 
 _logger = getLogger(__name__)
+
+
+def _utc_now() -> datetime.datetime:
+    return datetime.datetime.now(datetime.UTC)
 
 
 class MatchScreen(Screen):
@@ -138,6 +144,7 @@ class MatchScreen(Screen):
         self._new_round_operation_specification: (
             _OperationCandidatesSpecification | None
         ) = None
+        self._operation_candidates_observed_at: datetime.datetime | None = None
         self._state_store = MatchStateStore()
 
     @classmethod
@@ -267,8 +274,11 @@ class MatchScreen(Screen):
         if self._state_store.state is None:
             self._apply_initialization_event(event, operation)
             self._try_initialize_state()
-            return
-        self._apply_active_event(event, operation)
+        else:
+            self._apply_active_event(event, operation)
+        self._operation_candidates_observed_at = (
+            message.raw.observed_at if operation is not None else None
+        )
 
     async def _apply_match_message_with_screen_errors(
         self,
@@ -427,6 +437,8 @@ class MatchScreen(Screen):
             # Wait for the dealing animation. Moving tiles could turn
             # the intended first discard into a different one.
             await asyncio.sleep(DEALER_FIRST_DISCARD_DELAY_SECONDS)
+        else:
+            await self._wait_until_dapai_ui_is_ready()
 
         try:
             region = self._get_dapai_region(
@@ -441,6 +453,18 @@ class MatchScreen(Screen):
             )
         await self._click_dapai_until_progress(region)
         await self._move_mouse_away_from_hand()
+
+    async def _wait_until_dapai_ui_is_ready(self) -> None:
+        observed_at = self._operation_candidates_observed_at
+        if observed_at is None:
+            return
+        elapsed_seconds = max(0.0, (_utc_now() - observed_at).total_seconds())
+        remaining_seconds = max(
+            0.0,
+            DAPAI_UI_READY_DELAY_SECONDS - elapsed_seconds,
+        )
+        if remaining_seconds > 0.0:
+            await asyncio.sleep(remaining_seconds)
 
     async def _operate_chi(
         self,

@@ -445,6 +445,12 @@ operation の意味を変えずにツモ牌位置のクリックへ変換する�
 分離表示された牌を優先してよい。親の配牌演出中の誤クリックを避けるため、初打では
 v1-develop と同じ待機を入れる。
 
+通常打牌では、候補を含む `ActionPrototype` の `observed_at` から0.4秒後をUI準備時刻とする。
+`operate()` はクリック直前に準備時刻までの残り時間だけ待つ。AIの思考や利用者側の処理によって
+すでに0.4秒以上経過していれば追加で待たない。この観測時刻は操作タイミングのために
+`MatchScreen` 内部でだけ保持し、public `MatchEvent` や `MatchState` には追加しない。UIの描画が
+0.4秒より遅れた場合は、後述するクリック再試行で補う。
+
 通常の browser `click()` が対象座標への cursor 移動と hover 待機を行うため、Screen 側では
 いずれも重複して実行しない。クリック後は `MOUSE_SAFE_REGION` へ退避する。その後も Sniffer
 message を通常どおり log・reduce し、自家の
