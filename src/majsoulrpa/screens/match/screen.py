@@ -164,15 +164,10 @@ class MatchScreen(Screen):
     @_requires_active
     async def get_state(self) -> MatchState:
         while (message := self._get_sniffer_message_nowait()) is not None:
-            try:
-                self._apply_match_message(message)
-            except MatchMetadataUnsupportedError as error:
-                await self._raise_unsupported_match(cause=error)
-            except (MatchActionDecodeError, MatchMetadataDecodeError) as error:
-                await self._raise_inconsistent_message(
-                    "Match state update failed.",
-                    cause=error,
-                )
+            await self._apply_match_message_with_screen_errors(
+                message,
+                inconsistent_message="Match state update failed.",
+            )
         state = self._state_store.state
         if state is None:
             msg = "MatchScreen has not been initialized."
@@ -207,15 +202,12 @@ class MatchScreen(Screen):
         previous_version = state.version
         while True:
             message = await self._get_sniffer_message()
-            try:
-                self._apply_match_message(message)
-            except MatchMetadataUnsupportedError as error:
-                await self._raise_unsupported_match(cause=error)
-            except (MatchActionDecodeError, MatchMetadataDecodeError) as error:
-                await self._raise_inconsistent_message(
-                    "Match state update failed while operating.",
-                    cause=error,
-                )
+            await self._apply_match_message_with_screen_errors(
+                message,
+                inconsistent_message=(
+                    "Match state update failed while operating."
+                ),
+            )
 
             current = self._state_store.state
             if current is None:
@@ -271,6 +263,22 @@ class MatchScreen(Screen):
             self._try_initialize_state()
             return
         self._apply_active_event(event, operation)
+
+    async def _apply_match_message_with_screen_errors(
+        self,
+        message: DecodedSnifferMessage,
+        *,
+        inconsistent_message: str,
+    ) -> None:
+        try:
+            self._apply_match_message(message)
+        except MatchMetadataUnsupportedError as error:
+            await self._raise_unsupported_match(cause=error)
+        except (MatchActionDecodeError, MatchMetadataDecodeError) as error:
+            await self._raise_inconsistent_message(
+                inconsistent_message,
+                cause=error,
+            )
 
     def _apply_auth_game(self, message: DecodedSnifferMessage) -> None:
         if not isinstance(message, DecodedRequestResponse):
@@ -482,19 +490,12 @@ class MatchScreen(Screen):
             if message.raw.name == ACTION_PROTOTYPE_NAME:
                 self._put_back_sniffer_message(message)
                 return True
-            try:
-                self._apply_match_message(message)
-            except MatchMetadataUnsupportedError as error:
-                await self._raise_unsupported_match(cause=error)
-            except (
-                MatchActionDecodeError,
-                MatchMetadataDecodeError,
-            ) as error:
-                await self._raise_inconsistent_message(
-                    "Match state update failed while waiting for "
-                    "operation UI.",
-                    cause=error,
-                )
+            await self._apply_match_message_with_screen_errors(
+                message,
+                inconsistent_message=(
+                    "Match state update failed while waiting for operation UI."
+                ),
+            )
         return False
 
     @classmethod
@@ -583,15 +584,12 @@ class MatchScreen(Screen):
                 self._put_back_sniffer_message(message)
                 return
 
-            try:
-                self._apply_match_message(message)
-            except MatchMetadataUnsupportedError as error:
-                await self._raise_unsupported_match(cause=error)
-            except (MatchActionDecodeError, MatchMetadataDecodeError) as error:
-                await self._raise_inconsistent_message(
-                    "Match state update failed while retrying a discard.",
-                    cause=error,
-                )
+            await self._apply_match_message_with_screen_errors(
+                message,
+                inconsistent_message=(
+                    "Match state update failed while retrying a discard."
+                ),
+            )
 
     @classmethod
     def _get_dapai_region(
