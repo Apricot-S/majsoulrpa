@@ -1,6 +1,7 @@
 from dataclasses import replace
 from typing import assert_never
 
+from majsoulrpa.screens.match._common import is_preceding_seat
 from majsoulrpa.screens.match._metadata import MatchMetadata
 from majsoulrpa.screens.match.event import (
     ChiEvent,
@@ -283,7 +284,11 @@ class MatchStateStore:
         if player_count != _FOUR_PLAYER_COUNT:
             msg = "A chi is only valid in a four-player match."
             raise ValueError(msg)
-        if event.from_seat != (event.seat - 1) % player_count:
+        if not is_preceding_seat(
+            event.from_seat,
+            relative_to=event.seat,
+            player_count=player_count,
+        ):
             msg = "A chi must claim a discard from the preceding player."
             raise ValueError(msg)
 

@@ -1,4 +1,13 @@
-from majsoulrpa.screens.match.types import Tile
+from majsoulrpa.screens.match.types import Seat, Tile
+
+
+def is_preceding_seat(
+    seat: Seat,
+    *,
+    relative_to: Seat,
+    player_count: int,
+) -> bool:
+    return seat == (relative_to - 1) % player_count
 
 
 def validate_chi_tiles(tile: Tile, consumed: tuple[Tile, Tile]) -> None:

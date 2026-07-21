@@ -1,5 +1,6 @@
 from typing import assert_never
 
+from majsoulrpa.screens.match._common import is_preceding_seat
 from majsoulrpa.screens.match.event import (
     DapaiEvent,
     MatchEvent,
@@ -67,7 +68,11 @@ def materialize_operation_candidates(
                     player_count,
                     "chi",
                 )
-                if call_event.seat != (self_seat - 1) % _FOUR_PLAYER_COUNT:
+                if not is_preceding_seat(
+                    call_event.seat,
+                    relative_to=self_seat,
+                    player_count=player_count,
+                ):
                     msg = (
                         "A chi must claim a discard from the preceding player."
                     )
