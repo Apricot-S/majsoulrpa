@@ -690,10 +690,13 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 対応する自家の DapaiEvent より先に別の state event が来た場合は `ScreenInconsistentMessageError` にする
 - [x] stale な MatchScreen では browser を操作せず `ScreenStaleError` にする
 - [x] `operate()` の公開 API log は screen 名と API 名だけを出す
-- [ ] Dapai / Liqi は入力の進行を示すmessageを受信するまで同じ牌領域のclickを繰り返す
-- [ ] Dapai / Liqi の再試行中に既知common messageをlog・処理してclickを継続する
-- [ ] Dapai / Liqi の再試行で先読みした inputOperation / ActionPrototype を1回だけput_backする
-- [ ] 共通の再試行helperがinputChiPengGangを終了条件にした場合も、messageを1回だけput_backする
+- [x] Dapai は入力の進行を示すmessageを受信するまで同じ牌領域のclickを繰り返す
+- [ ] Liqi は入力の進行を示すmessageを受信するまで同じ牌領域のclickを繰り返す
+- [x] Dapai の再試行中に既知common messageをlog・処理してclickを継続する
+- [ ] Liqi の再試行中に既知common messageをlog・処理してclickを継続する
+- [x] Dapai の再試行で先読みした inputOperation / ActionPrototype を1回だけput_backする
+- [ ] Liqi の再試行で先読みした inputOperation / ActionPrototype を1回だけput_backする
+- [x] Dapai の再試行でinputChiPengGangを終了条件にした場合も、messageを1回だけput_backする
 - [ ] Dapai / Liqi の再試行中に未知messageを捨てたり成功扱いしたりしない
 
 ### MatchScreen operation のスキップ

@@ -55,6 +55,15 @@ from majsoulrpa.sniffer.events import (
 
 MATCH_INITIALIZATION_TIMEOUT_SECONDS = 5.0
 DEALER_FIRST_DISCARD_DELAY_SECONDS = 2.0
+DAPAI_CLICK_RETRY_INTERVAL_SECONDS = 0.5
+
+_DAPAI_CLICK_PROGRESS_MESSAGE_NAMES = frozenset(
+    {
+        ".lq.FastTest.inputOperation",
+        ".lq.FastTest.inputChiPengGang",
+        ACTION_PROTOTYPE_NAME,
+    }
+)
 
 _DEBUG_MESSAGE_NAMES = frozenset(
     {".lq.Lobby.heatbeat", ".lq.FastTest.checkNetworkDelay"}
@@ -386,8 +395,34 @@ class MatchScreen(Screen):
                 "A discard candidate does not match the hand layout.",
                 cause=error,
             )
-        await self.click_region(region)
+        await self._click_dapai_until_progress(region)
         await self._move_mouse_away_from_hand()
+
+    async def _click_dapai_until_progress(self, region: Region) -> None:
+        while True:
+            await self.click_region(region)
+            timeout = asyncio.timeout(DAPAI_CLICK_RETRY_INTERVAL_SECONDS)
+            try:
+                async with timeout:
+                    message = await self._get_sniffer_message()
+            except TimeoutError:
+                if not timeout.expired():
+                    raise
+                continue
+
+            if message.raw.name in _DAPAI_CLICK_PROGRESS_MESSAGE_NAMES:
+                self._put_back_sniffer_message(message)
+                return
+
+            try:
+                self._apply_match_message(message)
+            except MatchMetadataUnsupportedError as error:
+                await self._raise_unsupported_match(cause=error)
+            except (MatchActionDecodeError, MatchMetadataDecodeError) as error:
+                await self._raise_inconsistent_message(
+                    "Match state update failed while retrying a discard.",
+                    cause=error,
+                )
 
     @classmethod
     def _get_dapai_region(

@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
+import majsoulrpa.screens.match.screen as match_screen_module
 from majsoulrpa.assets.protocol import liqi_pb2
 from majsoulrpa.screens.errors import (
     ScreenInconsistentMessageError,
@@ -16,6 +17,7 @@ from majsoulrpa.screens.match import (
     DapaiEvent,
     DapaiOperation,
     MatchScreen,
+    MatchState,
     validate_tile,
 )
 from majsoulrpa.sniffer.events import DecodedSnifferMessage
@@ -24,6 +26,7 @@ from tests.screens._support import (
     BrowserControllerSpy,
     ScreenContext,
     _message_queue,
+    _notice,
     _request_response,
 )
 from tests.screens.match._support import (
@@ -54,6 +57,30 @@ class _MessagesOnClickBrowser(BrowserControllerSpy):
     ) -> None:
         await super().click(x, y, warp=warp)
         for message in self._messages_on_click:
+            self._messages.enqueue(message)
+
+
+class _MessagesByClickBrowser(BrowserControllerSpy):
+    def __init__(
+        self,
+        messages: SnifferMessageQueue,
+        *messages_by_click: tuple[DecodedSnifferMessage, ...],
+    ) -> None:
+        super().__init__(b"synthetic-screenshot")
+        self._messages = messages
+        self._messages_by_click = list(messages_by_click)
+
+    async def click(
+        self,
+        x: float,
+        y: float,
+        *,
+        warp: bool = False,
+    ) -> None:
+        await super().click(x, y, warp=warp)
+        if not self._messages_by_click:
+            return
+        for message in self._messages_by_click.pop(0):
             self._messages.enqueue(message)
 
 
@@ -365,9 +392,14 @@ def test_operate_rejects_stale_screen_without_clicking() -> None:
     assert browser.clicked_points == []
 
 
-def test_operate_logs_input_operation_and_only_outer_screen_api(
+@pytest.mark.parametrize(
+    "input_name",
+    [".lq.FastTest.inputOperation", ".lq.FastTest.inputChiPengGang"],
+)
+def test_operate_puts_back_input_progress_and_logs_only_outer_screen_api(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
+    input_name: str,
 ) -> None:
     messages = _message_queue(
         _auth_game(),
@@ -381,7 +413,7 @@ def test_operate_logs_input_operation_and_only_outer_screen_api(
     )
     browser = _MessagesOnClickBrowser(
         messages,
-        _request_response(".lq.FastTest.inputOperation", {}),
+        _request_response(input_name, {}),
         _live_discard_action(
             step=1,
             seat=0,
@@ -419,6 +451,120 @@ def test_operate_logs_input_operation_and_only_outer_screen_api(
         "screen API called: screen=MatchScreen api=operate"
     ]
     assert any(
-        '"name":".lq.FastTest.inputOperation"' in record.getMessage()
+        f'"name":"{input_name}"' in record.getMessage()
+        for record in caplog.records
+    )
+
+
+def test_operate_retries_click_until_input_progresses(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(
+            step=0,
+            tiles=["1m"] * 13 + ["9s"],
+            operation=liqi_pb2.OptionalOperationList(
+                operation_list=[liqi_pb2.OptionalOperation(type=1)],
+            ),
+        ),
+    )
+    browser = _MessagesByClickBrowser(
+        messages,
+        (),
+        (
+            _request_response(".lq.FastTest.inputOperation", {}),
+            _live_discard_action(
+                step=1,
+                seat=0,
+                tile="9s",
+                moqie=False,
+            ),
+        ),
+    )
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=browser,
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=messages,
+        ),
+    )
+
+    async def skip_sleep(_delay: float) -> None:
+        pass
+
+    monkeypatch.setattr(asyncio, "sleep", skip_sleep)
+    monkeypatch.setattr(
+        match_screen_module,
+        "DAPAI_CLICK_RETRY_INTERVAL_SECONDS",
+        0.001,
+        raising=False,
+    )
+    asyncio.run(screen.before_callback())
+
+    async def operate_with_deadline() -> MatchState:
+        async with asyncio.timeout(0.05):
+            return await screen.operate(
+                DapaiOperation(tile=validate_tile("9s"), moqie=False),
+            )
+
+    state = asyncio.run(operate_with_deadline())
+
+    assert state.version == 2
+    assert len(browser.clicked_points) == 2
+
+
+def test_operate_processes_common_message_before_retrying(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(
+            step=0,
+            tiles=["1m"] * 13 + ["9s"],
+            operation=liqi_pb2.OptionalOperationList(
+                operation_list=[liqi_pb2.OptionalOperation(type=1)],
+            ),
+        ),
+    )
+    browser = _MessagesByClickBrowser(
+        messages,
+        (_notice(".lq.Lobby.fetchServerTime"),),
+        (
+            _request_response(".lq.FastTest.inputOperation", {}),
+            _live_discard_action(
+                step=1,
+                seat=0,
+                tile="9s",
+                moqie=False,
+            ),
+        ),
+    )
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=browser,
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=messages,
+        ),
+    )
+
+    async def skip_sleep(_delay: float) -> None:
+        pass
+
+    monkeypatch.setattr(asyncio, "sleep", skip_sleep)
+    asyncio.run(screen.before_callback())
+
+    with caplog.at_level(logging.INFO):
+        state = asyncio.run(
+            screen.operate(
+                DapaiOperation(tile=validate_tile("9s"), moqie=False),
+            )
+        )
+
+    assert state.version == 2
+    assert len(browser.clicked_points) == 2
+    assert any(
+        '"name":".lq.Lobby.fetchServerTime"' in record.getMessage()
         for record in caplog.records
     )
