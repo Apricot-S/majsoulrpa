@@ -210,12 +210,14 @@ class DapaiOperation:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ChiOperation:
+    target_seat: Seat
     claimed_tile: Tile
     consumed_tiles: tuple[Tile, Tile]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PengOperation:
+    target_seat: Seat
     claimed_tile: Tile
     consumed_tiles: tuple[Tile, Tile]
 
@@ -227,6 +229,7 @@ class AngangOperation:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class DaminggangOperation:
+    target_seat: Seat
     claimed_tile: Tile
     consumed_tiles: tuple[Tile, Tile, Tile]
 
@@ -250,6 +253,7 @@ class ZimohuOperation:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RongOperation:
+    target_seat: Seat
     tile: Tile
 
 
@@ -283,9 +287,17 @@ class OperationCandidates:
     operations: tuple[MatchOperation, ...]
 ```
 
-live action の singular `operation` は受信者である自家用なので、protobuf の `seat` は公開 model に
-重複して保持しない。restore / record にある複数人分の `operations` を扱う段階で seat 付き model を
-別途設計する。`OperationCandidates.operations` は非空、時間は非負の millisecond として検証する。
+live action の singular `operation` は受信者である自家用なので、`OptionalOperationList.seat` が示す
+actor seat は各公開 operation model に重複して保持しない。実行主体は現在の `MatchScreen` と
+`OperationCandidates` によって自家へ固定される。restore / record にある複数人分の `operations` を
+扱う段階では、actor seat 付きの container を別途設計する。`OperationCandidates.operations` は非空、
+時間は非負の millisecond として検証する。
+
+一方、チー、ポン、大明槓、ロンの `target_seat` は操作対象を確定する値なので公開 operation に含める。
+`target_seat` と対象牌は直前の Event から materializer が同時に補い、利用者が
+`previous_dapai_seat` / `previous_dapai_tile` を参照して候補を完成させる必要をなくす。これは actor の
+`self_seat` とは役割が異なる。利用者が operation instance を自作した場合も、将来の operate API が
+現在の候補への包含を検証することで、対象 seat または対象牌が異なる instance を拒否する。
 `RoundState.operation_candidates` は候補がないときだけ `None` とし、
 `has_pending_operation` は設けない。候補の有無は `operation_candidates is None` または
 `operation_candidates is not None` で直接判定し、同じ状態を表す API を重複させない。
@@ -295,14 +307,14 @@ type と concrete class の対応は次のとおりとする。
 | type | public class | `combination` の意味 |
 |---:|---|---|
 | 1 | `DapaiOperation` | 鳴き後の食い替えで禁止される打牌。通常は空配列。現在の手牌から選択可能な打牌へ展開する |
-| 2 | `ChiOperation` | 手牌 2 枚を `|` で区切った組合せ |
-| 3 | `PengOperation` | 手牌 2 枚を `|` で区切った組合せ |
+| 2 | `ChiOperation` | 手牌 2 枚を `|` で区切った組合せ。対象 seat・牌は Event から補う |
+| 3 | `PengOperation` | 手牌 2 枚を `|` で区切った組合せ。対象 seat・牌は Event から補う |
 | 4 | `AngangOperation` | 消費する対象牌 4 枚を `|` で区切った組合せ |
-| 5 | `DaminggangOperation` | 手牌 3 枚を `|` で区切った組合せ |
+| 5 | `DaminggangOperation` | 手牌 3 枚を `|` で区切った組合せ。対象 seat・牌は Event から補う |
 | 6 | `JiagangOperation` | 既存のポン牌 3 枚と加える牌 1 枚を `|` で区切った組合せ |
 | 7 | `LiqiOperation` | 立直宣言牌の候補。各要素は単独の牌で、手出し／ツモ切りの選択肢へ展開する |
 | 8 | `ZimohuOperation` | 空配列。和了対象のツモ牌は Event から補う |
-| 9 | `RongOperation` | 空配列。和了対象牌は Event から補う |
+| 9 | `RongOperation` | 空配列。和了対象 seat・牌は Event から補う |
 | 10 | `JiuzhongjiupaiOperation` | 空配列 |
 | 11 | `BabeiOperation` | 空配列。v1-develop の対応であり実通信で再確認する |
 
@@ -321,9 +333,9 @@ type 2〜6 の各 encoded combination は表の枚数と完全に一致させ、
 protobuf の `combination` 1 要素を public operation 1 instance へ展開し、牌組の候補一覧を単一
 operation の中に保持しない。したがって、複数の鳴き方を選べる場合は `ChiOperation` などが候補数分
 並ぶ。チー、ポン、大明槓では `combination` から手牌側の `consumed_tiles` を生成し、候補が付随した
-`DapaiEvent` の牌を `claimed_tile` として補う。各 instance は取得する河の牌と手牌から消費する
-1 組の両方を持ち、それ自体で副露の選択内容を完全に表す。赤牌と通常牌は別の牌として保持し、
-`claimed_tile` も `DapaiEvent.tile` の表現を変更しない。
+`DapaiEvent` の牌を `claimed_tile`、seat を `target_seat` として補う。各 instance は対象 seat、取得する
+河の牌、手牌から消費する 1 組を持ち、それ自体で副露の選択内容を完全に表す。赤牌と通常牌は別の牌
+として保持し、`claimed_tile` も `DapaiEvent.tile` の表現を変更しない。
 
 暗槓は4枚すべてを `AngangOperation.consumed_tiles` とする。加槓は雀魂の並びを維持し、`|` で
 区切られた先頭3枚を既存のポン牌として `JiagangOperation.consumed_tiles`、4枚目を
@@ -335,8 +347,8 @@ type 7 は `|` で分割せず、各要素を立直宣言牌として検証す�
 `ActionDealTile` のツモ牌、または `ActionNewRound` の天和判定に使う牌から補う。type 9 の
 `ActionNewRound` の天和候補では、表示のため分離した `zimopai` を `ZimohuOperation.tile` として使う。
 これは和了 operation の対象牌を確定するための規約であり、同じ牌の打牌 operation を
-`moqie=True` に変更するものではない。`RongOperation.tile` は放銃牌、搶槓対象牌など、候補を
-発生させた Event の和了対象牌から補う。
+`moqie=True` に変更するものではない。`RongOperation.tile` と `target_seat` は放銃牌と放銃者、
+搶槓対象牌と槓を行った player など、候補を発生させた Event から補う。
 いずれも赤牌を通常牌へ正規化しない。type 8〜11 は `combination` が空でなければ不整合とする。
 未知 type は将来の候補として黙って保持せず decode error にする。`seat`、`change_tiles`、
 `change_tile_states`、`gap_type` および unknown protobuf field は今回の標準 operation model には
@@ -350,16 +362,16 @@ operation の変換は 2 段階に分ける。action adapter は `OptionalOperat
 live / restore 共通の immutable な内部 specification へ decode する。store は Event を適用した後の
 手牌状態と適用した Event を使って、その specification を public `OperationCandidates | None` へ
 展開する。type 1 と type 7 は action decode 時点では選択可能な手出し／ツモ切りを確定できず、
-type 2、3、5 は取得する直前の打牌を確定できないため、いずれも public operation へ直接 decode
+type 2、3、5 は取得する直前の打牌とその seat を確定できないため、いずれも public operation へ直接 decode
 しない。operation を event field に含めたり、同じ action を event と operation event の 2 件へ
 分割したりしない。操作を送信する browser API は operation model と decoder の実装範囲に含めず、
 候補を state へ接続した後に 1 API ずつ設計する。
 
 将来の operate API は `OperationCandidates.operations` から選んだ concrete operation instance を
 引数として受け取る。各 instance は追加の候補 index や牌組引数を要求せず、それ自体で選択内容を
-完全に表す。副露 operation も取得牌と消費牌を instance 内に持ち、呼び出し側が直前の河を参照して
-補完する必要はない。API は渡された instance が現在の候補に含まれることを確認してから画面操作へ
-変換する。
+完全に表す。副露・ロン operation も対象 seat、取得牌または和了対象牌、消費牌を instance 内に持ち、
+呼び出し側が直前の河や `RoundState.previous_dapai_*` を参照して補完する必要はない。API は渡された
+instance が現在の候補に含まれることを確認してから画面操作へ変換する。
 
 親の `ActionNewRound.tiles` 14 枚はすべて配牌であり、表示の都合で右端の 1 枚を `zimopai` field に
 分離していても実ツモ牌ではない。`ActionNewRound` に付随する type 1 / type 7 を展開するときは

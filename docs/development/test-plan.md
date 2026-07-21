@@ -634,7 +634,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] type 6 は先頭3枚を consumed_tiles、4枚目を added_tile とする `JiagangOperation` 1 instance へ変換する
 - [ ] type 7 の各候補牌を 1 打牌 1 `LiqiOperation` に展開する
 - [ ] type 8 は空の `combination` と発生元 Event のツモ牌から `ZimohuOperation` を生成する
-- [ ] type 9 は空の `combination` と発生元 Event の対象牌から `RongOperation` を生成する
+- [ ] type 9 は空の `combination` と発生元 Event の対象 seat・対象牌から `RongOperation` を生成する
 - [ ] type 10 は空の `combination` から field のない `JiuzhongjiupaiOperation` を生成する
 - [ ] v1-develop の type 11 / `BabeiOperation` 対応を三人戦の実通信で再確認してから固定する
 - [ ] type 2〜6 の区切り後の牌数が operation ごとの枚数と異なる場合は拒否する
@@ -656,13 +656,13 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] protobuf の `seat`、`change_tiles`、`change_tile_states`、`gap_type` と unknown field の存在だけでは拒否しない
 - [ ] operation の並びと各 combination の並びを protobuf の順序どおり tuple に保持する
 - [ ] 副露・槓 operation は候補一覧を内部に持たず、各 instance が operate API に渡せる単一の牌組を表す
-- [ ] Chi / Peng / Daminggang operation は claimed_tile と consumed_tiles だけで選択内容を完全に表す
-- [ ] claimed_tile は候補が付随した DapaiEvent.tile と一致し、赤牌を通常牌へ正規化しない
+- [ ] Chi / Peng / Daminggang operation は target_seat、claimed_tile、consumed_tiles だけで選択内容を完全に表す
+- [ ] target_seat / claimed_tile は候補が付随した DapaiEvent.seat / tile と一致し、赤牌を通常牌へ正規化しない
 - [ ] 直前の打牌がない状態で type 2 / 3 / 5 を public operation へ展開しない
 - [ ] ZimohuOperation.tile は ActionDealTile のツモ牌と一致し、赤牌を通常牌へ正規化しない
 - [ ] ActionNewRound の天和候補は presentation zimopai を ZimohuOperation.tile に保持する
 - [ ] 天和の ZimohuOperation.tile を決めても、同じ牌の打牌 operation は moqie=false のままにする
-- [ ] RongOperation.tile は放銃牌または搶槓対象牌と一致し、赤牌を通常牌へ正規化しない
+- [ ] RongOperation.target_seat / tile は放銃者と放銃牌、または槓を行った player と搶槓対象牌に一致し、赤牌を通常牌へ正規化しない
 - [ ] 和了対象牌を特定できない Event に type 8 / 9 が付随した場合は public operation へ展開しない
 - [x] live / restore action adapter は同じ decoded operation から等しい immutable な内部 specification を返す
 - [x] store は Event 適用後の手牌と内部 specification から `OperationCandidates | None` を生成する
