@@ -42,7 +42,11 @@ from majsoulrpa.screens.match.event import (
     StartMatchEvent,
     ZimoEvent,
 )
-from majsoulrpa.screens.match.operation import DapaiOperation, MatchOperation
+from majsoulrpa.screens.match.operation import (
+    ChiOperation,
+    DapaiOperation,
+    MatchOperation,
+)
 from majsoulrpa.screens.match.operation._specification import (
     _OperationCandidatesSpecification,
 )
@@ -169,6 +173,9 @@ class MatchScreen(Screen):
         match operation:
             case DapaiOperation():
                 await self._operate_dapai(state, operation)
+            case ChiOperation():
+                msg = "ChiOperation execution is not implemented."
+                raise NotImplementedError(msg)
             case _ as unreachable:
                 assert_never(unreachable)
 

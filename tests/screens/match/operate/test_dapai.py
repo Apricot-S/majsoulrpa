@@ -130,6 +130,7 @@ def test_operate_discards_dealers_presented_fourteenth_tile(
         for operation in candidates.operations
         if operation.tile == validate_tile("9s")
     )
+    assert isinstance(operation, DapaiOperation)
 
     state = asyncio.run(screen.operate(operation))
 

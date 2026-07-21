@@ -10,7 +10,15 @@ class _DapaiOperationSpecification:
     forbidden_tiles: tuple[Tile, ...]
 
 
-type _MatchOperationSpecification = _DapaiOperationSpecification
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class _ChiOperationSpecification:
+    consumed_candidates: tuple[tuple[Tile, Tile], ...]
+
+
+type _MatchOperationSpecification = (
+    _DapaiOperationSpecification | _ChiOperationSpecification
+)
 
 
 @final

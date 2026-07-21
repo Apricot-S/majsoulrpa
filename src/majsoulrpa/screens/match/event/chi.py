@@ -4,6 +4,7 @@ from typing import Self, final
 
 from pydantic import JsonValue
 
+from majsoulrpa.screens.match._common import validate_chi_tiles
 from majsoulrpa.screens.match._decode import (
     _get_int,
     _get_int_list,
@@ -35,18 +36,7 @@ class ChiEvent(_MatchEventBase):
         if self.seat == self.from_seat:
             msg = "seat and from_seat must identify different players."
             raise ValueError(msg)
-        tiles = (*self.consumed, self.tile)
-        suits = {tile[1] for tile in tiles}
-        numbers = sorted(
-            5 if tile[0] == "0" else int(tile[0]) for tile in tiles
-        )
-        if (
-            len(suits) != 1
-            or not suits <= {"m", "p", "s"}
-            or numbers != list(range(numbers[0], numbers[0] + 3))
-        ):
-            msg = "tiles must form a suited sequence."
-            raise ValueError(msg)
+        validate_chi_tiles(self.tile, self.consumed)
 
     @classmethod
     def from_dict(

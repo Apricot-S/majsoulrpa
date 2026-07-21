@@ -8,13 +8,16 @@ from majsoulrpa.screens.match._decode import (
     _get_str_list,
 )
 from majsoulrpa.screens.match.operation._specification import (
+    _ChiOperationSpecification,
     _DapaiOperationSpecification,
     _MatchOperationSpecification,
     _OperationCandidatesSpecification,
 )
-from majsoulrpa.screens.match.types import validate_tile
+from majsoulrpa.screens.match.types import Tile, validate_tile
 
 _DAPAI_OPERATION_TYPE = 1
+_CHI_OPERATION_TYPE = 2
+_CHI_CONSUMED_TILE_COUNT = 2
 
 
 def decode_operation_specification(
@@ -41,20 +44,24 @@ def decode_operation_specification(
             msg = "OptionalOperationList.operation_list items must be objects."
             raise TypeError(msg)
         operation_type = _get_int(item, "OptionalOperation.type")
-        if operation_type != _DAPAI_OPERATION_TYPE:
-            msg = f"OptionalOperation type is not supported: {operation_type}."
-            raise ValueError(msg)
-        specifications.append(
-            _DapaiOperationSpecification(
-                forbidden_tiles=tuple(
-                    validate_tile(tile)
-                    for tile in _get_str_list(
-                        item,
-                        "OptionalOperation.combination",
-                    )
-                ),
+        if operation_type == _DAPAI_OPERATION_TYPE:
+            specifications.append(
+                _DapaiOperationSpecification(
+                    forbidden_tiles=tuple(
+                        validate_tile(tile)
+                        for tile in _get_str_list(
+                            item,
+                            "OptionalOperation.combination",
+                        )
+                    ),
+                )
             )
-        )
+            continue
+        if operation_type == _CHI_OPERATION_TYPE:
+            specifications.append(_decode_chi_specification(item))
+            continue
+        msg = f"OptionalOperation type is not supported: {operation_type}."
+        raise ValueError(msg)
 
     if not specifications:
         return None
@@ -62,4 +69,29 @@ def decode_operation_specification(
         time_fixed_ms=time_fixed_ms,
         time_add_ms=time_add_ms,
         operations=tuple(specifications),
+    )
+
+
+def _decode_chi_specification(
+    item: Mapping[str, JsonValue],
+) -> _ChiOperationSpecification:
+    encoded_combinations = _get_str_list(
+        item,
+        "OptionalOperation.combination",
+    )
+    if not encoded_combinations:
+        msg = "A chi operation must contain at least one combination."
+        raise ValueError(msg)
+
+    consumed_candidates: list[tuple[Tile, Tile]] = []
+    for encoded_combination in encoded_combinations:
+        tiles = encoded_combination.split("|")
+        if len(tiles) != _CHI_CONSUMED_TILE_COUNT:
+            msg = "A chi combination must contain two tiles."
+            raise ValueError(msg)
+        consumed_candidates.append(
+            (validate_tile(tiles[0]), validate_tile(tiles[1]))
+        )
+    return _ChiOperationSpecification(
+        consumed_candidates=tuple(consumed_candidates),
     )

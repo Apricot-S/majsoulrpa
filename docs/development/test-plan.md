@@ -627,7 +627,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] operation field の欠落と空の `operation_list` はどちらも `None` に正規化する
 - [x] operation field が object でない、time / type が bool または int 以外、operation_list が list でない場合は拒否する
 - [x] type 1 の `combination` を禁止牌として解釈し、禁止されていない手牌を 1 打牌 1 `DapaiOperation` に展開する
-- [ ] type 2 は直前の取得牌と `combination` の手牌 2 枚を持つ `ChiOperation` 1 instance へ変換する
+- [x] type 2 は直前の取得牌と `combination` の手牌 2 枚を持つ `ChiOperation` 1 instance へ変換する
+- [x] type 2 の各 combination は `|` で区切られた2枚に限定し、wire 順の1候補1 instanceへ展開する
+- [x] ChiOperation は直前の DapaiEvent から from_seat / tile を補い、赤牌表現を維持する
+- [x] ChiOperation は四麻での自家の上家による直前打牌と、手牌に実在する consumed を必要とする
 - [ ] type 3 は直前の取得牌と `combination` の手牌 2 枚を持つ `PengOperation` 1 instance へ変換する
 - [ ] type 4 は `combination` 1 要素ごとに消費牌 4 枚を持つ `AngangOperation` 1 instance へ変換する
 - [ ] type 5 は直前の取得牌と `combination` の手牌 3 枚を持つ `DaminggangOperation` 1 instance へ変換する

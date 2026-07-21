@@ -3,8 +3,10 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 from majsoulrpa.screens.match import (
+    ChiOperation,
     DapaiOperation,
     OperationCandidates,
+    validate_seat,
     validate_tile,
 )
 
@@ -16,6 +18,29 @@ def test_dapai_operation_is_an_immutable_value() -> None:
     assert operation.moqie is True
     with pytest.raises(FrozenInstanceError):
         operation.moqie = False  # ty: ignore[invalid-assignment]
+
+
+def test_chi_operation_is_an_immutable_value() -> None:
+    operation = ChiOperation(
+        from_seat=validate_seat(3),
+        tile=validate_tile("5m"),
+        consumed=(validate_tile("3m"), validate_tile("4m")),
+    )
+
+    assert operation.from_seat == 3
+    assert operation.tile == "5m"
+    assert operation.consumed == ("3m", "4m")
+    with pytest.raises(FrozenInstanceError):
+        operation.tile = validate_tile("6m")  # ty: ignore[invalid-assignment]
+
+
+def test_chi_operation_rejects_tiles_that_do_not_form_a_sequence() -> None:
+    with pytest.raises(ValueError, match="sequence"):
+        ChiOperation(
+            from_seat=validate_seat(3),
+            tile=validate_tile("5m"),
+            consumed=(validate_tile("2m"), validate_tile("3m")),
+        )
 
 
 def test_operation_candidates_is_an_immutable_value() -> None:

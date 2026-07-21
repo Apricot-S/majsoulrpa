@@ -371,7 +371,9 @@ operation の中に保持しない。したがって、複数の鳴き方を選�
 並ぶ。チー、ポン、大明槓では `combination` から手牌側の `consumed` を生成し、候補が付随した
 `DapaiEvent` の牌を `tile`、seat を `from_seat` として補う。各 instance は取得元の seat、取得する河の牌、
 手牌から消費する 1 組を持ち、それ自体で副露の選択内容を完全に表す。赤牌と通常牌は別の牌として
-保持し、`tile` も `DapaiEvent.tile` の表現を変更しない。
+保持し、`tile` も `DapaiEvent.tile` の表現を変更しない。`ChiOperation` は四麻で自家の上家による
+`DapaiEvent` にだけ生成し、各 `consumed` が現在の `shoupai` に実在して、取得牌と合わせて順子に
+なることを検証する。
 
 暗槓は4枚すべてを `AngangOperation.consumed` とする。加槓は `|` で区切られた先頭3枚と一致する
 自家の `Peng` を現在の `RoundState.fulu` から一意に特定し、その `from_seat`、他家から取得した

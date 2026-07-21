@@ -4,6 +4,10 @@ from pydantic import JsonValue
 from majsoulrpa.screens.match.operation._decode import (
     decode_operation_specification,
 )
+from majsoulrpa.screens.match.operation._specification import (
+    _ChiOperationSpecification,
+    _DapaiOperationSpecification,
+)
 
 
 def test_decode_dapai_operation_specification() -> None:
@@ -30,7 +34,54 @@ def test_decode_dapai_operation_specification() -> None:
     assert specification.time_fixed_ms == 5000
     assert specification.time_add_ms == 20000
     [operation] = specification.operations
+    assert isinstance(operation, _DapaiOperationSpecification)
     assert operation.forbidden_tiles == ("5m", "7z")
+
+
+def test_decode_chi_operation_specification() -> None:
+    specification = decode_operation_specification(
+        {
+            "operation": {
+                "operation_list": [
+                    {
+                        "type": 2,
+                        "combination": ["1m|2m", "2m|4m"],
+                    }
+                ],
+                "time_add": 20000,
+                "time_fixed": 5000,
+            }
+        }
+    )
+
+    assert specification is not None
+    [operation] = specification.operations
+    assert isinstance(operation, _ChiOperationSpecification)
+    assert operation.consumed_candidates == (
+        ("1m", "2m"),
+        ("2m", "4m"),
+    )
+
+
+@pytest.mark.parametrize(
+    "combination",
+    [[], ["1m"], ["1m|2m|3m"], ["1m|1x"]],
+)
+def test_decode_chi_operation_rejects_invalid_combinations(
+    combination: list[str],
+) -> None:
+    with pytest.raises((TypeError, ValueError)):
+        decode_operation_specification(
+            {
+                "operation": {
+                    "operation_list": [
+                        {"type": 2, "combination": combination}
+                    ],
+                    "time_add": 0,
+                    "time_fixed": 0,
+                }
+            }
+        )
 
 
 @pytest.mark.parametrize(
@@ -66,11 +117,6 @@ def test_decode_absent_or_empty_operation_as_none(
         },
         {
             "operation_list": [{"type": 1, "combination": ["1x"]}],
-            "time_add": 0,
-            "time_fixed": 0,
-        },
-        {
-            "operation_list": [{"type": 2, "combination": ["1m|2m"]}],
             "time_add": 0,
             "time_fixed": 0,
         },

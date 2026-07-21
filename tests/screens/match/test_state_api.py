@@ -14,6 +14,7 @@ from majsoulrpa.screens.errors import (
 from majsoulrpa.screens.match import (
     Chi,
     ChiEvent,
+    ChiOperation,
     Dapai,
     DapaiEvent,
     DapaiOperation,
@@ -325,6 +326,93 @@ def test_get_state_applies_dealers_first_discard() -> None:
     assert state.round.previous_dapai_tile == "9s"
     assert isinstance(state.round.events[-1], DapaiEvent)
     assert state.round.events[-1].action_step == 2
+
+
+def test_get_state_exposes_chi_operations_after_opponent_discard() -> None:
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"synthetic-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(),
+                _live_new_round_action(
+                    step=0,
+                    ju=3,
+                    tiles=["3m", "4m", *(["1p"] * 11)],
+                ),
+                _live_discard_action(
+                    step=1,
+                    seat=3,
+                    tile="0m",
+                    moqie=False,
+                    operation=liqi_pb2.OptionalOperationList(
+                        time_fixed=5000,
+                        time_add=20000,
+                        operation_list=[
+                            liqi_pb2.OptionalOperation(
+                                type=2,
+                                combination=["3m|4m"],
+                            )
+                        ],
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+    state = asyncio.run(screen.get_state())
+
+    candidates = state.round.operation_candidates
+    assert candidates is not None
+    assert candidates.operations == (
+        ChiOperation(
+            from_seat=validate_seat(3),
+            tile=validate_tile("0m"),
+            consumed=(validate_tile("3m"), validate_tile("4m")),
+        ),
+    )
+
+
+def test_get_state_rejects_chi_operation_in_three_player_match() -> None:
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"inconsistent-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(
+                    player_count=3,
+                    seat_list=(100002, SELF_ACCOUNT_ID, 100003),
+                ),
+                _live_new_round_action(
+                    step=0,
+                    ju=0,
+                    scores=[35000] * 3,
+                    tiles=["3m", "4m", *(["1p"] * 11)],
+                ),
+                _live_discard_action(
+                    step=1,
+                    seat=0,
+                    tile="5m",
+                    moqie=False,
+                    operation=liqi_pb2.OptionalOperationList(
+                        operation_list=[
+                            liqi_pb2.OptionalOperation(
+                                type=2,
+                                combination=["3m|4m"],
+                            )
+                        ]
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+    with pytest.raises(ScreenInconsistentMessageError):
+        asyncio.run(screen.get_state())
 
 
 def test_get_state_applies_self_draw() -> None:

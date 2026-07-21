@@ -74,6 +74,7 @@ def _live_discard_action(
     liqi: bool = False,
     wliqi: bool = False,
     doras: list[str] | None = None,
+    operation: liqi_pb2.OptionalOperationList | None = None,
 ) -> DecodedNotice:
     data = liqi_pb2.ActionDiscardTile(
         seat=seat,
@@ -82,6 +83,7 @@ def _live_discard_action(
         is_liqi=liqi,
         is_wliqi=wliqi,
         doras=[] if doras is None else doras,
+        operation=operation,
     ).SerializeToString()
     return _live_action(step=step, name="ActionDiscardTile", data=data)
 

@@ -59,6 +59,7 @@ class MatchStateStore:
             new_round_event.shoupai,
             new_round_event.zimopai,
             metadata.self_seat,
+            player_count,
         )
         round_state = RoundState(
             generation=1,
@@ -156,6 +157,7 @@ class MatchStateStore:
             round_state.shoupai,
             zimopai,
             state.self_seat,
+            len(state.players),
         )
         next_round = replace(
             round_state,
@@ -238,6 +240,7 @@ class MatchStateStore:
             next_shoupai,
             zimopai,
             state.self_seat,
+            len(state.players),
         )
         next_round = replace(
             round_state,
@@ -332,6 +335,7 @@ class MatchStateStore:
             next_shoupai,
             None,
             state.self_seat,
+            player_count,
         )
         next_round = replace(
             round_state,
