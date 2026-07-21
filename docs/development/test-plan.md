@@ -717,6 +717,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 自家の `ChiEvent` が指定した from_seat / tile / consumed と異なる場合は不整合にする
 - [x] チーボタン待機中に上位の `ActionChiPengGang` を先読みした場合は1回だけput_backする
 - [x] 別playerの `PengEvent` にpreemptされた場合はoperation失敗にせず、更新後のMatchStateを返す
+- [x] 複数候補の表示待ち中に上位actionを受信した場合は、組合せ領域をクリックせず通常pipelineへ戻す
 - [x] 上位actionを確認できないチーボタン検出失敗を成功扱いしない
 
 ### MatchScreen operation のスキップ

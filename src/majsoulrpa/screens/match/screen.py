@@ -453,27 +453,12 @@ class MatchScreen(Screen):
                 cause=error,
             )
 
+        # This loop determines whether the chi button can be clicked or
+        # the operation opportunity disappears before the click. The
+        # outcome is verified later from the authoritative event.
         while True:
-            message = self._get_sniffer_message_nowait()
-            if message is not None:
-                if message.raw.name == ACTION_PROTOTYPE_NAME:
-                    self._put_back_sniffer_message(message)
-                    return
-
-                try:
-                    self._apply_match_message(message)
-                except MatchMetadataUnsupportedError as error:
-                    await self._raise_unsupported_match(cause=error)
-                except (
-                    MatchActionDecodeError,
-                    MatchMetadataDecodeError,
-                ) as error:
-                    await self._raise_inconsistent_message(
-                        "Match state update failed while waiting for chi UI.",
-                        cause=error,
-                    )
-                continue
-
+            if await self._put_back_pending_action_while_waiting_for_ui():
+                return
             if await self.click_template_if_present(self.CHI_BUTTON_TEMPLATE):
                 break
             await asyncio.sleep(
@@ -487,8 +472,30 @@ class MatchScreen(Screen):
                 index,
             )
             await asyncio.sleep(OPERATION_OPTION_DISPLAY_DELAY_SECONDS)
+            if await self._put_back_pending_action_while_waiting_for_ui():
+                return
             await self.click_region(selection_region)
         await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
+
+    async def _put_back_pending_action_while_waiting_for_ui(self) -> bool:
+        while (message := self._get_sniffer_message_nowait()) is not None:
+            if message.raw.name == ACTION_PROTOTYPE_NAME:
+                self._put_back_sniffer_message(message)
+                return True
+            try:
+                self._apply_match_message(message)
+            except MatchMetadataUnsupportedError as error:
+                await self._raise_unsupported_match(cause=error)
+            except (
+                MatchActionDecodeError,
+                MatchMetadataDecodeError,
+            ) as error:
+                await self._raise_inconsistent_message(
+                    "Match state update failed while waiting for "
+                    "operation UI.",
+                    cause=error,
+                )
+        return False
 
     @classmethod
     def _get_chi_peng_combination_region(

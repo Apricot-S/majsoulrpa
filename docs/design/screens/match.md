@@ -535,8 +535,10 @@ log・処理して再試行を続ける。v1-developの再試行helperは、操�
 要求する。チーbuttonの描画待ち中に `ActionPrototype` を先読みした場合は1回だけqueueへ戻し、
 通常のevent pipelineで処理する。他家の `PengEvent` が先に成立した場合はチーが上位actionに
 preemptされたものとして、operation失敗にはせず更新後のstateを返す。button click後に同じ競合が
-起きた場合も同様とする。上位actionを観測せずbuttonも検出できない場合は成功扱いせず、検出を
-続けて呼び出し側のtimeoutに委ねる。
+起きた場合も同様とする。複数候補の表示待ち中にも組合せ領域をクリックする直前にqueueを確認し、
+上位actionを先読みしていればput-backして、すでに消えた選択UIの座標をクリックしない。
+上位actionを観測せずbuttonも検出できない場合は成功扱いせず、検出を続けて呼び出し側のtimeoutに
+委ねる。
 
 ### operation のスキップ
 

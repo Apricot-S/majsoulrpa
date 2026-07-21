@@ -363,6 +363,84 @@ def test_operate_accepts_opponent_peng_preemption_after_click(
     assert state.round.events[-1].seat == 1
 
 
+def test_operate_does_not_click_combination_after_peng_preemption(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages = _PutBackTrackingQueue()
+    for message in (
+        _auth_game(),
+        _live_new_round_action(
+            step=0,
+            ju=3,
+            tiles=[
+                "3m",
+                "4m",
+                "4m",
+                "6m",
+                "6m",
+                "7m",
+                *(["1p"] * 7),
+            ],
+        ),
+        _live_discard_action(
+            step=1,
+            seat=3,
+            tile="5m",
+            moqie=False,
+            operation=liqi_pb2.OptionalOperationList(
+                operation_list=[
+                    liqi_pb2.OptionalOperation(
+                        type=2,
+                        combination=["3m|4m", "4m|6m", "6m|7m"],
+                    )
+                ]
+            ),
+        ),
+    ):
+        messages.enqueue(message)
+    screenshot = _synthetic_template_at_screenshot(
+        template_path=CHI_TEMPLATE_PATH,
+        left=900,
+        top=650,
+    )
+    browser = _MessagesOnClickBrowser(
+        screenshot,
+        messages,
+        _live_peng_action(
+            step=2,
+            seat=1,
+            tiles=["5m", "5m", "5m"],
+            froms=[1, 1, 3],
+        ),
+    )
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=browser,
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=messages,
+        ),
+    )
+
+    async def skip_sleep(_delay: float) -> None:
+        pass
+
+    monkeypatch.setattr(asyncio, "sleep", skip_sleep)
+
+    asyncio.run(screen.before_callback())
+    initial = asyncio.run(screen.get_state())
+    candidates = initial.round.operation_candidates
+    assert candidates is not None
+    operation = candidates.operations[1]
+    assert isinstance(operation, ChiOperation)
+
+    state = asyncio.run(screen.operate(operation))
+
+    assert isinstance(state.round.events[-1], PengEvent)
+    assert messages.put_back_count == 1
+    assert len(browser.clicked_points) == 1
+
+
 def test_operate_puts_back_preemption_while_waiting_for_chi_button(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
