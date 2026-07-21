@@ -210,14 +210,14 @@ class DapaiOperation:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ChiOperation:
-    target: Seat
+    from_seat: Seat
     tile: Tile
     consumed: tuple[Tile, Tile]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PengOperation:
-    target: Seat
+    from_seat: Seat
     tile: Tile
     consumed: tuple[Tile, Tile]
 
@@ -229,7 +229,7 @@ class AngangOperation:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class DaminggangOperation:
-    target: Seat
+    from_seat: Seat
     tile: Tile
     consumed: tuple[Tile, Tile, Tile]
 
@@ -253,7 +253,7 @@ class ZimohuOperation:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class RongOperation:
-    target: Seat
+    from_seat: Seat
     tile: Tile
 
 
@@ -293,8 +293,8 @@ actor seat は各公開 operation model に重複して保持しない。実行�
 扱う段階では、actor seat 付きの container を別途設計する。`OperationCandidates.operations` は非空、
 時間は非負の millisecond として検証する。
 
-一方、チー、ポン、大明槓、ロンの `target` は操作対象の seat を確定する値なので公開 operation に
-含める。`target` と `tile` は直前の Event から materializer が同時に補い、利用者が
+一方、チー、ポン、大明槓、ロンの `from_seat` は牌の取得元となる seat を確定する値なので公開 operation に
+含める。`from_seat` と `tile` は直前の Event から materializer が同時に補い、利用者が
 `previous_dapai_seat` / `previous_dapai_tile` を参照して候補を完成させる必要をなくす。これは actor の
 `self_seat` とは役割が異なる。利用者が operation instance を自作した場合も、将来の operate API が
 現在の候補への包含を検証することで、対象 seat または対象牌が異なる instance を拒否する。
@@ -333,7 +333,7 @@ type 2〜6 の各 encoded combination は表の枚数と完全に一致させ、
 protobuf の `combination` 1 要素を public operation 1 instance へ展開し、牌組の候補一覧を単一
 operation の中に保持しない。したがって、複数の鳴き方を選べる場合は `ChiOperation` などが候補数分
 並ぶ。チー、ポン、大明槓では `combination` から手牌側の `consumed` を生成し、候補が付随した
-`DapaiEvent` の牌を `tile`、seat を `target` として補う。各 instance は対象 seat、取得する河の牌、
+`DapaiEvent` の牌を `tile`、seat を `from_seat` として補う。各 instance は取得元の seat、取得する河の牌、
 手牌から消費する 1 組を持ち、それ自体で副露の選択内容を完全に表す。赤牌と通常牌は別の牌として
 保持し、`tile` も `DapaiEvent.tile` の表現を変更しない。
 
@@ -355,7 +355,7 @@ type 8 の `ZimohuOperation.tile` は候補を発生させた
 `ActionDealTile` のツモ牌、または `ActionNewRound` の天和判定に使う牌から補う。type 9 の
 `ActionNewRound` の天和候補では、表示のため分離した `zimopai` を `ZimohuOperation.tile` として使う。
 これは和了 operation の対象牌を確定するための規約であり、同じ牌の打牌 operation を
-`moqie=True` に変更するものではない。`RongOperation.tile` と `target` は放銃牌と放銃者、
+`moqie=True` に変更するものではない。`RongOperation.tile` と `from_seat` は放銃牌と放銃者、
 搶槓対象牌と槓を行った player など、候補を発生させた Event から補う。
 いずれも赤牌を通常牌へ正規化しない。type 8〜11 は `combination` が空でなければ不整合とする。
 未知 type は将来の候補として黙って保持せず decode error にする。`seat`、`change_tiles`、
