@@ -72,6 +72,8 @@ def _materialize_dapai_operations(
         if tile not in forbidden_tiles
     ]
     if zimopai is not None and zimopai not in forbidden_tiles:
+        # The dealer's first discard is not moqie. All 14 tiles belong
+        # to the initial deal, although the last one is displayed apart.
         candidates.append(
             DapaiOperation(
                 tile=zimopai,
