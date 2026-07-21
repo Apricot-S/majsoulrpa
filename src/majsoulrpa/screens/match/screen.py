@@ -66,7 +66,7 @@ MATCH_INITIALIZATION_TIMEOUT_SECONDS = 5.0
 DEALER_FIRST_DISCARD_DELAY_SECONDS = 2.0
 DAPAI_CLICK_RETRY_INTERVAL_SECONDS = 0.5
 CHI_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
-CHI_COMBINATION_SELECTION_DELAY_SECONDS = 0.4
+CHI_PENG_COMBINATION_SELECTION_DELAY_SECONDS = 0.4
 CHI_HAND_SLIDE_DELAY_SECONDS = 1.0
 
 _SINGLE_CHI_CANDIDATE_COUNT = 1
@@ -102,14 +102,14 @@ class MatchScreen(Screen):
         Region(left=1211, top=936, width=71, height=104),
         Region(left=1495, top=936, width=71, height=104),
     )
-    CHI_COMBINATION_REGION = Region(
+    CHI_PENG_COMBINATION_REGION = Region(
         left=961,
         top=692,
         width=157,
         height=117,
     )
-    CHI_COMBINATION_HORIZONTAL_INTERVAL = 200
-    CHI_COMBINATION_CENTERING_INTERVAL = 100
+    CHI_PENG_COMBINATION_HORIZONTAL_INTERVAL = 200
+    CHI_PENG_COMBINATION_CENTERING_INTERVAL = 100
 
     SEAT_INDICATOR_TEMPLATES = tuple(
         load_png_template_matcher(
@@ -480,16 +480,16 @@ class MatchScreen(Screen):
 
         if len(chi_operations) >= _MIN_MULTIPLE_CHI_CANDIDATE_COUNT:
             index = chi_operations.index(operation)
-            selection_region = self._get_chi_combination_region(
+            selection_region = self._get_chi_peng_combination_region(
                 len(chi_operations),
                 index,
             )
-            await asyncio.sleep(CHI_COMBINATION_SELECTION_DELAY_SECONDS)
+            await asyncio.sleep(CHI_PENG_COMBINATION_SELECTION_DELAY_SECONDS)
             await self.click_region(selection_region)
         await asyncio.sleep(CHI_HAND_SLIDE_DELAY_SECONDS)
 
     @classmethod
-    def _get_chi_combination_region(
+    def _get_chi_peng_combination_region(
         cls,
         candidate_count: int,
         index: int,
@@ -507,13 +507,13 @@ class MatchScreen(Screen):
 
         return Region(
             left=(
-                cls.CHI_COMBINATION_REGION.left
-                - candidate_count * cls.CHI_COMBINATION_CENTERING_INTERVAL
-                + index * cls.CHI_COMBINATION_HORIZONTAL_INTERVAL
+                cls.CHI_PENG_COMBINATION_REGION.left
+                - candidate_count * cls.CHI_PENG_COMBINATION_CENTERING_INTERVAL
+                + index * cls.CHI_PENG_COMBINATION_HORIZONTAL_INTERVAL
             ),
-            top=cls.CHI_COMBINATION_REGION.top,
-            width=cls.CHI_COMBINATION_REGION.width,
-            height=cls.CHI_COMBINATION_REGION.height,
+            top=cls.CHI_PENG_COMBINATION_REGION.top,
+            width=cls.CHI_PENG_COMBINATION_REGION.width,
+            height=cls.CHI_PENG_COMBINATION_REGION.height,
         )
 
     @staticmethod

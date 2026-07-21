@@ -121,12 +121,12 @@ class _MessageOnScreenshotBrowser(BrowserControllerSpy):
         (5, 4, 1261),
     ],
 )
-def test_chi_combination_regions_follow_candidate_layout(
+def test_chi_peng_combination_regions_follow_candidate_layout(
     candidate_count: int,
     index: int,
     expected_left: int,
 ) -> None:
-    region = MatchScreen._get_chi_combination_region(
+    region = MatchScreen._get_chi_peng_combination_region(
         candidate_count,
         index,
     )
