@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import final
 
 from majsoulrpa.screens.match.event import MatchEvent
 from majsoulrpa.screens.match.operation import OperationCandidates
@@ -54,8 +55,9 @@ class MatchPlayer:
         return self.name == ""
 
 
+@final
 @dataclass(frozen=True, slots=True)
-class MatchDapai:
+class Dapai:
     tile: Tile
     moqie: bool
     liqi: bool
@@ -67,19 +69,46 @@ class MatchDapai:
             raise ValueError(msg)
 
 
-class MatchFuluKind(StrEnum):
-    CHI = "chi"
-    PENG = "peng"
-    DAMINGGANG = "daminggang"
-    ANGANG = "angang"
-    JIAGANG = "jiagang"
-
-
+@final
 @dataclass(frozen=True, slots=True)
-class MatchFulu:
-    kind: MatchFuluKind
-    tiles: tuple[Tile, ...]
-    from_seat: Seat | None
+class Chi:
+    from_seat: Seat
+    tile: Tile
+    consumed: tuple[Tile, Tile]
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class Peng:
+    from_seat: Seat
+    tile: Tile
+    consumed: tuple[Tile, Tile]
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class Daminggang:
+    from_seat: Seat
+    tile: Tile
+    consumed: tuple[Tile, Tile, Tile]
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class Angang:
+    consumed: tuple[Tile, Tile, Tile, Tile]
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class Jiagang:
+    from_seat: Seat
+    tile: Tile
+    consumed: tuple[Tile, Tile]
+    added: Tile
+
+
+type Fulu = Chi | Peng | Daminggang | Angang | Jiagang
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,8 +124,8 @@ class RoundState:
     scores: tuple[int, ...]
     shoupai: tuple[Tile, ...]
     zimopai: Tile | None
-    he: tuple[tuple[MatchDapai, ...], ...]
-    fulu: tuple[tuple[MatchFulu, ...], ...]
+    he: tuple[tuple[Dapai, ...], ...]
+    fulu: tuple[tuple[Fulu, ...], ...]
     num_babei: tuple[int, ...]
     liqi: tuple[bool, ...]
     wliqi: tuple[bool, ...]

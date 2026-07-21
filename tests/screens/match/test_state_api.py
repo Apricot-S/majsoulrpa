@@ -12,12 +12,11 @@ from majsoulrpa.screens.errors import (
     ScreenUnexpectedStateError,
 )
 from majsoulrpa.screens.match import (
+    Chi,
     ChiEvent,
+    Dapai,
     DapaiEvent,
     DapaiOperation,
-    MatchDapai,
-    MatchFulu,
-    MatchFuluKind,
     MatchOrigin,
     MatchRank,
     MatchScreen,
@@ -314,7 +313,7 @@ def test_get_state_applies_dealers_first_discard() -> None:
     assert state.round.zimopai is None
     assert state.round.dora_indicators == ("4p",)
     assert state.round.he[0] == (
-        MatchDapai(
+        Dapai(
             tile=validate_tile("9s"),
             moqie=False,
             liqi=False,
@@ -412,10 +411,10 @@ def test_get_state_applies_self_chi() -> None:
     assert state.round.step == 2
     assert state.round.shoupai == ("4p",) * 11
     assert state.round.fulu[0] == (
-        MatchFulu(
-            kind=MatchFuluKind.CHI,
-            tiles=tuple(validate_tile(tile) for tile in ("2m", "3m", "1m")),
+        Chi(
             from_seat=validate_seat(3),
+            tile=validate_tile("1m"),
+            consumed=(validate_tile("2m"), validate_tile("3m")),
         ),
     )
     assert state.round.previous_dapai_seat is None
@@ -468,10 +467,10 @@ def test_get_state_applies_opponent_chi_and_liqi_success() -> None:
 
     assert state.round.shoupai == ("1m",) * 13
     assert state.round.fulu[2] == (
-        MatchFulu(
-            kind=MatchFuluKind.CHI,
-            tiles=tuple(validate_tile(tile) for tile in ("2m", "3m", "1m")),
+        Chi(
             from_seat=validate_seat(1),
+            tile=validate_tile("1m"),
+            consumed=(validate_tile("2m"), validate_tile("3m")),
         ),
     )
     assert state.round.scores[1] == 24000

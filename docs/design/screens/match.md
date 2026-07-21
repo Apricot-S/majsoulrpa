@@ -90,27 +90,55 @@ class MatchPlayer:
     def is_cpu(self) -> bool: ...
 
 
+@final
 @dataclass(frozen=True, slots=True)
-class MatchDapai:
+class Dapai:
     tile: Tile
     moqie: bool
     liqi: bool
     wliqi: bool
 
 
-class MatchFuluKind(StrEnum):
-    CHI = "chi"
-    PENG = "peng"
-    DAMINGGANG = "daminggang"
-    ANGANG = "angang"
-    JIAGANG = "jiagang"
-
-
+@final
 @dataclass(frozen=True, slots=True)
-class MatchFulu:
-    kind: MatchFuluKind
-    tiles: tuple[Tile, ...]
-    from_seat: Seat | None
+class Chi:
+    from_seat: Seat
+    tile: Tile
+    consumed: tuple[Tile, Tile]
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class Peng:
+    from_seat: Seat
+    tile: Tile
+    consumed: tuple[Tile, Tile]
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class Daminggang:
+    from_seat: Seat
+    tile: Tile
+    consumed: tuple[Tile, Tile, Tile]
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class Angang:
+    consumed: tuple[Tile, Tile, Tile, Tile]
+
+
+@final
+@dataclass(frozen=True, slots=True)
+class Jiagang:
+    from_seat: Seat
+    tile: Tile
+    consumed: tuple[Tile, Tile]
+    added: Tile
+
+
+type Fulu = Chi | Peng | Daminggang | Angang | Jiagang
 
 
 @dataclass(frozen=True, slots=True)
@@ -126,8 +154,8 @@ class RoundState:
     scores: tuple[int, ...]
     shoupai: tuple[Tile, ...]
     zimopai: Tile | None
-    he: tuple[tuple[MatchDapai, ...], ...]
-    fulu: tuple[tuple[MatchFulu, ...], ...]
+    he: tuple[tuple[Dapai, ...], ...]
+    fulu: tuple[tuple[Fulu, ...], ...]
     num_babei: tuple[int, ...]
     liqi: tuple[bool, ...]
     wliqi: tuple[bool, ...]
@@ -150,6 +178,12 @@ class MatchState:
     players: tuple[MatchPlayer, ...]
     round: RoundState
 ```
+
+`Fulu` は kind discriminator を持たず、具体 class の Union とする。利用者は class pattern で型を
+絞り込み、各副露に存在しない field を `None` として分岐する必要がない。`Chi`、`Peng`、
+`Daminggang` は取得元と取得牌を、`Jiagang` はさらに元の `Peng` の取得情報と追加牌を区別して保持する。
+これは Event 列の単純な複製ではなく、Event を適用して得られる現在の副露状態である。北抜きは面子の
+Union には含めず、当面は seat ごとの `num_babei` で保持する。
 
 human player は正の `account_id`、`name`、四麻段位 `level4`、三麻段位 `level3` を必須とする。
 `MatchRank` は `AccountLevel.id` と `score` を失わず保持する。段位名への変換表を state の正本に
@@ -236,7 +270,9 @@ class DaminggangOperation:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class JiagangOperation:
-    consumed: tuple[Tile, Tile, Tile]
+    from_seat: Seat
+    tile: Tile
+    consumed: tuple[Tile, Tile]
     added: Tile
 
 
@@ -337,10 +373,11 @@ operation の中に保持しない。したがって、複数の鳴き方を選�
 手牌から消費する 1 組を持ち、それ自体で副露の選択内容を完全に表す。赤牌と通常牌は別の牌として
 保持し、`tile` も `DapaiEvent.tile` の表現を変更しない。
 
-暗槓は4枚すべてを `AngangOperation.consumed` とする。加槓は雀魂の並びを維持し、`|` で区切られた
-先頭3枚を既存のポン牌として `JiagangOperation.consumed`、4枚目を `JiagangOperation.added` とする。
-加える牌が通常牌か赤牌かは4枚目の表現で区別し、牌を sort
-して位置を変えない。既存のポンがどの形で表示されているかは operation model では考慮しない。
+暗槓は4枚すべてを `AngangOperation.consumed` とする。加槓は `|` で区切られた先頭3枚と一致する
+自家の `Peng` を現在の `RoundState.fulu` から一意に特定し、その `from_seat`、他家から取得した
+`tile`、手牌から使った2枚の `consumed` を `JiagangOperation` に引き継ぐ。4枚目は
+`JiagangOperation.added` とし、通常牌か赤牌かをその表現で区別する。対応する `Peng` が存在しない、
+または一意に定まらない場合は不整合として拒否する。
 type 7 は `|` で分割せず、各要素を立直宣言牌として検証する。候補牌ごとに現在の `shoupai` から
 `moqie=False`、実際の `zimopai` から `moqie=True` の `LiqiOperation` を生成する。同じ牌について
 両方を選べる場合は 2 instance とする。
@@ -668,7 +705,7 @@ def event_name(event: MatchEvent) -> str:
 分解し、雀魂の内部表現をそのまま公開 API へ持ち込まない。
 `from_seat` は `froms[-1]` から取得する。reducer は `from_seat` と取得牌が未解決の直前打牌に一致し、
 かつ四麻で鳴いた seat の上家に当たることを検証する。自家のチーでは `consumed` を `shoupai` から
-除き、`(*consumed, tile)` を `MatchFulu(kind=MatchFuluKind.CHI, ...)` として追加する。他家のチーでは自家手牌を
+除き、`Chi(from_seat=..., tile=..., consumed=...)` として追加する。他家のチーでは自家手牌を
 変更しない。どちらも全員の `first_draw` / `yifa` を終了させ、未解決打牌を消去する。後続の打牌候補が
 同じ action に含まれる場合は、チー適用後の自家手牌から `DapaiOperation` を生成する。
 

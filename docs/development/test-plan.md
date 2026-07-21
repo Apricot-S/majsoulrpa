@@ -631,7 +631,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] type 3 は直前の取得牌と `combination` の手牌 2 枚を持つ `PengOperation` 1 instance へ変換する
 - [ ] type 4 は `combination` 1 要素ごとに消費牌 4 枚を持つ `AngangOperation` 1 instance へ変換する
 - [ ] type 5 は直前の取得牌と `combination` の手牌 3 枚を持つ `DaminggangOperation` 1 instance へ変換する
-- [ ] type 6 は先頭3枚を consumed、4枚目を added とする `JiagangOperation` 1 instance へ変換する
+- [ ] type 6 は4枚目を added として既存の `Peng` を特定し、元の from_seat / tile / consumed を保持する `JiagangOperation` 1 instance へ変換する
 - [ ] type 7 の各候補牌を 1 打牌 1 `LiqiOperation` に展開する
 - [ ] type 8 は空の `combination` と発生元 Event のツモ牌から `ZimohuOperation` を生成する
 - [ ] type 9 は空の `combination` と発生元 Event の対象 seat・対象牌から `RongOperation` を生成する
@@ -639,8 +639,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] v1-develop の type 11 / `BabeiOperation` 対応を三人戦の実通信で再確認してから固定する
 - [ ] type 2〜6 の区切り後の牌数が operation ごとの枚数と異なる場合は拒否する
 - [ ] AngangOperation は4枚を consumed として保持する
-- [ ] JiagangOperation は wire 順を sort せず、4枚目が通常牌か赤牌かを added に保持する
-- [ ] JiagangOperation の consumed は先頭3枚のポン牌とし、ポンの表示形を model に含めない
+- [ ] JiagangOperation は4枚目が通常牌か赤牌かを added に保持する
+- [ ] JiagangOperation は既存の Peng から from_seat、取得した tile、手牌から使った2枚の consumed を引き継ぐ
+- [ ] type 6 の先頭3枚に対応する自家の Peng が一意に見つからない場合は拒否する
 - [ ] `DapaiOperation` / `LiqiOperation` は tile と moqie を保持し、手出しとツモ切りを別 instance にする
 - [x] 同じ tile / moqie の物理牌が複数あっても同じ打牌 operation は重複させない
 - [x] 手牌と実ツモ牌の両方に同じ候補牌があれば、moqie=false / true の両 operation を生成する
@@ -716,7 +717,12 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### immutable state / reducer
 
-- [ ] MatchRank、MatchPlayer、MatchDapai、MatchFulu、RoundState、MatchState は frozen で collection を tuple にする
+- [x] MatchRank、MatchPlayer、Dapai、各 concrete Fulu、RoundState、MatchState は frozen で collection を tuple にする
+- [x] `Fulu` は `Chi | Peng | Daminggang | Angang | Jiagang` を列挙した型エイリアスとし、kind discriminator を持たない
+- [x] Chi / Peng / Daminggang は from_seat、取得した tile、手牌から使った固定長 consumed を保持する
+- [x] Angang は手牌から使った4枚の consumed を保持し、from_seat を持たない
+- [x] Jiagang は元の Peng の from_seat / tile / consumed と追加した added を区別して保持する
+- [x] 北抜きは Fulu に含めず、RoundState.num_babei で保持する
 - [x] human player の四麻 `level4` と三麻 `level3` の AccountLevel ID / score を失わず decode する
 - [x] 通常友人戦の authGame response は players が human のみ、robots が CPU のみであることを実通信で確認する
 - [x] 観測した robots の account_id は 1 / 2 / 3、nickname は空文字列、level / level3 は field 自体がない

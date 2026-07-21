@@ -19,9 +19,8 @@ from majsoulrpa.screens.match.operation._specification import (
     _OperationCandidatesSpecification,
 )
 from majsoulrpa.screens.match.state import (
-    MatchDapai,
-    MatchFulu,
-    MatchFuluKind,
+    Chi,
+    Dapai,
     MatchState,
     RoundState,
 )
@@ -209,7 +208,7 @@ class MatchStateStore:
 
         he = [list(dapai) for dapai in round_state.he]
         he[event.seat].append(
-            MatchDapai(
+            Dapai(
                 tile=event.tile,
                 moqie=event.moqie,
                 liqi=event.liqi,
@@ -313,10 +312,10 @@ class MatchStateStore:
 
         fulu = [list(player_fulu) for player_fulu in round_state.fulu]
         fulu[event.seat].append(
-            MatchFulu(
-                kind=MatchFuluKind.CHI,
-                tiles=(*event.consumed, event.tile),
+            Chi(
                 from_seat=event.from_seat,
+                tile=event.tile,
+                consumed=event.consumed,
             )
         )
         scores, liqibang = self._apply_liqi_success(
