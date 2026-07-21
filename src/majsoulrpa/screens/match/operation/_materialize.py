@@ -60,7 +60,10 @@ def _materialize_dapai_operations(
 ) -> list[DapaiOperation]:
     forbidden_tiles = set(specification.forbidden_tiles)
     for tile in specification.forbidden_tiles:
-        if tile[0] == "5" and tile[1] in {"m", "p", "s"}:
+        # Work around a Majsoul API inconsistency. When a swap calling
+        # forbids a normal five, combination may omit the matching
+        # red five.
+        if tile in {"5m", "5p", "5s"}:
             forbidden_tiles.add(Tile(f"0{tile[1]}"))
 
     candidates = [
