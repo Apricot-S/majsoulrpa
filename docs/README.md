@@ -39,6 +39,7 @@ ADR は採用済みの判断とその理由を固定します。現在の仕様�
 ## Investigations
 
 - [Yostar 認証通信の調査](investigations/yostar-auth.md)
+- [加槓候補の牌順序](investigations/jiagang-combination-order.md)
 - [抽象化・レイヤー構成レビュー（2026-07-13）](investigations/abstraction-review-2026-07-13.md)
 
 調査記録は特定時点の観測結果です。現行仕様と競合する場合は、Design と ADR を優先します。

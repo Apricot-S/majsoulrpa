@@ -347,7 +347,7 @@ type と concrete class の対応は次のとおりとする。
 | 3 | `PengOperation` | 手牌 2 枚を `|` で区切った組合せ。対象 seat・牌は Event から補う |
 | 4 | `AngangOperation` | 消費する対象牌 4 枚を `|` で区切った組合せ |
 | 5 | `DaminggangOperation` | 手牌 3 枚を `|` で区切った組合せ。対象 seat・牌は Event から補う |
-| 6 | `JiagangOperation` | 既存のポン牌 3 枚と加える牌 1 枚を `|` で区切った組合せ |
+| 6 | `JiagangOperation` | 既存のポン牌 3 枚と加える牌 1 枚を `|` で区切った組合せ。並び順に意味は持たせない |
 | 7 | `LiqiOperation` | 立直宣言牌の候補。各要素は単独の牌で、手出し／ツモ切りの選択肢へ展開する |
 | 8 | `ZimohuOperation` | 空配列。和了対象のツモ牌は Event から補う |
 | 9 | `RongOperation` | 空配列。和了対象 seat・牌は Event から補う |
@@ -377,11 +377,15 @@ operation の中に保持しない。したがって、複数の鳴き方を選�
 取得牌と `consumed` が同じ牌種で、各 `consumed` が現在の `shoupai` に実在することを検証する。
 赤5と黒5は同じ牌種として扱うが、各候補には wire の赤牌表現をそのまま保持する。
 
-暗槓は4枚すべてを `AngangOperation.consumed` とする。加槓は `|` で区切られた先頭3枚と一致する
-自家の `Peng` を現在の `RoundState.fulu` から一意に特定し、その `from_seat`、他家から取得した
-`tile`、手牌から使った2枚の `consumed` を `JiagangOperation` に引き継ぐ。4枚目は
-`JiagangOperation.added` とし、通常牌か赤牌かをその表現で区別する。対応する `Peng` が存在しない、
-または一意に定まらない場合は不整合として拒否する。
+暗槓は4枚すべてを `AngangOperation.consumed` とする。加槓候補の `combination` は、実牌譜では
+既存のポンと追加牌の区別によらず赤5が先頭に正規化されており、4枚目を追加牌として扱えない。
+4枚の multiset に牌構成が包含される自家の `Peng` を現在の `RoundState.fulu` から一意に特定し、その
+`from_seat`、他家から取得した `tile`、手牌から使った2枚の `consumed` を `JiagangOperation` に
+引き継ぐ。既存のポン3枚を multiset として差し引いた残りの1枚を `added` とし、通常牌か赤牌かを
+区別する。対応する `Peng` が存在しない、一意に定まらない、または差分が1枚にならない場合は
+不整合として拒否する。加槓成立時の `ActionAnGangAddGang` (`type == 2`) は `tiles` に追加牌
+1枚を直接格納するため、Event の追加牌はこの値から取得する。調査根拠は
+[`加槓候補の牌順序`](../../investigations/jiagang-combination-order.md) に記録する。
 type 7 は `|` で分割せず、各要素を立直宣言牌として検証する。候補牌ごとに現在の `shoupai` から
 `moqie=False`、実際の `zimopai` から `moqie=True` の `LiqiOperation` を生成する。同じ牌について
 両方を選べる場合は 2 instance とする。

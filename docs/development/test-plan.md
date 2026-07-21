@@ -637,7 +637,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] PengOperation は取得牌と consumed が同じ牌種で、consumed が手牌に実在することを必要とする
 - [ ] type 4 は `combination` 1 要素ごとに消費牌 4 枚を持つ `AngangOperation` 1 instance へ変換する
 - [ ] type 5 は直前の取得牌と `combination` の手牌 3 枚を持つ `DaminggangOperation` 1 instance へ変換する
-- [ ] type 6 は4枚目を added として既存の `Peng` を特定し、元の from_seat / tile / consumed を保持する `JiagangOperation` 1 instance へ変換する
+- [ ] type 6 は牌順に依存せず既存の `Peng` と4枚の multiset を比較し、元の from_seat / tile / consumed と差分の added を保持する `JiagangOperation` 1 instance へ変換する
 - [ ] type 7 の各候補牌を 1 打牌 1 `LiqiOperation` に展開する
 - [ ] type 8 は空の `combination` と発生元 Event のツモ牌から `ZimohuOperation` を生成する
 - [ ] type 9 は空の `combination` と発生元 Event の対象 seat・対象牌から `RongOperation` を生成する
@@ -645,9 +645,11 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] v1-develop の type 11 / `BabeiOperation` 対応を三人戦の実通信で再確認してから固定する
 - [ ] type 2〜6 の区切り後の牌数が operation ごとの枚数と異なる場合は拒否する
 - [ ] AngangOperation は4枚を consumed として保持する
-- [ ] JiagangOperation は4枚目が通常牌か赤牌かを added に保持する
+- [ ] JiagangOperation は既存の `Peng` との差分が通常牌か赤牌かを added に保持する
 - [ ] JiagangOperation は既存の Peng から from_seat、取得した tile、手牌から使った2枚の consumed を引き継ぐ
-- [ ] type 6 の先頭3枚に対応する自家の Peng が一意に見つからない場合は拒否する
+- [ ] type 6 の赤5が先頭に正規化されていても、既存の `Peng` に含まれる赤5と added の赤5を正しく区別する
+- [ ] type 6 の4枚に対応する自家の Peng が一意に見つからない、または multiset の差分が1枚でない場合は拒否する
+- [ ] `ActionAnGangAddGang` の type 2 は単独の `tiles` を加槓の追加牌として Event へ反映する
 - [ ] `DapaiOperation` / `LiqiOperation` は tile と moqie を保持し、手出しとツモ切りを別 instance にする
 - [x] 同じ tile / moqie の物理牌が複数あっても同じ打牌 operation は重複させない
 - [x] 手牌と実ツモ牌の両方に同じ候補牌があれば、moqie=false / true の両 operation を生成する
