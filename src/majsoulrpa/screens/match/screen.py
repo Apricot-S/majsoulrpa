@@ -5,6 +5,7 @@ from typing import NoReturn, assert_never, override
 from majsoulrpa.assets.templates.match import (
     BUTTON_AREA_SETTINGS_PATH,
     CHI_TEMPLATE_PATH,
+    PENG_TEMPLATE_PATH,
     SEAT_INDICATOR_SETTINGS_PATH,
     SEAT_INDICATOR_TEMPLATE_PATHS,
 )
@@ -14,6 +15,7 @@ from majsoulrpa.screens.base import (
     Screen,
     ScreenContext,
     ScreenDetectionSpec,
+    TemplateMatcher,
     _format_sniffer_message_for_log,
     _requires_active,
     _screen_api,
@@ -69,9 +71,10 @@ OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
 OPERATION_OPTION_DISPLAY_DELAY_SECONDS = 0.4
 HAND_SLIDE_DELAY_SECONDS = 1.0
 
-_SINGLE_CHI_CANDIDATE_COUNT = 1
-_MIN_MULTIPLE_CHI_CANDIDATE_COUNT = 2
+_SINGLE_CHI_PENG_CANDIDATE_COUNT = 1
+_MIN_MULTIPLE_CHI_PENG_CANDIDATE_COUNT = 2
 _MAX_CHI_CANDIDATE_COUNT = 5
+_MAX_PENG_CANDIDATE_COUNT = 2
 
 _DAPAI_CLICK_PROGRESS_MESSAGE_NAMES = frozenset(
     {
@@ -120,6 +123,10 @@ class MatchScreen(Screen):
     )
     CHI_BUTTON_TEMPLATE = load_png_template_matcher(
         template_path=CHI_TEMPLATE_PATH,
+        settings_path=BUTTON_AREA_SETTINGS_PATH,
+    )
+    PENG_BUTTON_TEMPLATE = load_png_template_matcher(
+        template_path=PENG_TEMPLATE_PATH,
         settings_path=BUTTON_AREA_SETTINGS_PATH,
     )
 
@@ -194,8 +201,7 @@ class MatchScreen(Screen):
             case ChiOperation():
                 await self._operate_chi(state, operation)
             case PengOperation():
-                msg = "PengOperation execution is not implemented."
-                raise NotImplementedError(msg)
+                await self._operate_peng(state, operation)
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -451,7 +457,7 @@ class MatchScreen(Screen):
             if isinstance(candidate, ChiOperation)
         )
         if not (
-            _SINGLE_CHI_CANDIDATE_COUNT
+            _SINGLE_CHI_PENG_CANDIDATE_COUNT
             <= len(chi_operations)
             <= _MAX_CHI_CANDIDATE_COUNT
         ):
@@ -460,23 +466,64 @@ class MatchScreen(Screen):
                 "Chi candidates do not match the supported UI layout.",
                 cause=error,
             )
+        await self._operate_chi_peng(
+            operation,
+            chi_operations,
+            self.CHI_BUTTON_TEMPLATE,
+        )
 
-        # This loop determines whether the chi button can be clicked or
+    async def _operate_peng(
+        self,
+        state: MatchState,
+        operation: PengOperation,
+    ) -> None:
+        candidates = state.round.operation_candidates
+        if candidates is None:
+            msg = "PengOperation requires operation candidates."
+            raise RuntimeError(msg)
+        peng_operations = tuple(
+            candidate
+            for candidate in candidates.operations
+            if isinstance(candidate, PengOperation)
+        )
+        if not (
+            _SINGLE_CHI_PENG_CANDIDATE_COUNT
+            <= len(peng_operations)
+            <= _MAX_PENG_CANDIDATE_COUNT
+        ):
+            error = ValueError("The number of peng candidates must be 1 or 2.")
+            await self._raise_inconsistent_message(
+                "Peng candidates do not match the supported UI layout.",
+                cause=error,
+            )
+        await self._operate_chi_peng(
+            operation,
+            peng_operations,
+            self.PENG_BUTTON_TEMPLATE,
+        )
+
+    async def _operate_chi_peng(
+        self,
+        operation: ChiOperation | PengOperation,
+        operations: tuple[ChiOperation | PengOperation, ...],
+        button_template: TemplateMatcher,
+    ) -> None:
+        # This loop determines whether the call button can be clicked or
         # the operation opportunity disappears before the click. The
         # outcome is verified later from the authoritative event.
         while True:
             if await self._put_back_pending_action_while_waiting_for_ui():
                 return
-            if await self.click_template_if_present(self.CHI_BUTTON_TEMPLATE):
+            if await self.click_template_if_present(button_template):
                 break
             await asyncio.sleep(
                 OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
             )
 
-        if len(chi_operations) >= _MIN_MULTIPLE_CHI_CANDIDATE_COUNT:
-            index = chi_operations.index(operation)
+        if len(operations) >= _MIN_MULTIPLE_CHI_PENG_CANDIDATE_COUNT:
+            index = operations.index(operation)
             selection_region = self._get_chi_peng_combination_region(
-                len(chi_operations),
+                len(operations),
                 index,
             )
             await asyncio.sleep(OPERATION_OPTION_DISPLAY_DELAY_SECONDS)
@@ -505,11 +552,11 @@ class MatchScreen(Screen):
         index: int,
     ) -> Region:
         if not (
-            _MIN_MULTIPLE_CHI_CANDIDATE_COUNT
+            _MIN_MULTIPLE_CHI_PENG_CANDIDATE_COUNT
             <= candidate_count
             <= _MAX_CHI_CANDIDATE_COUNT
         ):
-            msg = "Chi combination count must be between 2 and 5."
+            msg = "Chi/peng combination count must be between 2 and 5."
             raise ValueError(msg)
         if not 0 <= index < candidate_count:
             msg = "Chi combination index is out of range."
@@ -549,7 +596,13 @@ class MatchScreen(Screen):
                     and event.consumed == operation.consumed
                 )
             case PengOperation():
-                return False
+                return (
+                    isinstance(event, PengEvent)
+                    and event.seat == state.self_seat
+                    and event.from_seat == operation.from_seat
+                    and event.tile == operation.tile
+                    and event.consumed == operation.consumed
+                )
         assert_never(operation)
 
     @staticmethod

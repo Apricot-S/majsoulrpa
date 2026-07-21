@@ -722,6 +722,19 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 複数候補の表示待ち中に上位actionを受信した場合は、組合せ領域をクリックせず通常pipelineへ戻す
 - [x] 上位actionを確認できないチーボタン検出失敗を成功扱いしない
 
+### MatchScreen ポン操作 API
+
+- [x] `button-area.toml` の search region 内から `peng.png` を検出し、検出したボタン領域をクリックする
+- [x] ポンボタンがまだ描画されていない場合は、呼び出し側 timeout まで検出を再試行する
+- [x] PengOperation が1候補なら組合せ選択領域を追加クリックしない
+- [x] PengOperation が2候補なら候補tuple内の位置に対応する組合せ選択領域をクリックする
+- [x] ポンボタンと組合せを選択した後、手牌のスライド完了を待ってからAPIを返す
+- [x] `operate()` は指定した自家の `PengEvent` までmessageをreduceし、更新後のMatchStateを返す
+- [x] 自家の `PengEvent` が指定した from_seat / tile / consumed と異なる場合は不整合にする
+- [ ] ポンボタン待機中に上位の `ActionHule` を先読みした場合は1回だけput_backする
+- [ ] 複数候補の表示待ち中に上位actionを受信した場合は、組合せ領域をクリックせず通常pipelineへ戻す
+- [x] 上位actionを確認できないポンボタン検出失敗を成功扱いしない
+
 ### MatchScreen operation のスキップ
 
 - [ ] チー、ポン、大明槓は「鳴きなし」toggleをonにして明示的にスキップする
