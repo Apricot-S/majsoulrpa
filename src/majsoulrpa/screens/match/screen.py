@@ -71,8 +71,8 @@ OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
 OPERATION_OPTION_DISPLAY_DELAY_SECONDS = 0.4
 HAND_SLIDE_DELAY_SECONDS = 1.0
 
-_SINGLE_CHI_PENG_CANDIDATE_COUNT = 1
-_MIN_MULTIPLE_CHI_PENG_CANDIDATE_COUNT = 2
+_SINGLE_FULU_CANDIDATE_COUNT = 1
+_MIN_MULTIPLE_FULU_CANDIDATE_COUNT = 2
 _MAX_CHI_CANDIDATE_COUNT = 5
 _MAX_PENG_CANDIDATE_COUNT = 2
 
@@ -457,7 +457,7 @@ class MatchScreen(Screen):
             if isinstance(candidate, ChiOperation)
         )
         if not (
-            _SINGLE_CHI_PENG_CANDIDATE_COUNT
+            _SINGLE_FULU_CANDIDATE_COUNT
             <= len(chi_operations)
             <= _MAX_CHI_CANDIDATE_COUNT
         ):
@@ -487,7 +487,7 @@ class MatchScreen(Screen):
             if isinstance(candidate, PengOperation)
         )
         if not (
-            _SINGLE_CHI_PENG_CANDIDATE_COUNT
+            _SINGLE_FULU_CANDIDATE_COUNT
             <= len(peng_operations)
             <= _MAX_PENG_CANDIDATE_COUNT
         ):
@@ -520,7 +520,7 @@ class MatchScreen(Screen):
                 OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
             )
 
-        if len(operations) >= _MIN_MULTIPLE_CHI_PENG_CANDIDATE_COUNT:
+        if len(operations) >= _MIN_MULTIPLE_FULU_CANDIDATE_COUNT:
             index = operations.index(operation)
             selection_region = self._get_chi_peng_combination_region(
                 len(operations),
@@ -552,7 +552,7 @@ class MatchScreen(Screen):
         index: int,
     ) -> Region:
         if not (
-            _MIN_MULTIPLE_CHI_PENG_CANDIDATE_COUNT
+            _MIN_MULTIPLE_FULU_CANDIDATE_COUNT
             <= candidate_count
             <= _MAX_CHI_CANDIDATE_COUNT
         ):
