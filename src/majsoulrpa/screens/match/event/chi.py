@@ -35,9 +35,6 @@ class ChiEvent(_MatchEventBase):
         if self.seat == self.from_seat:
             msg = "seat and from_seat must identify different players."
             raise ValueError(msg)
-        if len(self.consumed) != CHI_TILE_COUNT - 1:
-            msg = "consumed must contain two tiles."
-            raise ValueError(msg)
         tiles = (*self.consumed, self.tile)
         suits = {tile[1] for tile in tiles}
         numbers = sorted(
