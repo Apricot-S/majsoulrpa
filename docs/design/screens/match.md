@@ -514,6 +514,30 @@ log・処理して再試行を続ける。v1-developの再試行helperは、操�
 `356`、`641`、`926`、`1211`、`1495` を `ZIMOPAI_REGIONS` の left とし、top、width、height は
 手牌クリック領域と共通にする。
 
+### チー操作
+
+チーbuttonは同時に提示されるoperationの組合せによって配置が変わる。`chi.png` は150×38で、
+`button-area.toml` の `region` も左上を基準とした同じ150×38とする。既存のtemplate matcherでは
+`margin` も含めた領域が探索範囲になるため、rightを670、bottomを252として、画面上の
+`left=630, top=600, width=820, height=290` 全体を探索する。専用のmatcher APIは追加せず、
+通常の `load_png_template_matcher()` を使用する。検出結果のregionは実際に見つかったbuttonの
+150×38なので、その領域をクリックする。描画が通信より遅い場合は、呼び出し側のtimeoutまで
+検出を繰り返す。
+
+`ChiOperation` が1候補ならチーbuttonのclickだけで選択が確定する。2〜5候補では、公開候補tuple中の
+同種operationのwire順をUIの左からの順序として用いる。v1-developで確認された選択領域は
+`top=692, width=157, height=117`、候補間隔200である。候補数を `n`、0始まりの候補位置を `i` とし、
+`left = 961 - 100 * n + 200 * i` で選択領域を求める。button clickから候補表示まで0.4秒待ち、
+組合せを選択した後は手牌のスライドが終わるまで1.0秒待って、続く打牌で移動中の牌を誤って
+クリックしないようにする。
+
+完了時は自家の `ChiEvent` の `from_seat`、`tile`、`consumed` が指定operationと一致することを
+要求する。チーbuttonの描画待ち中に `ActionPrototype` を先読みした場合は1回だけqueueへ戻し、
+通常のevent pipelineで処理する。他家の `PengEvent` が先に成立した場合はチーが上位actionに
+preemptされたものとして、operation失敗にはせず更新後のstateを返す。button click後に同じ競合が
+起きた場合も同様とする。上位actionを観測せずbuttonも検出できない場合は成功扱いせず、検出を
+続けて呼び出し側のtimeoutに委ねる。
+
 ### operation のスキップ
 
 チー、ポン、大明槓、ロン、および立直中に提示される暗槓・北抜きは、候補を選ばず待つだけでは

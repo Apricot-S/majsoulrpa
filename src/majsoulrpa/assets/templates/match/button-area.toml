@@ -1,14 +1,17 @@
+# chi.png and peng.png are both 150 x 38. The margins expand this
+# anchor region to the full 820 x 290 area where operation buttons
+# may appear in different combinations.
 [region]
 left = 630
 top = 600
-width = 820
-height = 290
+width = 150
+height = 38
 
 [margin]
 left = 0
-right = 0
+right = 670 # 820 - 150
 top = 0
-bottom = 0
+bottom = 252 # 290 - 38
 
 [match]
 threshold = 0.95

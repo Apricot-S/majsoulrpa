@@ -3,6 +3,8 @@ from logging import getLogger
 from typing import NoReturn, assert_never, override
 
 from majsoulrpa.assets.templates.match import (
+    BUTTON_AREA_SETTINGS_PATH,
+    CHI_TEMPLATE_PATH,
     SEAT_INDICATOR_SETTINGS_PATH,
     SEAT_INDICATOR_TEMPLATE_PATHS,
 )
@@ -63,6 +65,13 @@ from majsoulrpa.sniffer.events import (
 MATCH_INITIALIZATION_TIMEOUT_SECONDS = 5.0
 DEALER_FIRST_DISCARD_DELAY_SECONDS = 2.0
 DAPAI_CLICK_RETRY_INTERVAL_SECONDS = 0.5
+CHI_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
+CHI_COMBINATION_SELECTION_DELAY_SECONDS = 0.4
+CHI_HAND_SLIDE_DELAY_SECONDS = 1.0
+
+_SINGLE_CHI_CANDIDATE_COUNT = 1
+_MIN_MULTIPLE_CHI_CANDIDATE_COUNT = 2
+_MAX_CHI_CANDIDATE_COUNT = 5
 
 _DAPAI_CLICK_PROGRESS_MESSAGE_NAMES = frozenset(
     {
@@ -93,6 +102,14 @@ class MatchScreen(Screen):
         Region(left=1211, top=936, width=71, height=104),
         Region(left=1495, top=936, width=71, height=104),
     )
+    CHI_COMBINATION_REGION = Region(
+        left=961,
+        top=692,
+        width=157,
+        height=117,
+    )
+    CHI_COMBINATION_HORIZONTAL_INTERVAL = 200
+    CHI_COMBINATION_CENTERING_INTERVAL = 100
 
     SEAT_INDICATOR_TEMPLATES = tuple(
         load_png_template_matcher(
@@ -100,6 +117,10 @@ class MatchScreen(Screen):
             settings_path=SEAT_INDICATOR_SETTINGS_PATH,
         )
         for template_path in SEAT_INDICATOR_TEMPLATE_PATHS
+    )
+    CHI_BUTTON_TEMPLATE = load_png_template_matcher(
+        template_path=CHI_TEMPLATE_PATH,
+        settings_path=BUTTON_AREA_SETTINGS_PATH,
     )
 
     def __init__(self, context: ScreenContext | None = None) -> None:
@@ -176,8 +197,7 @@ class MatchScreen(Screen):
             case DapaiOperation():
                 await self._operate_dapai(state, operation)
             case ChiOperation():
-                msg = "ChiOperation execution is not implemented."
-                raise NotImplementedError(msg)
+                await self._operate_chi(state, operation)
             case PengOperation():
                 msg = "PengOperation execution is not implemented."
                 raise NotImplementedError(msg)
@@ -205,12 +225,9 @@ class MatchScreen(Screen):
                 continue
 
             event = current.round.events[-1]
-            if (
-                isinstance(event, DapaiEvent)
-                and event.seat == current.self_seat
-                and event.tile == operation.tile
-                and event.moqie is operation.moqie
-            ):
+            if self._event_completes_operation(
+                current, event, operation
+            ) or self._event_preempts_operation(current, event, operation):
                 return current
             screenshot = await self.context.browser.screenshot()
             msg = (
@@ -410,6 +427,138 @@ class MatchScreen(Screen):
             )
         await self._click_dapai_until_progress(region)
         await self._move_mouse_away_from_hand()
+
+    async def _operate_chi(
+        self,
+        state: MatchState,
+        operation: ChiOperation,
+    ) -> None:
+        candidates = state.round.operation_candidates
+        if candidates is None:
+            msg = "ChiOperation requires operation candidates."
+            raise RuntimeError(msg)
+        chi_operations = tuple(
+            candidate
+            for candidate in candidates.operations
+            if isinstance(candidate, ChiOperation)
+        )
+        if not (
+            _SINGLE_CHI_CANDIDATE_COUNT
+            <= len(chi_operations)
+            <= _MAX_CHI_CANDIDATE_COUNT
+        ):
+            error = ValueError("The number of chi candidates must be 1 to 5.")
+            await self._raise_inconsistent_message(
+                "Chi candidates do not match the supported UI layout.",
+                cause=error,
+            )
+
+        while True:
+            message = self._get_sniffer_message_nowait()
+            if message is not None:
+                if message.raw.name == ACTION_PROTOTYPE_NAME:
+                    self._put_back_sniffer_message(message)
+                    return
+
+                try:
+                    self._apply_match_message(message)
+                except MatchMetadataUnsupportedError as error:
+                    await self._raise_unsupported_match(cause=error)
+                except (
+                    MatchActionDecodeError,
+                    MatchMetadataDecodeError,
+                ) as error:
+                    await self._raise_inconsistent_message(
+                        "Match state update failed while waiting for chi UI.",
+                        cause=error,
+                    )
+                continue
+
+            result = await self.find_template(self.CHI_BUTTON_TEMPLATE)
+            if result is not None:
+                await self._click_region(result.region)
+                break
+            await asyncio.sleep(CHI_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS)
+
+        if len(chi_operations) >= _MIN_MULTIPLE_CHI_CANDIDATE_COUNT:
+            index = chi_operations.index(operation)
+            selection_region = self._get_chi_combination_region(
+                len(chi_operations),
+                index,
+            )
+            await asyncio.sleep(CHI_COMBINATION_SELECTION_DELAY_SECONDS)
+            await self.click_region(selection_region)
+        await asyncio.sleep(CHI_HAND_SLIDE_DELAY_SECONDS)
+
+    @classmethod
+    def _get_chi_combination_region(
+        cls,
+        candidate_count: int,
+        index: int,
+    ) -> Region:
+        if not (
+            _MIN_MULTIPLE_CHI_CANDIDATE_COUNT
+            <= candidate_count
+            <= _MAX_CHI_CANDIDATE_COUNT
+        ):
+            msg = "Chi combination count must be between 2 and 5."
+            raise ValueError(msg)
+        if not 0 <= index < candidate_count:
+            msg = "Chi combination index is out of range."
+            raise ValueError(msg)
+
+        return Region(
+            left=(
+                cls.CHI_COMBINATION_REGION.left
+                - candidate_count * cls.CHI_COMBINATION_CENTERING_INTERVAL
+                + index * cls.CHI_COMBINATION_HORIZONTAL_INTERVAL
+            ),
+            top=cls.CHI_COMBINATION_REGION.top,
+            width=cls.CHI_COMBINATION_REGION.width,
+            height=cls.CHI_COMBINATION_REGION.height,
+        )
+
+    @staticmethod
+    def _event_completes_operation(
+        state: MatchState,
+        event: MatchEvent,
+        operation: MatchOperation,
+    ) -> bool:
+        match operation:
+            case DapaiOperation():
+                return (
+                    isinstance(event, DapaiEvent)
+                    and event.seat == state.self_seat
+                    and event.tile == operation.tile
+                    and event.moqie is operation.moqie
+                )
+            case ChiOperation():
+                return (
+                    isinstance(event, ChiEvent)
+                    and event.seat == state.self_seat
+                    and event.from_seat == operation.from_seat
+                    and event.tile == operation.tile
+                    and event.consumed == operation.consumed
+                )
+            case PengOperation():
+                return False
+        assert_never(operation)
+
+    @staticmethod
+    def _event_preempts_operation(
+        state: MatchState,
+        event: MatchEvent,
+        operation: MatchOperation,
+    ) -> bool:
+        match operation:
+            case ChiOperation():
+                return (
+                    isinstance(event, PengEvent)
+                    and event.seat != state.self_seat
+                )
+            case DapaiOperation() | PengOperation():
+                return False
+        assert_never(operation)
 
     async def _click_dapai_until_progress(self, region: Region) -> None:
         while True:

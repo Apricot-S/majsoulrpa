@@ -110,6 +110,23 @@ def _synthetic_blank_screenshot() -> bytes:
     return screenshot_png.tobytes()
 
 
+def _synthetic_template_at_screenshot(
+    *,
+    template_path: Traversable,
+    left: int,
+    top: int,
+) -> bytes:
+    screenshot = np.zeros((1080, 1920), dtype=np.uint8)
+    encoded = np.frombuffer(template_path.read_bytes(), dtype=np.uint8)
+    template = cv2.imdecode(encoded, cv2.IMREAD_GRAYSCALE)
+    assert template is not None
+    height, width = template.shape
+    screenshot[top : top + height, left : left + width] = template
+    success, screenshot_png = cv2.imencode(".png", screenshot)
+    assert success
+    return screenshot_png.tobytes()
+
+
 def _notice(name: str) -> DecodedNotice:
     return DecodedNotice(
         raw=RawNotice(

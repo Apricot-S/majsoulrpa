@@ -706,6 +706,19 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] Dapai の再試行でinputChiPengGangを終了条件にした場合も、messageを1回だけput_backする
 - [ ] Dapai / Liqi の再試行中に未知messageを捨てたり成功扱いしたりしない
 
+### MatchScreen チー操作 API
+
+- [x] `button-area.toml` の search region 内から `chi.png` を検出し、検出したボタン領域をクリックする
+- [x] チーボタンがまだ描画されていない場合は、呼び出し側 timeout まで検出を再試行する
+- [x] ChiOperation が1候補なら組合せ選択領域を追加クリックしない
+- [x] ChiOperation が2〜5候補なら候補tuple内の位置に対応する組合せ選択領域をクリックする
+- [x] チーボタンと組合せを選択した後、手牌のスライド完了を待ってからAPIを返す
+- [x] `operate()` は指定した自家の `ChiEvent` までmessageをreduceし、更新後のMatchStateを返す
+- [x] 自家の `ChiEvent` が指定した from_seat / tile / consumed と異なる場合は不整合にする
+- [x] チーボタン待機中に上位の `ActionChiPengGang` を先読みした場合は1回だけput_backする
+- [x] 別playerの `PengEvent` にpreemptされた場合はoperation失敗にせず、更新後のMatchStateを返す
+- [x] 上位actionを確認できないチーボタン検出失敗を成功扱いしない
+
 ### MatchScreen operation のスキップ
 
 - [ ] チー、ポン、大明槓は「鳴きなし」toggleをonにして明示的にスキップする
