@@ -9,6 +9,7 @@ from pydantic import JsonValue
 
 from majsoulrpa.assets.protocol import liqi_pb2
 from majsoulrpa.screens.match.event import (
+    ChiEvent,
     DapaiEvent,
     MatchEvent,
     NewRoundEvent,
@@ -37,6 +38,7 @@ _EVENT_DECODERS: dict[str, _EventDecoder] = {
     "ActionNewRound": NewRoundEvent.from_dict,
     "ActionDealTile": ZimoEvent.from_dict,
     "ActionDiscardTile": DapaiEvent.from_dict,
+    "ActionChiPengGang": ChiEvent.from_dict,
 }
 
 

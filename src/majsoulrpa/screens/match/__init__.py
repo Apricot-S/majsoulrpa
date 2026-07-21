@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 from majsoulrpa.screens.match.event import (
+    ChiEvent,
     DapaiEvent,
     LiqiSuccess,
     MatchEvent,
@@ -34,6 +35,7 @@ if TYPE_CHECKING:
     from majsoulrpa.screens.match.screen import MatchScreen
 
 __all__ = [
+    "ChiEvent",
     "DapaiEvent",
     "DapaiOperation",
     "LiqiSuccess",

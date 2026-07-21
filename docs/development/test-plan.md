@@ -754,6 +754,13 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] ZimoEvent reducer は自家の zimopai、残り枚数、ドラ、立直成立時の点数と liqibang を更新する
 - [x] ZimoEvent reducer は他家の非公開ツモ牌を None のまま扱い、直前打牌を解決済みにする
 - [x] ZimoEvent reducer は action step、seat、自他と tile 公開範囲、既存 zimopai の不整合を拒否する
+- [x] `ActionChiPengGang(type=0)` を immutable `ChiEvent` へ live / restore の両方から decode する
+- [x] `ChiEvent` は鳴いた seat、取得元の from_seat、河から取得する tile、手牌から使う2枚の consumed、nested `LiQiSuccess` を保持する
+- [x] `ActionChiPengGang` の未対応 type は別の event として誤って受理しない
+- [x] `ChiEvent` reducer は自家の consumed tiles を手牌から除き、チー面子を fulu へ追加する
+- [x] `ChiEvent` reducer は他家のチーでは自家手牌を変更せず、直前打牌を解決済みにする
+- [x] `ChiEvent` reducer は step、seat、from_seat、直前打牌、取得牌、チー可能な上家の不整合を拒否する
+- [x] `ChiEvent` reducer は全員の first_draw / yifa、立直成立時の点数と liqibang、version / step を更新する
 - [ ] concrete MatchEvent は `@final`、`frozen=True`、`slots=True`、`kw_only=True` の dataclass である
 - [ ] public `MatchEvent` type alias はすべての concrete event class を列挙する
 - [ ] MatchEvent に type discriminator を設けない

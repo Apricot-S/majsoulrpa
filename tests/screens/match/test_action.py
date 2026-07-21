@@ -4,7 +4,12 @@ import pytest
 from pydantic import JsonValue
 
 from majsoulrpa.assets.protocol import liqi_pb2
-from majsoulrpa.screens.match import NewRoundEvent, StartMatchEvent, ZimoEvent
+from majsoulrpa.screens.match import (
+    ChiEvent,
+    NewRoundEvent,
+    StartMatchEvent,
+    ZimoEvent,
+)
 from majsoulrpa.screens.match._action import (
     MatchActionDecodeError,
     decode_live_action,
@@ -136,6 +141,49 @@ def test_live_and_restore_action_deal_tile_decode_to_same_event() -> None:
     assert live_event == restore_event
     assert live_operation is not None
     assert live_operation == restore_operation
+
+
+def test_live_and_restore_action_chi_decode_to_same_event() -> None:
+    data = liqi_pb2.ActionChiPengGang(
+        seat=1,
+        type=0,
+        tiles=["2m", "3m", "1m"],
+        froms=[1, 1, 0],
+    ).SerializeToString()
+    live_event, live_operation, _ = decode_live_action(
+        _live_action(step=3, name="ActionChiPengGang", data=data)
+    )
+    restore_event, restore_operation, _ = decode_restore_action(
+        {
+            "step": 3,
+            "name": "ActionChiPengGang",
+            "data": base64.b64encode(data).decode(),
+        }
+    )
+
+    assert isinstance(live_event, ChiEvent)
+    assert live_event == restore_event
+    assert live_operation is None
+    assert restore_operation is None
+
+
+@pytest.mark.parametrize("type_", [1, 2])
+def test_action_chi_peng_gang_rejects_unimplemented_types(type_: int) -> None:
+    data = liqi_pb2.ActionChiPengGang(
+        seat=1,
+        type=type_,
+        tiles=["1m", "1m", "1m"],
+        froms=[1, 1, 0],
+    ).SerializeToString()
+
+    with pytest.raises(MatchActionDecodeError):
+        decode_restore_action(
+            {
+                "step": 3,
+                "name": "ActionChiPengGang",
+                "data": base64.b64encode(data).decode(),
+            }
+        )
 
 
 @pytest.mark.parametrize(

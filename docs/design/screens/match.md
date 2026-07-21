@@ -597,6 +597,16 @@ class DapaiEvent(_MatchEventBase):
             raise ValueError("liqi and wliqi are mutually exclusive")
 
 
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ChiEvent(_MatchEventBase):
+    seat: Seat
+    from_seat: Seat
+    tile: Tile
+    consumed: tuple[Tile, Tile]
+    liqi_success: LiqiSuccess | None = None
+
+
 type MatchEvent = (
     StartMatchEvent
     | NewRoundEvent
@@ -652,6 +662,15 @@ def event_name(event: MatchEvent) -> str:
 空文字列を `None` に正規化し、reducer は自家なら実牌、他家なら `None` であることを検証する。
 `doras` が非空なら現在のドラ表示牌を置き換え、空なら以前の表示牌を維持する。ツモを適用した時点で
 直前の打牌は解決済みとして `previous_dapai_seat` / `previous_dapai_tile` を消去する。
+
+`ActionChiPengGang(type=0)` は `ChiEvent` に変換する。雀魂の `tiles` は自家から消費する2枚を先に、
+直前の河から取得する牌を末尾に置く。protocol decoder で前2枚を固定長の `consumed`、末尾を `tile` に
+分解し、雀魂の内部表現をそのまま公開 API へ持ち込まない。
+`from_seat` は `froms[-1]` から取得する。reducer は `from_seat` と取得牌が未解決の直前打牌に一致し、
+かつ四麻で鳴いた seat の上家に当たることを検証する。自家のチーでは `consumed` を `shoupai` から
+除き、`(*consumed, tile)` を `MatchFulu(kind=MatchFuluKind.CHI, ...)` として追加する。他家のチーでは自家手牌を
+変更しない。どちらも全員の `first_draw` / `yifa` を終了させ、未解決打牌を消去する。後続の打牌候補が
+同じ action に含まれる場合は、チー適用後の自家手牌から `DapaiOperation` を生成する。
 
 `ActionNewRound.tiles` が14枚の場合は全体をsortして右端を便宜上 `zimopai` に分離しているため、親の
 第一打牌では `moqie == false` でも打牌が `shoupai` ではなく `zimopai` と一致する場合がある。

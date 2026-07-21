@@ -47,6 +47,7 @@ def _live_new_round_action(
     *,
     step: int,
     tiles: list[str] | None = None,
+    scores: list[int] | None = None,
     ju: int = 0,
     operation: liqi_pb2.OptionalOperationList | None = None,
 ) -> DecodedNotice:
@@ -55,7 +56,7 @@ def _live_new_round_action(
         ju=ju,
         ben=0,
         tiles=["1m"] * 13 if tiles is None else tiles,
-        scores=[25000] * 4,
+        scores=[25000] * 4 if scores is None else scores,
         liqibang=0,
         left_tile_count=69,
         doras=["3p"],
@@ -106,8 +107,29 @@ def _live_deal_action(
     return _live_action(step=step, name="ActionDealTile", data=data)
 
 
+def _live_chi_action(
+    *,
+    step: int,
+    seat: int,
+    tiles: list[str],
+    froms: list[int],
+    liqi: liqi_pb2.LiQiSuccess | None = None,
+    operation: liqi_pb2.OptionalOperationList | None = None,
+) -> DecodedNotice:
+    data = liqi_pb2.ActionChiPengGang(
+        seat=seat,
+        type=0,
+        tiles=tiles,
+        froms=froms,
+        liqi=liqi,
+        operation=operation,
+    ).SerializeToString()
+    return _live_action(step=step, name="ActionChiPengGang", data=data)
+
+
 def _auth_game(
     *,
+    player_count: int = 4,
     cpu_count: int = 0,
     room_id: int = 12345,
     mode_id: int = 0,
@@ -119,7 +141,7 @@ def _auth_game(
         100002,
         100003,
         100004,
-    )[: 4 - cpu_count]
+    )[: player_count - cpu_count]
     robot_ids = tuple(range(1, cpu_count + 1))
     if seat_list is None:
         seat_list = (*human_account_ids, *robot_ids)

@@ -3,7 +3,9 @@ from typing import assert_never
 
 from majsoulrpa.screens.match._metadata import MatchMetadata
 from majsoulrpa.screens.match.event import (
+    ChiEvent,
     DapaiEvent,
+    LiqiSuccess,
     MatchEvent,
     NewRoundEvent,
     StartMatchEvent,
@@ -18,10 +20,14 @@ from majsoulrpa.screens.match.operation._specification import (
 )
 from majsoulrpa.screens.match.state import (
     MatchDapai,
+    MatchFulu,
+    MatchFuluKind,
     MatchState,
     RoundState,
 )
 from majsoulrpa.screens.match.types import Tile
+
+_FOUR_PLAYER_COUNT = 4
 
 
 class MatchStateStore:
@@ -101,6 +107,8 @@ class MatchStateStore:
                 return self._apply_zimo(event, operation_specification)
             case DapaiEvent():
                 return self._apply_dapai(event, operation_specification)
+            case ChiEvent():
+                return self._apply_chi(event, operation_specification)
             case StartMatchEvent() | NewRoundEvent():
                 msg = "A match initialization event cannot be applied again."
                 raise ValueError(msg)
@@ -136,16 +144,12 @@ class MatchStateStore:
             msg = "An opponent draw must conceal its tile."
             raise ValueError(msg)
 
-        scores = round_state.scores
-        liqibang = round_state.liqibang
-        if event.liqi_success is not None:
-            if event.liqi_success.seat >= len(state.players):
-                msg = "LiQiSuccess seat must identify a player."
-                raise ValueError(msg)
-            mutable_scores = list(scores)
-            mutable_scores[event.liqi_success.seat] = event.liqi_success.score
-            scores = tuple(mutable_scores)
-            liqibang = event.liqi_success.liqibang
+        scores, liqibang = self._apply_liqi_success(
+            event.liqi_success,
+            round_state.scores,
+            round_state.liqibang,
+            len(state.players),
+        )
 
         operation_candidates = materialize_operation_candidates(
             operation_specification,
@@ -262,6 +266,95 @@ class MatchStateStore:
         )
         return self._state
 
+    def _apply_chi(
+        self,
+        event: ChiEvent,
+        operation_specification: _OperationCandidatesSpecification | None,
+    ) -> MatchState:
+        state = self._require_state()
+        round_state = state.round
+        player_count = len(state.players)
+        if player_count != _FOUR_PLAYER_COUNT:
+            msg = "A chi is only valid in a four-player match."
+            raise ValueError(msg)
+        if event.action_step != round_state.step + 1:
+            msg = "ActionChiPengGang step must follow the current round step."
+            raise ValueError(msg)
+        if event.seat >= player_count or event.from_seat >= player_count:
+            msg = "ActionChiPengGang seats must identify players."
+            raise ValueError(msg)
+        if event.from_seat != round_state.previous_dapai_seat:
+            msg = "A chi must claim the unresolved discard."
+            raise ValueError(msg)
+        if event.tile != round_state.previous_dapai_tile:
+            msg = "A chi claimed tile must match the unresolved discard."
+            raise ValueError(msg)
+        if event.from_seat != (event.seat - 1) % player_count:
+            msg = "A chi must claim a discard from the preceding player."
+            raise ValueError(msg)
+        if round_state.zimopai is not None:
+            msg = "A chi cannot occur while a self draw is unresolved."
+            raise ValueError(msg)
+        if (
+            event.seat != state.self_seat
+            and operation_specification is not None
+        ):
+            msg = "An opponent chi cannot provide self operations."
+            raise ValueError(msg)
+
+        shoupai = list(round_state.shoupai)
+        if event.seat == state.self_seat:
+            for tile in event.consumed:
+                try:
+                    shoupai.remove(tile)
+                except ValueError:
+                    msg = "A self chi must consume tiles in the hand."
+                    raise ValueError(msg) from None
+
+        fulu = [list(player_fulu) for player_fulu in round_state.fulu]
+        fulu[event.seat].append(
+            MatchFulu(
+                kind=MatchFuluKind.CHI,
+                tiles=(*event.consumed, event.tile),
+                from_seat=event.from_seat,
+            )
+        )
+        scores, liqibang = self._apply_liqi_success(
+            event.liqi_success,
+            round_state.scores,
+            round_state.liqibang,
+            player_count,
+        )
+
+        next_shoupai = tuple(shoupai)
+        operation_candidates = materialize_operation_candidates(
+            operation_specification,
+            event,
+            next_shoupai,
+            None,
+            state.self_seat,
+        )
+        next_round = replace(
+            round_state,
+            step=event.action_step,
+            scores=scores,
+            liqibang=liqibang,
+            shoupai=next_shoupai,
+            fulu=tuple(tuple(player_fulu) for player_fulu in fulu),
+            first_draw=(False,) * player_count,
+            yifa=(False,) * player_count,
+            previous_dapai_seat=None,
+            previous_dapai_tile=None,
+            operation_candidates=operation_candidates,
+            events=(*round_state.events, event),
+        )
+        self._state = replace(
+            state,
+            version=state.version + 1,
+            round=next_round,
+        )
+        return self._state
+
     @staticmethod
     def _apply_self_dapai(
         event: DapaiEvent,
@@ -296,6 +389,22 @@ class MatchStateStore:
             shoupai.sort(key=tile_sort_key)
             zimopai = None
         return shoupai, zimopai
+
+    @staticmethod
+    def _apply_liqi_success(
+        liqi_success: LiqiSuccess | None,
+        scores: tuple[int, ...],
+        liqibang: int,
+        player_count: int,
+    ) -> tuple[tuple[int, ...], int]:
+        if liqi_success is None:
+            return scores, liqibang
+        if liqi_success.seat >= player_count:
+            msg = "LiQiSuccess seat must identify a player."
+            raise ValueError(msg)
+        mutable_scores = list(scores)
+        mutable_scores[liqi_success.seat] = liqi_success.score
+        return tuple(mutable_scores), liqi_success.liqibang
 
     def _require_state(self) -> MatchState:
         if self._state is None:
