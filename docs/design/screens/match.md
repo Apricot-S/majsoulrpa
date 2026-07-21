@@ -408,6 +408,20 @@ message を通常どおり log・reduce し、自家の
 `ScreenInconsistentMessageError` とする。API 自体には timeout 引数を設けず、必要なら呼出側が
 `asyncio.timeout()` で期限を管理する。
 
+#### 打牌・立直打牌のクリック再試行
+
+`DapaiOperation` と `LiqiOperation` は、対象牌を1回クリックしただけで入力済みとみなしてはならない。
+WebSocket message がUI描画より先に届くことがあり、候補を生成したmessageを処理できた時点でも、
+画面上の手牌がまだクリックに反応しない場合があるためである。v1-develop と同様に、入力の進行を
+確認できるまで同じ領域のクリックを繰り返す。
+
+再試行中も Sniffer message を別経路で消費しない。heartbeatなどの既知common messageは通常どおり
+log・処理して再試行を続ける。v1-developの再試行helperは、操作またはstate進行の境界となる
+`.lq.FastTest.inputOperation`、`.lq.FastTest.inputChiPengGang`、`.lq.ActionPrototype` だけを先読みの
+終了条件とし、取得したmessageをqueueへ `put_back()` して後続の通常pipelineに一度だけ処理させて
+いた。今回も同じ所有権規則を使い、Dapai / Liqi の進行確認に関係するmessageだけを `put_back()`
+する。未知messageを成功扱いで捨てたり、state eventを再試行loop内だけで消費したりしない。
+
 #### 手牌クリック領域の根拠
 
 1920 × 1080 の基準 viewport では、左端の牌を端まで含む領域を
@@ -458,6 +472,39 @@ message を通常どおり log・reduce し、自家の
 `348`、`633`、`918`、`1203`、`1487` を基準とする。同じ内側補正を適用した
 `356`、`641`、`926`、`1211`、`1495` を `ZIMOPAI_REGIONS` の left とし、top、width、height は
 手牌クリック領域と共通にする。
+
+### operation のスキップ
+
+チー、ポン、大明槓、ロン、および立直中に提示される暗槓・北抜きは、候補を選ばず待つだけでは
+スキップできない。frameworkは対応するUIを明示的に操作する。チー、ポン、大明槓は「鳴きなし」
+toggleをonにして現在の候補をスキップし、actionの進行を確認してからoffへ戻して、将来の鳴きを
+再び許可する。ロン、ならびに立直中の暗槓・北抜きはスキップbuttonをクリックする。これらは判断の
+遅延を避ける必要があるため、いずれのclickも `warp=True` とし、通常clickのcursor移動とhover待機を
+省略する。
+
+「鳴きなし」をonにした後のoffへの復帰は必須cleanupとする。通常どおりスキップが成立した場合だけで
+なく、別playerの上位actionによってチー・ポン・大明槓の選択またはスキップがpreemptされた場合も、
+offへの復帰を完了してからAPIを返す。onのまま処理を中断すると後続の鳴き候補まで自動的に拒否して
+しまうため、preemptをoperation失敗にしないこととcleanupの省略を混同しない。offへの復帰を確認
+できない場合も、正常完了したようには返さない。
+
+副露候補は、別playerの上位actionによってUIから消えることがある。これはスキップ時だけでなく、
+候補を選択した場合にも起こる。ロンはチー、ポン、大明槓より優先され、ポンと大明槓はチーより
+優先される。このため、チーの選択・スキップ中に別playerのポン・大明槓・ロンが成立した場合、
+およびポン・大明槓の選択・スキップ中にロンが成立した場合は、要求したoperationの失敗として
+扱わない。対応する `ActionChiPengGang` または `ActionHule` を先読みした場合はqueueへ
+`put_back()` し、通常のevent decode・reduceでauthoritative stateを進める。上位actionを確認できない
+ままbuttonが見つからない、または消えた場合まで黙って成功扱いにはしない。
+
+ロンのスキップは上位actionによってpreemptされない。ダブロン・トリロンが可能な状況でも、雀魂は
+自家がロンまたはスキップを選ぶまで待つ。したがって、別playerの `ActionHule` を理由に自家の
+ロンスキップを暗黙に成功扱いするfallbackは設けず、明示的なスキップ操作の完了を要求する。
+
+public APIで明示的なスキップを表す方法は未決定とする。`SkipOperation` は候補と選択を同じ型付きの
+値として扱え、class patternで分岐できる一方、protobufのoperationにはないframework側の合成候補が
+増える。`None` はv1-developと同様に追加modelを必要としない一方、候補tupleに含まれず、型switchでも
+通常operationと別扱いになる。スキップAPIを実装する前に、候補一覧から1つを渡す原則と利用側の
+扱いやすさを基準にどちらかを固定する。UI操作と優先度競合の規則は、どちらを選んでも共通とする。
 
 `ActionNewRound` では match identity と player metadata を維持し、round generation を増やして
 新しい `RoundState` を設定する。局の step は局ごとに 0 から始め、instance の version とは

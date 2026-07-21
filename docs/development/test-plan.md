@@ -690,6 +690,26 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 対応する自家の DapaiEvent より先に別の state event が来た場合は `ScreenInconsistentMessageError` にする
 - [x] stale な MatchScreen では browser を操作せず `ScreenStaleError` にする
 - [x] `operate()` の公開 API log は screen 名と API 名だけを出す
+- [ ] Dapai / Liqi は入力の進行を示すmessageを受信するまで同じ牌領域のclickを繰り返す
+- [ ] Dapai / Liqi の再試行中に既知common messageをlog・処理してclickを継続する
+- [ ] Dapai / Liqi の再試行で先読みした inputOperation / ActionPrototype を1回だけput_backする
+- [ ] 共通の再試行helperがinputChiPengGangを終了条件にした場合も、messageを1回だけput_backする
+- [ ] Dapai / Liqi の再試行中に未知messageを捨てたり成功扱いしたりしない
+
+### MatchScreen operation のスキップ
+
+- [ ] チー、ポン、大明槓は「鳴きなし」toggleをonにして明示的にスキップする
+- [ ] 「鳴きなし」によるスキップの進行後はtoggleをoffへ戻し、将来の鳴きを再び許可する
+- [ ] 「鳴きなし」をonにした後に上位actionでpreemptされても、toggleをoffへ戻してからAPIを返す
+- [ ] 「鳴きなし」をoffへ戻せない場合は、preempt自体を許容しても正常完了扱いにしない
+- [ ] ロン、および立直中の暗槓・北抜きはスキップbuttonで明示的にスキップする
+- [ ] スキップ用の「鳴きなし」toggleとスキップbuttonは `warp=True` でclickする
+- [ ] チーの選択・スキップ中に別playerのポン・大明槓・ロンが成立してもoperation失敗にしない
+- [ ] ポン・大明槓の選択・スキップ中に別playerのロンが成立してもoperation失敗にしない
+- [ ] 上位actionの ActionChiPengGang / ActionHule を先読みした場合は1回だけput_backして通常pipelineで処理する
+- [ ] 上位actionを確認できないbutton検出失敗を黙ってスキップ成功にしない
+- [ ] ロンのスキップはダブロン・トリロンでも自家の選択まで待たれ、別playerのActionHuleによるpreempt成功扱いをしない
+- [ ] publicなスキップ表現を `SkipOperation` または `None` のどちらにするか、スキップAPI実装前に固定する
 
 ### immutable state / reducer
 
