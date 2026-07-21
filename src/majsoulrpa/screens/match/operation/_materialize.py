@@ -10,6 +10,7 @@ from majsoulrpa.screens.match.operation._specification import (
     _ChiOperationSpecification,
     _DapaiOperationSpecification,
     _OperationCandidatesSpecification,
+    _PengOperationSpecification,
 )
 from majsoulrpa.screens.match.operation.candidates import (
     MatchOperation,
@@ -17,6 +18,7 @@ from majsoulrpa.screens.match.operation.candidates import (
 )
 from majsoulrpa.screens.match.operation.chi import ChiOperation
 from majsoulrpa.screens.match.operation.dapai import DapaiOperation
+from majsoulrpa.screens.match.operation.peng import PengOperation
 from majsoulrpa.screens.match.types import Seat, Tile
 
 _FOUR_PLAYER_COUNT = 4
@@ -58,21 +60,38 @@ def materialize_operation_candidates(
                         "A chi operation is only valid in a four-player match."
                     )
                     raise ValueError(msg)
-                if not isinstance(event, DapaiEvent):
-                    msg = "A chi operation must follow a discard."
-                    raise TypeError(msg)
-                if event.seat != (self_seat - 1) % _FOUR_PLAYER_COUNT:
+                call_event = _validate_call_event(
+                    event,
+                    zimopai,
+                    self_seat,
+                    player_count,
+                    "chi",
+                )
+                if call_event.seat != (self_seat - 1) % _FOUR_PLAYER_COUNT:
                     msg = (
                         "A chi must claim a discard from the preceding player."
                     )
                     raise ValueError(msg)
-                if zimopai is not None:
-                    msg = "A chi cannot be selected with an unresolved draw."
-                    raise ValueError(msg)
                 operations.extend(
                     _materialize_chi_operations(
                         operation_specification,
-                        event,
+                        call_event,
+                        shoupai,
+                    )
+                )
+                continue
+            case _PengOperationSpecification():
+                call_event = _validate_call_event(
+                    event,
+                    zimopai,
+                    self_seat,
+                    player_count,
+                    "peng",
+                )
+                operations.extend(
+                    _materialize_peng_operations(
+                        operation_specification,
+                        call_event,
                         shoupai,
                     )
                 )
@@ -143,3 +162,49 @@ def _materialize_chi_operations(
             )
         )
     return operations
+
+
+def _materialize_peng_operations(
+    specification: _PengOperationSpecification,
+    event: DapaiEvent,
+    shoupai: tuple[Tile, ...],
+) -> list[PengOperation]:
+    operations: list[PengOperation] = []
+    for consumed in specification.consumed_candidates:
+        remaining_tiles = list(shoupai)
+        for tile in consumed:
+            try:
+                remaining_tiles.remove(tile)
+            except ValueError:
+                msg = "A peng operation must consume tiles in the hand."
+                raise ValueError(msg) from None
+        operations.append(
+            PengOperation(
+                from_seat=event.seat,
+                tile=event.tile,
+                consumed=consumed,
+            )
+        )
+    return operations
+
+
+def _validate_call_event(
+    event: MatchEvent,
+    zimopai: Tile | None,
+    self_seat: Seat,
+    player_count: int,
+    operation_name: str,
+) -> DapaiEvent:
+    if not isinstance(event, DapaiEvent):
+        msg = f"A {operation_name} operation must follow a discard."
+        raise TypeError(msg)
+    if event.seat >= player_count:
+        msg = "A call source seat must identify a player."
+        raise ValueError(msg)
+    if event.seat == self_seat:
+        msg = "A call cannot claim the self player's discard."
+        raise ValueError(msg)
+    if zimopai is not None:
+        msg = f"A {operation_name} cannot be selected with an unresolved draw."
+        raise ValueError(msg)
+    return event

@@ -12,12 +12,15 @@ from majsoulrpa.screens.match.operation._specification import (
     _DapaiOperationSpecification,
     _MatchOperationSpecification,
     _OperationCandidatesSpecification,
+    _PengOperationSpecification,
 )
 from majsoulrpa.screens.match.types import Tile, validate_tile
 
 _DAPAI_OPERATION_TYPE = 1
 _CHI_OPERATION_TYPE = 2
-_CHI_CONSUMED_TILE_COUNT = 2
+_PENG_OPERATION_TYPE = 3
+
+_TWO_TILE_COMBINATION_COUNT = 2
 
 
 def decode_operation_specification(
@@ -60,6 +63,9 @@ def decode_operation_specification(
         if operation_type == _CHI_OPERATION_TYPE:
             specifications.append(_decode_chi_specification(item))
             continue
+        if operation_type == _PENG_OPERATION_TYPE:
+            specifications.append(_decode_peng_specification(item))
+            continue
         msg = f"OptionalOperation type is not supported: {operation_type}."
         raise ValueError(msg)
 
@@ -75,23 +81,38 @@ def decode_operation_specification(
 def _decode_chi_specification(
     item: Mapping[str, JsonValue],
 ) -> _ChiOperationSpecification:
+    return _ChiOperationSpecification(
+        consumed_candidates=_decode_two_tile_combinations(item, "chi"),
+    )
+
+
+def _decode_peng_specification(
+    item: Mapping[str, JsonValue],
+) -> _PengOperationSpecification:
+    return _PengOperationSpecification(
+        consumed_candidates=_decode_two_tile_combinations(item, "peng"),
+    )
+
+
+def _decode_two_tile_combinations(
+    item: Mapping[str, JsonValue],
+    operation_name: str,
+) -> tuple[tuple[Tile, Tile], ...]:
     encoded_combinations = _get_str_list(
         item,
         "OptionalOperation.combination",
     )
     if not encoded_combinations:
-        msg = "A chi operation must contain at least one combination."
+        msg = f"A {operation_name} operation must contain a combination."
         raise ValueError(msg)
 
     consumed_candidates: list[tuple[Tile, Tile]] = []
     for encoded_combination in encoded_combinations:
         tiles = encoded_combination.split("|")
-        if len(tiles) != _CHI_CONSUMED_TILE_COUNT:
-            msg = "A chi combination must contain two tiles."
+        if len(tiles) != _TWO_TILE_COMBINATION_COUNT:
+            msg = f"A {operation_name} combination must contain two tiles."
             raise ValueError(msg)
         consumed_candidates.append(
             (validate_tile(tiles[0]), validate_tile(tiles[1]))
         )
-    return _ChiOperationSpecification(
-        consumed_candidates=tuple(consumed_candidates),
-    )
+    return tuple(consumed_candidates)

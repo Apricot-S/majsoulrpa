@@ -3,8 +3,9 @@ from typing import final
 
 from majsoulrpa.screens.match.operation.chi import ChiOperation
 from majsoulrpa.screens.match.operation.dapai import DapaiOperation
+from majsoulrpa.screens.match.operation.peng import PengOperation
 
-type MatchOperation = DapaiOperation | ChiOperation
+type MatchOperation = DapaiOperation | ChiOperation | PengOperation
 
 
 @final

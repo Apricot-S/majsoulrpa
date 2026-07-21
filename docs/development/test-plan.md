@@ -631,7 +631,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] type 2 の各 combination は `|` で区切られた2枚に限定し、wire 順の1候補1 instanceへ展開する
 - [x] ChiOperation は直前の DapaiEvent から from_seat / tile を補い、赤牌表現を維持する
 - [x] ChiOperation は四麻での自家の上家による直前打牌と、手牌に実在する consumed を必要とする
-- [ ] type 3 は直前の取得牌と `combination` の手牌 2 枚を持つ `PengOperation` 1 instance へ変換する
+- [x] type 3 は直前の取得牌と `combination` の手牌 2 枚を持つ `PengOperation` 1 instance へ変換する
+- [x] type 3 の各 combination は `|` で区切られた2枚に限定し、wire 順の1候補1 instanceへ展開する
+- [x] PengOperation は任意の他家による直前の DapaiEvent から from_seat / tile を補い、赤牌表現を維持する
+- [x] PengOperation は取得牌と consumed が同じ牌種で、consumed が手牌に実在することを必要とする
 - [ ] type 4 は `combination` 1 要素ごとに消費牌 4 枚を持つ `AngangOperation` 1 instance へ変換する
 - [ ] type 5 は直前の取得牌と `combination` の手牌 3 枚を持つ `DaminggangOperation` 1 instance へ変換する
 - [ ] type 6 は4枚目を added として既存の `Peng` を特定し、元の from_seat / tile / consumed を保持する `JiagangOperation` 1 instance へ変換する

@@ -24,6 +24,7 @@ from majsoulrpa.screens.match import (
     NewRoundEvent,
     Peng,
     PengEvent,
+    PengOperation,
     StartMatchEvent,
     ZimoEvent,
     validate_seat,
@@ -374,6 +375,53 @@ def test_get_state_exposes_chi_operations_after_opponent_discard() -> None:
             from_seat=validate_seat(3),
             tile=validate_tile("0m"),
             consumed=(validate_tile("3m"), validate_tile("4m")),
+        ),
+    )
+
+
+def test_get_state_exposes_peng_operations_after_opponent_discard() -> None:
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"synthetic-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(),
+                _live_new_round_action(
+                    step=0,
+                    ju=2,
+                    tiles=["0m", "5m", *(["1p"] * 11)],
+                ),
+                _live_discard_action(
+                    step=1,
+                    seat=2,
+                    tile="5m",
+                    moqie=False,
+                    operation=liqi_pb2.OptionalOperationList(
+                        time_fixed=5000,
+                        time_add=20000,
+                        operation_list=[
+                            liqi_pb2.OptionalOperation(
+                                type=3,
+                                combination=["0m|5m"],
+                            )
+                        ],
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+    state = asyncio.run(screen.get_state())
+
+    candidates = state.round.operation_candidates
+    assert candidates is not None
+    assert candidates.operations == (
+        PengOperation(
+            from_seat=validate_seat(2),
+            tile=validate_tile("5m"),
+            consumed=(validate_tile("0m"), validate_tile("5m")),
         ),
     )
 

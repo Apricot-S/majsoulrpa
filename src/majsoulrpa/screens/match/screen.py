@@ -47,6 +47,7 @@ from majsoulrpa.screens.match.operation import (
     ChiOperation,
     DapaiOperation,
     MatchOperation,
+    PengOperation,
 )
 from majsoulrpa.screens.match.operation._specification import (
     _OperationCandidatesSpecification,
@@ -176,6 +177,9 @@ class MatchScreen(Screen):
                 await self._operate_dapai(state, operation)
             case ChiOperation():
                 msg = "ChiOperation execution is not implemented."
+                raise NotImplementedError(msg)
+            case PengOperation():
+                msg = "PengOperation execution is not implemented."
                 raise NotImplementedError(msg)
             case _ as unreachable:
                 assert_never(unreachable)

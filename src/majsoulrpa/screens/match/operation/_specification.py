@@ -16,8 +16,16 @@ class _ChiOperationSpecification:
     consumed_candidates: tuple[tuple[Tile, Tile], ...]
 
 
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class _PengOperationSpecification:
+    consumed_candidates: tuple[tuple[Tile, Tile], ...]
+
+
 type _MatchOperationSpecification = (
-    _DapaiOperationSpecification | _ChiOperationSpecification
+    _DapaiOperationSpecification
+    | _ChiOperationSpecification
+    | _PengOperationSpecification
 )
 
 
