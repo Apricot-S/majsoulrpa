@@ -646,6 +646,16 @@ class ChiEvent(_MatchEventBase):
     liqi_success: LiqiSuccess | None = None
 
 
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PengEvent(_MatchEventBase):
+    seat: Seat
+    from_seat: Seat
+    tile: Tile
+    consumed: tuple[Tile, Tile]
+    liqi_success: LiqiSuccess | None = None
+
+
 type MatchEvent = (
     StartMatchEvent
     | NewRoundEvent
@@ -710,6 +720,13 @@ def event_name(event: MatchEvent) -> str:
 除き、`Chi(from_seat=..., tile=..., consumed=...)` として追加する。他家のチーでは自家手牌を
 変更しない。どちらも全員の `first_draw` / `yifa` を終了させ、未解決打牌を消去する。後続の打牌候補が
 同じ action に含まれる場合は、チー適用後の自家手牌から `DapaiOperation` を生成する。
+
+`ActionChiPengGang(type=1)` は `PengEvent` に変換する。`tiles` / `froms` の分解方法はチーと同じで、
+前2枚を鳴いた player の `consumed`、末尾を `from_seat` の河から取得する `tile` とする。赤5と黒5は
+同じ牌種として扱い、3枚が同種であることを decoder で検証する。reducer は取得元の方向を制限せず、
+任意の他家による未解決の直前打牌と `from_seat` / `tile` が一致することを要求する。自家では
+`consumed` を手牌から除いて `Peng` を追加し、他家では自家手牌を変更しない。立直成立、
+`first_draw` / `yifa`、未解決打牌、同じ action に含まれる後続打牌候補の扱いはチーと共通とする。
 
 `ActionNewRound.tiles` が14枚の場合は全体をsortして右端を便宜上 `zimopai` に分離しているため、親の
 第一打牌では `moqie == false` でも打牌が `shoupai` ではなく `zimopai` と一致する場合がある。

@@ -118,9 +118,50 @@ def _live_chi_action(
     liqi: liqi_pb2.LiQiSuccess | None = None,
     operation: liqi_pb2.OptionalOperationList | None = None,
 ) -> DecodedNotice:
+    return _live_chi_peng_gang_action(
+        step=step,
+        seat=seat,
+        type_=0,
+        tiles=tiles,
+        froms=froms,
+        liqi=liqi,
+        operation=operation,
+    )
+
+
+def _live_peng_action(
+    *,
+    step: int,
+    seat: int,
+    tiles: list[str],
+    froms: list[int],
+    liqi: liqi_pb2.LiQiSuccess | None = None,
+    operation: liqi_pb2.OptionalOperationList | None = None,
+) -> DecodedNotice:
+    return _live_chi_peng_gang_action(
+        step=step,
+        seat=seat,
+        type_=1,
+        tiles=tiles,
+        froms=froms,
+        liqi=liqi,
+        operation=operation,
+    )
+
+
+def _live_chi_peng_gang_action(
+    *,
+    step: int,
+    seat: int,
+    type_: int,
+    tiles: list[str],
+    froms: list[int],
+    liqi: liqi_pb2.LiQiSuccess | None,
+    operation: liqi_pb2.OptionalOperationList | None,
+) -> DecodedNotice:
     data = liqi_pb2.ActionChiPengGang(
         seat=seat,
-        type=0,
+        type=type_,
         tiles=tiles,
         froms=froms,
         liqi=liqi,

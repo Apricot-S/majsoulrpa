@@ -6,6 +6,7 @@ from majsoulrpa.screens.match.event import (
     LiqiSuccess,
     MatchEvent,
     NewRoundEvent,
+    PengEvent,
     StartMatchEvent,
     ZimoEvent,
 )
@@ -61,6 +62,7 @@ __all__ = [
     "NewRoundEvent",
     "OperationCandidates",
     "Peng",
+    "PengEvent",
     "RoundState",
     "Seat",
     "StartMatchEvent",

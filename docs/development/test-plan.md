@@ -770,6 +770,13 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `ChiEvent` reducer は他家のチーでは自家手牌を変更せず、直前打牌を解決済みにする
 - [x] `ChiEvent` reducer は step、seat、from_seat、直前打牌、取得牌、チー可能な上家の不整合を拒否する
 - [x] `ChiEvent` reducer は全員の first_draw / yifa、立直成立時の点数と liqibang、version / step を更新する
+- [x] `ActionChiPengGang(type=1)` を immutable `PengEvent` へ live / restore の両方から decode する
+- [x] `PengEvent` は鳴いた seat、取得元の from_seat、河から取得する tile、手牌から使う2枚の consumed、nested `LiQiSuccess` を保持する
+- [x] `PengEvent` は赤牌と黒5を同種として扱い、取得牌と consumed が同じ牌種であることを保証する
+- [x] `PengEvent` reducer は自家の consumed tiles を手牌から除き、ポン面子を fulu へ追加する
+- [x] `PengEvent` reducer は他家のポンでは自家手牌を変更せず、任意の他家からの直前打牌を解決済みにする
+- [x] `PengEvent` reducer は step、seat、from_seat、直前打牌、取得牌、自家手牌の不整合を拒否する
+- [x] `PengEvent` reducer は全員の first_draw / yifa、立直成立時の点数と liqibang、version / step を更新する
 - [ ] concrete MatchEvent は `@final`、`frozen=True`、`slots=True`、`kw_only=True` の dataclass である
 - [ ] public `MatchEvent` type alias はすべての concrete event class を列挙する
 - [ ] MatchEvent に type discriminator を設けない

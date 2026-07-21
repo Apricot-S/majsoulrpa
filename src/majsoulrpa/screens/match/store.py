@@ -8,6 +8,7 @@ from majsoulrpa.screens.match.event import (
     LiqiSuccess,
     MatchEvent,
     NewRoundEvent,
+    PengEvent,
     StartMatchEvent,
     ZimoEvent,
 )
@@ -21,7 +22,9 @@ from majsoulrpa.screens.match.operation._specification import (
 from majsoulrpa.screens.match.state import (
     Chi,
     Dapai,
+    Fulu,
     MatchState,
+    Peng,
     RoundState,
 )
 from majsoulrpa.screens.match.types import Tile
@@ -109,6 +112,8 @@ class MatchStateStore:
                 return self._apply_dapai(event, operation_specification)
             case ChiEvent():
                 return self._apply_chi(event, operation_specification)
+            case PengEvent():
+                return self._apply_peng(event, operation_specification)
             case StartMatchEvent() | NewRoundEvent():
                 msg = "A match initialization event cannot be applied again."
                 raise ValueError(msg)
@@ -274,11 +279,48 @@ class MatchStateStore:
         operation_specification: _OperationCandidatesSpecification | None,
     ) -> MatchState:
         state = self._require_state()
-        round_state = state.round
         player_count = len(state.players)
         if player_count != _FOUR_PLAYER_COUNT:
             msg = "A chi is only valid in a four-player match."
             raise ValueError(msg)
+        if event.from_seat != (event.seat - 1) % player_count:
+            msg = "A chi must claim a discard from the preceding player."
+            raise ValueError(msg)
+
+        return self._apply_fulu(
+            event,
+            Chi(
+                from_seat=event.from_seat,
+                tile=event.tile,
+                consumed=event.consumed,
+            ),
+            operation_specification,
+        )
+
+    def _apply_peng(
+        self,
+        event: PengEvent,
+        operation_specification: _OperationCandidatesSpecification | None,
+    ) -> MatchState:
+        return self._apply_fulu(
+            event,
+            Peng(
+                from_seat=event.from_seat,
+                tile=event.tile,
+                consumed=event.consumed,
+            ),
+            operation_specification,
+        )
+
+    def _apply_fulu(
+        self,
+        event: ChiEvent | PengEvent,
+        fulu_entry: Fulu,
+        operation_specification: _OperationCandidatesSpecification | None,
+    ) -> MatchState:
+        state = self._require_state()
+        round_state = state.round
+        player_count = len(state.players)
         if event.action_step != round_state.step + 1:
             msg = "ActionChiPengGang step must follow the current round step."
             raise ValueError(msg)
@@ -286,22 +328,19 @@ class MatchStateStore:
             msg = "ActionChiPengGang seats must identify players."
             raise ValueError(msg)
         if event.from_seat != round_state.previous_dapai_seat:
-            msg = "A chi must claim the unresolved discard."
+            msg = "A call must claim the unresolved discard."
             raise ValueError(msg)
         if event.tile != round_state.previous_dapai_tile:
-            msg = "A chi claimed tile must match the unresolved discard."
-            raise ValueError(msg)
-        if event.from_seat != (event.seat - 1) % player_count:
-            msg = "A chi must claim a discard from the preceding player."
+            msg = "A called tile must match the unresolved discard."
             raise ValueError(msg)
         if round_state.zimopai is not None:
-            msg = "A chi cannot occur while a self draw is unresolved."
+            msg = "A call cannot occur while a self draw is unresolved."
             raise ValueError(msg)
         if (
             event.seat != state.self_seat
             and operation_specification is not None
         ):
-            msg = "An opponent chi cannot provide self operations."
+            msg = "An opponent call cannot provide self operations."
             raise ValueError(msg)
 
         shoupai = list(round_state.shoupai)
@@ -310,17 +349,11 @@ class MatchStateStore:
                 try:
                     shoupai.remove(tile)
                 except ValueError:
-                    msg = "A self chi must consume tiles in the hand."
+                    msg = "A self call must consume tiles in the hand."
                     raise ValueError(msg) from None
 
         fulu = [list(player_fulu) for player_fulu in round_state.fulu]
-        fulu[event.seat].append(
-            Chi(
-                from_seat=event.from_seat,
-                tile=event.tile,
-                consumed=event.consumed,
-            )
-        )
+        fulu[event.seat].append(fulu_entry)
         scores, liqibang = self._apply_liqi_success(
             event.liqi_success,
             round_state.scores,

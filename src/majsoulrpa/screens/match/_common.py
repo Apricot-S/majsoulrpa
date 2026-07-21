@@ -14,3 +14,16 @@ def validate_chi_tiles(tile: Tile, consumed: tuple[Tile, Tile]) -> None:
     ):
         msg = "tiles must form a suited sequence."
         raise ValueError(msg)
+
+
+def validate_same_tile_kind(tile: Tile, consumed: tuple[Tile, ...]) -> None:
+    expected = _normalized_tile_kind(tile)
+    if any(_normalized_tile_kind(value) != expected for value in consumed):
+        msg = "tiles must have the same kind."
+        raise ValueError(msg)
+
+
+def _normalized_tile_kind(tile: Tile) -> str:
+    if tile[0] == "0":
+        return f"5{tile[1]}"
+    return tile

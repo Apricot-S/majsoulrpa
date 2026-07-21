@@ -8,11 +8,13 @@ from google.protobuf.message_factory import GetMessageClass
 from pydantic import JsonValue
 
 from majsoulrpa.assets.protocol import liqi_pb2
+from majsoulrpa.screens.match._decode import _get_int
 from majsoulrpa.screens.match.event import (
     ChiEvent,
     DapaiEvent,
     MatchEvent,
     NewRoundEvent,
+    PengEvent,
     StartMatchEvent,
     ZimoEvent,
 )
@@ -33,17 +35,32 @@ _ACTION_MESSAGE_TYPE_MAP = {
 
 type _EventDecoder = Callable[[int, Mapping[str, JsonValue]], MatchEvent]
 
+
+class MatchActionDecodeError(ValueError):
+    pass
+
+
+def _decode_chi_peng_gang_event(
+    action_step: int,
+    data: Mapping[str, JsonValue],
+) -> MatchEvent:
+    match _get_int(data, "ActionChiPengGang.type"):
+        case 0:
+            return ChiEvent.from_dict(action_step, data)
+        case 1:
+            return PengEvent.from_dict(action_step, data)
+        case _:
+            msg = "ActionChiPengGang.type is not supported."
+            raise ValueError(msg)
+
+
 _EVENT_DECODERS: dict[str, _EventDecoder] = {
     "ActionMJStart": StartMatchEvent.from_dict,
     "ActionNewRound": NewRoundEvent.from_dict,
     "ActionDealTile": ZimoEvent.from_dict,
     "ActionDiscardTile": DapaiEvent.from_dict,
-    "ActionChiPengGang": ChiEvent.from_dict,
+    "ActionChiPengGang": _decode_chi_peng_gang_event,
 }
-
-
-class MatchActionDecodeError(ValueError):
-    pass
 
 
 def decode_live_action(
