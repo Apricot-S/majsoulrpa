@@ -143,7 +143,7 @@ def test_operate_selects_only_peng_candidate(
 
     assert state.version == initial.version + 1
     assert isinstance(state.round.events[-1], PengEvent)
-    assert sleep_delays == [1.0]
+    assert sleep_delays == [1.5]
     [(x, y)] = browser.clicked_points
     assert 900 < x < 1050
     assert 650 < y < 688
@@ -218,7 +218,7 @@ def test_operate_selects_requested_peng_from_two_candidates(
 
     assert isinstance(state.round.events[-1], PengEvent)
     assert state.round.events[-1].consumed == operation.consumed
-    assert sleep_delays == [0.4, 1.0]
+    assert sleep_delays == [0.4, 1.5]
     assert len(browser.clicked_points) == 2
     selection_x, selection_y = browser.clicked_points[1]
     assert 961 < selection_x < 1118
@@ -292,7 +292,7 @@ def test_operate_retries_until_peng_button_is_drawn(
     result = asyncio.run(screen.operate(operation))
 
     assert isinstance(result.round.events[-1], PengEvent)
-    assert sleep_delays == [0.5, 1.0]
+    assert sleep_delays == [0.5, 1.5]
 
 
 def test_operate_rejects_peng_event_for_different_combination(

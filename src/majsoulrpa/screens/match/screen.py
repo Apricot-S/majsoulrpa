@@ -69,7 +69,7 @@ DEALER_FIRST_DISCARD_DELAY_SECONDS = 2.0
 DAPAI_CLICK_RETRY_INTERVAL_SECONDS = 0.5
 OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
 OPERATION_OPTION_DISPLAY_DELAY_SECONDS = 0.4
-HAND_SLIDE_DELAY_SECONDS = 1.0
+HAND_SLIDE_DELAY_SECONDS = 1.5
 
 _SINGLE_FULU_CANDIDATE_COUNT = 1
 _MIN_MULTIPLE_FULU_CANDIDATE_COUNT = 2
@@ -622,27 +622,30 @@ class MatchScreen(Screen):
         assert_never(operation)
 
     async def _click_dapai_until_progress(self, region: Region) -> None:
+        loop = asyncio.get_running_loop()
         while True:
             await self.click_region(region)
-            timeout = asyncio.timeout(DAPAI_CLICK_RETRY_INTERVAL_SECONDS)
-            try:
-                async with timeout:
-                    message = await self._get_sniffer_message()
-            except TimeoutError:
-                if not timeout.expired():
-                    raise
-                continue
+            retry_at = loop.time() + DAPAI_CLICK_RETRY_INTERVAL_SECONDS
+            while True:
+                timeout = asyncio.timeout_at(retry_at)
+                try:
+                    async with timeout:
+                        message = await self._get_sniffer_message()
+                except TimeoutError:
+                    if not timeout.expired():
+                        raise
+                    break
 
-            if message.raw.name in _DAPAI_CLICK_PROGRESS_MESSAGE_NAMES:
-                self._put_back_sniffer_message(message)
-                return
+                if message.raw.name in _DAPAI_CLICK_PROGRESS_MESSAGE_NAMES:
+                    self._put_back_sniffer_message(message)
+                    return
 
-            await self._apply_match_message_with_screen_errors(
-                message,
-                inconsistent_message=(
-                    "Match state update failed while retrying a discard."
-                ),
-            )
+                await self._apply_match_message_with_screen_errors(
+                    message,
+                    inconsistent_message=(
+                        "Match state update failed while retrying a discard."
+                    ),
+                )
 
     @classmethod
     def _get_dapai_region(

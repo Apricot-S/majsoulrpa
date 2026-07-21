@@ -700,6 +700,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] stale な MatchScreen では browser を操作せず `ScreenStaleError` にする
 - [x] `operate()` の公開 API log は screen 名と API 名だけを出す
 - [x] Dapai は入力の進行を示すmessageを受信するまで同じ牌領域のclickを繰り返す
+- [x] Dapai の再試行間隔中にcommon messageを受信しても、前回clickから0.5秒未満で再clickしない
 - [ ] Liqi は入力の進行を示すmessageを受信するまで同じ牌領域のclickを繰り返す
 - [x] Dapai の再試行中に既知common messageをlog・処理してclickを継続する
 - [ ] Liqi の再試行中に既知common messageをlog・処理してclickを継続する
@@ -714,7 +715,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] チーボタンがまだ描画されていない場合は、呼び出し側 timeout まで検出を再試行する
 - [x] ChiOperation が1候補なら組合せ選択領域を追加クリックしない
 - [x] ChiOperation が2〜5候補なら候補tuple内の位置に対応する組合せ選択領域をクリックする
-- [x] チーボタンと組合せを選択した後、手牌のスライド完了を待ってからAPIを返す
+- [x] チーボタンと組合せを選択した後、手牌のスライド完了を1.5秒待ってからAPIを返す
 - [x] `operate()` は指定した自家の `ChiEvent` までmessageをreduceし、更新後のMatchStateを返す
 - [x] 自家の `ChiEvent` が指定した from_seat / tile / consumed と異なる場合は不整合にする
 - [x] チーボタン待機中に上位の `ActionChiPengGang` を先読みした場合は1回だけput_backする
@@ -728,7 +729,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] ポンボタンがまだ描画されていない場合は、呼び出し側 timeout まで検出を再試行する
 - [x] PengOperation が1候補なら組合せ選択領域を追加クリックしない
 - [x] PengOperation が2候補なら候補tuple内の位置に対応する組合せ選択領域をクリックする
-- [x] ポンボタンと組合せを選択した後、手牌のスライド完了を待ってからAPIを返す
+- [x] ポンボタンと組合せを選択した後、手牌のスライド完了を1.5秒待ってからAPIを返す
 - [x] `operate()` は指定した自家の `PengEvent` までmessageをreduceし、更新後のMatchStateを返す
 - [x] 自家の `PengEvent` が指定した from_seat / tile / consumed と異なる場合は不整合にする
 - [ ] ポンボタン待機中に上位の `ActionHule` を先読みした場合は1回だけput_backする

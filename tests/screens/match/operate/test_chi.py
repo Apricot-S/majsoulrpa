@@ -203,7 +203,7 @@ def test_operate_selects_only_chi_candidate(
 
     assert state.version == initial.version + 1
     assert isinstance(state.round.events[-1], ChiEvent)
-    assert sleep_delays == [1.0]
+    assert sleep_delays == [1.5]
     [(x, y)] = browser.clicked_points
     assert 900 < x < 1050
     assert 650 < y < 688
@@ -288,7 +288,7 @@ def test_operate_selects_requested_chi_from_multiple_candidates(
     event = state.round.events[-1]
     assert isinstance(event, ChiEvent)
     assert event.consumed == operation.consumed
-    assert sleep_delays == [0.4, 1.0]
+    assert sleep_delays == [0.4, 1.5]
     assert len(browser.clicked_points) == 2
     selection_x, selection_y = browser.clicked_points[1]
     assert 861 < selection_x < 1018
@@ -577,7 +577,7 @@ def test_operate_retries_until_chi_button_is_drawn(
     result = asyncio.run(screen.operate(operation))
 
     assert isinstance(result.round.events[-1], ChiEvent)
-    assert sleep_delays == [0.5, 1.0]
+    assert sleep_delays == [0.5, 1.5]
 
 
 def test_operate_rejects_chi_event_for_different_combination(

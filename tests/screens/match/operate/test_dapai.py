@@ -69,6 +69,7 @@ class _MessagesByClickBrowser(BrowserControllerSpy):
         super().__init__(b"synthetic-screenshot")
         self._messages = messages
         self._messages_by_click = list(messages_by_click)
+        self.clicked_at: list[float] = []
 
     async def click(
         self,
@@ -77,6 +78,7 @@ class _MessagesByClickBrowser(BrowserControllerSpy):
         *,
         warp: bool = False,
     ) -> None:
+        self.clicked_at.append(asyncio.get_running_loop().time())
         await super().click(x, y, warp=warp)
         if not self._messages_by_click:
             return
@@ -554,6 +556,11 @@ def test_operate_processes_common_message_before_retrying(
         pass
 
     monkeypatch.setattr(asyncio, "sleep", skip_sleep)
+    monkeypatch.setattr(
+        match_screen_module,
+        "DAPAI_CLICK_RETRY_INTERVAL_SECONDS",
+        0.02,
+    )
     asyncio.run(screen.before_callback())
 
     with caplog.at_level(logging.INFO):
@@ -565,6 +572,7 @@ def test_operate_processes_common_message_before_retrying(
 
     assert state.version == 2
     assert len(browser.clicked_points) == 2
+    assert browser.clicked_at[1] - browser.clicked_at[0] >= 0.02
     assert any(
         '"name":".lq.Lobby.fetchServerTime"' in record.getMessage()
         for record in caplog.records

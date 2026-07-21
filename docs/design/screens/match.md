@@ -461,7 +461,8 @@ WebSocket message がUI描画より先に届くことがあり、候補を生成
 確認できるまで同じ領域のクリックを繰り返す。
 
 再試行中も Sniffer message を別経路で消費しない。heartbeatなどの既知common messageは通常どおり
-log・処理して再試行を続ける。v1-developの再試行helperは、操作またはstate進行の境界となる
+log・処理するが、その受信を理由に直ちに再clickしない。各clickから0.5秒を次のclickまでの最小間隔とし、
+その間もmessageの処理を続ける。v1-developの再試行helperは、操作またはstate進行の境界となる
 `.lq.FastTest.inputOperation`、`.lq.FastTest.inputChiPengGang`、`.lq.ActionPrototype` だけを先読みの
 終了条件とし、取得したmessageをqueueへ `put_back()` して後続の通常pipelineに一度だけ処理させて
 いた。今回も同じ所有権規則を使い、Dapai / Liqi の進行確認に関係するmessageだけを `put_back()`
@@ -532,7 +533,7 @@ buttonの150×38なので、その領域をクリックする。描画が通信�
 チーの2〜5候補、ポンの2候補では、公開候補tuple中の同種operationのwire順をUIの左からの順序として
 用いる。v1-developで確認された選択領域は `top=692, width=157, height=117`、候補間隔200である。
 候補数を `n`、0始まりの候補位置を `i` とし、`left = 961 - 100 * n + 200 * i` で選択領域を求める。
-button clickから候補表示まで0.4秒待ち、組合せを選択した後は手牌のスライドが終わるまで1.0秒待って、
+button clickから候補表示まで0.4秒待ち、組合せを選択した後は手牌のスライドが終わるまで1.5秒待って、
 続く打牌で移動中の牌を誤ってクリックしないようにする。
 
 完了時は自家の `ChiEvent` または `PengEvent` の `from_seat`、`tile`、`consumed` が指定operationと
