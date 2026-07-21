@@ -408,6 +408,57 @@ message を通常どおり log・reduce し、自家の
 `ScreenInconsistentMessageError` とする。API 自体には timeout 引数を設けず、必要なら呼出側が
 `asyncio.timeout()` で期限を管理する。
 
+#### 手牌クリック領域の根拠
+
+1920 × 1080 の基準 viewport では、左端の牌を端まで含む領域を
+`[left=224, top=922, width=89, height=149]` とし、隣の牌までの水平間隔を `94.91` とした。13枚の
+各 left は次の計算結果になる。
+
+```pycon
+>>> left = 224
+>>> for i in range(13):
+...     print(left + i * 94.91)
+...
+224.0
+318.90999999999997
+413.82
+508.73
+603.64
+698.55
+793.46
+888.37
+983.28
+1078.19
+1173.1
+1268.01
+1362.92
+```
+
+牌の端では隣の牌へ触れる可能性があるため、左右をそれぞれ10%除外して中央80%を使う。上端も10%
+除外し、下側はクリックの安定性を優先して30%除外するため、高さは70%とする。左端の牌に対する
+計算結果は次のとおりである。
+
+```pycon
+>>> edge_region = [224, 922, 89, 149]
+>>> region = [0] * 4
+>>> region[0] = edge_region[0] + edge_region[2] * 0.1
+>>> region[1] = edge_region[1] + edge_region[3] * 0.1
+>>> region[2] = edge_region[2] * 0.8
+>>> region[3] = edge_region[3] * 0.7
+>>> region
+[232.9, 936.9, 71.2, 104.3]
+```
+
+実装では v1-develop と同じく各計算段階で `int()` により切り捨てる。そのため基準領域は
+`Region(left=232, top=936, width=71, height=104)`、index `i` の left は
+`232 + int(i * 94.91)` となる。この段階的な切り捨ては、最後に `232.9 + i * 94.91` 全体を
+切り捨てる計算とは一致しない場合がある。
+
+分離表示されたツモ牌は v1-develop で使われていた、手牌枚数 1、4、7、10、13 に対する left
+`348`、`633`、`918`、`1203`、`1487` を基準とする。同じ内側補正を適用した
+`356`、`641`、`926`、`1211`、`1495` を `ZIMOPAI_REGIONS` の left とし、top、width、height は
+手牌クリック領域と共通にする。
+
 `ActionNewRound` では match identity と player metadata を維持し、round generation を増やして
 新しい `RoundState` を設定する。局の step は局ごとに 0 から始め、instance の version とは
 分ける。state の collection は tuple などとし、内部 list をそのまま公開しない。
