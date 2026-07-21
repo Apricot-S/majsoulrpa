@@ -646,6 +646,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 手牌と実ツモ牌の両方に同じ候補牌があれば、moqie=false / true の両 operation を生成する
 - [x] type 1 で 5m / 5p / 5s が禁止されている場合、combination にない対応する 0m / 0p / 0s も禁止する
 - [x] type 1 で通常五が禁止されていない場合、対応する赤五を独自に禁止しない
+- [ ] type 7 で 0m / 0p / 0s が立直候補の場合、combination にない対応する 5m / 5p / 5s も候補にする
+- [ ] type 7 で通常五だけが立直候補の場合、対応する赤五を独自に候補へ追加しない
 - [x] 親の ActionNewRound の14枚はすべて moqie=false の DapaiOperation に展開する
 - [ ] 親の ActionNewRound の presentation zimopai にある立直候補も moqie=false の LiqiOperation にする
 - [x] 親の初期打牌でツモ牌位置を click する必要があっても operation を moqie=true に変換しない

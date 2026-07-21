@@ -343,7 +343,15 @@ operation の中に保持しない。したがって、複数の鳴き方を選�
 して位置を変えない。既存のポンがどの形で表示されているかは operation model では考慮しない。
 type 7 は `|` で分割せず、各要素を立直宣言牌として検証する。候補牌ごとに現在の `shoupai` から
 `moqie=False`、実際の `zimopai` から `moqie=True` の `LiqiOperation` を生成する。同じ牌について
-両方を選べる場合は 2 instance とする。type 8 の `ZimohuOperation.tile` は候補を発生させた
+両方を選べる場合は 2 instance とする。
+
+雀魂の立直候補にも赤五牌に関する欠落がある。`0m`、`0p`、`0s` のいずれかを切って立直できる
+場合、対応する `5m`、`5p`、`5s` が type 7 の `combination` に含まれないことがある。変換時は
+赤五が候補なら対応する通常五も候補牌として補い、現在の `shoupai` と `zimopai` に実在する牌から
+`LiqiOperation` を生成する。通常五だけが候補の場合に赤五を補う逆方向の推測は行わない。この
+workaround は Kanachan の `src/annotation/annotation.cpp` に残された知見に基づく。
+
+type 8 の `ZimohuOperation.tile` は候補を発生させた
 `ActionDealTile` のツモ牌、または `ActionNewRound` の天和判定に使う牌から補う。type 9 の
 `ActionNewRound` の天和候補では、表示のため分離した `zimopai` を `ZimohuOperation.tile` として使う。
 これは和了 operation の対象牌を確定するための規約であり、同じ牌の打牌 operation を
