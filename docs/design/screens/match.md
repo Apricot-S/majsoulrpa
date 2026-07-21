@@ -375,7 +375,7 @@ type 2、3、5 は取得する直前の打牌とその seat を確定できな�
 分割したりしない。操作を送信する browser API は operation model と decoder の実装範囲に含めず、
 候補を state へ接続した後に 1 API ずつ設計する。
 
-将来の operate API は `OperationCandidates.operations` から選んだ concrete operation instance を
+operate API は `OperationCandidates.operations` から選んだ concrete operation instance を
 引数として受け取る。各 instance は追加の候補 index や牌組引数を要求せず、それ自体で選択内容を
 完全に表す。副露・ロン operation も対象 seat、取得牌または和了対象牌、消費牌を instance 内に持ち、
 呼び出し側が直前の河や `RoundState.previous_dapai_*` を参照して補完する必要はない。API は渡された
@@ -385,6 +385,28 @@ instance が現在の候補に含まれることを確認してから画面操�
 分離していても実ツモ牌ではない。`ActionNewRound` に付随する type 1 / type 7 を展開するときは
 14 枚すべてを `moqie=False` の手出し候補とし、`moqie=True` へ変換しない。ツモ牌位置の click が
 必要かどうかは後続の operate API が画面上の配置へ変換する責務であり、operation の意味を変更しない。
+
+### 打牌操作 API
+
+`await screen.operate(operation)` は呼出時点までに蓄積された message を先に reduce し、更新後の
+`RoundState.operation_candidates` に渡された operation が含まれることを検証する。候補がない場合は
+`ScreenInvalidOperationError`、候補に含まれない instance は `ScreenInvalidArgumentError` とする。
+利用者が候補と等しい instance を自作して渡すことは許容する。最初の milestone では
+`DapaiOperation` だけを実行し、対応する自家の `DapaiEvent` を適用した後の `MatchState` を返す。
+
+`moqie=False` は現在の `shoupai` にある同種牌の先頭をクリックし、`moqie=True` は分離表示された
+実際の `zimopai` をクリックする。ただし親の初打で分離表示された14枚目を選んだ場合だけ、
+operation の意味を変えずにツモ牌位置のクリックへ変換する。同じ牌が残り13枚にもある場合も、
+分離表示された牌を優先してよい。親の配牌演出中の誤クリックを避けるため、初打では
+v1-develop と同じ待機を入れる。
+
+通常の browser `click()` が対象座標への cursor 移動と hover 待機を行うため、Screen 側では
+いずれも重複して実行しない。クリック後は `MOUSE_SAFE_REGION` へ退避する。その後も Sniffer
+message を通常どおり log・reduce し、自家の
+`DapaiEvent` の `tile` / `moqie` が指定した operation と一致した時点で完了する。先に別の state event
+が適用された場合や、自家の打牌内容が一致しない場合は authoritative state を保持したまま
+`ScreenInconsistentMessageError` とする。API 自体には timeout 引数を設けず、必要なら呼出側が
+`asyncio.timeout()` で期限を管理する。
 
 `ActionNewRound` では match identity と player metadata を維持し、round generation を増やして
 新しい `RoundState` を設定する。局の step は局ごとに 0 から始め、instance の version とは

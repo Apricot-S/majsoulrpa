@@ -18,6 +18,8 @@ from majsoulrpa.screens.base import (
 )
 from majsoulrpa.screens.errors import (
     ScreenInconsistentMessageError,
+    ScreenInvalidArgumentError,
+    ScreenInvalidOperationError,
     ScreenUnexpectedStateError,
 )
 from majsoulrpa.screens.match._action import (
@@ -39,6 +41,7 @@ from majsoulrpa.screens.match.event import (
     StartMatchEvent,
     ZimoEvent,
 )
+from majsoulrpa.screens.match.operation import DapaiOperation, MatchOperation
 from majsoulrpa.screens.match.operation._specification import (
     _OperationCandidatesSpecification,
 )
@@ -51,6 +54,7 @@ from majsoulrpa.sniffer.events import (
 )
 
 MATCH_INITIALIZATION_TIMEOUT_SECONDS = 5.0
+DEALER_FIRST_DISCARD_DELAY_SECONDS = 2.0
 
 _DEBUG_MESSAGE_NAMES = frozenset(
     {".lq.Lobby.heatbeat", ".lq.FastTest.checkNetworkDelay"}
@@ -64,6 +68,15 @@ _logger = getLogger(__name__)
 
 class MatchScreen(Screen):
     MOUSE_SAFE_REGION = Region(left=585, top=790, width=1000, height=70)
+    HAND_TILE_REGION = Region(left=232, top=936, width=71, height=104)
+    HAND_TILE_HORIZONTAL_INTERVAL = 94.91
+    ZIMOPAI_REGIONS = (
+        Region(left=356, top=936, width=71, height=104),
+        Region(left=641, top=936, width=71, height=104),
+        Region(left=926, top=936, width=71, height=104),
+        Region(left=1211, top=936, width=71, height=104),
+        Region(left=1495, top=936, width=71, height=104),
+    )
 
     SEAT_INDICATOR_TEMPLATES = tuple(
         load_png_template_matcher(
@@ -128,6 +141,60 @@ class MatchScreen(Screen):
             msg = "MatchScreen has not been initialized."
             raise RuntimeError(msg)
         return state
+
+    @_screen_api
+    @_requires_active
+    async def operate(self, operation: MatchOperation) -> MatchState:
+        state = await self.get_state()
+        candidates = state.round.operation_candidates
+        if candidates is None:
+            screenshot = await self.context.browser.screenshot()
+            msg = "No operation is currently available."
+            raise ScreenInvalidOperationError(msg, screenshot)
+        if operation not in candidates.operations:
+            screenshot = await self.context.browser.screenshot()
+            msg = "operation is not one of the current candidates."
+            raise ScreenInvalidArgumentError(msg, screenshot)
+
+        match operation:
+            case DapaiOperation():
+                await self._operate_dapai(state, operation)
+            case _ as unreachable:
+                assert_never(unreachable)
+
+        previous_version = state.version
+        while True:
+            message = await self._get_sniffer_message()
+            try:
+                self._apply_match_message(message)
+            except MatchMetadataUnsupportedError as error:
+                await self._raise_unsupported_match(cause=error)
+            except (MatchActionDecodeError, MatchMetadataDecodeError) as error:
+                await self._raise_inconsistent_message(
+                    "Match state update failed while operating.",
+                    cause=error,
+                )
+
+            current = self._state_store.state
+            if current is None:
+                msg = "MatchScreen has not been initialized."
+                raise RuntimeError(msg)
+            if current.version == previous_version:
+                continue
+
+            event = current.round.events[-1]
+            if (
+                isinstance(event, DapaiEvent)
+                and event.seat == current.self_seat
+                and event.tile == operation.tile
+                and event.moqie is operation.moqie
+            ):
+                return current
+            screenshot = await self.context.browser.screenshot()
+            msg = (
+                "Match state changed before the requested operation completed."
+            )
+            raise ScreenInconsistentMessageError(msg, screenshot)
 
     async def _initialize(self) -> None:
         while self._state_store.state is None:
@@ -285,6 +352,72 @@ class MatchScreen(Screen):
         # candidates. They may interfere with template matching, so keep
         # the cursor in the empty area immediately above the hand.
         await self.move_region(self.MOUSE_SAFE_REGION)
+
+    async def _operate_dapai(
+        self,
+        state: MatchState,
+        operation: DapaiOperation,
+    ) -> None:
+        round_state = state.round
+        is_dealer_first_discard = (
+            round_state.ju == state.self_seat
+            and round_state.first_draw[state.self_seat]
+        )
+        if is_dealer_first_discard:
+            # Wait for the dealing animation. Moving tiles could turn
+            # the intended first discard into a different one.
+            await asyncio.sleep(DEALER_FIRST_DISCARD_DELAY_SECONDS)
+
+        try:
+            region = self._get_dapai_region(
+                state,
+                operation,
+                is_dealer_first_discard=is_dealer_first_discard,
+            )
+        except ValueError as error:
+            await self._raise_inconsistent_message(
+                "A discard candidate does not match the hand layout.",
+                cause=error,
+            )
+        await self.click_region(region)
+        await self._move_mouse_away_from_hand()
+
+    @classmethod
+    def _get_dapai_region(
+        cls,
+        state: MatchState,
+        operation: DapaiOperation,
+        *,
+        is_dealer_first_discard: bool,
+    ) -> Region:
+        round_state = state.round
+        use_zimopai_region = operation.moqie or (
+            is_dealer_first_discard and round_state.zimopai == operation.tile
+        )
+        if use_zimopai_region:
+            if round_state.zimopai != operation.tile:
+                msg = "The discard tile does not match zimopai."
+                raise ValueError(msg)
+            shoupai_count = len(round_state.shoupai)
+            if shoupai_count not in {1, 4, 7, 10, 13}:
+                msg = "The hand size has no zimopai display position."
+                raise ValueError(msg)
+            return cls.ZIMOPAI_REGIONS[(shoupai_count - 1) // 3]
+
+        try:
+            index = round_state.shoupai.index(operation.tile)
+        except ValueError:
+            msg = "The discard tile is not in shoupai."
+            raise ValueError(msg) from None
+        return Region(
+            left=(
+                cls.HAND_TILE_REGION.left
+                + int(index * cls.HAND_TILE_HORIZONTAL_INTERVAL)
+            ),
+            top=cls.HAND_TILE_REGION.top,
+            width=cls.HAND_TILE_REGION.width,
+            height=cls.HAND_TILE_REGION.height,
+        )
 
     @classmethod
     def _matches_seat_indicator(cls, screenshot: object) -> bool:

@@ -673,6 +673,24 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] operation 候補の有無は `operation_candidates is None` / `is not None` で直接判定できる
 - [ ] operation の concrete class を class pattern で網羅すると ty が成功し、variant 追加時は `assert_never()` が失敗する
 
+### MatchScreen 打牌操作 API
+
+- [x] `operate()` は蓄積済み message を先に reduce し、最新の operation 候補を検証する
+- [x] operation 候補がない場合は screenshot 付き `ScreenInvalidOperationError` にする
+- [x] 現在の候補に等しくない operation は screenshot 付き `ScreenInvalidArgumentError` にする
+- [x] 現在の候補と等しい自作の `DapaiOperation` instance を受け入れる
+- [x] `moqie=false` は sorted shoupai にある同種牌の先頭をクリックする
+- [x] `moqie=true` は分離表示された zimopai をクリックする
+- [x] 手牌と zimopai が同種でも moqie に応じた異なる位置をクリックする
+- [x] 親の初打で presentation zimopai を選んだ場合、moqie=false のまま分離表示位置をクリックする
+- [x] 親の初打では配牌演出が終わるまで待ってからクリックする
+- [x] 対象牌への cursor 移動と hover 待機は browser click に任せ、Screen 側で重複させず、クリック後に `MOUSE_SAFE_REGION` へ退避する
+- [x] `operate()` は対応する自家の DapaiEvent まで message を log・reduce して更新後の MatchState を返す
+- [x] 自家の DapaiEvent の tile / moqie が指定と異なる場合は `ScreenInconsistentMessageError` にする
+- [x] 対応する自家の DapaiEvent より先に別の state event が来た場合は `ScreenInconsistentMessageError` にする
+- [x] stale な MatchScreen では browser を操作せず `ScreenStaleError` にする
+- [x] `operate()` の公開 API log は screen 名と API 名だけを出す
+
 ### immutable state / reducer
 
 - [ ] MatchRank、MatchPlayer、MatchDapai、MatchFulu、RoundState、MatchState は frozen で collection を tuple にする
