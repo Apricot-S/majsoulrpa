@@ -223,12 +223,12 @@ class MatchScreen(Screen):
     ) -> None:
         name = message.raw.name
         if name == AUTH_GAME_NAME:
-            self._log_initialization_message(message)
+            self._log_sniffer_message(message)
             self._apply_auth_game(message)
             self._try_initialize_state()
             return
         if name != ACTION_PROTOTYPE_NAME:
-            self._log_initialization_message(message)
+            self._log_sniffer_message(message)
             return
 
         if not isinstance(message, DecodedNotice):
@@ -328,7 +328,7 @@ class MatchScreen(Screen):
                     raise MatchActionDecodeError(msg) from error
 
     @staticmethod
-    def _log_initialization_message(
+    def _log_sniffer_message(
         message: DecodedSnifferMessage,
     ) -> None:
         name = message.raw.name
