@@ -474,9 +474,7 @@ class MatchScreen(Screen):
                     )
                 continue
 
-            result = await self.find_template(self.CHI_BUTTON_TEMPLATE)
-            if result is not None:
-                await self._click_region(result.region)
+            if await self.click_template_if_present(self.CHI_BUTTON_TEMPLATE):
                 break
             await asyncio.sleep(CHI_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS)
 
