@@ -835,6 +835,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 暗槓は previous_qianggang に `(seat, tile)` を設定し、後続の嶺上 ZimoEvent が消去する
 - [x] previous_dapai / previous_qianggang は seat と tile を単一 tuple にまとめ、存在条件の不整合を表現できない
 - [x] 暗槓の不連続 step、不正 seat、未解決打牌、自家の消費牌不足を不整合として拒否する
+- [x] 未実装の画面操作用に screenshot 付き `ScreenNotImplementedOperationError` を公開する
 - [ ] 暗槓・加槓の3候補 UI は座標を推測せず、調査協力を求める専用例外で停止する
 - [ ] match version は同じ Screen instance 内で単調増加し、round step は局ごとに 0 から始まる
 - [ ] 次局の `ActionNewRound` は同じ store の round generation を増やす

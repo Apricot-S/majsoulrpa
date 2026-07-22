@@ -53,6 +53,10 @@ class ScreenInvalidOperationError(ScreenError):
     pass
 
 
+class ScreenNotImplementedOperationError(ScreenError, NotImplementedError):
+    pass
+
+
 class ScreenUnexpectedStateError(ScreenError):
     pass
 

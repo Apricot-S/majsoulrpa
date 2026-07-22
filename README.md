@@ -135,6 +135,38 @@ See [examples/](examples/) for complete implementations.
 > [!IMPORTANT]
 > The email address you use must be linked to your Yostar ID.
 
+## Reporting an unsupported in-match layout
+
+Some rare in-match layouts cannot be implemented safely until their click
+coordinates have been confirmed. MajsoulRPA stops without clicking a guessed
+position and raises `ScreenNotImplementedOperationError`. The exception carries
+the screenshot captured when the unsupported layout was encountered. You can
+save it as follows:
+
+```python
+from pathlib import Path
+
+from majsoulrpa.screens import ScreenNotImplementedOperationError
+
+try:
+    ...
+except ScreenNotImplementedOperationError as error:
+    error.save_screenshot(Path("screenshots"))
+    # Saved as screenshots/YYYYMMDDTHHMMSSZ-ScreenNotImplementedOperationError.png
+    raise
+```
+
+If you encounter this exception, please help us investigate the layout by
+[opening an issue](https://github.com/Apricot-S/majsoulrpa/issues) with:
+
+- the operation being attempted and the number and order of its candidates;
+- the browser viewport size; and
+- the saved screenshot.
+
+Before sharing the screenshot, redact any account name, room identifier, or
+other personal information. Do not attach Sniffer logs, raw WebSocket payloads,
+cookies, or authentication information.
+
 ## License
 
 Licensed under the [MIT license](LICENSE).
