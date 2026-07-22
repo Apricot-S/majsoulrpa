@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import assert_never
 
 from majsoulrpa.screens.match._common import is_preceding_seat
@@ -13,6 +14,7 @@ from majsoulrpa.screens.match.operation._specification import (
     _DaminggangOperationSpecification,
     _DapaiOperationSpecification,
     _LiqiOperationSpecification,
+    _MatchOperationSpecification,
     _OperationCandidatesSpecification,
     _PengOperationSpecification,
 )
@@ -44,126 +46,16 @@ def materialize_operation_candidates(
 
     operations: list[MatchOperation] = []
     for operation_specification in specification.operations:
-        match operation_specification:
-            case _DapaiOperationSpecification():
-                if isinstance(event, NewRoundEvent) and event.ju != self_seat:
-                    msg = "Only the dealer can discard after ActionNewRound."
-                    raise ValueError(msg)
-                if isinstance(event, ZimoEvent) and event.seat != self_seat:
-                    msg = "An opponent draw cannot provide self operations."
-                    raise ValueError(msg)
-                operations.extend(
-                    _materialize_dapai_operations(
-                        operation_specification,
-                        event,
-                        shoupai,
-                        zimopai,
-                    )
-                )
-                continue
-            case _ChiOperationSpecification():
-                if player_count != _FOUR_PLAYER_COUNT:
-                    msg = (
-                        "A chi operation is only valid in a four-player match."
-                    )
-                    raise ValueError(msg)
-                call_event = _validate_call_event(
-                    event,
-                    zimopai,
-                    self_seat,
-                    player_count,
-                    "chi",
-                )
-                if not is_preceding_seat(
-                    call_event.seat,
-                    relative_to=self_seat,
-                    player_count=player_count,
-                ):
-                    msg = (
-                        "A chi must claim a discard from the preceding player."
-                    )
-                    raise ValueError(msg)
-                operations.extend(
-                    _materialize_chi_operations(
-                        operation_specification,
-                        call_event,
-                        shoupai,
-                    )
-                )
-                continue
-            case _PengOperationSpecification():
-                call_event = _validate_call_event(
-                    event,
-                    zimopai,
-                    self_seat,
-                    player_count,
-                    "peng",
-                )
-                operations.extend(
-                    _materialize_peng_operations(
-                        operation_specification,
-                        call_event,
-                        shoupai,
-                    )
-                )
-                continue
-            case _AngangOperationSpecification():
-                angang_zimopai = _validate_angang_event(
-                    event,
-                    zimopai,
-                    self_seat,
-                )
-                operations.extend(
-                    _materialize_angang_operations(
-                        operation_specification,
-                        shoupai,
-                        angang_zimopai,
-                    )
-                )
-                continue
-            case _DaminggangOperationSpecification():
-                call_event = _validate_call_event(
-                    event,
-                    zimopai,
-                    self_seat,
-                    player_count,
-                    "daminggang",
-                )
-                operations.extend(
-                    _materialize_daminggang_operations(
-                        operation_specification,
-                        call_event,
-                        shoupai,
-                    )
-                )
-                continue
-            case _LiqiOperationSpecification():
-                if isinstance(event, NewRoundEvent):
-                    if event.ju != self_seat:
-                        msg = (
-                            "Only the dealer can declare liqi after "
-                            "ActionNewRound."
-                        )
-                        raise ValueError(msg)
-                elif isinstance(event, ZimoEvent):
-                    if event.seat != self_seat:
-                        msg = (
-                            "An opponent draw cannot provide a liqi operation."
-                        )
-                        raise ValueError(msg)
-                else:
-                    msg = "A liqi operation must follow a self draw."
-                    raise TypeError(msg)
-                operations.extend(
-                    _materialize_liqi_operations(
-                        operation_specification,
-                        event,
-                        shoupai,
-                        zimopai,
-                    )
-                )
-                continue
-        assert_never(operation_specification)
+        operations.extend(
+            _materialize_operation_specification(
+                operation_specification,
+                event,
+                shoupai,
+                zimopai,
+                self_seat,
+                player_count,
+            )
+        )
 
     deduplicated_operations = tuple(dict.fromkeys(operations))
     if not deduplicated_operations:
@@ -173,6 +65,207 @@ def materialize_operation_candidates(
         time_fixed_ms=specification.time_fixed_ms,
         time_add_ms=specification.time_add_ms,
         operations=deduplicated_operations,
+    )
+
+
+def _materialize_operation_specification(
+    specification: _MatchOperationSpecification,
+    event: MatchEvent,
+    shoupai: tuple[Tile, ...],
+    zimopai: Tile | None,
+    self_seat: Seat,
+    player_count: int,
+) -> Sequence[MatchOperation]:
+    match specification:
+        case _DapaiOperationSpecification():
+            return _materialize_dapai_specification(
+                specification,
+                event,
+                shoupai,
+                zimopai,
+                self_seat,
+            )
+        case _ChiOperationSpecification():
+            return _materialize_chi_specification(
+                specification,
+                event,
+                shoupai,
+                zimopai,
+                self_seat,
+                player_count,
+            )
+        case _PengOperationSpecification():
+            return _materialize_peng_specification(
+                specification,
+                event,
+                shoupai,
+                zimopai,
+                self_seat,
+                player_count,
+            )
+        case _AngangOperationSpecification():
+            return _materialize_angang_specification(
+                specification,
+                event,
+                shoupai,
+                zimopai,
+                self_seat,
+            )
+        case _DaminggangOperationSpecification():
+            return _materialize_daminggang_specification(
+                specification,
+                event,
+                shoupai,
+                zimopai,
+                self_seat,
+                player_count,
+            )
+        case _LiqiOperationSpecification():
+            return _materialize_liqi_specification(
+                specification,
+                event,
+                shoupai,
+                zimopai,
+                self_seat,
+            )
+    assert_never(specification)
+
+
+def _materialize_dapai_specification(
+    specification: _DapaiOperationSpecification,
+    event: MatchEvent,
+    shoupai: tuple[Tile, ...],
+    zimopai: Tile | None,
+    self_seat: Seat,
+) -> list[DapaiOperation]:
+    if isinstance(event, NewRoundEvent) and event.ju != self_seat:
+        msg = "Only the dealer can discard after ActionNewRound."
+        raise ValueError(msg)
+    if isinstance(event, ZimoEvent) and event.seat != self_seat:
+        msg = "An opponent draw cannot provide self operations."
+        raise ValueError(msg)
+    return _materialize_dapai_operations(
+        specification,
+        event,
+        shoupai,
+        zimopai,
+    )
+
+
+def _materialize_chi_specification(
+    specification: _ChiOperationSpecification,
+    event: MatchEvent,
+    shoupai: tuple[Tile, ...],
+    zimopai: Tile | None,
+    self_seat: Seat,
+    player_count: int,
+) -> list[ChiOperation]:
+    if player_count != _FOUR_PLAYER_COUNT:
+        msg = "A chi operation is only valid in a four-player match."
+        raise ValueError(msg)
+    call_event = _validate_call_event(
+        event,
+        zimopai,
+        self_seat,
+        player_count,
+        "chi",
+    )
+    if not is_preceding_seat(
+        call_event.seat,
+        relative_to=self_seat,
+        player_count=player_count,
+    ):
+        msg = "A chi must claim a discard from the preceding player."
+        raise ValueError(msg)
+    return _materialize_chi_operations(
+        specification,
+        call_event,
+        shoupai,
+    )
+
+
+def _materialize_peng_specification(
+    specification: _PengOperationSpecification,
+    event: MatchEvent,
+    shoupai: tuple[Tile, ...],
+    zimopai: Tile | None,
+    self_seat: Seat,
+    player_count: int,
+) -> list[PengOperation]:
+    call_event = _validate_call_event(
+        event,
+        zimopai,
+        self_seat,
+        player_count,
+        "peng",
+    )
+    return _materialize_peng_operations(
+        specification,
+        call_event,
+        shoupai,
+    )
+
+
+def _materialize_angang_specification(
+    specification: _AngangOperationSpecification,
+    event: MatchEvent,
+    shoupai: tuple[Tile, ...],
+    zimopai: Tile | None,
+    self_seat: Seat,
+) -> list[AngangOperation]:
+    angang_zimopai = _validate_angang_event(event, zimopai, self_seat)
+    return _materialize_angang_operations(
+        specification,
+        shoupai,
+        angang_zimopai,
+    )
+
+
+def _materialize_daminggang_specification(
+    specification: _DaminggangOperationSpecification,
+    event: MatchEvent,
+    shoupai: tuple[Tile, ...],
+    zimopai: Tile | None,
+    self_seat: Seat,
+    player_count: int,
+) -> list[DaminggangOperation]:
+    call_event = _validate_call_event(
+        event,
+        zimopai,
+        self_seat,
+        player_count,
+        "daminggang",
+    )
+    return _materialize_daminggang_operations(
+        specification,
+        call_event,
+        shoupai,
+    )
+
+
+def _materialize_liqi_specification(
+    specification: _LiqiOperationSpecification,
+    event: MatchEvent,
+    shoupai: tuple[Tile, ...],
+    zimopai: Tile | None,
+    self_seat: Seat,
+) -> list[LiqiOperation]:
+    if isinstance(event, NewRoundEvent):
+        if event.ju != self_seat:
+            msg = "Only the dealer can declare liqi after ActionNewRound."
+            raise ValueError(msg)
+    elif isinstance(event, ZimoEvent):
+        if event.seat != self_seat:
+            msg = "An opponent draw cannot provide a liqi operation."
+            raise ValueError(msg)
+    else:
+        msg = "A liqi operation must follow a self draw."
+        raise TypeError(msg)
+    return _materialize_liqi_operations(
+        specification,
+        event,
+        shoupai,
+        zimopai,
     )
 
 
