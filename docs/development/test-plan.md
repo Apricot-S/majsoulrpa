@@ -710,13 +710,24 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `operate()` の公開 API log は screen 名と API 名だけを出す
 - [x] Dapai は入力の進行を示すmessageを受信するまで同じ牌領域のclickを繰り返す
 - [x] Dapai の再試行間隔中にcommon messageを受信しても、前回clickから0.5秒未満で再clickしない
-- [ ] Liqi は入力の進行を示すmessageを受信するまで同じ牌領域のclickを繰り返す
+- [x] Liqi は入力の進行を示すmessageを受信するまで同じ牌領域のclickを繰り返す
 - [x] Dapai の再試行中に既知common messageをlog・処理してclickを継続する
-- [ ] Liqi の再試行中に既知common messageをlog・処理してclickを継続する
+- [x] Liqi の再試行中に既知common messageをlog・処理してclickを継続する
 - [x] Dapai の再試行で先読みした inputOperation / ActionPrototype を1回だけput_backする
-- [ ] Liqi の再試行で先読みした inputOperation / ActionPrototype を1回だけput_backする
+- [x] Liqi の再試行で先読みした inputOperation / ActionPrototype を1回だけput_backする
 - [x] Dapai の再試行でinputChiPengGangを終了条件にした場合も、messageを1回だけput_backする
 - [ ] Dapai / Liqi の再試行中に未知messageを捨てたり成功扱いしたりしない
+
+### MatchScreen 立直操作 API
+
+- [x] `button-area.toml` の search region 内から `liqi.png` を検出し、検出したボタン領域をクリックする
+- [x] 立直ボタンがまだ描画されていない場合は、呼び出し側 timeout まで検出を再試行する
+- [x] 立直ボタンをクリックしてから候補表示を0.4秒待ち、`LiqiOperation` の tile / moqie に対応する牌領域をクリックする
+- [x] 牌クリックは Dapai と同じ入力進行messageの待機・再試行処理を使う
+- [x] 立直ボタン後の候補表示待ち中に `ActionPrototype` を先読みした場合は、牌領域をクリックせず1回だけput_backする
+- [x] `operate()` は指定した自家の通常立直またはダブル立直の `DapaiEvent` までmessageをreduceし、更新後のMatchStateを返す
+- [x] 自家の `DapaiEvent` の tile / moqie が指定と異なる場合や、立直宣言を伴わない場合は不整合にする
+- [x] 上位actionを確認できない立直ボタン検出失敗を成功扱いしない
 
 ### MatchScreen チー操作 API
 

@@ -6,6 +6,7 @@ from majsoulrpa._clock import utc_now
 from majsoulrpa.assets.templates.match import (
     BUTTON_AREA_SETTINGS_PATH,
     CHI_TEMPLATE_PATH,
+    LIQI_TEMPLATE_PATH,
     PENG_TEMPLATE_PATH,
     SEAT_INDICATOR_SETTINGS_PATH,
     SEAT_INDICATOR_TEMPLATE_PATHS,
@@ -135,6 +136,10 @@ class MatchScreen(Screen):
         template_path=PENG_TEMPLATE_PATH,
         settings_path=BUTTON_AREA_SETTINGS_PATH,
     )
+    LIQI_BUTTON_TEMPLATE = load_png_template_matcher(
+        template_path=LIQI_TEMPLATE_PATH,
+        settings_path=BUTTON_AREA_SETTINGS_PATH,
+    )
 
     def __init__(self, context: ScreenContext | None = None) -> None:
         super().__init__(context=context)
@@ -210,8 +215,7 @@ class MatchScreen(Screen):
             case PengOperation():
                 await self._operate_peng(state, operation)
             case LiqiOperation():
-                msg = "LiqiOperation execution is not implemented."
-                raise NotImplementedError(msg)
+                await self._operate_liqi(state, operation)
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -529,6 +533,46 @@ class MatchScreen(Screen):
             self.PENG_BUTTON_TEMPLATE,
         )
 
+    async def _operate_liqi(
+        self,
+        state: MatchState,
+        operation: LiqiOperation,
+    ) -> None:
+        # The button may not be drawn when its operation message
+        # arrives.
+        # Wait until it can be clicked or the opportunity disappears.
+        while True:
+            if await self._put_back_pending_action_while_waiting_for_ui():
+                return
+            if await self.click_template_if_present(self.LIQI_BUTTON_TEMPLATE):
+                break
+            await asyncio.sleep(
+                OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
+            )
+
+        await asyncio.sleep(OPERATION_OPTION_DISPLAY_DELAY_SECONDS)
+        if await self._put_back_pending_action_while_waiting_for_ui():
+            return
+
+        round_state = state.round
+        is_dealer_first_discard = (
+            round_state.ju == state.self_seat
+            and round_state.first_draw[state.self_seat]
+        )
+        try:
+            region = self._get_dapai_region(
+                state,
+                operation,
+                is_dealer_first_discard=is_dealer_first_discard,
+            )
+        except ValueError as error:
+            await self._raise_inconsistent_message(
+                "A liqi candidate does not match the hand layout.",
+                cause=error,
+            )
+        await self._click_dapai_until_progress(region)
+        await self._move_mouse_away_from_hand()
+
     async def _operate_chi_peng(
         self,
         operation: ChiOperation | PengOperation,
@@ -631,7 +675,13 @@ class MatchScreen(Screen):
                     and event.consumed == operation.consumed
                 )
             case LiqiOperation():
-                return False
+                return (
+                    isinstance(event, DapaiEvent)
+                    and event.seat == state.self_seat
+                    and event.tile == operation.tile
+                    and event.moqie is operation.moqie
+                    and (event.liqi or event.wliqi)
+                )
         assert_never(operation)
 
     @staticmethod
@@ -680,7 +730,7 @@ class MatchScreen(Screen):
     def _get_dapai_region(
         cls,
         state: MatchState,
-        operation: DapaiOperation,
+        operation: DapaiOperation | LiqiOperation,
         *,
         is_dealer_first_discard: bool,
     ) -> Region:

@@ -460,6 +460,19 @@ message を通常どおり log・reduce し、自家の
 `ScreenInconsistentMessageError` とする。API 自体には timeout 引数を設けず、必要なら呼出側が
 `asyncio.timeout()` で期限を管理する。
 
+#### 立直操作
+
+`LiqiOperation` は `button-area.toml` の search region 内で `liqi.png` を検出して立直ボタンを
+クリックする。operation message がUI描画より先に届くため、ボタンを検出できるか、後続の
+`ActionPrototype` によって選択権の消滅を確認するまで検出を繰り返す。ボタンをクリックした後は
+立直打牌候補の表示を0.4秒待ち、もう一度queueを確認してから `tile` / `moqie` に対応する牌領域を
+クリックする。待機中に後続actionを先読みした場合は、そのmessageを1回だけ `put_back()` し、
+古くなった牌領域をクリックしない。
+
+牌領域の決定とクリック再試行は `DapaiOperation` と共通にする。自家の `DapaiEvent` が指定した
+`tile` / `moqie` と一致し、`liqi` または `wliqi` が真であることを完了条件とする。これにより通常の
+立直とダブル立直を同じ `LiqiOperation` で扱い、立直を伴わない同一打牌を成功扱いしない。
+
 #### 打牌・立直打牌のクリック再試行
 
 `DapaiOperation` と `LiqiOperation` は、対象牌を1回クリックしただけで入力済みとみなしてはならない。
