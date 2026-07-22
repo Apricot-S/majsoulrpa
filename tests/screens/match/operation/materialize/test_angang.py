@@ -16,7 +16,7 @@ from majsoulrpa.screens.match.operation._materialize import (
 )
 
 
-def test_angang_materialization_preserves_wire_order() -> None:
+def test_angang_materialization_preserves_unsorted_wire_order() -> None:
     specification = decode_operation_specification(
         {
             "operation": {
@@ -24,8 +24,9 @@ def test_angang_materialization_preserves_wire_order() -> None:
                     {
                         "type": 4,
                         "combination": [
-                            "0m|5m|5m|5m",
-                            "7z|7z|7z|7z",
+                            "4p|4p|4p|4p",
+                            "0p|5p|5p|5p",
+                            "1m|1m|1m|1m",
                         ],
                     }
                 ],
@@ -38,7 +39,7 @@ def test_angang_materialization_preserves_wire_order() -> None:
     event = ZimoEvent(
         action_step=2,
         seat=validate_seat(0),
-        tile=validate_tile("5m"),
+        tile=validate_tile("1m"),
         left_tile_count=60,
         dora_indicators=(),
     )
@@ -48,9 +49,21 @@ def test_angang_materialization_preserves_wire_order() -> None:
         event,
         tuple(
             validate_tile(tile)
-            for tile in ("0m", "5m", "5m", "7z", "7z", "7z", "7z")
+            for tile in (
+                "4p",
+                "4p",
+                "4p",
+                "4p",
+                "0p",
+                "5p",
+                "5p",
+                "5p",
+                "1m",
+                "1m",
+                "1m",
+            )
         ),
-        validate_tile("5m"),
+        validate_tile("1m"),
         validate_seat(0),
         4,
     )
@@ -59,18 +72,26 @@ def test_angang_materialization_preserves_wire_order() -> None:
     assert candidates.operations == (
         AngangOperation(
             consumed=(
-                validate_tile("0m"),
-                validate_tile("5m"),
-                validate_tile("5m"),
-                validate_tile("5m"),
+                validate_tile("4p"),
+                validate_tile("4p"),
+                validate_tile("4p"),
+                validate_tile("4p"),
             )
         ),
         AngangOperation(
             consumed=(
-                validate_tile("7z"),
-                validate_tile("7z"),
-                validate_tile("7z"),
-                validate_tile("7z"),
+                validate_tile("0p"),
+                validate_tile("5p"),
+                validate_tile("5p"),
+                validate_tile("5p"),
+            )
+        ),
+        AngangOperation(
+            consumed=(
+                validate_tile("1m"),
+                validate_tile("1m"),
+                validate_tile("1m"),
+                validate_tile("1m"),
             )
         ),
     )
