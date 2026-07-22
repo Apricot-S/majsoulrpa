@@ -211,6 +211,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `LoginScreen.enter_verification_code()` が半角数字 6 桁以外を不正引数エラーにする
 - [x] `LoginScreen.enter_verification_code()` が認証コード欄へ `clear=True` で入力する
 - [x] `LoginScreen.enter_verification_code()` が認証コード入力後 0.5 秒待機してログインボタンをクリックする
+- [x] `LoginScreen.enter_verification_code()` が入力シーケンス完了後にメンテナンスダイアログを検出する
+- [x] メンテナンスダイアログを `LoginScreen` の stale 化直前に検出する
+- [x] メンテナンスダイアログを検出したら screenshot 付き `ScreenUnexpectedStateError` にする
 
 認証コード後のログインフローは、まず
 [認証コード後のログインフロー設計](../design/screens/login-verification.md) の spike を行い、

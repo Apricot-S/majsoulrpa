@@ -8,6 +8,8 @@ from pydantic import EmailStr, TypeAdapter, ValidationError
 from majsoulrpa.assets.templates.login import (
     LOGIN_1_SETTINGS_PATH,
     LOGIN_1_TEMPLATE_PATH,
+    MAINTENANCE_OK_SETTINGS_PATH,
+    MAINTENANCE_OK_TEMPLATE_PATH,
     YOSTAR_LOGO_SETTINGS_PATH,
     YOSTAR_LOGO_TEMPLATE_PATH,
 )
@@ -24,6 +26,7 @@ from majsoulrpa.screens.base import (
 from majsoulrpa.screens.errors import (
     ScreenInvalidArgumentError,
     ScreenInvalidOperationError,
+    ScreenUnexpectedStateError,
 )
 
 EMAIL_ADDRESS_PATTERN = re.compile(
@@ -91,6 +94,10 @@ class LoginScreen(Screen):
     YOSTAR_LOGO_TEMPLATE = load_png_template_matcher(
         template_path=YOSTAR_LOGO_TEMPLATE_PATH,
         settings_path=YOSTAR_LOGO_SETTINGS_PATH,
+    )
+    MAINTENANCE_OK_TEMPLATE = load_png_template_matcher(
+        template_path=MAINTENANCE_OK_TEMPLATE_PATH,
+        settings_path=MAINTENANCE_OK_SETTINGS_PATH,
     )
 
     def __init__(self, context: ScreenContext | None = None) -> None:
@@ -202,6 +209,11 @@ class LoginScreen(Screen):
         # Its pre-hook then fails because the Yostar dialog no longer
         # opens.
         await asyncio.sleep(2.0)
+        screenshot = await self.screenshot()
+        if self.MAINTENANCE_OK_TEMPLATE.find(screenshot) is not None:
+            msg = "Server maintenance dialog was detected."
+            raise ScreenUnexpectedStateError(msg, screenshot)
+
         self._mark_stale()
 
     async def _click_agreement_region(
