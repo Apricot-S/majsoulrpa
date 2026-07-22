@@ -201,7 +201,7 @@ def test_operate_waits_only_until_discard_ui_is_ready(
         ),
     )
     now = OBSERVED_AT + datetime.timedelta(seconds=elapsed_seconds)
-    monkeypatch.setattr(match_screen_module, "_utc_now", lambda: now)
+    monkeypatch.setattr(match_screen_module, "utc_now", lambda: now)
     sleep_delays: list[float] = []
 
     async def record_sleep(delay: float) -> None:
@@ -631,7 +631,7 @@ def test_operate_processes_common_message_before_retrying(
     monkeypatch.setattr(
         match_screen_module,
         "DAPAI_CLICK_RETRY_INTERVAL_SECONDS",
-        0.02,
+        0.05,
     )
     asyncio.run(screen.before_callback())
 
@@ -644,7 +644,7 @@ def test_operate_processes_common_message_before_retrying(
 
     assert state.version == 2
     assert len(browser.clicked_points) == 2
-    assert browser.clicked_at[1] - browser.clicked_at[0] >= 0.02
+    assert browser.clicked_at[1] - browser.clicked_at[0] >= 0.03
     assert any(
         '"name":".lq.Lobby.fetchServerTime"' in record.getMessage()
         for record in caplog.records

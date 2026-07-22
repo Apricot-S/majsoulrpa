@@ -1,8 +1,8 @@
 import asyncio
-import datetime
 from logging import getLogger
-from typing import NoReturn, assert_never, override
+from typing import TYPE_CHECKING, NoReturn, assert_never, override
 
+from majsoulrpa._clock import utc_now
 from majsoulrpa.assets.templates.match import (
     BUTTON_AREA_SETTINGS_PATH,
     CHI_TEMPLATE_PATH,
@@ -65,6 +65,9 @@ from majsoulrpa.sniffer.events import (
     DecodedSnifferMessage,
 )
 
+if TYPE_CHECKING:
+    import datetime
+
 MATCH_INITIALIZATION_TIMEOUT_SECONDS = 5.0
 DEALER_FIRST_DISCARD_DELAY_SECONDS = 2.0
 DAPAI_UI_READY_DELAY_SECONDS = 0.4
@@ -94,10 +97,6 @@ _WARNING_MESSAGE_NAMES = frozenset(
 )
 
 _logger = getLogger(__name__)
-
-
-def _utc_now() -> datetime.datetime:
-    return datetime.datetime.now(datetime.UTC)
 
 
 class MatchScreen(Screen):
@@ -458,7 +457,7 @@ class MatchScreen(Screen):
         observed_at = self._operation_candidates_observed_at
         if observed_at is None:
             return
-        elapsed_seconds = max(0.0, (_utc_now() - observed_at).total_seconds())
+        elapsed_seconds = max(0.0, (utc_now() - observed_at).total_seconds())
         remaining_seconds = max(
             0.0,
             DAPAI_UI_READY_DELAY_SECONDS - elapsed_seconds,

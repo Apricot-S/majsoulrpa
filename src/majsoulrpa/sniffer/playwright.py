@@ -6,6 +6,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from typing import Protocol
 
+from majsoulrpa._clock import Clock, utc_now
 from majsoulrpa.sniffer.correlator import Direction
 
 
@@ -48,7 +49,6 @@ class EventEmitterLike(Protocol):
     ) -> None: ...
 
 
-type Clock = Callable[[], datetime.datetime]
 type ConnectionIDFactory = Callable[[], str]
 type _QueueItem = CaptureEvent | PlaywrightCaptureError
 type _WebSocketListeners = tuple[
@@ -73,7 +73,7 @@ class PlaywrightFrameCapture:
         self._queue: asyncio.Queue[_QueueItem] = asyncio.Queue(
             maxsize=queue_size,
         )
-        self._clock = clock or _utc_now
+        self._clock = clock or utc_now
         self._connection_id_factory = connection_id_factory or _new_id
         self._next_frame_sequence = 1
         self._failure: PlaywrightCaptureError | None = None
@@ -211,10 +211,6 @@ class PlaywrightFrameCapture:
         self._failure = error
         with suppress(asyncio.QueueFull):
             self._queue.put_nowait(error)
-
-
-def _utc_now() -> datetime.datetime:
-    return datetime.datetime.now(tz=datetime.UTC)
 
 
 def _new_id() -> str:
