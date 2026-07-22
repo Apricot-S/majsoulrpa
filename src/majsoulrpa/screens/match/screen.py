@@ -52,6 +52,7 @@ from majsoulrpa.screens.match.event import (
 )
 from majsoulrpa.screens.match.operation import (
     ChiOperation,
+    DaminggangOperation,
     DapaiOperation,
     LiqiOperation,
     MatchOperation,
@@ -215,6 +216,9 @@ class MatchScreen(Screen):
                 await self._operate_chi(state, operation)
             case PengOperation():
                 await self._operate_peng(state, operation)
+            case DaminggangOperation():
+                msg = "DaminggangOperation execution is not implemented."
+                raise NotImplementedError(msg)
             case LiqiOperation():
                 await self._operate_liqi(state, operation)
             case _ as unreachable:
@@ -689,6 +693,8 @@ class MatchScreen(Screen):
                     and event.moqie is operation.moqie
                     and (event.liqi or event.wliqi)
                 )
+            case DaminggangOperation():
+                return False
         assert_never(operation)
 
     @staticmethod
@@ -703,7 +709,12 @@ class MatchScreen(Screen):
                     isinstance(event, PengEvent | DaminggangEvent)
                     and event.seat != state.self_seat
                 )
-            case DapaiOperation() | PengOperation() | LiqiOperation():
+            case (
+                DapaiOperation()
+                | PengOperation()
+                | DaminggangOperation()
+                | LiqiOperation()
+            ):
                 return False
         assert_never(operation)
 

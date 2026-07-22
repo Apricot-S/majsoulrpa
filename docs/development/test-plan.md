@@ -641,7 +641,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] PengOperation は任意の他家による直前の DapaiEvent から from_seat / tile を補い、赤牌表現を維持する
 - [x] PengOperation は取得牌と consumed が同じ牌種で、consumed が手牌に実在することを必要とする
 - [ ] type 4 は `combination` 1 要素ごとに消費牌 4 枚を持つ `AngangOperation` 1 instance へ変換する
-- [ ] type 5 は直前の取得牌と `combination` の手牌 3 枚を持つ `DaminggangOperation` 1 instance へ変換する
+- [x] type 5 は直前の取得牌と `combination` の手牌 3 枚を持つ `DaminggangOperation` 1 instance へ変換する
+- [x] type 5 の各 combination は `|` で区切られた3枚に限定し、wire 順の1候補1 instanceへ展開する
+- [x] DaminggangOperation は任意の他家による直前の DapaiEvent から from_seat / tile を補い、赤牌表現を維持する
+- [x] DaminggangOperation は取得牌と consumed が同じ牌種で、consumed が手牌に実在することを必要とする
 - [ ] type 6 は牌順に依存せず既存の `Peng` と4枚の multiset を比較し、元の from_seat / tile / consumed と差分の added を保持する `JiagangOperation` 1 instance へ変換する
 - [x] type 7 の各候補牌を 1 打牌 1 `LiqiOperation` に展開する
 - [ ] type 8 は空の `combination` と発生元 Event のツモ牌から `ZimohuOperation` を生成する
@@ -673,9 +676,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] protobuf の `seat`、`change_tiles`、`change_tile_states`、`gap_type` と unknown field の存在だけでは拒否しない
 - [ ] operation の並びと各 combination の並びを protobuf の順序どおり tuple に保持する
 - [ ] 副露・槓 operation は候補一覧を内部に持たず、各 instance が operate API に渡せる単一の牌組を表す
-- [ ] Chi / Peng / Daminggang operation は from_seat、tile、consumed だけで選択内容を完全に表す
-- [ ] from_seat / tile は候補が付随した DapaiEvent.seat / tile と一致し、赤牌を通常牌へ正規化しない
-- [ ] 直前の打牌がない状態で type 2 / 3 / 5 を public operation へ展開しない
+- [x] Chi / Peng / Daminggang operation は from_seat、tile、consumed だけで選択内容を完全に表す
+- [x] from_seat / tile は候補が付随した DapaiEvent.seat / tile と一致し、赤牌を通常牌へ正規化しない
+- [x] 直前の打牌がない状態で type 2 / 3 / 5 を public operation へ展開しない
 - [ ] ZimohuOperation.tile は ActionDealTile のツモ牌と一致し、赤牌を通常牌へ正規化しない
 - [ ] ActionNewRound の天和候補は presentation zimopai を ZimohuOperation.tile に保持する
 - [ ] 天和の ZimohuOperation.tile を決めても、同じ牌の打牌 operation は moqie=false のままにする

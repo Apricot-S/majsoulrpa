@@ -3,12 +3,14 @@ from majsoulrpa.screens.match.operation.candidates import (
     OperationCandidates,
 )
 from majsoulrpa.screens.match.operation.chi import ChiOperation
+from majsoulrpa.screens.match.operation.daminggang import DaminggangOperation
 from majsoulrpa.screens.match.operation.dapai import DapaiOperation
 from majsoulrpa.screens.match.operation.liqi import LiqiOperation
 from majsoulrpa.screens.match.operation.peng import PengOperation
 
 __all__ = [
     "ChiOperation",
+    "DaminggangOperation",
     "DapaiOperation",
     "LiqiOperation",
     "MatchOperation",

@@ -9,6 +9,7 @@ from majsoulrpa.screens.match._decode import (
 )
 from majsoulrpa.screens.match.operation._specification import (
     _ChiOperationSpecification,
+    _DaminggangOperationSpecification,
     _DapaiOperationSpecification,
     _LiqiOperationSpecification,
     _MatchOperationSpecification,
@@ -20,9 +21,11 @@ from majsoulrpa.screens.match.types import Tile, validate_tile
 _DAPAI_OPERATION_TYPE = 1
 _CHI_OPERATION_TYPE = 2
 _PENG_OPERATION_TYPE = 3
+_DAMINGGANG_OPERATION_TYPE = 5
 _LIQI_OPERATION_TYPE = 7
 
 _TWO_TILE_COMBINATION_COUNT = 2
+_THREE_TILE_COMBINATION_COUNT = 3
 
 
 def decode_operation_specification(
@@ -68,6 +71,9 @@ def decode_operation_specification(
         if operation_type == _PENG_OPERATION_TYPE:
             specifications.append(_decode_peng_specification(item))
             continue
+        if operation_type == _DAMINGGANG_OPERATION_TYPE:
+            specifications.append(_decode_daminggang_specification(item))
+            continue
         if operation_type == _LIQI_OPERATION_TYPE:
             candidate_tiles = tuple(
                 validate_tile(tile)
@@ -108,6 +114,35 @@ def _decode_peng_specification(
 ) -> _PengOperationSpecification:
     return _PengOperationSpecification(
         consumed_candidates=_decode_two_tile_combinations(item, "peng"),
+    )
+
+
+def _decode_daminggang_specification(
+    item: Mapping[str, JsonValue],
+) -> _DaminggangOperationSpecification:
+    encoded_combinations = _get_str_list(
+        item,
+        "OptionalOperation.combination",
+    )
+    if not encoded_combinations:
+        msg = "A daminggang operation must contain a combination."
+        raise ValueError(msg)
+
+    consumed_candidates: list[tuple[Tile, Tile, Tile]] = []
+    for encoded_combination in encoded_combinations:
+        tiles = encoded_combination.split("|")
+        if len(tiles) != _THREE_TILE_COMBINATION_COUNT:
+            msg = "A daminggang combination must contain three tiles."
+            raise ValueError(msg)
+        consumed_candidates.append(
+            (
+                validate_tile(tiles[0]),
+                validate_tile(tiles[1]),
+                validate_tile(tiles[2]),
+            )
+        )
+    return _DaminggangOperationSpecification(
+        consumed_candidates=tuple(consumed_candidates)
     )
 
 

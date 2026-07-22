@@ -17,6 +17,7 @@ from majsoulrpa.screens.match import (
     ChiOperation,
     Daminggang,
     DaminggangEvent,
+    DaminggangOperation,
     Dapai,
     DapaiEvent,
     DapaiOperation,
@@ -425,6 +426,57 @@ def test_get_state_exposes_peng_operations_after_opponent_discard() -> None:
             from_seat=validate_seat(2),
             tile=validate_tile("5m"),
             consumed=(validate_tile("0m"), validate_tile("5m")),
+        ),
+    )
+
+
+def test_get_state_exposes_daminggang_after_opponent_discard() -> None:
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"synthetic-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(),
+                _live_new_round_action(
+                    step=0,
+                    ju=2,
+                    tiles=["0m", "5m", "5m", *(["1p"] * 10)],
+                ),
+                _live_discard_action(
+                    step=1,
+                    seat=2,
+                    tile="5m",
+                    moqie=False,
+                    operation=liqi_pb2.OptionalOperationList(
+                        time_fixed=5000,
+                        time_add=20000,
+                        operation_list=[
+                            liqi_pb2.OptionalOperation(
+                                type=5,
+                                combination=["0m|5m|5m"],
+                            )
+                        ],
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+    state = asyncio.run(screen.get_state())
+
+    candidates = state.round.operation_candidates
+    assert candidates is not None
+    assert candidates.operations == (
+        DaminggangOperation(
+            from_seat=validate_seat(2),
+            tile=validate_tile("5m"),
+            consumed=(
+                validate_tile("0m"),
+                validate_tile("5m"),
+                validate_tile("5m"),
+            ),
         ),
     )
 

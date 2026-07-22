@@ -375,7 +375,9 @@ operation の中に保持しない。したがって、複数の鳴き方を選�
 `DapaiEvent` にだけ生成し、各 `consumed` が現在の `shoupai` に実在して、取得牌と合わせて順子に
 なることを検証する。`PengOperation` は三麻・四麻とも任意の他家による `DapaiEvent` から生成し、
 取得牌と `consumed` が同じ牌種で、各 `consumed` が現在の `shoupai` に実在することを検証する。
-赤5と黒5は同じ牌種として扱うが、各候補には wire の赤牌表現をそのまま保持する。
+`DaminggangOperation` も三麻・四麻とも任意の他家による `DapaiEvent` から生成し、同じ検証を
+手牌側の3枚に対して行う。赤5と黒5は同じ牌種として扱うが、各候補には wire の赤牌表現を
+そのまま保持する。
 
 暗槓は4枚すべてを `AngangOperation.consumed` とする。加槓候補の `combination` は、実牌譜では
 既存のポンと追加牌の区別によらず赤5が先頭に正規化されており、4枚目を追加牌として扱えない。

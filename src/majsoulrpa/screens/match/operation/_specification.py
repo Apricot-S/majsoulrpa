@@ -24,6 +24,12 @@ class _PengOperationSpecification:
 
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
+class _DaminggangOperationSpecification:
+    consumed_candidates: tuple[tuple[Tile, Tile, Tile], ...]
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
 class _LiqiOperationSpecification:
     candidate_tiles: tuple[Tile, ...]
 
@@ -32,6 +38,7 @@ type _MatchOperationSpecification = (
     _DapaiOperationSpecification
     | _ChiOperationSpecification
     | _PengOperationSpecification
+    | _DaminggangOperationSpecification
     | _LiqiOperationSpecification
 )
 

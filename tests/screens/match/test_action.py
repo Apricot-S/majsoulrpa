@@ -19,6 +19,7 @@ from majsoulrpa.screens.match._action import (
 )
 from majsoulrpa.screens.match.operation._specification import (
     _ChiOperationSpecification,
+    _DaminggangOperationSpecification,
 )
 from tests.screens.match._support import _live_action
 
@@ -182,6 +183,39 @@ def test_live_and_restore_discard_decode_same_chi_specification() -> None:
         ("3m", "4m"),
         ("4m", "6m"),
     )
+
+
+def test_live_restore_daminggang_specification() -> None:
+    data = liqi_pb2.ActionDiscardTile(
+        seat=2,
+        tile="5m",
+        operation=liqi_pb2.OptionalOperationList(
+            time_fixed=5000,
+            time_add=20000,
+            operation_list=[
+                liqi_pb2.OptionalOperation(
+                    type=5,
+                    combination=["0m|5m|5m"],
+                )
+            ],
+        ),
+    ).SerializeToString()
+    _, live_operation, _ = decode_live_action(
+        _live_action(step=2, name="ActionDiscardTile", data=data)
+    )
+    _, restore_operation, _ = decode_restore_action(
+        {
+            "step": 2,
+            "name": "ActionDiscardTile",
+            "data": base64.b64encode(data).decode(),
+        }
+    )
+
+    assert live_operation is not None
+    assert live_operation == restore_operation
+    [operation] = live_operation.operations
+    assert isinstance(operation, _DaminggangOperationSpecification)
+    assert operation.consumed_candidates == (("0m", "5m", "5m"),)
 
 
 def test_live_and_restore_action_chi_decode_to_same_event() -> None:

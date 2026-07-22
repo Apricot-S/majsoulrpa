@@ -4,6 +4,7 @@ import pytest
 
 from majsoulrpa.screens.match import (
     ChiOperation,
+    DaminggangOperation,
     DapaiOperation,
     LiqiOperation,
     OperationCandidates,
@@ -74,6 +75,37 @@ def test_peng_operation_rejects_tiles_of_different_kinds() -> None:
             from_seat=validate_seat(2),
             tile=validate_tile("5m"),
             consumed=(validate_tile("5m"), validate_tile("5p")),
+        )
+
+
+def test_daminggang_operation_is_an_immutable_value() -> None:
+    operation = DaminggangOperation(
+        from_seat=validate_seat(2),
+        tile=validate_tile("5m"),
+        consumed=(
+            validate_tile("0m"),
+            validate_tile("5m"),
+            validate_tile("5m"),
+        ),
+    )
+
+    assert operation.from_seat == 2
+    assert operation.tile == "5m"
+    assert operation.consumed == ("0m", "5m", "5m")
+    with pytest.raises(FrozenInstanceError):
+        operation.tile = validate_tile("6m")  # ty: ignore[invalid-assignment]
+
+
+def test_daminggang_operation_rejects_tiles_of_different_kinds() -> None:
+    with pytest.raises(ValueError, match="same kind"):
+        DaminggangOperation(
+            from_seat=validate_seat(2),
+            tile=validate_tile("5m"),
+            consumed=(
+                validate_tile("5m"),
+                validate_tile("5m"),
+                validate_tile("5p"),
+            ),
         )
 
 

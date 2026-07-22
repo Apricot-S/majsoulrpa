@@ -9,6 +9,7 @@ from majsoulrpa.screens.match.event import (
 )
 from majsoulrpa.screens.match.operation._specification import (
     _ChiOperationSpecification,
+    _DaminggangOperationSpecification,
     _DapaiOperationSpecification,
     _LiqiOperationSpecification,
     _OperationCandidatesSpecification,
@@ -19,6 +20,7 @@ from majsoulrpa.screens.match.operation.candidates import (
     OperationCandidates,
 )
 from majsoulrpa.screens.match.operation.chi import ChiOperation
+from majsoulrpa.screens.match.operation.daminggang import DaminggangOperation
 from majsoulrpa.screens.match.operation.dapai import DapaiOperation
 from majsoulrpa.screens.match.operation.liqi import LiqiOperation
 from majsoulrpa.screens.match.operation.peng import PengOperation
@@ -103,6 +105,22 @@ def materialize_operation_candidates(
                     )
                 )
                 continue
+            case _DaminggangOperationSpecification():
+                call_event = _validate_call_event(
+                    event,
+                    zimopai,
+                    self_seat,
+                    player_count,
+                    "daminggang",
+                )
+                operations.extend(
+                    _materialize_daminggang_operations(
+                        operation_specification,
+                        call_event,
+                        shoupai,
+                    )
+                )
+                continue
             case _LiqiOperationSpecification():
                 if isinstance(event, NewRoundEvent):
                     if event.ju != self_seat:
@@ -180,13 +198,7 @@ def _materialize_chi_operations(
 ) -> list[ChiOperation]:
     operations: list[ChiOperation] = []
     for consumed in specification.consumed_candidates:
-        remaining_tiles = list(shoupai)
-        for tile in consumed:
-            try:
-                remaining_tiles.remove(tile)
-            except ValueError:
-                msg = "A chi operation must consume tiles in the hand."
-                raise ValueError(msg) from None
+        _validate_consumed_tiles_in_hand(consumed, shoupai, "chi")
         operations.append(
             ChiOperation(
                 from_seat=event.seat,
@@ -204,13 +216,7 @@ def _materialize_peng_operations(
 ) -> list[PengOperation]:
     operations: list[PengOperation] = []
     for consumed in specification.consumed_candidates:
-        remaining_tiles = list(shoupai)
-        for tile in consumed:
-            try:
-                remaining_tiles.remove(tile)
-            except ValueError:
-                msg = "A peng operation must consume tiles in the hand."
-                raise ValueError(msg) from None
+        _validate_consumed_tiles_in_hand(consumed, shoupai, "peng")
         operations.append(
             PengOperation(
                 from_seat=event.seat,
@@ -219,6 +225,40 @@ def _materialize_peng_operations(
             )
         )
     return operations
+
+
+def _materialize_daminggang_operations(
+    specification: _DaminggangOperationSpecification,
+    event: DapaiEvent,
+    shoupai: tuple[Tile, ...],
+) -> list[DaminggangOperation]:
+    operations: list[DaminggangOperation] = []
+    for consumed in specification.consumed_candidates:
+        _validate_consumed_tiles_in_hand(consumed, shoupai, "daminggang")
+        operations.append(
+            DaminggangOperation(
+                from_seat=event.seat,
+                tile=event.tile,
+                consumed=consumed,
+            )
+        )
+    return operations
+
+
+def _validate_consumed_tiles_in_hand(
+    consumed: tuple[Tile, ...],
+    shoupai: tuple[Tile, ...],
+    operation_name: str,
+) -> None:
+    remaining_tiles = list(shoupai)
+    for tile in consumed:
+        try:
+            remaining_tiles.remove(tile)
+        except ValueError:
+            msg = (
+                f"A {operation_name} operation must consume tiles in the hand."
+            )
+            raise ValueError(msg) from None
 
 
 def _validate_call_event(
