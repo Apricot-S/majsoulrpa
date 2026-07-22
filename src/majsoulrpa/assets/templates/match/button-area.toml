@@ -1,6 +1,6 @@
-# chi.png and peng.png are both 150 x 38. The margins expand this
-# anchor region to the full 820 x 290 area where operation buttons
-# may appear in different combinations.
+# Operation-selection buttons use a 150 x 38 anchor region. The
+# margins expand it to the full 820 x 290 area where the buttons may
+# appear in different combinations.
 [region]
 left = 630
 top = 600
