@@ -132,10 +132,8 @@ class RoundState:
     first_draw: tuple[bool, ...]
     yifa: tuple[bool, ...]
     lingshang_zimo: tuple[bool, ...]
-    previous_dapai_seat: Seat | None
-    previous_dapai_tile: Tile | None
-    previous_qianggang_seat: Seat | None
-    previous_qianggang_tile: Tile | None
+    previous_dapai: tuple[Seat, Tile] | None
+    previous_qianggang: tuple[Seat, Tile] | None
     operation_candidates: OperationCandidates | None
     events: tuple[MatchEvent, ...]
 
@@ -164,14 +162,6 @@ class RoundState:
             len(collection) != player_count for collection in collections
         ):
             msg = "Round seat collections must contain three or four values."
-            raise ValueError(msg)
-        if (self.previous_qianggang_seat is None) != (
-            self.previous_qianggang_tile is None
-        ):
-            msg = (
-                "Previous qianggang seat and tile must both be present or "
-                "absent."
-            )
             raise ValueError(msg)
 
 

@@ -162,10 +162,8 @@ class RoundState:
     first_draw: tuple[bool, ...]
     yifa: tuple[bool, ...]
     lingshang_zimo: tuple[bool, ...]
-    previous_dapai_seat: Seat | None
-    previous_dapai_tile: Tile | None
-    previous_qianggang_seat: Seat | None
-    previous_qianggang_tile: Tile | None
+    previous_dapai: tuple[Seat, Tile] | None
+    previous_qianggang: tuple[Seat, Tile] | None
     operation_candidates: OperationCandidates | None
     events: tuple[MatchEvent, ...]
 
@@ -333,7 +331,7 @@ actor seat は各公開 operation model に重複して保持しない。実行�
 
 一方、チー、ポン、大明槓、ロンの `from_seat` は牌の取得元となる seat を確定する値なので公開 operation に
 含める。`from_seat` と `tile` は直前の Event から materializer が同時に補い、利用者が
-`previous_dapai_seat` / `previous_dapai_tile` を参照して候補を完成させる必要をなくす。これは actor の
+`previous_dapai` を参照して候補を完成させる必要をなくす。これは actor の
 `self_seat` とは役割が異なる。利用者が operation instance を自作した場合も、将来の operate API が
 現在の候補への包含を検証することで、対象 seat または対象牌が異なる instance を拒否する。
 `RoundState.operation_candidates` は候補がないときだけ `None` とし、
@@ -428,7 +426,7 @@ type 2、3、5 は取得する直前の打牌とその seat を確定できな�
 operate API は `OperationCandidates.operations` から選んだ concrete operation instance を
 引数として受け取る。各 instance は追加の候補 index や牌組引数を要求せず、それ自体で選択内容を
 完全に表す。副露・ロン operation も対象 seat、取得牌または和了対象牌、消費牌を instance 内に持ち、
-呼び出し側が直前の河や `RoundState.previous_dapai_*` を参照して補完する必要はない。API は渡された
+呼び出し側が直前の河や `RoundState.previous_dapai` を参照して補完する必要はない。API は渡された
 instance が現在の候補に含まれることを確認してから画面操作へ変換する。
 
 親の `ActionNewRound.tiles` 14 枚はすべて配牌であり、表示の都合で右端の 1 枚を `zimopai` field に
@@ -781,7 +779,7 @@ def event_name(event: MatchEvent) -> str:
 `ActionDealTile.tile` は自家のツモだけ実牌を含み、他家のツモでは空文字列になる。`ZimoEvent.tile` は
 空文字列を `None` に正規化し、reducer は自家なら実牌、他家なら `None` であることを検証する。
 `doras` が非空なら現在のドラ表示牌を置き換え、空なら以前の表示牌を維持する。ツモを適用した時点で
-直前の打牌は解決済みとして `previous_dapai_seat` / `previous_dapai_tile` を消去する。
+直前の打牌は解決済みとして `previous_dapai` を消去する。
 
 `ActionChiPengGang(type=0)` は `ChiEvent` に変換する。雀魂の `tiles` は自家から消費する2枚を先に、
 直前の河から取得する牌を末尾に置く。protocol decoder で前2枚を固定長の `consumed`、末尾を `tile` に
@@ -817,13 +815,13 @@ playerの手牌から消費する3枚を先に、河から取得する牌とそ�
 reducer は自家の `shoupai` と `zimopai` から、赤五と黒五を同じ牌種として数えた4枚を消費する。
 したがって赤なし対局で手牌が黒五4枚でも state 遷移は継続できる。暗槓が手牌内の4枚だけを使い、
 別の `zimopai` が残る場合は、そのツモ牌を `shoupai` に取り込む。暗槓は河へ追加せず、
-`previous_dapai_*` も変更しない。全員の `first_draw` / `yifa` を終了し、暗槓した seat の
+`previous_dapai` も変更しない。全員の `first_draw` / `yifa` を終了し、暗槓した seat の
 `lingshang_zimo` を真にする。
 
 雀魂では暗槓・加槓・北抜きのいずれも搶槓の対象になり得るため、成立直後の対象を
-`previous_qianggang_seat` / `previous_qianggang_tile` に保持する。通常の打牌と混同せず、河にも
+`previous_qianggang` の `(seat, tile)` に保持する。通常の打牌と混同せず、河にも
 加えない。ロンなら後続の和了 Event がこの値を参照し、和了せず嶺上牌の `ZimoEvent` へ進んだ時点で
-両方を消去する。両 field は常に同時に `None`、または同時に値を持つ。
+消去する。seat と tile を別々の optional field にせず、存在条件がずれないようにする。
 
 暗槓・加槓の operation は最大3候補を取り得る。一方、3候補時の雀魂 UI の選択座標は未確認である。
 操作 API を実装する際は推測した座標でクリックせず、専用の画面状態例外で停止する。例外 message には

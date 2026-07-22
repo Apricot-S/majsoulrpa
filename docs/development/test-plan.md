@@ -827,9 +827,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 暗槓を手牌内の4枚で行った場合は、別の zimopai を shoupai へ取り込んで sort する
 - [x] 赤なし対局の黒五4枚も、赤あり表現へ正規化した AngangEvent から reducer を継続できる
 - [x] 他家の暗槓は自家の shoupai / zimopai を変更せず、対象 seat の fulu に Angang を追加する
-- [x] 暗槓は河と previous_dapai_* を変更せず、全員の first_draw / yifa を終了し、対象 seat の lingshang_zimo を有効にする
-- [x] 暗槓は previous_qianggang_seat / tile を設定し、後続の嶺上 ZimoEvent が両方を消去する
-- [x] previous_qianggang_seat / tile は常に両方 None または両方が値を持つ
+- [x] 暗槓は河と previous_dapai を変更せず、全員の first_draw / yifa を終了し、対象 seat の lingshang_zimo を有効にする
+- [x] 暗槓は previous_qianggang に `(seat, tile)` を設定し、後続の嶺上 ZimoEvent が消去する
+- [x] previous_dapai / previous_qianggang は seat と tile を単一 tuple にまとめ、存在条件の不整合を表現できない
 - [x] 暗槓の不連続 step、不正 seat、未解決打牌、自家の消費牌不足を不整合として拒否する
 - [ ] 暗槓・加槓の3候補 UI は座標を推測せず、調査協力を求める専用例外で停止する
 - [ ] match version は同じ Screen instance 内で単調増加し、round step は局ごとに 0 から始まる

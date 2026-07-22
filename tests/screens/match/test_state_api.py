@@ -333,8 +333,7 @@ def test_get_state_applies_dealers_first_discard() -> None:
         ),
     )
     assert state.round.first_draw[0] is False
-    assert state.round.previous_dapai_seat == 0
-    assert state.round.previous_dapai_tile == "9s"
+    assert state.round.previous_dapai == (0, "9s")
     assert isinstance(state.round.events[-1], DapaiEvent)
     assert state.round.events[-1].action_step == 2
 
@@ -565,8 +564,7 @@ def test_get_state_applies_self_draw() -> None:
     assert state.round.dora_indicators == ("4p",)
     assert state.round.scores[3] == 24000
     assert state.round.liqibang == 1
-    assert state.round.previous_dapai_seat is None
-    assert state.round.previous_dapai_tile is None
+    assert state.round.previous_dapai is None
     assert isinstance(state.round.events[-1], ZimoEvent)
 
 
@@ -614,8 +612,7 @@ def test_get_state_applies_self_chi() -> None:
             consumed=(validate_tile("2m"), validate_tile("3m")),
         ),
     )
-    assert state.round.previous_dapai_seat is None
-    assert state.round.previous_dapai_tile is None
+    assert state.round.previous_dapai is None
     assert state.round.first_draw == (False,) * 4
     assert state.round.yifa == (False,) * 4
     assert state.round.operation_candidates is not None
@@ -674,7 +671,7 @@ def test_get_state_applies_opponent_chi_and_liqi_success() -> None:
     assert state.round.liqibang == 1
     assert state.round.first_draw == (False,) * 4
     assert state.round.yifa == (False,) * 4
-    assert state.round.previous_dapai_seat is None
+    assert state.round.previous_dapai is None
     assert state.round.operation_candidates is None
 
 
@@ -722,8 +719,7 @@ def test_get_state_applies_self_peng() -> None:
             consumed=(validate_tile("0m"), validate_tile("5m")),
         ),
     )
-    assert state.round.previous_dapai_seat is None
-    assert state.round.previous_dapai_tile is None
+    assert state.round.previous_dapai is None
     assert state.round.first_draw == (False,) * 4
     assert state.round.yifa == (False,) * 4
     assert state.round.operation_candidates is not None
@@ -779,7 +775,7 @@ def test_get_state_applies_opponent_peng_and_liqi_success() -> None:
     assert state.round.liqibang == 1
     assert state.round.first_draw == (False,) * 4
     assert state.round.yifa == (False,) * 4
-    assert state.round.previous_dapai_seat is None
+    assert state.round.previous_dapai is None
     assert state.round.operation_candidates is None
 
 
@@ -826,8 +822,7 @@ def test_get_state_applies_self_daminggang() -> None:
             ),
         ),
     )
-    assert state.round.previous_dapai_seat is None
-    assert state.round.previous_dapai_tile is None
+    assert state.round.previous_dapai is None
     assert state.round.first_draw == (False,) * 4
     assert state.round.yifa == (False,) * 4
     assert state.round.lingshang_zimo == (True, False, False, False)
@@ -886,8 +881,7 @@ def test_get_state_applies_opponent_daminggang_and_liqi_success() -> None:
     assert state.round.first_draw == (False,) * 4
     assert state.round.yifa == (False,) * 4
     assert state.round.lingshang_zimo == (False, True, False, False)
-    assert state.round.previous_dapai_seat is None
-    assert state.round.previous_dapai_tile is None
+    assert state.round.previous_dapai is None
     assert state.round.operation_candidates is None
 
 
@@ -978,10 +972,8 @@ def test_get_state_applies_self_angang_with_drawn_tile() -> None:
     assert state.round.fulu[0] == (Angang(consumed=consumed),)
     assert state.round.dora_indicators == ("3p", "4p")
     assert state.round.he[0] == ()
-    assert state.round.previous_dapai_seat is None
-    assert state.round.previous_dapai_tile is None
-    assert state.round.previous_qianggang_seat == 0
-    assert state.round.previous_qianggang_tile == "0m"
+    assert state.round.previous_dapai is None
+    assert state.round.previous_qianggang == (0, "0m")
     assert state.round.first_draw == (False,) * 4
     assert state.round.yifa == (False,) * 4
     assert state.round.lingshang_zimo == (True, False, False, False)
@@ -1047,8 +1039,7 @@ def test_get_state_applies_opponent_angang() -> None:
             )
         ),
     )
-    assert state.round.previous_qianggang_seat == 1
-    assert state.round.previous_qianggang_tile == "7z"
+    assert state.round.previous_qianggang == (1, "7z")
 
 
 def test_get_state_clears_qianggang_target_on_lingshang_draw() -> None:
@@ -1075,8 +1066,7 @@ def test_get_state_clears_qianggang_target_on_lingshang_draw() -> None:
     asyncio.run(screen.before_callback())
     state = asyncio.run(screen.get_state())
 
-    assert state.round.previous_qianggang_seat is None
-    assert state.round.previous_qianggang_tile is None
+    assert state.round.previous_qianggang is None
     assert state.round.zimopai == "2p"
 
 
@@ -1358,8 +1348,7 @@ def test_get_state_continues_after_opponents_concealed_draw() -> None:
 
     assert state.round.zimopai is None
     assert state.round.dora_indicators == ("3p",)
-    assert state.round.previous_dapai_seat == 1
-    assert state.round.previous_dapai_tile == "5p"
+    assert state.round.previous_dapai == (1, "5p")
     event = state.round.events[-2]
     assert isinstance(event, ZimoEvent)
     assert event.tile is None
