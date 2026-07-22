@@ -144,137 +144,7 @@ def _materialize_dapai_specification(
     if isinstance(event, ZimoEvent) and event.seat != self_seat:
         msg = "An opponent draw cannot provide self operations."
         raise ValueError(msg)
-    return _materialize_dapai_operations(
-        specification,
-        event,
-        shoupai,
-        zimopai,
-    )
 
-
-def _materialize_chi_specification(
-    specification: _ChiOperationSpecification,
-    event: MatchEvent,
-    shoupai: tuple[Tile, ...],
-    zimopai: Tile | None,
-    self_seat: Seat,
-    player_count: int,
-) -> list[ChiOperation]:
-    if player_count != _FOUR_PLAYER_COUNT:
-        msg = "A chi operation is only valid in a four-player match."
-        raise ValueError(msg)
-    call_event = _validate_call_event(
-        event,
-        zimopai,
-        self_seat,
-        player_count,
-        "chi",
-    )
-    if not is_preceding_seat(
-        call_event.seat,
-        relative_to=self_seat,
-        player_count=player_count,
-    ):
-        msg = "A chi must claim a discard from the preceding player."
-        raise ValueError(msg)
-    return _materialize_chi_operations(
-        specification,
-        call_event,
-        shoupai,
-    )
-
-
-def _materialize_peng_specification(
-    specification: _PengOperationSpecification,
-    event: MatchEvent,
-    shoupai: tuple[Tile, ...],
-    zimopai: Tile | None,
-    self_seat: Seat,
-    player_count: int,
-) -> list[PengOperation]:
-    call_event = _validate_call_event(
-        event,
-        zimopai,
-        self_seat,
-        player_count,
-        "peng",
-    )
-    return _materialize_peng_operations(
-        specification,
-        call_event,
-        shoupai,
-    )
-
-
-def _materialize_angang_specification(
-    specification: _AngangOperationSpecification,
-    event: MatchEvent,
-    shoupai: tuple[Tile, ...],
-    zimopai: Tile | None,
-    self_seat: Seat,
-) -> list[AngangOperation]:
-    angang_zimopai = _validate_angang_event(event, zimopai, self_seat)
-    return _materialize_angang_operations(
-        specification,
-        shoupai,
-        angang_zimopai,
-    )
-
-
-def _materialize_daminggang_specification(
-    specification: _DaminggangOperationSpecification,
-    event: MatchEvent,
-    shoupai: tuple[Tile, ...],
-    zimopai: Tile | None,
-    self_seat: Seat,
-    player_count: int,
-) -> list[DaminggangOperation]:
-    call_event = _validate_call_event(
-        event,
-        zimopai,
-        self_seat,
-        player_count,
-        "daminggang",
-    )
-    return _materialize_daminggang_operations(
-        specification,
-        call_event,
-        shoupai,
-    )
-
-
-def _materialize_liqi_specification(
-    specification: _LiqiOperationSpecification,
-    event: MatchEvent,
-    shoupai: tuple[Tile, ...],
-    zimopai: Tile | None,
-    self_seat: Seat,
-) -> list[LiqiOperation]:
-    if isinstance(event, NewRoundEvent):
-        if event.ju != self_seat:
-            msg = "Only the dealer can declare liqi after ActionNewRound."
-            raise ValueError(msg)
-    elif isinstance(event, ZimoEvent):
-        if event.seat != self_seat:
-            msg = "An opponent draw cannot provide a liqi operation."
-            raise ValueError(msg)
-    else:
-        msg = "A liqi operation must follow a self draw."
-        raise TypeError(msg)
-    return _materialize_liqi_operations(
-        specification,
-        event,
-        shoupai,
-        zimopai,
-    )
-
-
-def _materialize_dapai_operations(
-    specification: _DapaiOperationSpecification,
-    event: MatchEvent,
-    shoupai: tuple[Tile, ...],
-    zimopai: Tile | None,
-) -> list[DapaiOperation]:
     forbidden_tiles = set(specification.forbidden_tiles)
     for tile in specification.forbidden_tiles:
         # Work around a Majsoul API inconsistency. When a swap calling
@@ -300,70 +170,163 @@ def _materialize_dapai_operations(
     return candidates
 
 
-def _materialize_chi_operations(
+def _materialize_chi_specification(
     specification: _ChiOperationSpecification,
-    event: DapaiEvent,
+    event: MatchEvent,
     shoupai: tuple[Tile, ...],
+    zimopai: Tile | None,
+    self_seat: Seat,
+    player_count: int,
 ) -> list[ChiOperation]:
+    if player_count != _FOUR_PLAYER_COUNT:
+        msg = "A chi operation is only valid in a four-player match."
+        raise ValueError(msg)
+
+    call_event = _validate_call_event(
+        event,
+        zimopai,
+        self_seat,
+        player_count,
+        "chi",
+    )
+    if not is_preceding_seat(
+        call_event.seat,
+        relative_to=self_seat,
+        player_count=player_count,
+    ):
+        msg = "A chi must claim a discard from the preceding player."
+        raise ValueError(msg)
+
     operations: list[ChiOperation] = []
     for consumed in specification.consumed_candidates:
         _validate_consumed_tiles_in_hand(consumed, shoupai, "chi")
         operations.append(
             ChiOperation(
-                from_seat=event.seat,
-                tile=event.tile,
+                from_seat=call_event.seat,
+                tile=call_event.tile,
                 consumed=consumed,
             )
         )
     return operations
 
 
-def _materialize_peng_operations(
+def _materialize_peng_specification(
     specification: _PengOperationSpecification,
-    event: DapaiEvent,
+    event: MatchEvent,
     shoupai: tuple[Tile, ...],
+    zimopai: Tile | None,
+    self_seat: Seat,
+    player_count: int,
 ) -> list[PengOperation]:
+    call_event = _validate_call_event(
+        event,
+        zimopai,
+        self_seat,
+        player_count,
+        "peng",
+    )
     operations: list[PengOperation] = []
     for consumed in specification.consumed_candidates:
         _validate_consumed_tiles_in_hand(consumed, shoupai, "peng")
         operations.append(
             PengOperation(
-                from_seat=event.seat,
-                tile=event.tile,
+                from_seat=call_event.seat,
+                tile=call_event.tile,
                 consumed=consumed,
             )
         )
     return operations
 
 
-def _materialize_daminggang_operations(
-    specification: _DaminggangOperationSpecification,
-    event: DapaiEvent,
+def _materialize_angang_specification(
+    specification: _AngangOperationSpecification,
+    event: MatchEvent,
     shoupai: tuple[Tile, ...],
+    zimopai: Tile | None,
+    self_seat: Seat,
+) -> list[AngangOperation]:
+    angang_zimopai = _validate_angang_event(event, zimopai, self_seat)
+    available_tiles = (*shoupai, angang_zimopai)
+    operations: list[AngangOperation] = []
+    for consumed in specification.consumed_candidates:
+        _validate_consumed_tiles_in_hand(consumed, available_tiles, "angang")
+        operations.append(AngangOperation(consumed=consumed))
+    return operations
+
+
+def _materialize_daminggang_specification(
+    specification: _DaminggangOperationSpecification,
+    event: MatchEvent,
+    shoupai: tuple[Tile, ...],
+    zimopai: Tile | None,
+    self_seat: Seat,
+    player_count: int,
 ) -> list[DaminggangOperation]:
+    call_event = _validate_call_event(
+        event,
+        zimopai,
+        self_seat,
+        player_count,
+        "daminggang",
+    )
     operations: list[DaminggangOperation] = []
     for consumed in specification.consumed_candidates:
         _validate_consumed_tiles_in_hand(consumed, shoupai, "daminggang")
         operations.append(
             DaminggangOperation(
-                from_seat=event.seat,
-                tile=event.tile,
+                from_seat=call_event.seat,
+                tile=call_event.tile,
                 consumed=consumed,
             )
         )
     return operations
 
 
-def _materialize_angang_operations(
-    specification: _AngangOperationSpecification,
+def _materialize_liqi_specification(
+    specification: _LiqiOperationSpecification,
+    event: MatchEvent,
     shoupai: tuple[Tile, ...],
-    zimopai: Tile,
-) -> list[AngangOperation]:
-    available_tiles = (*shoupai, zimopai)
-    operations: list[AngangOperation] = []
-    for consumed in specification.consumed_candidates:
-        _validate_consumed_tiles_in_hand(consumed, available_tiles, "angang")
-        operations.append(AngangOperation(consumed=consumed))
+    zimopai: Tile | None,
+    self_seat: Seat,
+) -> list[LiqiOperation]:
+    if isinstance(event, NewRoundEvent):
+        if event.ju != self_seat:
+            msg = "Only the dealer can declare liqi after ActionNewRound."
+            raise ValueError(msg)
+    elif isinstance(event, ZimoEvent):
+        if event.seat != self_seat:
+            msg = "An opponent draw cannot provide a liqi operation."
+            raise ValueError(msg)
+    else:
+        msg = "A liqi operation must follow a self draw."
+        raise TypeError(msg)
+
+    operations: list[LiqiOperation] = []
+    for tile in specification.candidate_tiles:
+        candidate_operations = _materialize_liqi_tile(
+            tile,
+            event,
+            shoupai,
+            zimopai,
+        )
+        if not candidate_operations:
+            msg = "A liqi candidate must exist in the hand or drawn tile."
+            raise ValueError(msg)
+        operations.extend(candidate_operations)
+
+        # Work around a Majsoul API inconsistency. When both a red five
+        # and its normal counterpart can declare liqi, combination may
+        # contain only the red five.
+        if tile in {"0m", "0p", "0s"}:
+            normal_five = Tile(f"5{tile[1]}")
+            operations.extend(
+                _materialize_liqi_tile(
+                    normal_five,
+                    event,
+                    shoupai,
+                    zimopai,
+                )
+            )
     return operations
 
 
@@ -426,41 +389,6 @@ def _validate_call_event(
         msg = f"A {operation_name} cannot be selected with an unresolved draw."
         raise ValueError(msg)
     return event
-
-
-def _materialize_liqi_operations(
-    specification: _LiqiOperationSpecification,
-    event: NewRoundEvent | ZimoEvent,
-    shoupai: tuple[Tile, ...],
-    zimopai: Tile | None,
-) -> list[LiqiOperation]:
-    operations: list[LiqiOperation] = []
-    for tile in specification.candidate_tiles:
-        candidate_operations = _materialize_liqi_tile(
-            tile,
-            event,
-            shoupai,
-            zimopai,
-        )
-        if not candidate_operations:
-            msg = "A liqi candidate must exist in the hand or drawn tile."
-            raise ValueError(msg)
-        operations.extend(candidate_operations)
-
-        # Work around a Majsoul API inconsistency. When both a red five
-        # and its normal counterpart can declare liqi, combination may
-        # contain only the red five.
-        if tile in {"0m", "0p", "0s"}:
-            normal_five = Tile(f"5{tile[1]}")
-            operations.extend(
-                _materialize_liqi_tile(
-                    normal_five,
-                    event,
-                    shoupai,
-                    zimopai,
-                )
-            )
-    return operations
 
 
 def _materialize_liqi_tile(
