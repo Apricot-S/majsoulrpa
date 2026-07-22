@@ -228,6 +228,7 @@ def test_login_screen_before_callback_clicks_matched_region(
         sleeps.append(seconds)
 
     browser = BrowserControllerSpy(
+        _synthetic_blank_screenshot(),
         _synthetic_login_button_screenshot(),
         _synthetic_yostar_logo_screenshot(),
     )
@@ -239,12 +240,13 @@ def test_login_screen_before_callback_clicks_matched_region(
     [(x, y)] = browser.clicked_points
     assert 1380 < x < 1680
     assert 435 < y < 500
-    assert sleeps == [1.0, 0.5]
+    assert sleeps == [1.5, 1.0, 0.5]
     assert browser.input_texts == []
 
 
 def test_login_screen_before_callback_raises_without_login_button() -> None:
-    browser = BrowserControllerSpy(_synthetic_blank_screenshot())
+    screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(screenshot, screenshot)
     screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
 
     with pytest.raises(ScreenDetectionError, match="login button") as exc_info:
@@ -262,6 +264,7 @@ def test_login_screen_before_callback_raises_when_yostar_logo_is_missing(
 
     yostar_missing_screenshot = _synthetic_blank_screenshot()
     browser = BrowserControllerSpy(
+        _synthetic_blank_screenshot(),
         _synthetic_login_button_screenshot(),
         yostar_missing_screenshot,
     )
@@ -273,6 +276,30 @@ def test_login_screen_before_callback_raises_when_yostar_logo_is_missing(
 
     assert exc_info.value.screenshot == yostar_missing_screenshot
     assert browser.clicked_points
+
+
+def test_login_screen_before_callback_rejects_maintenance_dialog(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    screenshot = _synthetic_maintenance_dialog_screenshot()
+    browser = BrowserControllerSpy(screenshot)
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+
+    with pytest.raises(
+        ScreenUnexpectedStateError,
+        match="Server maintenance",
+    ) as exc_info:
+        asyncio.run(screen.before_callback())
+
+    assert exc_info.value.screenshot == screenshot
+    assert sleeps == [1.5]
+    assert browser.clicked_points == []
 
 
 def test_login_screen_enter_email_address_records_browser_operation(

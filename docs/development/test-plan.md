@@ -198,6 +198,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `LoginScreen.before_callback()` がログインボタン不一致時に例外を投げる
 - [x] `LoginScreen.before_callback()` がログインボタンクリック後に 1.0 秒待機する
 - [x] `LoginScreen.before_callback()` が Yostar ロゴ不一致時に例外を投げる
+- [x] `LoginScreen.before_callback()` が開始時に 1.5 秒待機してメンテナンスダイアログを検出する
+- [x] `LoginScreen.before_callback()` がメンテナンスダイアログを検出したら操作せず `ScreenUnexpectedStateError` にする
 
 候補:
 

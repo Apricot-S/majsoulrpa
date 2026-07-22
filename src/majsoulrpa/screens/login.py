@@ -111,6 +111,9 @@ class LoginScreen(Screen):
 
     @override
     async def before_callback(self) -> None:
+        await asyncio.sleep(1.5)
+        await self._raise_if_maintenance_dialog()
+
         await self.click_template(
             self.LOGIN_1_TEMPLATE,
             message="Failed to find login button.",
@@ -209,12 +212,14 @@ class LoginScreen(Screen):
         # Its pre-hook then fails because the Yostar dialog no longer
         # opens.
         await asyncio.sleep(2.0)
+        await self._raise_if_maintenance_dialog()
+        self._mark_stale()
+
+    async def _raise_if_maintenance_dialog(self) -> None:
         screenshot = await self.screenshot()
         if self.MAINTENANCE_OK_TEMPLATE.find(screenshot) is not None:
             msg = "Server maintenance dialog was detected."
             raise ScreenUnexpectedStateError(msg, screenshot)
-
-        self._mark_stale()
 
     async def _click_agreement_region(
         self,
