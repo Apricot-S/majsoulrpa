@@ -6,6 +6,7 @@ from majsoulrpa._clock import utc_now
 from majsoulrpa.assets.templates.match import (
     BUTTON_AREA_SETTINGS_PATH,
     CHI_TEMPLATE_PATH,
+    GANG_TEMPLATE_PATH,
     LIQI_TEMPLATE_PATH,
     PENG_TEMPLATE_PATH,
     SEAT_INDICATOR_SETTINGS_PATH,
@@ -138,6 +139,10 @@ class MatchScreen(Screen):
         template_path=PENG_TEMPLATE_PATH,
         settings_path=BUTTON_AREA_SETTINGS_PATH,
     )
+    GANG_BUTTON_TEMPLATE = load_png_template_matcher(
+        template_path=GANG_TEMPLATE_PATH,
+        settings_path=BUTTON_AREA_SETTINGS_PATH,
+    )
     LIQI_BUTTON_TEMPLATE = load_png_template_matcher(
         template_path=LIQI_TEMPLATE_PATH,
         settings_path=BUTTON_AREA_SETTINGS_PATH,
@@ -217,8 +222,7 @@ class MatchScreen(Screen):
             case PengOperation():
                 await self._operate_peng(state, operation)
             case DaminggangOperation():
-                msg = "DaminggangOperation execution is not implemented."
-                raise NotImplementedError(msg)
+                await self._operate_daminggang(state, operation)
             case LiqiOperation():
                 await self._operate_liqi(state, operation)
             case _ as unreachable:
@@ -544,6 +548,34 @@ class MatchScreen(Screen):
             self.PENG_BUTTON_TEMPLATE,
         )
 
+    async def _operate_daminggang(
+        self,
+        state: MatchState,
+        operation: DaminggangOperation,
+    ) -> None:
+        candidates = state.round.operation_candidates
+        if candidates is None:
+            msg = "DaminggangOperation requires operation candidates."
+            raise RuntimeError(msg)
+        daminggang_operations = tuple(
+            candidate
+            for candidate in candidates.operations
+            if isinstance(candidate, DaminggangOperation)
+        )
+        if daminggang_operations != (operation,):
+            error = ValueError(
+                "The number of daminggang candidates must be one."
+            )
+            await self._raise_inconsistent_message(
+                "Daminggang candidates do not match the supported UI layout.",
+                cause=error,
+            )
+        if not await self._click_operation_button_or_detect_progress(
+            self.GANG_BUTTON_TEMPLATE
+        ):
+            return
+        await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
+
     async def _operate_liqi(
         self,
         state: MatchState,
@@ -590,17 +622,10 @@ class MatchScreen(Screen):
         operations: tuple[ChiOperation | PengOperation, ...],
         button_template: TemplateMatcher,
     ) -> None:
-        # This loop determines whether the call button can be clicked or
-        # the operation opportunity disappears before the click. The
-        # outcome is verified later from the authoritative event.
-        while True:
-            if await self._put_back_pending_action_while_waiting_for_ui():
-                return
-            if await self.click_template_if_present(button_template):
-                break
-            await asyncio.sleep(
-                OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
-            )
+        if not await self._click_operation_button_or_detect_progress(
+            button_template
+        ):
+            return
 
         if len(operations) >= _MIN_MULTIPLE_FULU_CANDIDATE_COUNT:
             index = operations.index(operation)
@@ -613,6 +638,22 @@ class MatchScreen(Screen):
                 return
             await self.click_region(selection_region)
         await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
+
+    async def _click_operation_button_or_detect_progress(
+        self,
+        button_template: TemplateMatcher,
+    ) -> bool:
+        # Determine whether the operation button can be clicked or the
+        # opportunity disappears before the click. The authoritative
+        # event is verified later by the normal operation pipeline.
+        while True:
+            if await self._put_back_pending_action_while_waiting_for_ui():
+                return False
+            if await self.click_template_if_present(button_template):
+                return True
+            await asyncio.sleep(
+                OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
+            )
 
     async def _put_back_pending_action_while_waiting_for_ui(self) -> bool:
         while (message := self._get_sniffer_message_nowait()) is not None:
@@ -694,7 +735,13 @@ class MatchScreen(Screen):
                     and (event.liqi or event.wliqi)
                 )
             case DaminggangOperation():
-                return False
+                return (
+                    isinstance(event, DaminggangEvent)
+                    and event.seat == state.self_seat
+                    and event.from_seat == operation.from_seat
+                    and event.tile == operation.tile
+                    and event.consumed == operation.consumed
+                )
         assert_never(operation)
 
     @staticmethod

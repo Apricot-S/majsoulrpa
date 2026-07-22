@@ -759,6 +759,18 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] 複数候補の表示待ち中に上位actionを受信した場合は、組合せ領域をクリックせず通常pipelineへ戻す
 - [x] 上位actionを確認できないポンボタン検出失敗を成功扱いしない
 
+### MatchScreen 大明槓操作 API
+
+- [x] `button-area.toml` の search region 内から `gang.png` を検出し、検出したボタン領域をクリックする
+- [x] 槓ボタンがまだ描画されていない場合は、呼び出し側 timeout まで検出を再試行する
+- [x] DaminggangOperation は1候補だけを許容し、組合せ選択領域を追加クリックしない
+- [x] 槓ボタンをクリックした後、手牌のスライド完了を1.5秒待ってからAPIを返す
+- [x] `operate()` は指定した自家の `DaminggangEvent` までmessageをreduceし、更新後のMatchStateを返す
+- [x] 自家の `DaminggangEvent` が指定した from_seat / tile / consumed と異なる場合は不整合にする
+- [x] 槓ボタン待機中に `ActionPrototype` を先読みした場合は1回だけput_backし、ボタンをクリックしない
+- [x] 上位actionを確認できない槓ボタン検出失敗を成功扱いしない
+- [ ] 他家のロンが先に成立した場合は大明槓操作をpreemptする
+
 ### MatchScreen operation のスキップ
 
 - [ ] チー、ポン、大明槓は「鳴きなし」toggleをonにして明示的にスキップする
