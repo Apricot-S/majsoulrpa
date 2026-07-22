@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import final
 
+from majsoulrpa.screens.match.operation.angang import AngangOperation
 from majsoulrpa.screens.match.operation.chi import ChiOperation
 from majsoulrpa.screens.match.operation.daminggang import DaminggangOperation
 from majsoulrpa.screens.match.operation.dapai import DapaiOperation
@@ -11,6 +12,7 @@ type MatchOperation = (
     DapaiOperation
     | ChiOperation
     | PengOperation
+    | AngangOperation
     | DaminggangOperation
     | LiqiOperation
 )

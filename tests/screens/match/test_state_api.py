@@ -14,6 +14,7 @@ from majsoulrpa.screens.errors import (
 from majsoulrpa.screens.match import (
     Angang,
     AngangEvent,
+    AngangOperation,
     Chi,
     ChiEvent,
     ChiOperation,
@@ -1547,6 +1548,50 @@ def test_get_state_exposes_initial_dapai_operation_candidates() -> None:
             "1z",
             "2z",
         )
+    )
+
+
+def test_get_state_exposes_initial_angang_operation_candidate() -> None:
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"synthetic-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(),
+                _live_new_round_action(
+                    step=0,
+                    ju=0,
+                    tiles=["1z"] * 4 + ["2m"] * 10,
+                    operation=liqi_pb2.OptionalOperationList(
+                        time_fixed=5000,
+                        time_add=20000,
+                        operation_list=[
+                            liqi_pb2.OptionalOperation(
+                                type=4,
+                                combination=["1z|1z|1z|1z"],
+                            )
+                        ],
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+    state = asyncio.run(screen.get_state())
+
+    candidates = state.round.operation_candidates
+    assert candidates is not None
+    assert candidates.operations == (
+        AngangOperation(
+            consumed=(
+                validate_tile("1z"),
+                validate_tile("1z"),
+                validate_tile("1z"),
+                validate_tile("1z"),
+            )
+        ),
     )
 
 

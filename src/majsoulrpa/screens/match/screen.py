@@ -53,6 +53,7 @@ from majsoulrpa.screens.match.event import (
     ZimoEvent,
 )
 from majsoulrpa.screens.match.operation import (
+    AngangOperation,
     ChiOperation,
     DaminggangOperation,
     DapaiOperation,
@@ -222,6 +223,10 @@ class MatchScreen(Screen):
                 await self._operate_chi(state, operation)
             case PengOperation():
                 await self._operate_peng(state, operation)
+            case AngangOperation():
+                screenshot = await self.context.browser.screenshot()
+                msg = "AngangOperation is not supported by operate() yet."
+                raise ScreenInvalidOperationError(msg, screenshot)
             case DaminggangOperation():
                 await self._operate_daminggang(state, operation)
             case LiqiOperation():
@@ -728,13 +733,11 @@ class MatchScreen(Screen):
                     and event.tile == operation.tile
                     and event.consumed == operation.consumed
                 )
-            case LiqiOperation():
+            case AngangOperation():
                 return (
-                    isinstance(event, DapaiEvent)
+                    isinstance(event, AngangEvent)
                     and event.seat == state.self_seat
-                    and event.tile == operation.tile
-                    and event.moqie is operation.moqie
-                    and (event.liqi or event.wliqi)
+                    and event.consumed == operation.consumed
                 )
             case DaminggangOperation():
                 return (
@@ -743,6 +746,14 @@ class MatchScreen(Screen):
                     and event.from_seat == operation.from_seat
                     and event.tile == operation.tile
                     and event.consumed == operation.consumed
+                )
+            case LiqiOperation():
+                return (
+                    isinstance(event, DapaiEvent)
+                    and event.seat == state.self_seat
+                    and event.tile == operation.tile
+                    and event.moqie is operation.moqie
+                    and (event.liqi or event.wliqi)
                 )
         assert_never(operation)
 
@@ -761,6 +772,7 @@ class MatchScreen(Screen):
             case (
                 DapaiOperation()
                 | PengOperation()
+                | AngangOperation()
                 | DaminggangOperation()
                 | LiqiOperation()
             ):

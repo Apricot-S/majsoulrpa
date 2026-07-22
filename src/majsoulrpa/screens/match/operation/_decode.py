@@ -8,6 +8,7 @@ from majsoulrpa.screens.match._decode import (
     _get_str_list,
 )
 from majsoulrpa.screens.match.operation._specification import (
+    _AngangOperationSpecification,
     _ChiOperationSpecification,
     _DaminggangOperationSpecification,
     _DapaiOperationSpecification,
@@ -21,11 +22,13 @@ from majsoulrpa.screens.match.types import Tile, validate_tile
 _DAPAI_OPERATION_TYPE = 1
 _CHI_OPERATION_TYPE = 2
 _PENG_OPERATION_TYPE = 3
+_ANGANG_OPERATION_TYPE = 4
 _DAMINGGANG_OPERATION_TYPE = 5
 _LIQI_OPERATION_TYPE = 7
 
 _TWO_TILE_COMBINATION_COUNT = 2
 _THREE_TILE_COMBINATION_COUNT = 3
+_FOUR_TILE_COMBINATION_COUNT = 4
 
 
 def decode_operation_specification(
@@ -70,6 +73,9 @@ def decode_operation_specification(
             continue
         if operation_type == _PENG_OPERATION_TYPE:
             specifications.append(_decode_peng_specification(item))
+            continue
+        if operation_type == _ANGANG_OPERATION_TYPE:
+            specifications.append(_decode_angang_specification(item))
             continue
         if operation_type == _DAMINGGANG_OPERATION_TYPE:
             specifications.append(_decode_daminggang_specification(item))
@@ -142,6 +148,36 @@ def _decode_daminggang_specification(
             )
         )
     return _DaminggangOperationSpecification(
+        consumed_candidates=tuple(consumed_candidates)
+    )
+
+
+def _decode_angang_specification(
+    item: Mapping[str, JsonValue],
+) -> _AngangOperationSpecification:
+    encoded_combinations = _get_str_list(
+        item,
+        "OptionalOperation.combination",
+    )
+    if not encoded_combinations:
+        msg = "An angang operation must contain a combination."
+        raise ValueError(msg)
+
+    consumed_candidates: list[tuple[Tile, Tile, Tile, Tile]] = []
+    for encoded_combination in encoded_combinations:
+        tiles = encoded_combination.split("|")
+        if len(tiles) != _FOUR_TILE_COMBINATION_COUNT:
+            msg = "An angang combination must contain four tiles."
+            raise ValueError(msg)
+        consumed_candidates.append(
+            (
+                validate_tile(tiles[0]),
+                validate_tile(tiles[1]),
+                validate_tile(tiles[2]),
+                validate_tile(tiles[3]),
+            )
+        )
+    return _AngangOperationSpecification(
         consumed_candidates=tuple(consumed_candidates)
     )
 

@@ -132,7 +132,8 @@ def test_operate_discards_dealers_presented_fourteenth_tile(
     operation = next(
         operation
         for operation in candidates.operations
-        if operation.tile == validate_tile("9s")
+        if isinstance(operation, DapaiOperation)
+        and operation.tile == validate_tile("9s")
     )
     assert isinstance(operation, DapaiOperation)
 

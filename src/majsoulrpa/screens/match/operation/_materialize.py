@@ -8,6 +8,7 @@ from majsoulrpa.screens.match.event import (
     ZimoEvent,
 )
 from majsoulrpa.screens.match.operation._specification import (
+    _AngangOperationSpecification,
     _ChiOperationSpecification,
     _DaminggangOperationSpecification,
     _DapaiOperationSpecification,
@@ -15,6 +16,7 @@ from majsoulrpa.screens.match.operation._specification import (
     _OperationCandidatesSpecification,
     _PengOperationSpecification,
 )
+from majsoulrpa.screens.match.operation.angang import AngangOperation
 from majsoulrpa.screens.match.operation.candidates import (
     MatchOperation,
     OperationCandidates,
@@ -102,6 +104,20 @@ def materialize_operation_candidates(
                         operation_specification,
                         call_event,
                         shoupai,
+                    )
+                )
+                continue
+            case _AngangOperationSpecification():
+                angang_zimopai = _validate_angang_event(
+                    event,
+                    zimopai,
+                    self_seat,
+                )
+                operations.extend(
+                    _materialize_angang_operations(
+                        operation_specification,
+                        shoupai,
+                        angang_zimopai,
                     )
                 )
                 continue
@@ -243,6 +259,42 @@ def _materialize_daminggang_operations(
             )
         )
     return operations
+
+
+def _materialize_angang_operations(
+    specification: _AngangOperationSpecification,
+    shoupai: tuple[Tile, ...],
+    zimopai: Tile,
+) -> list[AngangOperation]:
+    available_tiles = (*shoupai, zimopai)
+    operations: list[AngangOperation] = []
+    for consumed in specification.consumed_candidates:
+        _validate_consumed_tiles_in_hand(consumed, available_tiles, "angang")
+        operations.append(AngangOperation(consumed=consumed))
+    return operations
+
+
+def _validate_angang_event(
+    event: MatchEvent,
+    zimopai: Tile | None,
+    self_seat: Seat,
+) -> Tile:
+    if isinstance(event, NewRoundEvent):
+        if event.ju != self_seat:
+            msg = "Only the dealer can declare angang after ActionNewRound."
+            raise ValueError(msg)
+    elif isinstance(event, ZimoEvent):
+        if event.seat != self_seat:
+            msg = "An opponent draw cannot provide an angang operation."
+            raise ValueError(msg)
+    else:
+        msg = "An angang operation must follow a self draw."
+        raise TypeError(msg)
+
+    if zimopai is None:
+        msg = "An angang operation requires a drawn tile."
+        raise ValueError(msg)
+    return zimopai
 
 
 def _validate_consumed_tiles_in_hand(

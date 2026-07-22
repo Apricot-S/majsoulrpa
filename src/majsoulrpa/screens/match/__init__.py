@@ -13,6 +13,7 @@ from majsoulrpa.screens.match.event import (
     ZimoEvent,
 )
 from majsoulrpa.screens.match.operation import (
+    AngangOperation,
     ChiOperation,
     DaminggangOperation,
     DapaiOperation,
@@ -48,6 +49,7 @@ if TYPE_CHECKING:
 __all__ = [
     "Angang",
     "AngangEvent",
+    "AngangOperation",
     "Chi",
     "ChiEvent",
     "ChiOperation",

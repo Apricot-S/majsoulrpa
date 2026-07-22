@@ -379,7 +379,12 @@ operation の中に保持しない。したがって、複数の鳴き方を選�
 手牌側の3枚に対して行う。赤5と黒5は同じ牌種として扱うが、各候補には wire の赤牌表現を
 そのまま保持する。
 
-暗槓は4枚すべてを `AngangOperation.consumed` とする。加槓候補の `combination` は、実牌譜では
+暗槓は4枚すべてを `AngangOperation.consumed` とし、各 combination の牌順と候補順を wire のまま
+保持する。候補は親の `ActionNewRound` または自家の `ActionDealTile` にだけ生成し、4枚すべてが
+現在の `shoupai` と `zimopai` を合わせた実牌に存在することを要求する。親の14枚配牌で表示上
+分離された `zimopai` も手牌として消費牌の検証に含める。
+
+加槓候補の `combination` は、実牌譜では
 既存のポンと追加牌の区別によらず赤5が先頭に正規化されており、4枚目を追加牌として扱えない。
 4枚の multiset に牌構成が包含される自家の `Peng` を現在の `RoundState.fulu` から一意に特定し、その
 `from_seat`、他家から取得した `tile`、手牌から使った2枚の `consumed` を `JiagangOperation` に

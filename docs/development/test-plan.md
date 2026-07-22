@@ -640,7 +640,11 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] type 3 の各 combination は `|` で区切られた2枚に限定し、wire 順の1候補1 instanceへ展開する
 - [x] PengOperation は任意の他家による直前の DapaiEvent から from_seat / tile を補い、赤牌表現を維持する
 - [x] PengOperation は取得牌と consumed が同じ牌種で、consumed が手牌に実在することを必要とする
-- [ ] type 4 は `combination` 1 要素ごとに消費牌 4 枚を持つ `AngangOperation` 1 instance へ変換する
+- [x] type 4 は `combination` 1 要素ごとに消費牌 4 枚を持つ `AngangOperation` 1 instance へ変換する
+- [x] type 4 の各 combination は `|` で区切られた4枚に限定し、wire 順の1候補1 instanceへ展開する
+- [x] AngangOperation は ActionNewRound の親配牌または自家の ActionDealTile にだけ生成する
+- [x] AngangOperation の consumed は shoupai と zimopai を合わせた現在の牌に実在することを必要とする
+- [x] 親の14枚配牌で presentation zimopai が暗槓牌に含まれる場合も同じ候補へ展開する
 - [x] type 5 は直前の取得牌と `combination` の手牌 3 枚を持つ `DaminggangOperation` 1 instance へ変換する
 - [x] type 5 の各 combination は `|` で区切られた3枚に限定し、wire 順の1候補1 instanceへ展開する
 - [x] DaminggangOperation は任意の他家による直前の DapaiEvent から from_seat / tile を補い、赤牌表現を維持する
@@ -657,7 +661,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] type 10 は空の `combination` から field のない `JiuzhongjiupaiOperation` を生成する
 - [ ] v1-develop の type 11 / `BabeiOperation` 対応を三人戦の実通信で再確認してから固定する
 - [ ] type 2〜6 の区切り後の牌数が operation ごとの枚数と異なる場合は拒否する
-- [ ] AngangOperation は4枚を consumed として保持する
+- [x] AngangOperation は4枚を consumed として保持する
 - [ ] JiagangOperation は既存の `Peng` との差分が通常牌か赤牌かを added に保持する
 - [ ] JiagangOperation は既存の Peng から from_seat、取得した tile、手牌から使った2枚の consumed を引き継ぐ
 - [ ] type 6 の赤5が先頭に正規化されていても、既存の `Peng` に含まれる赤5と added の赤5を正しく区別する
