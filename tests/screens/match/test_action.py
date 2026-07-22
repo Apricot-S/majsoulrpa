@@ -6,6 +6,7 @@ from pydantic import JsonValue
 from majsoulrpa.assets.protocol import liqi_pb2
 from majsoulrpa.screens.match import (
     ChiEvent,
+    DaminggangEvent,
     NewRoundEvent,
     PengEvent,
     StartMatchEvent,
@@ -231,10 +232,34 @@ def test_live_and_restore_action_peng_decode_to_same_event() -> None:
     assert restore_operation is None
 
 
-def test_action_chi_peng_gang_rejects_unimplemented_type() -> None:
+def test_live_and_restore_action_daminggang_decode_to_same_event() -> None:
     data = liqi_pb2.ActionChiPengGang(
         seat=1,
         type=2,
+        tiles=["0m", "5m", "5m", "5m"],
+        froms=[1, 1, 1, 3],
+    ).SerializeToString()
+    live_event, live_operation, _ = decode_live_action(
+        _live_action(step=3, name="ActionChiPengGang", data=data)
+    )
+    restore_event, restore_operation, _ = decode_restore_action(
+        {
+            "step": 3,
+            "name": "ActionChiPengGang",
+            "data": base64.b64encode(data).decode(),
+        }
+    )
+
+    assert isinstance(live_event, DaminggangEvent)
+    assert live_event == restore_event
+    assert live_operation is None
+    assert restore_operation is None
+
+
+def test_action_chi_peng_gang_rejects_unimplemented_type() -> None:
+    data = liqi_pb2.ActionChiPengGang(
+        seat=1,
+        type=3,
         tiles=["1m", "1m", "1m"],
         froms=[1, 1, 0],
     ).SerializeToString()

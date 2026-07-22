@@ -42,6 +42,7 @@ from majsoulrpa.screens.match._metadata import (
 )
 from majsoulrpa.screens.match.event import (
     ChiEvent,
+    DaminggangEvent,
     DapaiEvent,
     MatchEvent,
     NewRoundEvent,
@@ -363,7 +364,13 @@ class MatchScreen(Screen):
                     raise MatchActionDecodeError(msg)
                 self._new_round_event = event
                 self._new_round_operation_specification = operation
-            case ZimoEvent() | DapaiEvent() | ChiEvent() | PengEvent():
+            case (
+                ZimoEvent()
+                | DapaiEvent()
+                | ChiEvent()
+                | PengEvent()
+                | DaminggangEvent()
+            ):
                 msg = f"{type(event).__name__} must follow ActionNewRound."
                 raise MatchActionDecodeError(msg)
             case _ as unreachable:
@@ -693,7 +700,7 @@ class MatchScreen(Screen):
         match operation:
             case ChiOperation():
                 return (
-                    isinstance(event, PengEvent)
+                    isinstance(event, PengEvent | DaminggangEvent)
                     and event.seat != state.self_seat
                 )
             case DapaiOperation() | PengOperation() | LiqiOperation():

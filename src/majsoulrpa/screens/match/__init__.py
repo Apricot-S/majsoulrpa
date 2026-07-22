@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 from majsoulrpa.screens.match.event import (
     ChiEvent,
+    DaminggangEvent,
     DapaiEvent,
     LiqiSuccess,
     MatchEvent,
@@ -48,6 +49,7 @@ __all__ = [
     "ChiEvent",
     "ChiOperation",
     "Daminggang",
+    "DaminggangEvent",
     "Dapai",
     "DapaiEvent",
     "DapaiOperation",

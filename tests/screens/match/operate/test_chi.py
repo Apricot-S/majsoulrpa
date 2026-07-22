@@ -11,6 +11,7 @@ from majsoulrpa.screens.errors import ScreenInconsistentMessageError
 from majsoulrpa.screens.match import (
     ChiEvent,
     ChiOperation,
+    DaminggangEvent,
     MatchScreen,
     MatchState,
     PengEvent,
@@ -28,6 +29,7 @@ from tests.screens.match._support import (
     SELF_ACCOUNT_ID,
     _auth_game,
     _live_chi_action,
+    _live_daminggang_action,
     _live_discard_action,
     _live_new_round_action,
     _live_peng_action,
@@ -360,6 +362,74 @@ def test_operate_accepts_opponent_peng_preemption_after_click(
 
     assert state.version == initial.version + 1
     assert isinstance(state.round.events[-1], PengEvent)
+    assert state.round.events[-1].seat == 1
+
+
+def test_operate_accepts_opponent_daminggang_preemption_after_click(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(
+            step=0,
+            ju=3,
+            tiles=["3m", "4m", *(["1p"] * 11)],
+        ),
+        _live_discard_action(
+            step=1,
+            seat=3,
+            tile="5m",
+            moqie=False,
+            operation=liqi_pb2.OptionalOperationList(
+                operation_list=[
+                    liqi_pb2.OptionalOperation(
+                        type=2,
+                        combination=["3m|4m"],
+                    )
+                ]
+            ),
+        ),
+    )
+    screenshot = _synthetic_template_at_screenshot(
+        template_path=CHI_TEMPLATE_PATH,
+        left=900,
+        top=650,
+    )
+    browser = _MessagesOnClickBrowser(
+        screenshot,
+        messages,
+        _live_daminggang_action(
+            step=2,
+            seat=1,
+            tiles=["5m", "5m", "5m", "5m"],
+            froms=[1, 1, 1, 3],
+        ),
+    )
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=browser,
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=messages,
+        ),
+    )
+
+    async def skip_sleep(_delay: float) -> None:
+        pass
+
+    monkeypatch.setattr(asyncio, "sleep", skip_sleep)
+
+    asyncio.run(screen.before_callback())
+    initial = asyncio.run(screen.get_state())
+    candidates = initial.round.operation_candidates
+    assert candidates is not None
+    [operation] = candidates.operations
+    assert isinstance(operation, ChiOperation)
+
+    state = asyncio.run(screen.operate(operation))
+
+    assert state.version == initial.version + 1
+    assert isinstance(state.round.events[-1], DaminggangEvent)
     assert state.round.events[-1].seat == 1
 
 

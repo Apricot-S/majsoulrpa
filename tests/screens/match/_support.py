@@ -149,6 +149,26 @@ def _live_peng_action(
     )
 
 
+def _live_daminggang_action(
+    *,
+    step: int,
+    seat: int,
+    tiles: list[str],
+    froms: list[int],
+    liqi: liqi_pb2.LiQiSuccess | None = None,
+    operation: liqi_pb2.OptionalOperationList | None = None,
+) -> DecodedNotice:
+    return _live_chi_peng_gang_action(
+        step=step,
+        seat=seat,
+        type_=2,
+        tiles=tiles,
+        froms=froms,
+        liqi=liqi,
+        operation=operation,
+    )
+
+
 def _live_chi_peng_gang_action(
     *,
     step: int,

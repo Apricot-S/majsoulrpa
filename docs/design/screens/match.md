@@ -709,6 +709,16 @@ class PengEvent(_MatchEventBase):
     liqi_success: LiqiSuccess | None = None
 
 
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class DaminggangEvent(_MatchEventBase):
+    seat: Seat
+    from_seat: Seat
+    tile: Tile
+    consumed: tuple[Tile, Tile, Tile]
+    liqi_success: LiqiSuccess | None = None
+
+
 type MatchEvent = (
     StartMatchEvent
     | NewRoundEvent
@@ -780,6 +790,14 @@ def event_name(event: MatchEvent) -> str:
 任意の他家による未解決の直前打牌と `from_seat` / `tile` が一致することを要求する。自家では
 `consumed` を手牌から除いて `Peng` を追加し、他家では自家手牌を変更しない。立直成立、
 `first_draw` / `yifa`、未解決打牌、同じ action に含まれる後続打牌候補の扱いはチーと共通とする。
+
+`ActionChiPengGang(type=2)` は `DaminggangEvent` に変換する。雀魂の `tiles` / `froms` は、鳴いた
+playerの手牌から消費する3枚を先に、河から取得する牌とその `from_seat` を末尾に置く。decoderは
+先頭3枚を固定長の `consumed`、末尾を `tile` に分解し、赤5と黒5を同じ牌種として4枚の整合性を
+検証する。reducerは任意の他家による未解決の直前打牌との一致を要求し、自家では `consumed` を
+手牌から除いて `Daminggang` を追加する。他家では自家手牌を変更しない。大明槓したseatの
+`lingshang_zimo` を真にし、続く嶺上牌の処理へ引き継ぐ。立直成立、`first_draw` / `yifa`、未解決
+打牌の扱いはチー・ポンと共通とする。
 
 `ActionNewRound.tiles` が14枚の場合は全体をsortして右端を便宜上 `zimopai` に分離しているため、親の
 第一打牌では `moqie == false` でも打牌が `shoupai` ではなく `zimopai` と一致する場合がある。

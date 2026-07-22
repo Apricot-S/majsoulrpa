@@ -5,6 +5,7 @@ from majsoulrpa.screens.match._common import is_preceding_seat
 from majsoulrpa.screens.match._metadata import MatchMetadata
 from majsoulrpa.screens.match.event import (
     ChiEvent,
+    DaminggangEvent,
     DapaiEvent,
     LiqiSuccess,
     MatchEvent,
@@ -22,6 +23,7 @@ from majsoulrpa.screens.match.operation._specification import (
 )
 from majsoulrpa.screens.match.state import (
     Chi,
+    Daminggang,
     Dapai,
     Fulu,
     MatchState,
@@ -115,6 +117,8 @@ class MatchStateStore:
                 return self._apply_chi(event, operation_specification)
             case PengEvent():
                 return self._apply_peng(event, operation_specification)
+            case DaminggangEvent():
+                return self._apply_daminggang(event, operation_specification)
             case StartMatchEvent() | NewRoundEvent():
                 msg = "A match initialization event cannot be applied again."
                 raise ValueError(msg)
@@ -133,8 +137,14 @@ class MatchStateStore:
         if event.seat >= len(state.players):
             msg = "ActionDealTile seat must identify a player."
             raise ValueError(msg)
-        if round_state.previous_dapai_seat is None:
-            msg = "ActionDealTile must follow an unresolved discard."
+        previous_event = round_state.events[-1]
+        follows_daminggang = (
+            isinstance(previous_event, DaminggangEvent)
+            and previous_event.seat == event.seat
+            and round_state.lingshang_zimo[event.seat]
+        )
+        if round_state.previous_dapai_seat is None and not follows_daminggang:
+            msg = "ActionDealTile must follow an unresolved discard or gang."
             raise ValueError(msg)
 
         zimopai = round_state.zimopai
@@ -317,9 +327,24 @@ class MatchStateStore:
             operation_specification,
         )
 
+    def _apply_daminggang(
+        self,
+        event: DaminggangEvent,
+        operation_specification: _OperationCandidatesSpecification | None,
+    ) -> MatchState:
+        return self._apply_fulu(
+            event,
+            Daminggang(
+                from_seat=event.from_seat,
+                tile=event.tile,
+                consumed=event.consumed,
+            ),
+            operation_specification,
+        )
+
     def _apply_fulu(
         self,
-        event: ChiEvent | PengEvent,
+        event: ChiEvent | PengEvent | DaminggangEvent,
         fulu_entry: Fulu,
         operation_specification: _OperationCandidatesSpecification | None,
     ) -> MatchState:
@@ -359,6 +384,9 @@ class MatchStateStore:
 
         fulu = [list(player_fulu) for player_fulu in round_state.fulu]
         fulu[event.seat].append(fulu_entry)
+        lingshang_zimo = list(round_state.lingshang_zimo)
+        if isinstance(event, DaminggangEvent):
+            lingshang_zimo[event.seat] = True
         scores, liqibang = self._apply_liqi_success(
             event.liqi_success,
             round_state.scores,
@@ -384,6 +412,7 @@ class MatchStateStore:
             fulu=tuple(tuple(player_fulu) for player_fulu in fulu),
             first_draw=(False,) * player_count,
             yifa=(False,) * player_count,
+            lingshang_zimo=tuple(lingshang_zimo),
             previous_dapai_seat=None,
             previous_dapai_tile=None,
             operation_candidates=operation_candidates,

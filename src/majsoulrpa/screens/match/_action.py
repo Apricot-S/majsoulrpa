@@ -11,6 +11,7 @@ from majsoulrpa.assets.protocol import liqi_pb2
 from majsoulrpa.screens.match._decode import _get_int
 from majsoulrpa.screens.match.event import (
     ChiEvent,
+    DaminggangEvent,
     DapaiEvent,
     MatchEvent,
     NewRoundEvent,
@@ -49,6 +50,8 @@ def _decode_chi_peng_gang_event(
             return ChiEvent.from_dict(action_step, data)
         case 1:
             return PengEvent.from_dict(action_step, data)
+        case 2:
+            return DaminggangEvent.from_dict(action_step, data)
         case _:
             msg = "ActionChiPengGang.type is not supported."
             raise ValueError(msg)
