@@ -16,16 +16,16 @@ from majsoulrpa.screens.match.operation._specification import (
     _OperationCandidatesSpecification,
     _PengOperationSpecification,
 )
-from majsoulrpa.screens.match.operation.angang import AngangOperation
-from majsoulrpa.screens.match.operation.candidates import (
+from majsoulrpa.screens.match.operation.models import (
+    AngangOperation,
+    ChiOperation,
+    DaminggangOperation,
+    DapaiOperation,
+    LiqiOperation,
     MatchOperation,
     OperationCandidates,
+    PengOperation,
 )
-from majsoulrpa.screens.match.operation.chi import ChiOperation
-from majsoulrpa.screens.match.operation.daminggang import DaminggangOperation
-from majsoulrpa.screens.match.operation.dapai import DapaiOperation
-from majsoulrpa.screens.match.operation.liqi import LiqiOperation
-from majsoulrpa.screens.match.operation.peng import PengOperation
 from majsoulrpa.screens.match.types import Seat, Tile
 
 _FOUR_PLAYER_COUNT = 4
