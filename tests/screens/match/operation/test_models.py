@@ -5,6 +5,7 @@ import pytest
 from majsoulrpa.screens.match import (
     ChiOperation,
     DapaiOperation,
+    LiqiOperation,
     OperationCandidates,
     PengOperation,
     validate_seat,
@@ -14,6 +15,15 @@ from majsoulrpa.screens.match import (
 
 def test_dapai_operation_is_an_immutable_value() -> None:
     operation = DapaiOperation(tile=validate_tile("0m"), moqie=True)
+
+    assert operation.tile == "0m"
+    assert operation.moqie is True
+    with pytest.raises(FrozenInstanceError):
+        operation.moqie = False  # ty: ignore[invalid-assignment]
+
+
+def test_liqi_operation_is_an_immutable_value() -> None:
+    operation = LiqiOperation(tile=validate_tile("0m"), moqie=True)
 
     assert operation.tile == "0m"
     assert operation.moqie is True

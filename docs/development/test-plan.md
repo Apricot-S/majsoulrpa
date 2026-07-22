@@ -643,7 +643,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] type 4 は `combination` 1 要素ごとに消費牌 4 枚を持つ `AngangOperation` 1 instance へ変換する
 - [ ] type 5 は直前の取得牌と `combination` の手牌 3 枚を持つ `DaminggangOperation` 1 instance へ変換する
 - [ ] type 6 は牌順に依存せず既存の `Peng` と4枚の multiset を比較し、元の from_seat / tile / consumed と差分の added を保持する `JiagangOperation` 1 instance へ変換する
-- [ ] type 7 の各候補牌を 1 打牌 1 `LiqiOperation` に展開する
+- [x] type 7 の各候補牌を 1 打牌 1 `LiqiOperation` に展開する
 - [ ] type 8 は空の `combination` と発生元 Event のツモ牌から `ZimohuOperation` を生成する
 - [ ] type 9 は空の `combination` と発生元 Event の対象 seat・対象牌から `RongOperation` を生成する
 - [ ] type 10 は空の `combination` から field のない `JiuzhongjiupaiOperation` を生成する
@@ -655,15 +655,16 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] type 6 の赤5が先頭に正規化されていても、既存の `Peng` に含まれる赤5と added の赤5を正しく区別する
 - [ ] type 6 の4枚に対応する自家の Peng が一意に見つからない、または multiset の差分が1枚でない場合は拒否する
 - [ ] `ActionAnGangAddGang` の type 2 は単独の `tiles` を加槓の追加牌として Event へ反映する
-- [ ] `DapaiOperation` / `LiqiOperation` は tile と moqie を保持し、手出しとツモ切りを別 instance にする
+- [x] `DapaiOperation` / `LiqiOperation` は tile と moqie を保持し、手出しとツモ切りを別 instance にする
 - [x] 同じ tile / moqie の物理牌が複数あっても同じ打牌 operation は重複させない
 - [x] 手牌と実ツモ牌の両方に同じ候補牌があれば、moqie=false / true の両 operation を生成する
 - [x] type 1 で 5m / 5p / 5s が禁止されている場合、combination にない対応する 0m / 0p / 0s も禁止する
 - [x] type 1 で通常五が禁止されていない場合、対応する赤五を独自に禁止しない
-- [ ] type 7 で 0m / 0p / 0s が立直候補の場合、combination にない対応する 5m / 5p / 5s も候補にする
-- [ ] type 7 で通常五だけが立直候補の場合、対応する赤五を独自に候補へ追加しない
+- [x] type 7 で 0m / 0p / 0s が立直候補で、対応する 5m / 5p / 5s も手牌またはツモ牌に実在する場合だけ通常5も候補にする
+- [x] type 7 で赤5だけが実在する場合、存在しない通常5の候補を追加しない
+- [x] type 7 で通常五だけが立直候補の場合、対応する赤五を独自に候補へ追加しない
 - [x] 親の ActionNewRound の14枚はすべて moqie=false の DapaiOperation に展開する
-- [ ] 親の ActionNewRound の presentation zimopai にある立直候補も moqie=false の LiqiOperation にする
+- [x] 親の ActionNewRound の presentation zimopai にある立直候補も moqie=false の LiqiOperation にする
 - [x] 親の初期打牌でツモ牌位置を click する必要があっても operation を moqie=true に変換しない
 - [ ] type 8〜11 の `combination` が空でない場合は拒否する
 - [x] operation 内の不正な牌表現を拒否する

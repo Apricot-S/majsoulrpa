@@ -10,6 +10,7 @@ from majsoulrpa.screens.match.event import (
 from majsoulrpa.screens.match.operation._specification import (
     _ChiOperationSpecification,
     _DapaiOperationSpecification,
+    _LiqiOperationSpecification,
     _OperationCandidatesSpecification,
     _PengOperationSpecification,
 )
@@ -19,6 +20,7 @@ from majsoulrpa.screens.match.operation.candidates import (
 )
 from majsoulrpa.screens.match.operation.chi import ChiOperation
 from majsoulrpa.screens.match.operation.dapai import DapaiOperation
+from majsoulrpa.screens.match.operation.liqi import LiqiOperation
 from majsoulrpa.screens.match.operation.peng import PengOperation
 from majsoulrpa.screens.match.types import Seat, Tile
 
@@ -98,6 +100,32 @@ def materialize_operation_candidates(
                         operation_specification,
                         call_event,
                         shoupai,
+                    )
+                )
+                continue
+            case _LiqiOperationSpecification():
+                if isinstance(event, NewRoundEvent):
+                    if event.ju != self_seat:
+                        msg = (
+                            "Only the dealer can declare liqi after "
+                            "ActionNewRound."
+                        )
+                        raise ValueError(msg)
+                elif isinstance(event, ZimoEvent):
+                    if event.seat != self_seat:
+                        msg = (
+                            "An opponent draw cannot provide a liqi operation."
+                        )
+                        raise ValueError(msg)
+                else:
+                    msg = "A liqi operation must follow a self draw."
+                    raise TypeError(msg)
+                operations.extend(
+                    _materialize_liqi_operations(
+                        operation_specification,
+                        event,
+                        shoupai,
+                        zimopai,
                     )
                 )
                 continue
@@ -213,3 +241,57 @@ def _validate_call_event(
         msg = f"A {operation_name} cannot be selected with an unresolved draw."
         raise ValueError(msg)
     return event
+
+
+def _materialize_liqi_operations(
+    specification: _LiqiOperationSpecification,
+    event: NewRoundEvent | ZimoEvent,
+    shoupai: tuple[Tile, ...],
+    zimopai: Tile | None,
+) -> list[LiqiOperation]:
+    operations: list[LiqiOperation] = []
+    for tile in specification.candidate_tiles:
+        candidate_operations = _materialize_liqi_tile(
+            tile,
+            event,
+            shoupai,
+            zimopai,
+        )
+        if not candidate_operations:
+            msg = "A liqi candidate must exist in the hand or drawn tile."
+            raise ValueError(msg)
+        operations.extend(candidate_operations)
+
+        # Work around a Majsoul API inconsistency. When both a red five
+        # and its normal counterpart can declare liqi, combination may
+        # contain only the red five.
+        if tile in {"0m", "0p", "0s"}:
+            normal_five = Tile(f"5{tile[1]}")
+            operations.extend(
+                _materialize_liqi_tile(
+                    normal_five,
+                    event,
+                    shoupai,
+                    zimopai,
+                )
+            )
+    return operations
+
+
+def _materialize_liqi_tile(
+    tile: Tile,
+    event: NewRoundEvent | ZimoEvent,
+    shoupai: tuple[Tile, ...],
+    zimopai: Tile | None,
+) -> list[LiqiOperation]:
+    operations: list[LiqiOperation] = []
+    if tile in shoupai:
+        operations.append(LiqiOperation(tile=tile, moqie=False))
+    if tile == zimopai:
+        operations.append(
+            LiqiOperation(
+                tile=tile,
+                moqie=not isinstance(event, NewRoundEvent),
+            )
+        )
+    return operations

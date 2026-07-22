@@ -13,6 +13,7 @@ from majsoulrpa.screens.match.event import (
 from majsoulrpa.screens.match.operation import (
     ChiOperation,
     DapaiOperation,
+    LiqiOperation,
     MatchOperation,
     OperationCandidates,
     PengOperation,
@@ -52,6 +53,7 @@ __all__ = [
     "DapaiOperation",
     "Fulu",
     "Jiagang",
+    "LiqiOperation",
     "LiqiSuccess",
     "MatchEvent",
     "MatchOperation",

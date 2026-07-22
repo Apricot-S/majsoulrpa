@@ -7,6 +7,7 @@ from majsoulrpa.screens.match.operation._decode import (
 from majsoulrpa.screens.match.operation._specification import (
     _ChiOperationSpecification,
     _DapaiOperationSpecification,
+    _LiqiOperationSpecification,
     _PengOperationSpecification,
 )
 
@@ -123,6 +124,46 @@ def test_decode_peng_operation_rejects_invalid_combinations(
                 "operation": {
                     "operation_list": [
                         {"type": 3, "combination": combination}
+                    ],
+                    "time_add": 0,
+                    "time_fixed": 0,
+                }
+            }
+        )
+
+
+def test_decode_liqi_operation_specification() -> None:
+    specification = decode_operation_specification(
+        {
+            "operation": {
+                "operation_list": [
+                    {
+                        "type": 7,
+                        "combination": ["0m", "3p"],
+                    }
+                ],
+                "time_add": 20000,
+                "time_fixed": 5000,
+            }
+        }
+    )
+
+    assert specification is not None
+    [operation] = specification.operations
+    assert isinstance(operation, _LiqiOperationSpecification)
+    assert operation.candidate_tiles == ("0m", "3p")
+
+
+@pytest.mark.parametrize("combination", [[], ["1x"], ["1m|2m"]])
+def test_decode_liqi_operation_rejects_invalid_combinations(
+    combination: list[str],
+) -> None:
+    with pytest.raises((TypeError, ValueError)):
+        decode_operation_specification(
+            {
+                "operation": {
+                    "operation_list": [
+                        {"type": 7, "combination": combination}
                     ],
                     "time_add": 0,
                     "time_fixed": 0,

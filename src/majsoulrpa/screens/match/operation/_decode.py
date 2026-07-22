@@ -10,6 +10,7 @@ from majsoulrpa.screens.match._decode import (
 from majsoulrpa.screens.match.operation._specification import (
     _ChiOperationSpecification,
     _DapaiOperationSpecification,
+    _LiqiOperationSpecification,
     _MatchOperationSpecification,
     _OperationCandidatesSpecification,
     _PengOperationSpecification,
@@ -19,6 +20,7 @@ from majsoulrpa.screens.match.types import Tile, validate_tile
 _DAPAI_OPERATION_TYPE = 1
 _CHI_OPERATION_TYPE = 2
 _PENG_OPERATION_TYPE = 3
+_LIQI_OPERATION_TYPE = 7
 
 _TWO_TILE_COMBINATION_COUNT = 2
 
@@ -65,6 +67,21 @@ def decode_operation_specification(
             continue
         if operation_type == _PENG_OPERATION_TYPE:
             specifications.append(_decode_peng_specification(item))
+            continue
+        if operation_type == _LIQI_OPERATION_TYPE:
+            candidate_tiles = tuple(
+                validate_tile(tile)
+                for tile in _get_str_list(
+                    item,
+                    "OptionalOperation.combination",
+                )
+            )
+            if not candidate_tiles:
+                msg = "A liqi operation must contain a candidate tile."
+                raise ValueError(msg)
+            specifications.append(
+                _LiqiOperationSpecification(candidate_tiles=candidate_tiles)
+            )
             continue
         msg = f"OptionalOperation type is not supported: {operation_type}."
         raise ValueError(msg)

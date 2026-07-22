@@ -393,8 +393,9 @@ type 7 は `|` で分割せず、各要素を立直宣言牌として検証す�
 雀魂の立直候補にも赤五牌に関する欠落がある。`0m`、`0p`、`0s` のいずれかを切って立直できる
 場合、対応する `5m`、`5p`、`5s` が type 7 の `combination` に含まれないことがある。変換時は
 赤五が候補なら対応する通常五も候補牌として補い、現在の `shoupai` と `zimopai` に実在する牌から
-`LiqiOperation` を生成する。通常五だけが候補の場合に赤五を補う逆方向の推測は行わない。この
-workaround は Kanachan の `src/annotation/annotation.cpp` に残された知見に基づく。
+`LiqiOperation` を生成する。対応する通常五が実在しなければ候補を追加しない。通常五だけが候補の
+場合に赤五を補う逆方向の推測も行わない。この workaround は Kanachan の
+`src/annotation/annotation.cpp` に残された知見に基づく。
 
 type 8 の `ZimohuOperation.tile` は候補を発生させた
 `ActionDealTile` のツモ牌、または `ActionNewRound` の天和判定に使う牌から補う。type 9 の
