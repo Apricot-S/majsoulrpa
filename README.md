@@ -160,12 +160,13 @@ If you encounter this exception, please help us investigate the layout by
 [opening an issue](https://github.com/Apricot-S/majsoulrpa/issues) with:
 
 - the operation being attempted and the number and order of its candidates;
-- the browser viewport size; and
-- the saved screenshot.
+- the saved screenshot; and
+- any relevant decoded Sniffer logs, after redacting account IDs and
+  authentication information such as tokens.
 
-Before sharing the screenshot, redact any account name, room identifier, or
-other personal information. Do not attach Sniffer logs, raw WebSocket payloads,
-cookies, or authentication information.
+Before sharing the screenshot, redact any account name or other personal
+information. Before sharing Sniffer logs, redact account IDs, tokens, cookies,
+and any other authentication information.
 
 ## License
 
