@@ -1,3 +1,4 @@
+from majsoulrpa.screens.match.event.angang import AngangEvent
 from majsoulrpa.screens.match.event.chi import ChiEvent
 from majsoulrpa.screens.match.event.daminggang import DaminggangEvent
 from majsoulrpa.screens.match.event.dapai import DapaiEvent
@@ -15,9 +16,11 @@ type MatchEvent = (
     | ChiEvent
     | PengEvent
     | DaminggangEvent
+    | AngangEvent
 )
 
 __all__ = [
+    "AngangEvent",
     "ChiEvent",
     "DaminggangEvent",
     "DapaiEvent",

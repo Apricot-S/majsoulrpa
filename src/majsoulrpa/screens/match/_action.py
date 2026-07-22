@@ -10,6 +10,7 @@ from pydantic import JsonValue
 from majsoulrpa.assets.protocol import liqi_pb2
 from majsoulrpa.screens.match._decode import _get_int
 from majsoulrpa.screens.match.event import (
+    AngangEvent,
     ChiEvent,
     DaminggangEvent,
     DapaiEvent,
@@ -57,12 +58,25 @@ def _decode_chi_peng_gang_event(
             raise ValueError(msg)
 
 
+def _decode_angang_jiagang_event(
+    action_step: int,
+    data: Mapping[str, JsonValue],
+) -> MatchEvent:
+    match _get_int(data, "ActionAnGangAddGang.type"):
+        case 3:
+            return AngangEvent.from_dict(action_step, data)
+        case _:
+            msg = "ActionAnGangAddGang.type is not supported."
+            raise ValueError(msg)
+
+
 _EVENT_DECODERS: dict[str, _EventDecoder] = {
     "ActionMJStart": StartMatchEvent.from_dict,
     "ActionNewRound": NewRoundEvent.from_dict,
     "ActionDealTile": ZimoEvent.from_dict,
     "ActionDiscardTile": DapaiEvent.from_dict,
     "ActionChiPengGang": _decode_chi_peng_gang_event,
+    "ActionAnGangAddGang": _decode_angang_jiagang_event,
 }
 
 

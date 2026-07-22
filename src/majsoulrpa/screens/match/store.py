@@ -1,9 +1,13 @@
 from dataclasses import replace
 from typing import assert_never
 
-from majsoulrpa.screens.match._common import is_preceding_seat
+from majsoulrpa.screens.match._common import (
+    is_preceding_seat,
+    normalize_tile_kind,
+)
 from majsoulrpa.screens.match._metadata import MatchMetadata
 from majsoulrpa.screens.match.event import (
+    AngangEvent,
     ChiEvent,
     DaminggangEvent,
     DapaiEvent,
@@ -22,6 +26,7 @@ from majsoulrpa.screens.match.operation._specification import (
     _OperationCandidatesSpecification,
 )
 from majsoulrpa.screens.match.state import (
+    Angang,
     Chi,
     Daminggang,
     Dapai,
@@ -89,6 +94,8 @@ class MatchStateStore:
             lingshang_zimo=(False,) * player_count,
             previous_dapai_seat=None,
             previous_dapai_tile=None,
+            previous_qianggang_seat=None,
+            previous_qianggang_tile=None,
             operation_candidates=operation_candidates,
             events=events,
         )
@@ -119,6 +126,8 @@ class MatchStateStore:
                 return self._apply_peng(event, operation_specification)
             case DaminggangEvent():
                 return self._apply_daminggang(event, operation_specification)
+            case AngangEvent():
+                return self._apply_angang(event, operation_specification)
             case StartMatchEvent() | NewRoundEvent():
                 msg = "A match initialization event cannot be applied again."
                 raise ValueError(msg)
@@ -143,7 +152,17 @@ class MatchStateStore:
             and previous_event.seat == event.seat
             and round_state.lingshang_zimo[event.seat]
         )
-        if round_state.previous_dapai_seat is None and not follows_daminggang:
+        follows_angang = (
+            isinstance(previous_event, AngangEvent)
+            and previous_event.seat == event.seat
+            and round_state.previous_qianggang_seat == event.seat
+            and round_state.lingshang_zimo[event.seat]
+        )
+        if (
+            round_state.previous_dapai_seat is None
+            and not follows_daminggang
+            and not follows_angang
+        ):
             msg = "ActionDealTile must follow an unresolved discard or gang."
             raise ValueError(msg)
 
@@ -187,6 +206,8 @@ class MatchStateStore:
             zimopai=zimopai,
             previous_dapai_seat=None,
             previous_dapai_tile=None,
+            previous_qianggang_seat=None,
+            previous_qianggang_tile=None,
             operation_candidates=operation_candidates,
             events=(*round_state.events, event),
         )
@@ -212,6 +233,9 @@ class MatchStateStore:
             raise ValueError(msg)
         if round_state.previous_dapai_seat is not None:
             msg = "A discard cannot follow an unresolved discard."
+            raise ValueError(msg)
+        if round_state.previous_qianggang_seat is not None:
+            msg = "A discard cannot follow an unresolved qianggang target."
             raise ValueError(msg)
 
         shoupai = list(round_state.shoupai)
@@ -342,6 +366,97 @@ class MatchStateStore:
             operation_specification,
         )
 
+    def _apply_angang(
+        self,
+        event: AngangEvent,
+        operation_specification: _OperationCandidatesSpecification | None,
+    ) -> MatchState:
+        state = self._require_state()
+        round_state = state.round
+        player_count = len(state.players)
+        if event.action_step != round_state.step + 1:
+            msg = (
+                "ActionAnGangAddGang step must follow the current round step."
+            )
+            raise ValueError(msg)
+        if event.seat >= player_count:
+            msg = "ActionAnGangAddGang seat must identify a player."
+            raise ValueError(msg)
+        if round_state.previous_dapai_seat is not None:
+            msg = "An angang cannot follow an unresolved discard."
+            raise ValueError(msg)
+        if round_state.previous_qianggang_seat is not None:
+            msg = "An angang cannot follow an unresolved qianggang target."
+            raise ValueError(msg)
+        shoupai = list(round_state.shoupai)
+        zimopai = round_state.zimopai
+        if event.seat == state.self_seat:
+            if zimopai is None:
+                msg = "A self angang must follow a self draw."
+                raise ValueError(msg)
+            expected_kind = normalize_tile_kind(event.consumed[0])
+            matching_tiles = sum(
+                normalize_tile_kind(tile) == expected_kind for tile in shoupai
+            )
+            zimopai_matches = (
+                zimopai is not None
+                and normalize_tile_kind(zimopai) == expected_kind
+            )
+            if matching_tiles + int(zimopai_matches) != 4:  # noqa: PLR2004
+                msg = "A self angang must consume four tiles of one kind."
+                raise ValueError(msg)
+            shoupai = [
+                tile
+                for tile in shoupai
+                if normalize_tile_kind(tile) != expected_kind
+            ]
+            if zimopai_matches:
+                zimopai = None
+            else:
+                shoupai.append(zimopai)
+                shoupai.sort(key=tile_sort_key)
+                zimopai = None
+        elif zimopai is not None:
+            msg = "An opponent angang cannot occur during a self draw."
+            raise ValueError(msg)
+
+        fulu = [list(player_fulu) for player_fulu in round_state.fulu]
+        fulu[event.seat].append(Angang(consumed=event.consumed))
+        lingshang_zimo = list(round_state.lingshang_zimo)
+        lingshang_zimo[event.seat] = True
+        next_shoupai = tuple(shoupai)
+        operation_candidates = materialize_operation_candidates(
+            operation_specification,
+            event,
+            next_shoupai,
+            zimopai,
+            state.self_seat,
+            player_count,
+        )
+        next_round = replace(
+            round_state,
+            step=event.action_step,
+            dora_indicators=(
+                event.dora_indicators or round_state.dora_indicators
+            ),
+            shoupai=next_shoupai,
+            zimopai=zimopai,
+            fulu=tuple(tuple(player_fulu) for player_fulu in fulu),
+            first_draw=(False,) * player_count,
+            yifa=(False,) * player_count,
+            lingshang_zimo=tuple(lingshang_zimo),
+            previous_qianggang_seat=event.seat,
+            previous_qianggang_tile=event.consumed[0],
+            operation_candidates=operation_candidates,
+            events=(*round_state.events, event),
+        )
+        self._state = replace(
+            state,
+            version=state.version + 1,
+            round=next_round,
+        )
+        return self._state
+
     def _apply_fulu(
         self,
         event: ChiEvent | PengEvent | DaminggangEvent,
@@ -365,6 +480,9 @@ class MatchStateStore:
             raise ValueError(msg)
         if round_state.zimopai is not None:
             msg = "A call cannot occur while a self draw is unresolved."
+            raise ValueError(msg)
+        if round_state.previous_qianggang_seat is not None:
+            msg = "A call cannot follow an unresolved qianggang target."
             raise ValueError(msg)
         if (
             event.seat != state.self_seat

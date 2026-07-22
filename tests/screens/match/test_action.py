@@ -5,6 +5,7 @@ from pydantic import JsonValue
 
 from majsoulrpa.assets.protocol import liqi_pb2
 from majsoulrpa.screens.match import (
+    AngangEvent,
     ChiEvent,
     DaminggangEvent,
     NewRoundEvent,
@@ -303,6 +304,47 @@ def test_action_chi_peng_gang_rejects_unimplemented_type() -> None:
             {
                 "step": 3,
                 "name": "ActionChiPengGang",
+                "data": base64.b64encode(data).decode(),
+            }
+        )
+
+
+def test_live_and_restore_action_angang_decode_to_same_event() -> None:
+    data = liqi_pb2.ActionAnGangAddGang(
+        seat=1,
+        type=3,
+        tiles="5m",
+        doras=["4p"],
+    ).SerializeToString()
+    live_event, live_operation, _ = decode_live_action(
+        _live_action(step=3, name="ActionAnGangAddGang", data=data)
+    )
+    restore_event, restore_operation, _ = decode_restore_action(
+        {
+            "step": 3,
+            "name": "ActionAnGangAddGang",
+            "data": base64.b64encode(data).decode(),
+        }
+    )
+
+    assert isinstance(live_event, AngangEvent)
+    assert live_event == restore_event
+    assert live_operation is None
+    assert restore_operation is None
+
+
+def test_action_angang_add_gang_rejects_jiagang_type() -> None:
+    data = liqi_pb2.ActionAnGangAddGang(
+        seat=1,
+        type=2,
+        tiles="5m",
+    ).SerializeToString()
+
+    with pytest.raises(MatchActionDecodeError):
+        decode_restore_action(
+            {
+                "step": 3,
+                "name": "ActionAnGangAddGang",
                 "data": base64.b64encode(data).decode(),
             }
         )

@@ -645,6 +645,11 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] type 5 の各 combination は `|` で区切られた3枚に限定し、wire 順の1候補1 instanceへ展開する
 - [x] DaminggangOperation は任意の他家による直前の DapaiEvent から from_seat / tile を補い、赤牌表現を維持する
 - [x] DaminggangOperation は取得牌と consumed が同じ牌種で、consumed が手牌に実在することを必要とする
+- [x] `ActionAnGangAddGang(type=3)` を live / restore の両経路で同じ `AngangEvent` へ変換する
+- [x] `AngangEvent` は seat、固定長4枚の consumed、非空時に置換するドラ表示牌を保持する
+- [x] 暗槓する牌が 0m / 5m、0p / 5p、0s / 5s のどちらで届いても赤五1枚を先頭、黒五3枚へ正規化する
+- [x] 五以外の暗槓は wire の単独牌を同じ4枚の consumed へ展開する
+- [x] `ActionAnGangAddGang` の type 2 と未知 type は暗槓として受理しない
 - [ ] type 6 は牌順に依存せず既存の `Peng` と4枚の multiset を比較し、元の from_seat / tile / consumed と差分の added を保持する `JiagangOperation` 1 instance へ変換する
 - [x] type 7 の各候補牌を 1 打牌 1 `LiqiOperation` に展開する
 - [ ] type 8 は空の `combination` と発生元 Event のツモ牌から `ZimohuOperation` を生成する
@@ -818,6 +823,15 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] `ActionMJStart` を state を変更しない `StartMatchEvent` として decode する
 - [x] `StartMatchEvent.from_dict()` は `ActionMJStart` のstep 0制約を検証する
 - [x] 最初の RoundState ができるまで StartMatchEvent を temporary prelude に保持する
+- [x] 自家の暗槓は赤五と黒五を同じ牌種として shoupai / zimopai から合計4枚を消費する
+- [x] 暗槓を手牌内の4枚で行った場合は、別の zimopai を shoupai へ取り込んで sort する
+- [x] 赤なし対局の黒五4枚も、赤あり表現へ正規化した AngangEvent から reducer を継続できる
+- [x] 他家の暗槓は自家の shoupai / zimopai を変更せず、対象 seat の fulu に Angang を追加する
+- [x] 暗槓は河と previous_dapai_* を変更せず、全員の first_draw / yifa を終了し、対象 seat の lingshang_zimo を有効にする
+- [x] 暗槓は previous_qianggang_seat / tile を設定し、後続の嶺上 ZimoEvent が両方を消去する
+- [x] previous_qianggang_seat / tile は常に両方 None または両方が値を持つ
+- [x] 暗槓の不連続 step、不正 seat、未解決打牌、自家の消費牌不足を不整合として拒否する
+- [ ] 暗槓・加槓の3候補 UI は座標を推測せず、調査協力を求める専用例外で停止する
 - [ ] match version は同じ Screen instance 内で単調増加し、round step は局ごとに 0 から始まる
 - [ ] 次局の `ActionNewRound` は同じ store の round generation を増やす
 - [ ] 次局へ移っても match identity、self seat、player metadata を維持する

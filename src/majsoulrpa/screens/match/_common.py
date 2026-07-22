@@ -26,13 +26,23 @@ def validate_chi_tiles(tile: Tile, consumed: tuple[Tile, Tile]) -> None:
 
 
 def validate_same_tile_kind(tile: Tile, consumed: tuple[Tile, ...]) -> None:
-    expected = _normalized_tile_kind(tile)
-    if any(_normalized_tile_kind(value) != expected for value in consumed):
+    expected = normalize_tile_kind(tile)
+    if any(normalize_tile_kind(value) != expected for value in consumed):
         msg = "tiles must have the same kind."
         raise ValueError(msg)
 
 
-def _normalized_tile_kind(tile: Tile) -> str:
+def normalize_tile_kind(tile: Tile) -> Tile:
     if tile[0] == "0":
-        return f"5{tile[1]}"
+        return Tile(f"5{tile[1]}")
     return tile
+
+
+def canonicalize_angang_consumed(
+    tile: Tile,
+) -> tuple[Tile, Tile, Tile, Tile]:
+    normalized = normalize_tile_kind(tile)
+    if normalized in {"5m", "5p", "5s"}:
+        red = Tile(f"0{normalized[1]}")
+        return red, normalized, normalized, normalized
+    return normalized, normalized, normalized, normalized

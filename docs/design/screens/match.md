@@ -164,6 +164,8 @@ class RoundState:
     lingshang_zimo: tuple[bool, ...]
     previous_dapai_seat: Seat | None
     previous_dapai_tile: Tile | None
+    previous_qianggang_seat: Seat | None
+    previous_qianggang_tile: Tile | None
     operation_candidates: OperationCandidates | None
     events: tuple[MatchEvent, ...]
 
@@ -804,6 +806,28 @@ playerの手牌から消費する3枚を先に、河から取得する牌とそ�
 手牌から除いて `Daminggang` を追加する。他家では自家手牌を変更しない。大明槓したseatの
 `lingshang_zimo` を真にし、続く嶺上牌の処理へ引き継ぐ。立直成立、`first_draw` / `yifa`、未解決
 打牌の扱いはチー・ポンと共通とする。
+
+`ActionAnGangAddGang(type=3)` は `AngangEvent` に変換する。wire の `tiles` は名前に反して暗槓する
+牌種を表す単独の文字列である。公開 Event と `Angang` state は消費した4枚を固定長 `consumed` として
+保持する。赤ありルールの表現へ正規化し、萬子・筒子・索子の五は wire が `0m` / `5m`、`0p` /
+`5p`、`0s` / `5s` のどちらでも、それぞれ赤五を先頭に置いた1枚と黒五3枚にする。それ以外は同じ
+牌4枚とする。対局ルール metadata まで RPA が解釈して赤なし表現へ切り替える複雑さは導入しない。
+赤なし対局を扱う利用者は、把握している対局ルールに基づいて AI feature 等の外部境界で補正する。
+
+reducer は自家の `shoupai` と `zimopai` から、赤五と黒五を同じ牌種として数えた4枚を消費する。
+したがって赤なし対局で手牌が黒五4枚でも state 遷移は継続できる。暗槓が手牌内の4枚だけを使い、
+別の `zimopai` が残る場合は、そのツモ牌を `shoupai` に取り込む。暗槓は河へ追加せず、
+`previous_dapai_*` も変更しない。全員の `first_draw` / `yifa` を終了し、暗槓した seat の
+`lingshang_zimo` を真にする。
+
+雀魂では暗槓・加槓・北抜きのいずれも搶槓の対象になり得るため、成立直後の対象を
+`previous_qianggang_seat` / `previous_qianggang_tile` に保持する。通常の打牌と混同せず、河にも
+加えない。ロンなら後続の和了 Event がこの値を参照し、和了せず嶺上牌の `ZimoEvent` へ進んだ時点で
+両方を消去する。両 field は常に同時に `None`、または同時に値を持つ。
+
+暗槓・加槓の operation は最大3候補を取り得る。一方、3候補時の雀魂 UI の選択座標は未確認である。
+操作 API を実装する際は推測した座標でクリックせず、専用の画面状態例外で停止する。例外 message には
+実例と座標調査への協力依頼を含め、利用者が任意に取得した screenshot を報告できるようにする。
 
 `ActionNewRound.tiles` が14枚の場合は全体をsortして右端を便宜上 `zimopai` に分離しているため、親の
 第一打牌では `moqie == false` でも打牌が `shoupai` ではなく `zimopai` と一致する場合がある。
