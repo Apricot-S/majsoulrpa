@@ -58,17 +58,7 @@ def decode_operation_specification(
             raise TypeError(msg)
         operation_type = _get_int(item, "OptionalOperation.type")
         if operation_type == _DAPAI_OPERATION_TYPE:
-            specifications.append(
-                _DapaiOperationSpecification(
-                    forbidden_tiles=tuple(
-                        validate_tile(tile)
-                        for tile in _get_str_list(
-                            item,
-                            "OptionalOperation.combination",
-                        )
-                    ),
-                )
-            )
+            specifications.append(_decode_dapai_specification(item))
             continue
         if operation_type == _CHI_OPERATION_TYPE:
             specifications.append(_decode_chi_specification(item))
@@ -109,6 +99,17 @@ def decode_operation_specification(
         time_fixed_ms=time_fixed_ms,
         time_add_ms=time_add_ms,
         operations=tuple(specifications),
+    )
+
+
+def _decode_dapai_specification(
+    item: Mapping[str, JsonValue],
+) -> _DapaiOperationSpecification:
+    return _DapaiOperationSpecification(
+        forbidden_tiles=tuple(
+            validate_tile(tile)
+            for tile in _get_str_list(item, "OptionalOperation.combination")
+        ),
     )
 
 
