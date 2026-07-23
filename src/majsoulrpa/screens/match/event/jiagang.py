@@ -4,9 +4,7 @@ from typing import Self, final
 
 from pydantic import JsonValue
 
-from majsoulrpa.screens.match._common import (
-    canonicalize_jiagang_consumed,
-)
+from majsoulrpa.screens.match._common import normalize_tile_kind
 from majsoulrpa.screens.match._decode import _get_int, _get_str, _get_str_list
 from majsoulrpa.screens.match.event._base import _MatchEventBase
 from majsoulrpa.screens.match.event._constants import MAX_DORA_INDICATORS
@@ -16,6 +14,16 @@ from majsoulrpa.screens.match.types import (
     validate_seat,
     validate_tile,
 )
+
+
+def _canonicalize_consumed(added: Tile) -> tuple[Tile, Tile, Tile]:
+    normalized = normalize_tile_kind(added)
+    if normalized in {"5m", "5p", "5s"}:
+        if added[0] == "0":
+            return normalized, normalized, normalized
+        red = Tile(f"0{normalized[1]}")
+        return red, normalized, normalized
+    return normalized, normalized, normalized
 
 
 @final
@@ -28,7 +36,7 @@ class JiagangEvent(_MatchEventBase):
 
     def __post_init__(self) -> None:
         _MatchEventBase.__post_init__(self)
-        if self.consumed != canonicalize_jiagang_consumed(self.added):
+        if self.consumed != _canonicalize_consumed(self.added):
             msg = "consumed must use the canonical jiagang representation."
             raise ValueError(msg)
         if len(self.dora_indicators) > MAX_DORA_INDICATORS:
@@ -48,7 +56,7 @@ class JiagangEvent(_MatchEventBase):
         return cls(
             action_step=action_step,
             seat=validate_seat(_get_int(data, "ActionAnGangAddGang.seat")),
-            consumed=canonicalize_jiagang_consumed(added),
+            consumed=_canonicalize_consumed(added),
             added=added,
             dora_indicators=tuple(
                 validate_tile(dora)
