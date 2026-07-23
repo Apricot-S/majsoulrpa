@@ -629,6 +629,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 - [x] concrete operation は `@final`、`frozen=True`、`slots=True`、`kw_only=True` の dataclass である
 - [x] public `MatchOperation` type alias はすべての concrete operation class を列挙し、type discriminator を持たない
+- [ ] field のない `SkipOperation` を public `MatchOperation` に含める
 - [x] `OperationCandidates` は非負の millisecond 単位の fixed / add time、非空 tuple の operation を保持する
 - [x] operation field の欠落と空の `operation_list` はどちらも `None` に正規化する
 - [x] operation field が object でない、time / type が bool または int 以外、operation_list が list でない場合は拒否する
@@ -807,14 +808,20 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] 「鳴きなし」によるスキップの進行後はtoggleをoffへ戻し、将来の鳴きを再び許可する
 - [ ] 「鳴きなし」をonにした後に上位actionでpreemptされても、toggleをoffへ戻してからAPIを返す
 - [ ] 「鳴きなし」をoffへ戻せない場合は、preempt自体を許容しても正常完了扱いにしない
-- [ ] ロン、および立直中の暗槓・北抜きはスキップbuttonで明示的にスキップする
+- [ ] ロンはスキップbuttonで明示的にスキップする
+- [ ] 非立直時の北抜き・暗槓・加槓・ツモ和了には `SkipOperation` を追加しない
+- [ ] 非立直時の北抜き・暗槓・加槓・ツモ和了は `DapaiOperation` の打牌で暗黙にキャンセルする
+- [ ] 非立直時の北抜き・暗槓・加槓・ツモ和了を見送るためにスキップbuttonを押さない
+- [ ] 立直中の北抜き・暗槓・加槓・ツモ和了がある場合はツモ切りの `DapaiOperation` を候補に含めない
+- [ ] 立直中の北抜き・暗槓・加槓・ツモ和了がある場合は `SkipOperation` を候補に追加する
+- [ ] 立直中の `SkipOperation` はスキップbuttonをクリックして実行する
 - [ ] スキップ用の「鳴きなし」toggleとスキップbuttonは `warp=True` でclickする
 - [ ] チーの選択・スキップ中に別playerのポン・大明槓・ロンが成立してもoperation失敗にしない
 - [ ] ポン・大明槓の選択・スキップ中に別playerのロンが成立してもoperation失敗にしない
 - [ ] 上位actionの ActionChiPengGang / ActionHule を先読みした場合は1回だけput_backして通常pipelineで処理する
 - [ ] 上位actionを確認できないbutton検出失敗を黙ってスキップ成功にしない
 - [ ] ロンのスキップはダブロン・トリロンでも自家の選択まで待たれ、別playerのActionHuleによるpreempt成功扱いをしない
-- [ ] publicなスキップ表現を `SkipOperation` または `None` のどちらにするか、スキップAPI実装前に固定する
+- [ ] publicなスキップ表現は field のない `SkipOperation` とし、他の候補と同じ `operate()` APIへ渡す
 
 ### immutable state / reducer
 

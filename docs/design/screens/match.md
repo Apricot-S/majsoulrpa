@@ -301,6 +301,10 @@ class JiuzhongjiupaiOperation: ...
 class BabeiOperation: ...
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SkipOperation: ...
+
+
 type MatchOperation = (
     DapaiOperation
     | ChiOperation
@@ -313,6 +317,7 @@ type MatchOperation = (
     | RongOperation
     | JiuzhongjiupaiOperation
     | BabeiOperation
+    | SkipOperation
 )
 
 
@@ -589,12 +594,25 @@ put-backして、すでに消えた選択UIの座標をクリックしない。�
 
 ### operation のスキップ
 
-チー、ポン、大明槓、ロン、および立直中に提示される暗槓・北抜きは、候補を選ばず待つだけでは
-スキップできない。frameworkは対応するUIを明示的に操作する。チー、ポン、大明槓は「鳴きなし」
-toggleをonにして現在の候補をスキップし、actionの進行を確認してからoffへ戻して、将来の鳴きを
-再び許可する。ロン、ならびに立直中の暗槓・北抜きはスキップbuttonをクリックする。これらは判断の
-遅延を避ける必要があるため、いずれのclickも `warp=True` とし、通常clickのcursor移動とhover待機を
-省略する。
+チー、ポン、大明槓、ロンは、候補を選ばず待つだけではスキップできない。frameworkは対応するUIを
+明示的に操作する。チー、ポン、大明槓は「鳴きなし」toggleをonにして現在の候補をスキップし、
+actionの進行を確認してからoffへ戻して、将来の鳴きを再び許可する。ロンはスキップbuttonを
+クリックする。
+
+自家のツモ番に北抜き・暗槓・加槓・ツモ和了が提示された場合、立直の有無で候補の構成と操作を変える。
+非立直時は `SkipOperation` を候補へ追加せず、利用者が選んだ `DapaiOperation` の打牌によって
+他の候補を暗黙にキャンセルする。雀魂のUIではスキップbuttonでも候補を消せるが、その後に打牌選択が
+必要になるため、frameworkの標準操作では使用しない。
+
+立直中はツモ切りの牌を含めて打牌を選択できない。ツモ切りを表す `DapaiOperation` は行動候補へ
+含めず、frameworkが合成する `SkipOperation` を追加する。利用者は提示された北抜き・暗槓・加槓・
+ツモ和了、または `SkipOperation` のいずれかを選ぶ。`SkipOperation` を実行したときは
+スキップbuttonをクリックして明示的に候補を見送る。
+
+「鳴きなし」toggleとスキップbuttonのclickは判断の遅延を避けるため `warp=True` とし、通常clickの
+cursor移動とhover待機を省略する。
+実画面での確認結果は
+[対局中のスキップボタン押下要否](../../investigations/match-skip-button.md) に記録する。
 
 「鳴きなし」をonにした後のoffへの復帰は必須cleanupとする。通常どおりスキップが成立した場合だけで
 なく、別playerの上位actionによってチー・ポン・大明槓の選択またはスキップがpreemptされた場合も、
@@ -614,11 +632,11 @@ offへの復帰を完了してからAPIを返す。onのまま処理を中断す
 自家がロンまたはスキップを選ぶまで待つ。したがって、別playerの `ActionHule` を理由に自家の
 ロンスキップを暗黙に成功扱いするfallbackは設けず、明示的なスキップ操作の完了を要求する。
 
-public APIで明示的なスキップを表す方法は未決定とする。`SkipOperation` は候補と選択を同じ型付きの
-値として扱え、class patternで分岐できる一方、protobufのoperationにはないframework側の合成候補が
-増える。`None` はv1-developと同様に追加modelを必要としない一方、候補tupleに含まれず、型switchでも
-通常operationと別扱いになる。スキップAPIを実装する前に、候補一覧から1つを渡す原則と利用側の
-扱いやすさを基準にどちらかを固定する。UI操作と優先度競合の規則は、どちらを選んでも共通とする。
+public APIでは明示的なスキップを field のない `SkipOperation` で表す。これによりスキップも
+`OperationCandidates.operations` から選択でき、他の候補と同じ `operate()` APIへ渡せる。
+`SkipOperation` はprotobufのoperation typeを直接表すものではなく、画面状態と立直状態に基づいて
+frameworkが追加する合成候補である。非立直時の自家ツモ番には追加せず、打牌を暗黙のキャンセルとして
+利用する。
 
 `ActionNewRound` では match identity と player metadata を維持し、round generation を増やして
 新しい `RoundState` を設定する。局の step は局ごとに 0 から始め、instance の version とは
