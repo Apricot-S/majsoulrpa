@@ -91,7 +91,7 @@ _SINGLE_FULU_CANDIDATE_COUNT = 1
 _MIN_MULTIPLE_FULU_CANDIDATE_COUNT = 2
 _MAX_CHI_CANDIDATE_COUNT = 5
 _MAX_PENG_CANDIDATE_COUNT = 2
-_MAX_ANGANG_CANDIDATE_COUNT = 3
+_MAX_ANGANG_JIAGANG_CANDIDATE_COUNT = 3
 
 _DAPAI_CLICK_PROGRESS_MESSAGE_NAMES = frozenset(
     {
@@ -237,9 +237,7 @@ class MatchScreen(Screen):
             case DaminggangOperation():
                 await self._operate_daminggang(state, operation)
             case JiagangOperation():
-                screenshot = await self.context.browser.screenshot()
-                msg = "Jiagang operation is not implemented."
-                raise ScreenNotImplementedOperationError(msg, screenshot)
+                await self._operate_jiagang(state, operation)
             case LiqiOperation():
                 await self._operate_liqi(state, operation)
             case _ as unreachable:
@@ -612,7 +610,7 @@ class MatchScreen(Screen):
         if not (
             _SINGLE_FULU_CANDIDATE_COUNT
             <= len(angang_operations)
-            <= _MAX_ANGANG_CANDIDATE_COUNT
+            <= _MAX_ANGANG_JIAGANG_CANDIDATE_COUNT
         ):
             error = ValueError(
                 "The number of angang candidates must be 1 to 3."
@@ -622,12 +620,58 @@ class MatchScreen(Screen):
                 cause=error,
             )
 
+        await self._operate_angang_jiagang(
+            angang_operations,
+            operation,
+            operation_name="angang",
+        )
+
+    async def _operate_jiagang(
+        self,
+        state: MatchState,
+        operation: JiagangOperation,
+    ) -> None:
+        candidates = state.round.operation_candidates
+        if candidates is None:
+            msg = "JiagangOperation requires operation candidates."
+            raise RuntimeError(msg)
+        jiagang_operations = tuple(
+            candidate
+            for candidate in candidates.operations
+            if isinstance(candidate, JiagangOperation)
+        )
+        if not (
+            _SINGLE_FULU_CANDIDATE_COUNT
+            <= len(jiagang_operations)
+            <= _MAX_ANGANG_JIAGANG_CANDIDATE_COUNT
+        ):
+            error = ValueError(
+                "The number of jiagang candidates must be 1 to 3."
+            )
+            await self._raise_inconsistent_message(
+                "Jiagang candidates do not match the supported UI layout.",
+                cause=error,
+            )
+
+        await self._operate_angang_jiagang(
+            jiagang_operations,
+            operation,
+            operation_name="jiagang",
+        )
+
+    async def _operate_angang_jiagang[T: AngangOperation | JiagangOperation](
+        self,
+        operations: tuple[T, ...],
+        operation: T,
+        *,
+        operation_name: str,
+    ) -> None:
         if not await self._click_operation_button_or_detect_progress(
             self.GANG_BUTTON_TEMPLATE
         ):
             return
 
-        if len(angang_operations) == _SINGLE_FULU_CANDIDATE_COUNT:
+        if len(operations) == _SINGLE_FULU_CANDIDATE_COUNT:
             await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
             return
 
@@ -635,16 +679,16 @@ class MatchScreen(Screen):
         if await self._put_back_pending_action_while_waiting_for_ui():
             return
 
-        if len(angang_operations) == _MAX_ANGANG_CANDIDATE_COUNT:
+        if len(operations) == _MAX_ANGANG_JIAGANG_CANDIDATE_COUNT:
             screenshot = await self.context.browser.screenshot()
             msg = (
-                "Selecting from three angang candidates is not implemented. "
-                "Please provide the information requested in the project "
-                "README."
+                f"Selecting from three {operation_name} candidates is not "
+                "implemented. Please provide the information requested in "
+                "the project README."
             )
             raise ScreenNotImplementedOperationError(msg, screenshot)
 
-        index = angang_operations.index(operation)
+        index = operations.index(operation)
         await self.click_region(
             self.ANGANG_JIAGANG_TWO_CANDIDATE_REGIONS[index]
         )
