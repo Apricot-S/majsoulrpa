@@ -28,10 +28,11 @@ from majsoulrpa.screens.match.operation.models import (
     OperationCandidates,
     PengOperation,
 )
-from majsoulrpa.screens.match.state import Fulu
+from majsoulrpa.screens.match.state import Angang, Fulu
 from majsoulrpa.screens.match.types import Seat, Tile
 
 _FOUR_PLAYER_COUNT = 4
+_MAX_FULU_COUNT = 4
 
 
 def materialize_operation_candidates(
@@ -80,9 +81,6 @@ def _materialize_operation_specification(
     self_seat: Seat,
     player_count: int,
 ) -> Sequence[MatchOperation]:
-    # Jiagang materialization will use the current self melds. Keep this
-    # context on every dispatch path.
-    _ = fulu
     match specification:
         case _DapaiOperationSpecification():
             return _materialize_dapai_specification(
@@ -98,6 +96,7 @@ def _materialize_operation_specification(
                 event,
                 shoupai,
                 zimopai,
+                fulu,
                 self_seat,
                 player_count,
             )
@@ -107,6 +106,7 @@ def _materialize_operation_specification(
                 event,
                 shoupai,
                 zimopai,
+                fulu,
                 self_seat,
                 player_count,
             )
@@ -116,6 +116,7 @@ def _materialize_operation_specification(
                 event,
                 shoupai,
                 zimopai,
+                fulu,
                 self_seat,
             )
         case _DaminggangOperationSpecification():
@@ -124,6 +125,7 @@ def _materialize_operation_specification(
                 event,
                 shoupai,
                 zimopai,
+                fulu,
                 self_seat,
                 player_count,
             )
@@ -133,6 +135,7 @@ def _materialize_operation_specification(
                 event,
                 shoupai,
                 zimopai,
+                fulu,
                 self_seat,
             )
     assert_never(specification)
@@ -182,9 +185,11 @@ def _materialize_chi_specification(
     event: MatchEvent,
     shoupai: tuple[Tile, ...],
     zimopai: Tile | None,
+    fulu: tuple[Fulu, ...],
     self_seat: Seat,
     player_count: int,
 ) -> list[ChiOperation]:
+    _validate_new_fulu_allowed(fulu, "chi")
     if player_count != _FOUR_PLAYER_COUNT:
         msg = "A chi operation is only valid in a four-player match."
         raise ValueError(msg)
@@ -222,9 +227,11 @@ def _materialize_peng_specification(
     event: MatchEvent,
     shoupai: tuple[Tile, ...],
     zimopai: Tile | None,
+    fulu: tuple[Fulu, ...],
     self_seat: Seat,
     player_count: int,
 ) -> list[PengOperation]:
+    _validate_new_fulu_allowed(fulu, "peng")
     call_event = _validate_call_event(
         event,
         zimopai,
@@ -250,8 +257,10 @@ def _materialize_angang_specification(
     event: MatchEvent,
     shoupai: tuple[Tile, ...],
     zimopai: Tile | None,
+    fulu: tuple[Fulu, ...],
     self_seat: Seat,
 ) -> list[AngangOperation]:
+    _validate_new_fulu_allowed(fulu, "angang")
     angang_zimopai = _validate_angang_event(event, zimopai, self_seat)
     available_tiles = (*shoupai, angang_zimopai)
     operations: list[AngangOperation] = []
@@ -266,9 +275,11 @@ def _materialize_daminggang_specification(
     event: MatchEvent,
     shoupai: tuple[Tile, ...],
     zimopai: Tile | None,
+    fulu: tuple[Fulu, ...],
     self_seat: Seat,
     player_count: int,
 ) -> list[DaminggangOperation]:
+    _validate_new_fulu_allowed(fulu, "daminggang")
     call_event = _validate_call_event(
         event,
         zimopai,
@@ -294,8 +305,10 @@ def _materialize_liqi_specification(
     event: MatchEvent,
     shoupai: tuple[Tile, ...],
     zimopai: Tile | None,
+    fulu: tuple[Fulu, ...],
     self_seat: Seat,
 ) -> list[LiqiOperation]:
+    _validate_liqi_fulu(fulu)
     if isinstance(event, NewRoundEvent):
         if event.ju != self_seat:
             msg = "Only the dealer can declare liqi after ActionNewRound."
@@ -335,6 +348,21 @@ def _materialize_liqi_specification(
                 )
             )
     return operations
+
+
+def _validate_new_fulu_allowed(
+    fulu: tuple[Fulu, ...],
+    operation_name: str,
+) -> None:
+    if len(fulu) >= _MAX_FULU_COUNT:
+        msg = f"A {operation_name} operation cannot add a fifth fulu."
+        raise ValueError(msg)
+
+
+def _validate_liqi_fulu(fulu: tuple[Fulu, ...]) -> None:
+    if any(not isinstance(item, Angang) for item in fulu):
+        msg = "A liqi operation requires a closed hand."
+        raise ValueError(msg)
 
 
 def _validate_angang_event(
