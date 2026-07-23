@@ -389,6 +389,7 @@ def test_live_and_restore_action_jiagang_decode_to_same_event() -> None:
     assert isinstance(live_event, JiagangEvent)
     assert live_event == restore_event
     assert live_event.added == "0m"
+    assert live_event.consumed == ("5m", "5m", "5m")
     assert live_operation is None
     assert restore_operation is None
 

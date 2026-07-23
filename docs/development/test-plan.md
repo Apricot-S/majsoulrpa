@@ -668,6 +668,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] type 6 の4枚に対応する自家の Peng が一意に見つからない、または multiset の差分が1枚でない場合は拒否する
 - [x] `ActionAnGangAddGang` の type 2 は単独の `tiles` を加槓の追加牌として Event へ反映する
 - [x] `JiagangEvent` は追加牌の赤牌・通常牌を正規化せず区別し、非空のドラ表示牌を保持する
+- [x] `JiagangEvent.consumed` は added が赤五なら黒五3枚、黒五なら赤五1枚と黒五2枚、それ以外なら同種3枚に正規化する
 - [x] 加槓は既存の `Peng` を元の取得情報と追加牌を持つ `Jiagang` に置換する
 - [x] 自家の加槓は `added` と一致する手牌またはツモ牌を消費し、他のツモ牌は手牌へ取り込む
 - [x] 加槓は嶺上ツモと搶槓対象を設定し、河には牌を追加しない

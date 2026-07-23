@@ -753,6 +753,7 @@ class AngangEvent(_MatchEventBase):
 @dataclass(frozen=True, slots=True, kw_only=True)
 class JiagangEvent(_MatchEventBase):
     seat: Seat
+    consumed: tuple[Tile, Tile, Tile]
     added: Tile
     dora_indicators: tuple[Tile, ...]
 
@@ -851,8 +852,10 @@ reducer は自家の `shoupai` と `zimopai` から、赤五と黒五を同じ�
 `lingshang_zimo` を真にする。
 
 `ActionAnGangAddGang(type=2)` は `JiagangEvent` に変換する。`tiles` は加えた牌1枚を表すため、
-赤牌と通常牌を正規化せず `added` にそのまま保持する。Event は元のポンの形を複製せず、
-成立した action の差分である `seat`、`added`、`dora_indicators` だけを持つ。
+赤牌と通常牌を正規化せず `added` にそのまま保持する。`consumed` は `added` を除いた3枚を
+赤あり表現へ正規化する。`added` が赤五なら黒五3枚、黒五なら赤五1枚と黒五2枚、それ以外は
+同種3枚とする。この `consumed` は wire から一意に補完した正規化形であり、元のポンの取得形は
+表さない。
 reducer は同じ牌種の既存 `Peng` が対象 seat の `fulu` に一意に存在することを要求し、その
 `from_seat`、取得した `tile`、`consumed` を引き継いだ完全な `Jiagang` へ置換する。自家の加槓では
 `added` と完全一致する牌を `shoupai` または `zimopai` から消費する。手牌側の牌を加えた場合は、

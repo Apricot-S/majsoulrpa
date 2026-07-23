@@ -46,3 +46,15 @@ def canonicalize_angang_consumed(
         red = Tile(f"0{normalized[1]}")
         return red, normalized, normalized, normalized
     return normalized, normalized, normalized, normalized
+
+
+def canonicalize_jiagang_consumed(
+    added: Tile,
+) -> tuple[Tile, Tile, Tile]:
+    normalized = normalize_tile_kind(added)
+    if normalized in {"5m", "5p", "5s"}:
+        if added[0] == "0":
+            return normalized, normalized, normalized
+        red = Tile(f"0{normalized[1]}")
+        return red, normalized, normalized
+    return normalized, normalized, normalized
