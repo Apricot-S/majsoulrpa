@@ -273,7 +273,12 @@ def _materialize_angang_specification(
     self_seat: Seat,
 ) -> list[AngangOperation]:
     _validate_new_fulu_allowed(fulu, "angang")
-    angang_zimopai = _validate_angang_event(event, zimopai, self_seat)
+    angang_zimopai = _validate_self_draw_operation_event(
+        event,
+        zimopai,
+        self_seat,
+        "angang",
+    )
     available_tiles = (*shoupai, angang_zimopai)
     operations: list[AngangOperation] = []
     for consumed in specification.consumed_candidates:
@@ -434,25 +439,32 @@ def _validate_liqi_fulu(fulu: tuple[Fulu, ...]) -> None:
         raise ValueError(msg)
 
 
-def _validate_angang_event(
+def _validate_self_draw_operation_event(
     event: MatchEvent,
     zimopai: Tile | None,
     self_seat: Seat,
+    operation_name: str,
 ) -> Tile:
     if isinstance(event, NewRoundEvent):
         if event.ju != self_seat:
-            msg = "Only the dealer can declare angang after ActionNewRound."
+            msg = (
+                f"Only the dealer can select {operation_name} "
+                "after ActionNewRound."
+            )
             raise ValueError(msg)
     elif isinstance(event, ZimoEvent):
         if event.seat != self_seat:
-            msg = "An opponent draw cannot provide an angang operation."
+            msg = (
+                f"An opponent draw cannot provide the {operation_name} "
+                "operation."
+            )
             raise ValueError(msg)
     else:
-        msg = "An angang operation must follow a self draw."
+        msg = f"The {operation_name} operation must follow a self draw."
         raise TypeError(msg)
 
     if zimopai is None:
-        msg = "An angang operation requires a drawn tile."
+        msg = f"The {operation_name} operation requires a drawn tile."
         raise ValueError(msg)
     return zimopai
 
