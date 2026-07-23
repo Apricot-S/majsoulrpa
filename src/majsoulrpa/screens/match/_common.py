@@ -36,13 +36,3 @@ def normalize_tile_kind(tile: Tile) -> Tile:
     if tile[0] == "0":
         return Tile(f"5{tile[1]}")
     return tile
-
-
-def canonicalize_angang_consumed(
-    tile: Tile,
-) -> tuple[Tile, Tile, Tile, Tile]:
-    normalized = normalize_tile_kind(tile)
-    if normalized in {"5m", "5p", "5s"}:
-        red = Tile(f"0{normalized[1]}")
-        return red, normalized, normalized, normalized
-    return normalized, normalized, normalized, normalized

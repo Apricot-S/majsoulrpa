@@ -4,7 +4,7 @@ from typing import Self, final
 
 from pydantic import JsonValue
 
-from majsoulrpa.screens.match._common import canonicalize_angang_consumed
+from majsoulrpa.screens.match._common import normalize_tile_kind
 from majsoulrpa.screens.match._decode import _get_int, _get_str, _get_str_list
 from majsoulrpa.screens.match.event._base import _MatchEventBase
 from majsoulrpa.screens.match.event._constants import MAX_DORA_INDICATORS
@@ -16,6 +16,14 @@ from majsoulrpa.screens.match.types import (
 )
 
 
+def _canonicalize_consumed(tile: Tile) -> tuple[Tile, Tile, Tile, Tile]:
+    normalized = normalize_tile_kind(tile)
+    if normalized in {"5m", "5p", "5s"}:
+        red = Tile(f"0{normalized[1]}")
+        return red, normalized, normalized, normalized
+    return normalized, normalized, normalized, normalized
+
+
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class AngangEvent(_MatchEventBase):
@@ -25,7 +33,7 @@ class AngangEvent(_MatchEventBase):
 
     def __post_init__(self) -> None:
         _MatchEventBase.__post_init__(self)
-        if self.consumed != canonicalize_angang_consumed(self.consumed[0]):
+        if self.consumed != _canonicalize_consumed(self.consumed[0]):
             msg = "consumed must use the canonical angang representation."
             raise ValueError(msg)
         if len(self.dora_indicators) > MAX_DORA_INDICATORS:
@@ -45,7 +53,7 @@ class AngangEvent(_MatchEventBase):
         return cls(
             action_step=action_step,
             seat=validate_seat(_get_int(data, "ActionAnGangAddGang.seat")),
-            consumed=canonicalize_angang_consumed(tile),
+            consumed=_canonicalize_consumed(tile),
             dora_indicators=tuple(
                 validate_tile(dora)
                 for dora in _get_str_list(data, "ActionAnGangAddGang.doras")
