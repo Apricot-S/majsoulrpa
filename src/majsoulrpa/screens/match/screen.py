@@ -734,10 +734,10 @@ class MatchScreen(Screen):
         await self._click_dapai_until_progress(region)
         await self._move_mouse_away_from_hand()
 
-    async def _operate_chi_peng(
+    async def _operate_chi_peng[T: ChiOperation | PengOperation](
         self,
-        operation: ChiOperation | PengOperation,
-        operations: tuple[ChiOperation | PengOperation, ...],
+        operation: T,
+        operations: tuple[T, ...],
         button_template: TemplateMatcher,
     ) -> None:
         if not await self._click_operation_button_or_detect_progress(
