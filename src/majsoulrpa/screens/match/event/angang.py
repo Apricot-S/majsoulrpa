@@ -4,7 +4,6 @@ from typing import Self, final
 
 from pydantic import JsonValue
 
-from majsoulrpa.screens.match._common import normalize_tile_kind
 from majsoulrpa.screens.match._decode import _get_int, _get_str, _get_str_list
 from majsoulrpa.screens.match.event._base import _MatchEventBase
 from majsoulrpa.screens.match.event._constants import MAX_DORA_INDICATORS
@@ -17,11 +16,11 @@ from majsoulrpa.screens.match.types import (
 
 
 def _canonicalize_consumed(tile: Tile) -> tuple[Tile, Tile, Tile, Tile]:
-    normalized = normalize_tile_kind(tile)
-    if normalized in {"5m", "5p", "5s"}:
-        red = Tile(f"0{normalized[1]}")
-        return red, normalized, normalized, normalized
-    return normalized, normalized, normalized, normalized
+    if tile in {"0m", "5m", "0p", "5p", "0s", "5s"}:
+        red = Tile(f"0{tile[1]}")
+        normal = Tile(f"5{tile[1]}")
+        return red, normal, normal, normal
+    return tile, tile, tile, tile
 
 
 @final
