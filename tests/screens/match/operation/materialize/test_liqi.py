@@ -39,6 +39,7 @@ def test_liqi_materialization_preserves_wire_order_and_tile_position() -> None:
         event,
         (validate_tile("4s"), validate_tile("3p")),
         validate_tile("3p"),
+        (),
         validate_seat(0),
         4,
     )
@@ -78,6 +79,7 @@ def test_liqi_materialization_adds_existing_normal_five_for_red_candidate(
         event,
         (validate_tile(f"5{suit}"),),
         validate_tile(f"0{suit}"),
+        (),
         validate_seat(0),
         4,
     )
@@ -113,6 +115,7 @@ def test_liqi_materialization_does_not_add_absent_normal_five() -> None:
         event,
         (),
         validate_tile("0m"),
+        (),
         validate_seat(0),
         4,
     )
@@ -147,6 +150,7 @@ def test_liqi_materialization_does_not_add_red_for_normal_five() -> None:
         event,
         (validate_tile("0m"),),
         validate_tile("5m"),
+        (),
         validate_seat(0),
         4,
     )
@@ -186,6 +190,7 @@ def test_liqi_marks_dealer_initial_tile_as_hand_discard() -> None:
         event,
         tuple(validate_tile("1m") for _ in range(13)),
         validate_tile("9s"),
+        (),
         validate_seat(0),
         4,
     )
@@ -221,6 +226,7 @@ def test_liqi_materialization_rejects_candidate_absent_from_tiles() -> None:
             event,
             (validate_tile("5m"),),
             validate_tile("1m"),
+            (),
             validate_seat(0),
             4,
         )

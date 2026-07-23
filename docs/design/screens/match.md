@@ -395,7 +395,8 @@ operation の中に保持しない。したがって、複数の鳴き方を選�
 [`加槓候補の牌順序`](../../investigations/jiagang-combination-order.md) に記録する。
 
 この復元に必要な既存ポンを失わないよう、store は operation 候補のmaterializerへ、候補生成時点の
-`round_state.fulu[state.self_seat]` を `self_fulu` として渡す。局初期化時だけは副露が存在しないため
+`round_state.fulu[state.self_seat]` を `fulu` として渡す。`fulu` は `zimopai` の直後に置く必須引数と
+し、局初期化時だけは副露が存在しないため
 空tupleを渡す。副露Eventの適用と同じactionに後続operationが含まれる場合は、Eventを反映した後の
 自家fuluを渡す。materializerへMatchState全体は渡さず、候補生成に必要な自家副露だけに境界を絞る。
 

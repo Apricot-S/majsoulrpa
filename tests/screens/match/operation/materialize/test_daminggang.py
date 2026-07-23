@@ -46,6 +46,7 @@ def test_daminggang_materialization_preserves_wire_order() -> None:
         event,
         tuple(validate_tile(tile) for tile in ("0m", "5m", "5m", "5m")),
         None,
+        (),
         validate_seat(0),
         3,
     )
@@ -91,6 +92,7 @@ def test_daminggang_materialization_rejects_non_discard_event() -> None:
             StartMatchEvent(action_step=0),
             tuple(validate_tile("5m") for _ in range(3)),
             None,
+            (),
             validate_seat(0),
             4,
         )
@@ -136,6 +138,7 @@ def test_daminggang_materialization_rejects_inconsistent_state(
             event,
             tuple(validate_tile(tile) for tile in shoupai),
             None if zimopai is None else validate_tile(zimopai),
+            (),
             validate_seat(0),
             4,
         )

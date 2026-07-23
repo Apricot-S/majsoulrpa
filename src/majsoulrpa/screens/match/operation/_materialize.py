@@ -39,10 +39,9 @@ def materialize_operation_candidates(
     event: MatchEvent,
     shoupai: tuple[Tile, ...],
     zimopai: Tile | None,
+    fulu: tuple[Fulu, ...],
     self_seat: Seat,
     player_count: int,
-    *,
-    self_fulu: tuple[Fulu, ...] = (),
 ) -> OperationCandidates | None:
     if specification is None:
         return None
@@ -55,9 +54,9 @@ def materialize_operation_candidates(
                 event,
                 shoupai,
                 zimopai,
+                fulu,
                 self_seat,
                 player_count,
-                self_fulu,
             )
         )
 
@@ -77,13 +76,13 @@ def _materialize_operation_specification(
     event: MatchEvent,
     shoupai: tuple[Tile, ...],
     zimopai: Tile | None,
+    fulu: tuple[Fulu, ...],
     self_seat: Seat,
     player_count: int,
-    self_fulu: tuple[Fulu, ...],
 ) -> Sequence[MatchOperation]:
     # Jiagang materialization will use the current self melds. Keep this
     # context on every dispatch path.
-    _ = self_fulu
+    _ = fulu
     match specification:
         case _DapaiOperationSpecification():
             return _materialize_dapai_specification(

@@ -64,6 +64,7 @@ def test_angang_materialization_preserves_unsorted_wire_order() -> None:
             )
         ),
         validate_tile("1m"),
+        (),
         validate_seat(0),
         4,
     )
@@ -131,6 +132,7 @@ def test_angang_materialization_includes_dealer_presentation_tile() -> None:
         event,
         shoupai,
         validate_tile("1z"),
+        (),
         validate_seat(0),
         4,
     )
@@ -208,6 +210,7 @@ def test_angang_materialization_rejects_inconsistent_state(
             event,
             tuple(validate_tile(tile) for tile in shoupai),
             None if zimopai is None else validate_tile(zimopai),
+            (),
             validate_seat(0),
             4,
         )

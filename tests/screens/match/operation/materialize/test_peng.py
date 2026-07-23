@@ -46,6 +46,7 @@ def test_peng_materialization_expands_each_combination_in_wire_order() -> None:
         event,
         tuple(validate_tile(tile) for tile in ("0m", "5m", "5m")),
         None,
+        (),
         validate_seat(0),
         3,
     )
@@ -83,6 +84,7 @@ def test_peng_materialization_rejects_non_discard_event() -> None:
             StartMatchEvent(action_step=0),
             (validate_tile("5m"), validate_tile("5m")),
             None,
+            (),
             validate_seat(0),
             4,
         )
@@ -115,6 +117,7 @@ def test_peng_materialization_rejects_tiles_absent_from_hand() -> None:
             event,
             (validate_tile("5m"), validate_tile("6m")),
             None,
+            (),
             validate_seat(0),
             4,
         )

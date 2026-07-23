@@ -42,9 +42,9 @@ def test_dapai_materialization_does_not_forbid_unrelated_red_five() -> None:
             validate_tile("1p"),
         ),
         None,
+        (),
         validate_seat(0),
         4,
-        self_fulu=(),
     )
 
     assert candidates is not None

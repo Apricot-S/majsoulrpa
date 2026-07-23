@@ -69,9 +69,9 @@ class MatchStateStore:
             new_round_event,
             new_round_event.shoupai,
             new_round_event.zimopai,
+            (),
             metadata.self_seat,
             player_count,
-            self_fulu=(),
         )
         round_state = RoundState(
             generation=1,
@@ -180,9 +180,9 @@ class MatchStateStore:
             event,
             round_state.shoupai,
             zimopai,
+            round_state.fulu[state.self_seat],
             state.self_seat,
             len(state.players),
-            self_fulu=round_state.fulu[state.self_seat],
         )
         next_round = replace(
             round_state,
@@ -267,9 +267,9 @@ class MatchStateStore:
             event,
             next_shoupai,
             zimopai,
+            round_state.fulu[state.self_seat],
             state.self_seat,
             len(state.players),
-            self_fulu=round_state.fulu[state.self_seat],
         )
         next_round = replace(
             round_state,
@@ -410,6 +410,7 @@ class MatchStateStore:
 
         fulu = [list(player_fulu) for player_fulu in round_state.fulu]
         fulu[event.seat].append(Angang(consumed=event.consumed))
+        next_fulu = tuple(tuple(player_fulu) for player_fulu in fulu)
         lingshang_zimo = list(round_state.lingshang_zimo)
         lingshang_zimo[event.seat] = True
         next_shoupai = tuple(shoupai)
@@ -418,9 +419,9 @@ class MatchStateStore:
             event,
             next_shoupai,
             zimopai,
+            next_fulu[state.self_seat],
             state.self_seat,
             player_count,
-            self_fulu=tuple(fulu[state.self_seat]),
         )
         next_round = replace(
             round_state,
@@ -430,7 +431,7 @@ class MatchStateStore:
             ),
             shoupai=next_shoupai,
             zimopai=zimopai,
-            fulu=tuple(tuple(player_fulu) for player_fulu in fulu),
+            fulu=next_fulu,
             first_draw=(False,) * player_count,
             yifa=(False,) * player_count,
             lingshang_zimo=tuple(lingshang_zimo),
@@ -491,6 +492,7 @@ class MatchStateStore:
 
         fulu = [list(player_fulu) for player_fulu in round_state.fulu]
         fulu[event.seat].append(fulu_entry)
+        next_fulu = tuple(tuple(player_fulu) for player_fulu in fulu)
         lingshang_zimo = list(round_state.lingshang_zimo)
         if isinstance(event, DaminggangEvent):
             lingshang_zimo[event.seat] = True
@@ -507,9 +509,9 @@ class MatchStateStore:
             event,
             next_shoupai,
             None,
+            next_fulu[state.self_seat],
             state.self_seat,
             player_count,
-            self_fulu=tuple(fulu[state.self_seat]),
         )
         next_round = replace(
             round_state,
@@ -517,7 +519,7 @@ class MatchStateStore:
             scores=scores,
             liqibang=liqibang,
             shoupai=next_shoupai,
-            fulu=tuple(tuple(player_fulu) for player_fulu in fulu),
+            fulu=next_fulu,
             first_draw=(False,) * player_count,
             yifa=(False,) * player_count,
             lingshang_zimo=tuple(lingshang_zimo),
