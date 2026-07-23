@@ -4,11 +4,13 @@ from types import SimpleNamespace
 
 import pytest
 
+from majsoulrpa.assets.protocol import liqi_pb2
 from majsoulrpa.screens.errors import ScreenInconsistentMessageError
 from majsoulrpa.screens.match import (
     Dapai,
     Jiagang,
     JiagangEvent,
+    JiagangOperation,
     MatchScreen,
     validate_seat,
     validate_tile,
@@ -27,6 +29,81 @@ from tests.screens.match._support import (
     _live_new_round_action,
     _live_peng_action,
 )
+
+
+def test_get_state_exposes_jiagang_operation_after_self_draw() -> None:
+    tiles = ["0m", "5m", *(["4p"] * 11)]
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"synthetic-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(),
+                _live_new_round_action(step=0, ju=2, tiles=tiles),
+                _live_discard_action(
+                    step=1,
+                    seat=2,
+                    tile="5m",
+                    moqie=False,
+                ),
+                _live_peng_action(
+                    step=2,
+                    seat=0,
+                    tiles=["0m", "5m", "5m"],
+                    froms=[0, 0, 2],
+                ),
+                _live_discard_action(
+                    step=3,
+                    seat=0,
+                    tile="4p",
+                    moqie=False,
+                ),
+                _live_deal_action(
+                    step=4,
+                    seat=1,
+                    tile="",
+                    left_tile_count=68,
+                ),
+                _live_discard_action(
+                    step=5,
+                    seat=1,
+                    tile="2s",
+                    moqie=True,
+                ),
+                _live_deal_action(
+                    step=6,
+                    seat=0,
+                    tile="5m",
+                    left_tile_count=67,
+                    operation=liqi_pb2.OptionalOperationList(
+                        time_fixed=5000,
+                        time_add=20000,
+                        operation_list=[
+                            liqi_pb2.OptionalOperation(
+                                type=6,
+                                combination=["0m|5m|5m|5m"],
+                            )
+                        ],
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+    state = asyncio.run(screen.get_state())
+
+    candidates = state.round.operation_candidates
+    assert candidates is not None
+    assert candidates.operations == (
+        JiagangOperation(
+            from_seat=validate_seat(2),
+            tile=validate_tile("5m"),
+            consumed=(validate_tile("0m"), validate_tile("5m")),
+            added=validate_tile("5m"),
+        ),
+    )
 
 
 def test_get_state_applies_self_jiagang_with_drawn_tile() -> None:

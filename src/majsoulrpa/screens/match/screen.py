@@ -60,6 +60,7 @@ from majsoulrpa.screens.match.operation import (
     ChiOperation,
     DaminggangOperation,
     DapaiOperation,
+    JiagangOperation,
     LiqiOperation,
     MatchOperation,
     PengOperation,
@@ -235,6 +236,10 @@ class MatchScreen(Screen):
                 await self._operate_angang(state, operation)
             case DaminggangOperation():
                 await self._operate_daminggang(state, operation)
+            case JiagangOperation():
+                screenshot = await self.context.browser.screenshot()
+                msg = "Jiagang operation is not implemented."
+                raise ScreenNotImplementedOperationError(msg, screenshot)
             case LiqiOperation():
                 await self._operate_liqi(state, operation)
             case _ as unreachable:
@@ -810,6 +815,12 @@ class MatchScreen(Screen):
                     and event.tile == operation.tile
                     and event.consumed == operation.consumed
                 )
+            case JiagangOperation():
+                return (
+                    isinstance(event, JiagangEvent)
+                    and event.seat == state.self_seat
+                    and event.added == operation.added
+                )
             case LiqiOperation():
                 return (
                     isinstance(event, DapaiEvent)
@@ -837,6 +848,7 @@ class MatchScreen(Screen):
                 | PengOperation()
                 | AngangOperation()
                 | DaminggangOperation()
+                | JiagangOperation()
                 | LiqiOperation()
             ):
                 return False

@@ -12,6 +12,7 @@ from majsoulrpa.screens.match.operation._specification import (
     _ChiOperationSpecification,
     _DaminggangOperationSpecification,
     _DapaiOperationSpecification,
+    _JiagangOperationSpecification,
     _LiqiOperationSpecification,
     _MatchOperationSpecification,
     _OperationCandidatesSpecification,
@@ -24,6 +25,7 @@ _CHI_OPERATION_TYPE = 2
 _PENG_OPERATION_TYPE = 3
 _ANGANG_OPERATION_TYPE = 4
 _DAMINGGANG_OPERATION_TYPE = 5
+_JIAGANG_OPERATION_TYPE = 6
 _LIQI_OPERATION_TYPE = 7
 
 _TWO_TILE_COMBINATION_COUNT = 2
@@ -79,6 +81,16 @@ def decode_operation_specification(
             continue
         if operation_type == _DAMINGGANG_OPERATION_TYPE:
             specifications.append(_decode_daminggang_specification(item))
+            continue
+        if operation_type == _JIAGANG_OPERATION_TYPE:
+            specifications.append(
+                _JiagangOperationSpecification(
+                    tile_candidates=_decode_four_tile_combinations(
+                        item,
+                        "jiagang",
+                    )
+                )
+            )
             continue
         if operation_type == _LIQI_OPERATION_TYPE:
             candidate_tiles = tuple(
@@ -155,21 +167,35 @@ def _decode_daminggang_specification(
 def _decode_angang_specification(
     item: Mapping[str, JsonValue],
 ) -> _AngangOperationSpecification:
+    return _AngangOperationSpecification(
+        consumed_candidates=_decode_four_tile_combinations(item, "angang")
+    )
+
+
+def _decode_four_tile_combinations(
+    item: Mapping[str, JsonValue],
+    operation_name: str,
+) -> tuple[tuple[Tile, Tile, Tile, Tile], ...]:
+    subject = (
+        f"An {operation_name}"
+        if operation_name[0] in {"a", "e", "i", "o", "u"}
+        else f"A {operation_name}"
+    )
     encoded_combinations = _get_str_list(
         item,
         "OptionalOperation.combination",
     )
     if not encoded_combinations:
-        msg = "An angang operation must contain a combination."
+        msg = f"{subject} operation must contain a combination."
         raise ValueError(msg)
 
-    consumed_candidates: list[tuple[Tile, Tile, Tile, Tile]] = []
+    candidates: list[tuple[Tile, Tile, Tile, Tile]] = []
     for encoded_combination in encoded_combinations:
         tiles = encoded_combination.split("|")
         if len(tiles) != _FOUR_TILE_COMBINATION_COUNT:
-            msg = "An angang combination must contain four tiles."
+            msg = f"{subject} combination must contain four tiles."
             raise ValueError(msg)
-        consumed_candidates.append(
+        candidates.append(
             (
                 validate_tile(tiles[0]),
                 validate_tile(tiles[1]),
@@ -177,9 +203,7 @@ def _decode_angang_specification(
                 validate_tile(tiles[3]),
             )
         )
-    return _AngangOperationSpecification(
-        consumed_candidates=tuple(consumed_candidates)
-    )
+    return tuple(candidates)
 
 
 def _decode_two_tile_combinations(

@@ -656,18 +656,18 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 暗槓する牌が 0m / 5m、0p / 5p、0s / 5s のどちらで届いても赤五1枚を先頭、黒五3枚へ正規化する
 - [x] 五以外の暗槓は wire の単独牌を同じ4枚の consumed へ展開する
 - [x] `ActionAnGangAddGang` の type 2 と未知 type は暗槓として受理しない
-- [ ] type 6 は牌順に依存せず既存の `Peng` と4枚の multiset を比較し、元の from_seat / tile / consumed と差分の added を保持する `JiagangOperation` 1 instance へ変換する
+- [x] type 6 は牌順に依存せず既存の `Peng` と4枚の multiset を比較し、元の from_seat / tile / consumed と差分の added を保持する `JiagangOperation` 1 instance へ変換する
 - [x] type 7 の各候補牌を 1 打牌 1 `LiqiOperation` に展開する
 - [ ] type 8 は空の `combination` と発生元 Event のツモ牌から `ZimohuOperation` を生成する
 - [ ] type 9 は空の `combination` と発生元 Event の対象 seat・対象牌から `RongOperation` を生成する
 - [ ] type 10 は空の `combination` から field のない `JiuzhongjiupaiOperation` を生成する
 - [ ] v1-develop の type 11 / `BabeiOperation` 対応を三人戦の実通信で再確認してから固定する
-- [ ] type 2〜6 の区切り後の牌数が operation ごとの枚数と異なる場合は拒否する
+- [x] type 2〜6 の区切り後の牌数が operation ごとの枚数と異なる場合は拒否する
 - [x] AngangOperation は4枚を consumed として保持する
-- [ ] JiagangOperation は既存の `Peng` との差分が通常牌か赤牌かを added に保持する
-- [ ] JiagangOperation は既存の Peng から from_seat、取得した tile、手牌から使った2枚の consumed を引き継ぐ
-- [ ] type 6 の赤5が先頭に正規化されていても、既存の `Peng` に含まれる赤5と added の赤5を正しく区別する
-- [ ] type 6 の4枚に対応する自家の Peng が一意に見つからない、または multiset の差分が1枚でない場合は拒否する
+- [x] JiagangOperation は既存の `Peng` との差分が通常牌か赤牌かを added に保持する
+- [x] JiagangOperation は既存の Peng から from_seat、取得した tile、手牌から使った2枚の consumed を引き継ぐ
+- [x] type 6 の赤5が先頭に正規化されていても、既存の `Peng` に含まれる赤5と added の赤5を正しく区別する
+- [x] type 6 の4枚に対応する自家の Peng が一意に見つからない、または multiset の差分が1枚でない場合は拒否する
 - [x] `ActionAnGangAddGang` の type 2 は単独の `tiles` を加槓の追加牌として Event へ反映する
 - [x] `JiagangEvent` は追加牌の赤牌・通常牌を正規化せず区別し、非空のドラ表示牌を保持する
 - [x] `JiagangEvent.consumed` は added が赤五なら黒五3枚、黒五なら赤五1枚と黒五2枚、それ以外なら同種3枚に正規化する

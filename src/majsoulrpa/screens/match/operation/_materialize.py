@@ -1,3 +1,4 @@
+from collections import Counter
 from collections.abc import Sequence
 from typing import assert_never
 
@@ -13,6 +14,7 @@ from majsoulrpa.screens.match.operation._specification import (
     _ChiOperationSpecification,
     _DaminggangOperationSpecification,
     _DapaiOperationSpecification,
+    _JiagangOperationSpecification,
     _LiqiOperationSpecification,
     _MatchOperationSpecification,
     _OperationCandidatesSpecification,
@@ -23,12 +25,13 @@ from majsoulrpa.screens.match.operation.models import (
     ChiOperation,
     DaminggangOperation,
     DapaiOperation,
+    JiagangOperation,
     LiqiOperation,
     MatchOperation,
     OperationCandidates,
     PengOperation,
 )
-from majsoulrpa.screens.match.state import Angang, Fulu
+from majsoulrpa.screens.match.state import Angang, Fulu, Peng
 from majsoulrpa.screens.match.types import Seat, Tile
 
 _FOUR_PLAYER_COUNT = 4
@@ -128,6 +131,15 @@ def _materialize_operation_specification(
                 fulu,
                 self_seat,
                 player_count,
+            )
+        case _JiagangOperationSpecification():
+            return _materialize_jiagang_specification(
+                specification,
+                event,
+                shoupai,
+                zimopai,
+                fulu,
+                self_seat,
             )
         case _LiqiOperationSpecification():
             return _materialize_liqi_specification(
@@ -295,6 +307,63 @@ def _materialize_daminggang_specification(
                 from_seat=call_event.seat,
                 tile=call_event.tile,
                 consumed=consumed,
+            )
+        )
+    return operations
+
+
+def _materialize_jiagang_specification(
+    specification: _JiagangOperationSpecification,
+    event: MatchEvent,
+    shoupai: tuple[Tile, ...],
+    zimopai: Tile | None,
+    fulu: tuple[Fulu, ...],
+    self_seat: Seat,
+) -> list[JiagangOperation]:
+    if not isinstance(event, ZimoEvent):
+        msg = "A jiagang operation must follow a self draw."
+        raise TypeError(msg)
+    if event.seat != self_seat:
+        msg = "An opponent draw cannot provide a jiagang operation."
+        raise ValueError(msg)
+    if zimopai is None:
+        msg = "A jiagang operation requires a drawn tile."
+        raise ValueError(msg)
+
+    available_tiles = {*shoupai, zimopai}
+    operations: list[JiagangOperation] = []
+    for tile_candidate in specification.tile_candidates:
+        candidate_counts = Counter(tile_candidate)
+        matching_pengs: list[tuple[Peng, Tile]] = []
+        for entry in fulu:
+            if not isinstance(entry, Peng):
+                continue
+            remaining_counts = candidate_counts.copy()
+            for tile in (entry.tile, *entry.consumed):
+                if remaining_counts[tile] == 0:
+                    break
+                remaining_counts[tile] -= 1
+            else:
+                added_tiles = list(remaining_counts.elements())
+                if len(added_tiles) == 1:
+                    matching_pengs.append((entry, added_tiles[0]))
+
+        if len(matching_pengs) != 1:
+            msg = "A jiagang operation must have exactly one matching peng."
+            raise ValueError(msg)
+        peng, added = matching_pengs[0]
+        if added not in available_tiles:
+            msg = (
+                "A jiagang operation must add a tile from the hand "
+                "or drawn tile."
+            )
+            raise ValueError(msg)
+        operations.append(
+            JiagangOperation(
+                from_seat=peng.from_seat,
+                tile=peng.tile,
+                consumed=peng.consumed,
+                added=added,
             )
         )
     return operations

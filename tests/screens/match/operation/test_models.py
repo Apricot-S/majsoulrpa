@@ -7,6 +7,7 @@ from majsoulrpa.screens.match import (
     ChiOperation,
     DaminggangOperation,
     DapaiOperation,
+    JiagangOperation,
     LiqiOperation,
     OperationCandidates,
     PengOperation,
@@ -123,6 +124,32 @@ def test_angang_operation_rejects_tiles_of_different_kinds() -> None:
                 validate_tile("5m"),
                 validate_tile("5p"),
             )
+        )
+
+
+def test_jiagang_operation_is_an_immutable_value() -> None:
+    operation = JiagangOperation(
+        from_seat=validate_seat(2),
+        tile=validate_tile("5m"),
+        consumed=(validate_tile("0m"), validate_tile("5m")),
+        added=validate_tile("5m"),
+    )
+
+    assert operation.from_seat == 2
+    assert operation.tile == "5m"
+    assert operation.consumed == ("0m", "5m")
+    assert operation.added == "5m"
+    with pytest.raises(FrozenInstanceError):
+        operation.added = validate_tile("0m")  # ty: ignore[invalid-assignment]
+
+
+def test_jiagang_operation_rejects_tiles_of_different_kinds() -> None:
+    with pytest.raises(ValueError, match="same kind"):
+        JiagangOperation(
+            from_seat=validate_seat(2),
+            tile=validate_tile("5m"),
+            consumed=(validate_tile("5m"), validate_tile("5m")),
+            added=validate_tile("5p"),
         )
 
 

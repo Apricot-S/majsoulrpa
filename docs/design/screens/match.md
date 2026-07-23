@@ -395,7 +395,10 @@ operation の中に保持しない。したがって、複数の鳴き方を選�
 `from_seat`、他家から取得した `tile`、手牌から使った2枚の `consumed` を `JiagangOperation` に
 引き継ぐ。既存のポン3枚を multiset として差し引いた残りの1枚を `added` とし、通常牌か赤牌かを
 区別する。対応する `Peng` が存在しない、一意に定まらない、または差分が1枚にならない場合は
-不整合として拒否する。加槓成立時の `ActionAnGangAddGang` (`type == 2`) は `tiles` に追加牌
+不整合として拒否する。候補は自家の `ActionDealTile` にだけ生成し、`added` が現在の `shoupai`
+または `zimopai` に実在することを要求する。4組のfuluがあっても、既存の `Peng` を置換するため
+許容する。複数候補は `combination` の wire 順を維持する。
+加槓成立時の `ActionAnGangAddGang` (`type == 2`) は `tiles` に追加牌
 1枚を直接格納するため、Event の追加牌はこの値から取得する。調査根拠は
 [`加槓候補の牌順序`](../../investigations/jiagang-combination-order.md) に記録する。
 

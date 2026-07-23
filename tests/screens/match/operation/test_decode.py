@@ -9,6 +9,7 @@ from majsoulrpa.screens.match.operation._specification import (
     _ChiOperationSpecification,
     _DaminggangOperationSpecification,
     _DapaiOperationSpecification,
+    _JiagangOperationSpecification,
     _LiqiOperationSpecification,
     _PengOperationSpecification,
 )
@@ -200,6 +201,55 @@ def test_decode_angang_operation_rejects_invalid_combinations(
                 "operation": {
                     "operation_list": [
                         {"type": 4, "combination": combination}
+                    ],
+                    "time_add": 0,
+                    "time_fixed": 0,
+                }
+            }
+        )
+
+
+def test_decode_jiagang_operation_specification() -> None:
+    specification = decode_operation_specification(
+        {
+            "operation": {
+                "operation_list": [
+                    {
+                        "type": 6,
+                        "combination": [
+                            "0m|5m|5m|5m",
+                            "7z|7z|7z|7z",
+                        ],
+                    }
+                ],
+                "time_add": 20000,
+                "time_fixed": 5000,
+            }
+        }
+    )
+
+    assert specification is not None
+    [operation] = specification.operations
+    assert isinstance(operation, _JiagangOperationSpecification)
+    assert operation.tile_candidates == (
+        ("0m", "5m", "5m", "5m"),
+        ("7z", "7z", "7z", "7z"),
+    )
+
+
+@pytest.mark.parametrize(
+    "combination",
+    [[], ["5m|5m|5m"], ["5m|5m|5m|5m|5m"], ["5m|5m|5m|5x"]],
+)
+def test_decode_jiagang_operation_rejects_invalid_combinations(
+    combination: list[str],
+) -> None:
+    with pytest.raises((TypeError, ValueError)):
+        decode_operation_specification(
+            {
+                "operation": {
+                    "operation_list": [
+                        {"type": 6, "combination": combination}
                     ],
                     "time_add": 0,
                     "time_fixed": 0,
