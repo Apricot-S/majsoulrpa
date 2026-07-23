@@ -132,10 +132,7 @@ def _decode_peng_specification(
 def _decode_daminggang_specification(
     item: Mapping[str, JsonValue],
 ) -> _DaminggangOperationSpecification:
-    encoded_combinations = _get_str_list(
-        item,
-        "OptionalOperation.combination",
-    )
+    encoded_combinations = _get_str_list(item, "OptionalOperation.combination")
     if not encoded_combinations:
         msg = "A daminggang operation must contain a combination."
         raise ValueError(msg)
@@ -183,10 +180,7 @@ def _decode_four_tile_combinations(
         if operation_name[0] in {"a", "e", "i", "o", "u"}
         else f"A {operation_name}"
     )
-    encoded_combinations = _get_str_list(
-        item,
-        "OptionalOperation.combination",
-    )
+    encoded_combinations = _get_str_list(item, "OptionalOperation.combination")
     if not encoded_combinations:
         msg = f"{subject} operation must contain a combination."
         raise ValueError(msg)
@@ -212,10 +206,7 @@ def _decode_two_tile_combinations(
     item: Mapping[str, JsonValue],
     operation_name: str,
 ) -> tuple[tuple[Tile, Tile], ...]:
-    encoded_combinations = _get_str_list(
-        item,
-        "OptionalOperation.combination",
-    )
+    encoded_combinations = _get_str_list(item, "OptionalOperation.combination")
     if not encoded_combinations:
         msg = f"A {operation_name} operation must contain a combination."
         raise ValueError(msg)
