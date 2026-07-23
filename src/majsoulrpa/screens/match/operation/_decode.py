@@ -20,14 +20,6 @@ from majsoulrpa.screens.match.operation._specification import (
 )
 from majsoulrpa.screens.match.types import Tile, validate_tile
 
-_DAPAI_OPERATION_TYPE = 1
-_CHI_OPERATION_TYPE = 2
-_PENG_OPERATION_TYPE = 3
-_ANGANG_OPERATION_TYPE = 4
-_DAMINGGANG_OPERATION_TYPE = 5
-_JIAGANG_OPERATION_TYPE = 6
-_LIQI_OPERATION_TYPE = 7
-
 _TWO_TILE_COMBINATION_COUNT = 2
 _THREE_TILE_COMBINATION_COUNT = 3
 _FOUR_TILE_COMBINATION_COUNT = 4
@@ -57,29 +49,28 @@ def decode_operation_specification(
             msg = "OptionalOperationList.operation_list items must be objects."
             raise TypeError(msg)
         operation_type = _get_int(item, "OptionalOperation.type")
-        if operation_type == _DAPAI_OPERATION_TYPE:
-            specifications.append(_decode_dapai_specification(item))
-            continue
-        if operation_type == _CHI_OPERATION_TYPE:
-            specifications.append(_decode_chi_specification(item))
-            continue
-        if operation_type == _PENG_OPERATION_TYPE:
-            specifications.append(_decode_peng_specification(item))
-            continue
-        if operation_type == _ANGANG_OPERATION_TYPE:
-            specifications.append(_decode_angang_specification(item))
-            continue
-        if operation_type == _DAMINGGANG_OPERATION_TYPE:
-            specifications.append(_decode_daminggang_specification(item))
-            continue
-        if operation_type == _JIAGANG_OPERATION_TYPE:
-            specifications.append(_decode_jiagang_specification(item))
-            continue
-        if operation_type == _LIQI_OPERATION_TYPE:
-            specifications.append(_decode_liqi_specification(item))
-            continue
-        msg = f"OptionalOperation type is not supported: {operation_type}."
-        raise ValueError(msg)
+        match operation_type:
+            case 1:
+                specification = _decode_dapai_specification(item)
+            case 2:
+                specification = _decode_chi_specification(item)
+            case 3:
+                specification = _decode_peng_specification(item)
+            case 4:
+                specification = _decode_angang_specification(item)
+            case 5:
+                specification = _decode_daminggang_specification(item)
+            case 6:
+                specification = _decode_jiagang_specification(item)
+            case 7:
+                specification = _decode_liqi_specification(item)
+            case _:
+                msg = (
+                    "OptionalOperation type is not supported: "
+                    f"{operation_type}."
+                )
+                raise ValueError(msg)
+        specifications.append(specification)
 
     if not specifications:
         return None
