@@ -28,8 +28,10 @@ def validate_chi_tiles(tile: Tile, consumed: tuple[Tile, Tile]) -> None:
 
 
 def validate_same_tile_kind(tile: Tile, consumed: tuple[Tile, ...]) -> None:
-    expected = normalize_tile_kind(tile)
-    if any(normalize_tile_kind(value) != expected for value in consumed):
+    expected_tiles = {tile}
+    if tile in {"0m", "5m", "0p", "5p", "0s", "5s"}:
+        expected_tiles = {Tile(f"0{tile[1]}"), Tile(f"5{tile[1]}")}
+    if any(value not in expected_tiles for value in consumed):
         msg = "tiles must have the same kind."
         raise ValueError(msg)
 

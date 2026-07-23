@@ -3,7 +3,6 @@ from typing import assert_never
 
 from majsoulrpa.screens.match._common import (
     is_preceding_seat,
-    normalize_tile_kind,
     tile_sort_key,
 )
 from majsoulrpa.screens.match._metadata import MatchMetadata
@@ -390,21 +389,15 @@ class MatchStateStore:
                 msg = "A self angang must follow a self draw."
                 raise ValueError(msg)
             expected_kind = event.consumed[3]
-            matching_tiles = sum(
-                normalize_tile_kind(tile) == expected_kind for tile in shoupai
-            )
-            zimopai_matches = (
-                zimopai is not None
-                and normalize_tile_kind(zimopai) == expected_kind
-            )
+            expected_tiles = {expected_kind}
+            if expected_kind in {"5m", "5p", "5s"}:
+                expected_tiles.add(Tile(f"0{expected_kind[1]}"))
+            matching_tiles = sum(tile in expected_tiles for tile in shoupai)
+            zimopai_matches = zimopai is not None and zimopai in expected_tiles
             if matching_tiles + int(zimopai_matches) != 4:  # noqa: PLR2004
                 msg = "A self angang must consume four tiles of one kind."
                 raise ValueError(msg)
-            shoupai = [
-                tile
-                for tile in shoupai
-                if normalize_tile_kind(tile) != expected_kind
-            ]
+            shoupai = [tile for tile in shoupai if tile not in expected_tiles]
             if zimopai_matches:
                 zimopai = None
             else:
@@ -477,12 +470,16 @@ class MatchStateStore:
             raise ValueError(msg)
 
         player_fulu = round_state.fulu[event.seat]
-        added_kind = normalize_tile_kind(event.added)
+        added_tiles = {event.added}
+        if event.added in {"0m", "5m", "0p", "5p", "0s", "5s"}:
+            added_tiles = {
+                Tile(f"0{event.added[1]}"),
+                Tile(f"5{event.added[1]}"),
+            }
         matching_pengs = [
             (index, entry)
             for index, entry in enumerate(player_fulu)
-            if isinstance(entry, Peng)
-            and normalize_tile_kind(entry.tile) == added_kind
+            if isinstance(entry, Peng) and entry.tile in added_tiles
         ]
         if len(matching_pengs) != 1:
             msg = "A jiagang must replace exactly one matching peng."
