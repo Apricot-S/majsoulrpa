@@ -230,3 +230,34 @@ def test_liqi_materialization_rejects_candidate_absent_from_tiles() -> None:
             validate_seat(0),
             4,
         )
+
+
+def test_liqi_materialization_requires_drawn_tile() -> None:
+    specification = decode_operation_specification(
+        {
+            "operation": {
+                "operation_list": [{"type": 7, "combination": ["4s"]}],
+                "time_add": 0,
+                "time_fixed": 0,
+            }
+        }
+    )
+    assert specification is not None
+    event = ZimoEvent(
+        action_step=1,
+        seat=validate_seat(0),
+        tile=validate_tile("4s"),
+        left_tile_count=60,
+        dora_indicators=(),
+    )
+
+    with pytest.raises(ValueError, match="requires a drawn tile"):
+        materialize_operation_candidates(
+            specification,
+            event,
+            (validate_tile("4s"),),
+            None,
+            (),
+            validate_seat(0),
+            4,
+        )

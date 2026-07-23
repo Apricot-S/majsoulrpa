@@ -273,7 +273,7 @@ def _materialize_angang_specification(
     self_seat: Seat,
 ) -> list[AngangOperation]:
     _validate_new_fulu_allowed(fulu, "angang")
-    angang_zimopai = _validate_self_draw_operation_event(
+    _, angang_zimopai = _validate_self_draw_operation_event(
         event,
         zimopai,
         self_seat,
@@ -383,25 +383,20 @@ def _materialize_liqi_specification(
     self_seat: Seat,
 ) -> list[LiqiOperation]:
     _validate_liqi_fulu(fulu)
-    if isinstance(event, NewRoundEvent):
-        if event.ju != self_seat:
-            msg = "Only the dealer can declare liqi after ActionNewRound."
-            raise ValueError(msg)
-    elif isinstance(event, ZimoEvent):
-        if event.seat != self_seat:
-            msg = "An opponent draw cannot provide a liqi operation."
-            raise ValueError(msg)
-    else:
-        msg = "A liqi operation must follow a self draw."
-        raise TypeError(msg)
+    liqi_event, liqi_zimopai = _validate_self_draw_operation_event(
+        event,
+        zimopai,
+        self_seat,
+        "liqi",
+    )
 
     operations: list[LiqiOperation] = []
     for tile in specification.candidate_tiles:
         candidate_operations = _materialize_liqi_tile(
             tile,
-            event,
+            liqi_event,
             shoupai,
-            zimopai,
+            liqi_zimopai,
         )
         if not candidate_operations:
             msg = "A liqi candidate must exist in the hand or drawn tile."
@@ -416,9 +411,9 @@ def _materialize_liqi_specification(
             operations.extend(
                 _materialize_liqi_tile(
                     normal_five,
-                    event,
+                    liqi_event,
                     shoupai,
-                    zimopai,
+                    liqi_zimopai,
                 )
             )
     return operations
@@ -444,7 +439,7 @@ def _validate_self_draw_operation_event(
     zimopai: Tile | None,
     self_seat: Seat,
     operation_name: str,
-) -> Tile:
+) -> tuple[NewRoundEvent | ZimoEvent, Tile]:
     if isinstance(event, NewRoundEvent):
         if event.ju != self_seat:
             msg = (
@@ -466,7 +461,7 @@ def _validate_self_draw_operation_event(
     if zimopai is None:
         msg = f"The {operation_name} operation requires a drawn tile."
         raise ValueError(msg)
-    return zimopai
+    return event, zimopai
 
 
 def _validate_consumed_tiles_in_hand(
@@ -511,7 +506,7 @@ def _materialize_liqi_tile(
     tile: Tile,
     event: NewRoundEvent | ZimoEvent,
     shoupai: tuple[Tile, ...],
-    zimopai: Tile | None,
+    zimopai: Tile,
 ) -> list[LiqiOperation]:
     operations: list[LiqiOperation] = []
     if tile in shoupai:
