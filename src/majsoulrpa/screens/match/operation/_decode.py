@@ -76,19 +76,7 @@ def decode_operation_specification(
             specifications.append(_decode_jiagang_specification(item))
             continue
         if operation_type == _LIQI_OPERATION_TYPE:
-            candidate_tiles = tuple(
-                validate_tile(tile)
-                for tile in _get_str_list(
-                    item,
-                    "OptionalOperation.combination",
-                )
-            )
-            if not candidate_tiles:
-                msg = "A liqi operation must contain a candidate tile."
-                raise ValueError(msg)
-            specifications.append(
-                _LiqiOperationSpecification(candidate_tiles=candidate_tiles)
-            )
+            specifications.append(_decode_liqi_specification(item))
             continue
         msg = f"OptionalOperation type is not supported: {operation_type}."
         raise ValueError(msg)
@@ -169,6 +157,19 @@ def _decode_jiagang_specification(
     return _JiagangOperationSpecification(
         tile_candidates=_decode_four_tile_combinations(item, "jiagang")
     )
+
+
+def _decode_liqi_specification(
+    item: Mapping[str, JsonValue],
+) -> _LiqiOperationSpecification:
+    candidate_tiles = tuple(
+        validate_tile(tile)
+        for tile in _get_str_list(item, "OptionalOperation.combination")
+    )
+    if not candidate_tiles:
+        msg = "A liqi operation must contain a candidate tile."
+        raise ValueError(msg)
+    return _LiqiOperationSpecification(candidate_tiles=candidate_tiles)
 
 
 def _decode_four_tile_combinations(
