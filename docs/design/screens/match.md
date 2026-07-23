@@ -832,6 +832,14 @@ reducer は自家の `shoupai` と `zimopai` から、赤五と黒五を同じ�
 操作 API を実装する際は推測した座標でクリックせず、専用の画面状態例外で停止する。例外 message には
 実例と座標調査への協力依頼を含め、利用者が任意に取得した screenshot を報告できるようにする。
 
+暗槓操作は `gang.png` のボタンをクリックし、1候補なら追加の候補選択を行わない。2候補なら
+message の候補順を画面の左から右へ対応させ、基準 viewport でそれぞれ
+`Region(left=601, top=692, width=317, height=117)` と
+`Region(left=961, top=692, width=317, height=117)` をクリックする。この座標は4牌を表示する
+暗槓・加槓候補用であり、2牌を表示するチー・ポン候補の領域とは共用しない。3候補の場合は槓ボタンを
+クリックして候補表示を待った後、座標を推測せず `ScreenNotImplementedOperationError` に表示中の
+screenshot を添えて停止する。
+
 `ActionNewRound.tiles` が14枚の場合は全体をsortして右端を便宜上 `zimopai` に分離しているため、親の
 第一打牌では `moqie == false` でも打牌が `shoupai` ではなく `zimopai` と一致する場合がある。
 `DapaiEvent` reducer は、自分が親、当該 seat の第一打牌、打牌が `zimopai` と一致するという条件を

@@ -27,6 +27,7 @@ from majsoulrpa.screens.errors import (
     ScreenInconsistentMessageError,
     ScreenInvalidArgumentError,
     ScreenInvalidOperationError,
+    ScreenNotImplementedOperationError,
     ScreenUnexpectedStateError,
 )
 from majsoulrpa.screens.match._action import (
@@ -34,6 +35,7 @@ from majsoulrpa.screens.match._action import (
     MatchActionDecodeError,
     decode_live_action,
 )
+from majsoulrpa.screens.match._common import normalize_tile_kind
 from majsoulrpa.screens.match._metadata import (
     AUTH_GAME_NAME,
     MatchMetadata,
@@ -87,6 +89,7 @@ _SINGLE_FULU_CANDIDATE_COUNT = 1
 _MIN_MULTIPLE_FULU_CANDIDATE_COUNT = 2
 _MAX_CHI_CANDIDATE_COUNT = 5
 _MAX_PENG_CANDIDATE_COUNT = 2
+_MAX_ANGANG_CANDIDATE_COUNT = 3
 
 _DAPAI_CLICK_PROGRESS_MESSAGE_NAMES = frozenset(
     {
@@ -125,6 +128,10 @@ class MatchScreen(Screen):
     )
     CHI_PENG_COMBINATION_HORIZONTAL_INTERVAL = 200
     CHI_PENG_COMBINATION_CENTERING_INTERVAL = 100
+    ANGANG_JIAGANG_TWO_CANDIDATE_REGIONS = (
+        Region(left=601, top=692, width=317, height=117),
+        Region(left=961, top=692, width=317, height=117),
+    )
 
     SEAT_INDICATOR_TEMPLATES = tuple(
         load_png_template_matcher(
@@ -224,9 +231,7 @@ class MatchScreen(Screen):
             case PengOperation():
                 await self._operate_peng(state, operation)
             case AngangOperation():
-                screenshot = await self.context.browser.screenshot()
-                msg = "AngangOperation is not supported by operate() yet."
-                raise ScreenInvalidOperationError(msg, screenshot)
+                await self._operate_angang(state, operation)
             case DaminggangOperation():
                 await self._operate_daminggang(state, operation)
             case LiqiOperation():
@@ -583,6 +588,61 @@ class MatchScreen(Screen):
             return
         await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
 
+    async def _operate_angang(
+        self,
+        state: MatchState,
+        operation: AngangOperation,
+    ) -> None:
+        candidates = state.round.operation_candidates
+        if candidates is None:
+            msg = "AngangOperation requires operation candidates."
+            raise RuntimeError(msg)
+        angang_operations = tuple(
+            candidate
+            for candidate in candidates.operations
+            if isinstance(candidate, AngangOperation)
+        )
+        if not (
+            _SINGLE_FULU_CANDIDATE_COUNT
+            <= len(angang_operations)
+            <= _MAX_ANGANG_CANDIDATE_COUNT
+        ):
+            error = ValueError(
+                "The number of angang candidates must be 1 to 3."
+            )
+            await self._raise_inconsistent_message(
+                "Angang candidates do not match the supported UI layout.",
+                cause=error,
+            )
+
+        if not await self._click_operation_button_or_detect_progress(
+            self.GANG_BUTTON_TEMPLATE
+        ):
+            return
+
+        if len(angang_operations) == _SINGLE_FULU_CANDIDATE_COUNT:
+            await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
+            return
+
+        await asyncio.sleep(OPERATION_OPTION_DISPLAY_DELAY_SECONDS)
+        if await self._put_back_pending_action_while_waiting_for_ui():
+            return
+
+        if len(angang_operations) == _MAX_ANGANG_CANDIDATE_COUNT:
+            screenshot = await self.context.browser.screenshot()
+            msg = (
+                "Selecting from three angang candidates is not implemented. "
+                "Please provide the information requested in the project "
+                "README."
+            )
+            raise ScreenNotImplementedOperationError(msg, screenshot)
+
+        index = angang_operations.index(operation)
+        await self.click_region(
+            self.ANGANG_JIAGANG_TWO_CANDIDATE_REGIONS[index]
+        )
+        await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
+
     async def _operate_liqi(
         self,
         state: MatchState,
@@ -737,7 +797,8 @@ class MatchScreen(Screen):
                 return (
                     isinstance(event, AngangEvent)
                     and event.seat == state.self_seat
-                    and event.consumed == operation.consumed
+                    and normalize_tile_kind(event.consumed[0])
+                    == normalize_tile_kind(operation.consumed[0])
                 )
             case DaminggangOperation():
                 return (

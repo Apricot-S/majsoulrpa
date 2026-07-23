@@ -780,6 +780,20 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 上位actionを確認できない槓ボタン検出失敗を成功扱いしない
 - [ ] 他家のロンが先に成立した場合は大明槓操作をpreemptする
 
+### MatchScreen 暗槓操作 API
+
+- [x] `button-area.toml` の search region 内から `gang.png` を検出し、検出したボタン領域をクリックする
+- [x] 槓ボタンがまだ描画されていない場合は、呼び出し側 timeout まで検出を再試行する
+- [x] AngangOperation が1候補なら組合せ選択領域を追加クリックしない
+- [x] AngangOperation が2候補なら wire 順の位置に対応する4牌の組合せ選択領域をクリックする
+- [x] AngangOperation が3候補なら候補UI表示後の screenshot 付き `ScreenNotImplementedOperationError` で停止する
+- [x] 槓ボタンまたは組合せをクリックした後、手牌のスライド完了を1.5秒待ってからAPIを返す
+- [x] `operate()` は指定した自家の `AngangEvent` までmessageをreduceし、更新後のMatchStateを返す
+- [x] 赤なし対局の黒5四枚は、赤あり表現へ正規化された `AngangEvent` と牌種で照合する
+- [x] 自家の `AngangEvent` が指定した consumed と異なる場合は不整合にする
+- [x] 槓ボタンまたは複数候補の表示待ち中に `ActionPrototype` を先読みした場合は1回だけput_backし、次の領域をクリックしない
+- [x] 上位actionを確認できない槓ボタン検出失敗を成功扱いしない
+
 ### MatchScreen operation のスキップ
 
 - [ ] チー、ポン、大明槓は「鳴きなし」toggleをonにして明示的にスキップする
@@ -836,7 +850,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] previous_dapai / previous_qianggang は seat と tile を単一 tuple にまとめ、存在条件の不整合を表現できない
 - [x] 暗槓の不連続 step、不正 seat、未解決打牌、自家の消費牌不足を不整合として拒否する
 - [x] 未実装の画面操作用に screenshot 付き `ScreenNotImplementedOperationError` を公開する
-- [ ] 暗槓・加槓の3候補 UI は座標を推測せず、調査協力を求める専用例外で停止する
+- [x] 暗槓の3候補 UI は座標を推測せず、調査協力を求める専用例外で停止する
+- [ ] 加槓の3候補 UI は座標を推測せず、調査協力を求める専用例外で停止する
 - [ ] match version は同じ Screen instance 内で単調増加し、round step は局ごとに 0 から始まる
 - [ ] 次局の `ActionNewRound` は同じ store の round generation を増やす
 - [ ] 次局へ移っても match identity、self seat、player metadata を維持する
