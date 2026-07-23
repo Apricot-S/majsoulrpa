@@ -382,7 +382,10 @@ def _materialize_liqi_specification(
     fulu: tuple[Fulu, ...],
     self_seat: Seat,
 ) -> list[LiqiOperation]:
-    _validate_liqi_fulu(fulu)
+    if any(not isinstance(item, Angang) for item in fulu):
+        msg = "A liqi operation requires a closed hand."
+        raise ValueError(msg)
+
     liqi_event, liqi_zimopai = _validate_self_draw_operation_event(
         event,
         zimopai,
@@ -425,12 +428,6 @@ def _validate_new_fulu_allowed(
 ) -> None:
     if len(fulu) >= _MAX_FULU_COUNT:
         msg = f"A {operation_name} operation cannot add a fifth fulu."
-        raise ValueError(msg)
-
-
-def _validate_liqi_fulu(fulu: tuple[Fulu, ...]) -> None:
-    if any(not isinstance(item, Angang) for item in fulu):
-        msg = "A liqi operation requires a closed hand."
         raise ValueError(msg)
 
 
