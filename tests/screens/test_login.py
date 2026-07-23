@@ -244,10 +244,16 @@ def test_login_screen_before_callback_clicks_matched_region(
     assert browser.input_texts == []
 
 
-def test_login_screen_before_callback_raises_without_login_button() -> None:
+def test_login_screen_before_callback_raises_without_login_button(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
     screenshot = _synthetic_blank_screenshot()
     browser = BrowserControllerSpy(screenshot, screenshot)
     screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
 
     with pytest.raises(ScreenDetectionError, match="login button") as exc_info:
         asyncio.run(screen.before_callback())
@@ -493,6 +499,9 @@ def test_login_screen_rejects_pattern_only_valid_address() -> None:
 def test_login_screen_enter_email_address_scales_region_to_viewport(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
     browser = BrowserControllerSpy()
     base_region = LoginScreen.EMAIL_ADDRESS_REGION
     monkeypatch.setattr(
@@ -500,6 +509,7 @@ def test_login_screen_enter_email_address_scales_region_to_viewport(
         "EMAIL_ADDRESS_ADAPTER",
         EmailAddressAdapterStub(),
     )
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
     LoginScreen.EMAIL_ADDRESS_REGION = Region(
         left=300,
         top=150,
@@ -734,7 +744,12 @@ def test_login_screen_scales_standard_agreement_regions_at_1440p(
         assert scaled_region.top < y < scaled_region.bottom
 
 
-def test_login_screen_rejects_rejected_yostar_authentication() -> None:
+def test_login_screen_rejects_rejected_yostar_authentication(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
     screenshot = _synthetic_blank_screenshot()
     browser = BrowserControllerSpy(screenshot)
     browser.yostar_auth_response = YostarAuthRejectedResponse(
@@ -742,6 +757,7 @@ def test_login_screen_rejects_rejected_yostar_authentication() -> None:
     )
     screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
     screen._email_address_entered_at = 100.0
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
 
     with pytest.raises(
         ScreenInvalidArgumentError,
@@ -758,11 +774,17 @@ def test_login_screen_rejects_rejected_yostar_authentication() -> None:
         asyncio.run(screen.enter_verification_code("123456"))
 
 
-def test_login_screen_remains_active_when_transition_click_fails() -> None:
+def test_login_screen_remains_active_when_transition_click_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
     browser = BrowserControllerSpy()
     browser.fail_click_number = 5
     screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
     screen._email_address_entered_at = 100.0
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
 
     with pytest.raises(RuntimeError, match="click failed"):
         asyncio.run(screen.enter_verification_code("123456"))
