@@ -83,14 +83,7 @@ def decode_operation_specification(
             specifications.append(_decode_daminggang_specification(item))
             continue
         if operation_type == _JIAGANG_OPERATION_TYPE:
-            specifications.append(
-                _JiagangOperationSpecification(
-                    tile_candidates=_decode_four_tile_combinations(
-                        item,
-                        "jiagang",
-                    )
-                )
-            )
+            specifications.append(_decode_jiagang_specification(item))
             continue
         if operation_type == _LIQI_OPERATION_TYPE:
             candidate_tiles = tuple(
@@ -169,6 +162,14 @@ def _decode_angang_specification(
 ) -> _AngangOperationSpecification:
     return _AngangOperationSpecification(
         consumed_candidates=_decode_four_tile_combinations(item, "angang")
+    )
+
+
+def _decode_jiagang_specification(
+    item: Mapping[str, JsonValue],
+) -> _JiagangOperationSpecification:
+    return _JiagangOperationSpecification(
+        tile_candidates=_decode_four_tile_combinations(item, "jiagang")
     )
 
 
