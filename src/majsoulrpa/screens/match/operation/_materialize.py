@@ -28,6 +28,7 @@ from majsoulrpa.screens.match.operation.models import (
     OperationCandidates,
     PengOperation,
 )
+from majsoulrpa.screens.match.state import Fulu
 from majsoulrpa.screens.match.types import Seat, Tile
 
 _FOUR_PLAYER_COUNT = 4
@@ -40,6 +41,8 @@ def materialize_operation_candidates(
     zimopai: Tile | None,
     self_seat: Seat,
     player_count: int,
+    *,
+    self_fulu: tuple[Fulu, ...] = (),
 ) -> OperationCandidates | None:
     if specification is None:
         return None
@@ -54,6 +57,7 @@ def materialize_operation_candidates(
                 zimopai,
                 self_seat,
                 player_count,
+                self_fulu,
             )
         )
 
@@ -75,7 +79,11 @@ def _materialize_operation_specification(
     zimopai: Tile | None,
     self_seat: Seat,
     player_count: int,
+    self_fulu: tuple[Fulu, ...],
 ) -> Sequence[MatchOperation]:
+    # Jiagang materialization will use the current self melds. Keep this
+    # context on every dispatch path.
+    _ = self_fulu
     match specification:
         case _DapaiOperationSpecification():
             return _materialize_dapai_specification(

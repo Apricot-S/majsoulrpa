@@ -837,6 +837,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 13 枚の ActionNewRound.tiles は全体を shoupai にし、zimopai を None にする
 - [ ] scores、seat ごとの collection、tile、chang / ju / ben、dora、left count の不変条件を検証する
 - [x] `RoundState` は `OperationCandidates | None` を保持し、同じ状態を表す bool field / property を持たない
+- [x] operation候補のmaterializerへ候補生成時点の自家fuluを渡す
+- [ ] 自家fuluが4組なら、既存ポンを置換する加槓以外の新たな副露候補を拒否する
+- [ ] 立直候補は自家fuluが暗槓だけで構成されている場合に限って許容する
 - [x] 初回は `ActionMJStart` step 0 の有無に応じて `ActionNewRound` step 1 / step 0 を受理する
 - [ ] `ActionMJStart` を state を変更しない `StartMatchEvent` として decode する
 - [x] `StartMatchEvent.from_dict()` は `ActionMJStart` のstep 0制約を検証する

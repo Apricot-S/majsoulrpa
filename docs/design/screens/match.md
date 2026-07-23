@@ -393,6 +393,16 @@ operation の中に保持しない。したがって、複数の鳴き方を選�
 不整合として拒否する。加槓成立時の `ActionAnGangAddGang` (`type == 2`) は `tiles` に追加牌
 1枚を直接格納するため、Event の追加牌はこの値から取得する。調査根拠は
 [`加槓候補の牌順序`](../../investigations/jiagang-combination-order.md) に記録する。
+
+この復元に必要な既存ポンを失わないよう、store は operation 候補のmaterializerへ、候補生成時点の
+`round_state.fulu[state.self_seat]` を `self_fulu` として渡す。局初期化時だけは副露が存在しないため
+空tupleを渡す。副露Eventの適用と同じactionに後続operationが含まれる場合は、Eventを反映した後の
+自家fuluを渡す。materializerへMatchState全体は渡さず、候補生成に必要な自家副露だけに境界を絞る。
+
+自家fuluは加槓の復元以外の不整合検出にも利用する。新しいチー・ポン・大明槓・暗槓は、自家fuluが
+すでに4組なら生成しない。ただし加槓は既存のポンを置き換えて副露数を増やさないため許容する。
+立直は自家fuluが空、または暗槓だけで構成される場合に限って許容する。これらはoperationごとに
+テストを追加してからmaterializerへ実装する。
 type 7 は `|` で分割せず、各要素を立直宣言牌として検証する。候補牌ごとに現在の `shoupai` から
 `moqie=False`、実際の `zimopai` から `moqie=True` の `LiqiOperation` を生成する。同じ牌について
 両方を選べる場合は 2 instance とする。

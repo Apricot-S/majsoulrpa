@@ -71,6 +71,7 @@ class MatchStateStore:
             new_round_event.zimopai,
             metadata.self_seat,
             player_count,
+            self_fulu=(),
         )
         round_state = RoundState(
             generation=1,
@@ -181,6 +182,7 @@ class MatchStateStore:
             zimopai,
             state.self_seat,
             len(state.players),
+            self_fulu=round_state.fulu[state.self_seat],
         )
         next_round = replace(
             round_state,
@@ -267,6 +269,7 @@ class MatchStateStore:
             zimopai,
             state.self_seat,
             len(state.players),
+            self_fulu=round_state.fulu[state.self_seat],
         )
         next_round = replace(
             round_state,
@@ -417,6 +420,7 @@ class MatchStateStore:
             zimopai,
             state.self_seat,
             player_count,
+            self_fulu=tuple(fulu[state.self_seat]),
         )
         next_round = replace(
             round_state,
@@ -505,6 +509,7 @@ class MatchStateStore:
             None,
             state.self_seat,
             player_count,
+            self_fulu=tuple(fulu[state.self_seat]),
         )
         next_round = replace(
             round_state,
