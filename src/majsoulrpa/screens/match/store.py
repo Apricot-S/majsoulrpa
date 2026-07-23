@@ -4,6 +4,7 @@ from typing import assert_never
 from majsoulrpa.screens.match._common import (
     is_preceding_seat,
     normalize_tile_kind,
+    tile_sort_key,
 )
 from majsoulrpa.screens.match._metadata import MatchMetadata
 from majsoulrpa.screens.match.event import (
@@ -19,7 +20,6 @@ from majsoulrpa.screens.match.event import (
     StartMatchEvent,
     ZimoEvent,
 )
-from majsoulrpa.screens.match.event._common import tile_sort_key
 from majsoulrpa.screens.match.operation._materialize import (
     materialize_operation_candidates,
 )
