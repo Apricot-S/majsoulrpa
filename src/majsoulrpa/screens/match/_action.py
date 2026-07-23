@@ -14,6 +14,7 @@ from majsoulrpa.screens.match.event import (
     ChiEvent,
     DaminggangEvent,
     DapaiEvent,
+    JiagangEvent,
     MatchEvent,
     NewRoundEvent,
     PengEvent,
@@ -63,6 +64,8 @@ def _decode_angang_jiagang_event(
     data: Mapping[str, JsonValue],
 ) -> MatchEvent:
     match _get_int(data, "ActionAnGangAddGang.type"):
+        case 2:
+            return JiagangEvent.from_dict(action_step, data)
         case 3:
             return AngangEvent.from_dict(action_step, data)
         case _:

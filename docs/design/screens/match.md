@@ -741,6 +741,22 @@ class DaminggangEvent(_MatchEventBase):
     liqi_success: LiqiSuccess | None = None
 
 
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AngangEvent(_MatchEventBase):
+    seat: Seat
+    consumed: tuple[Tile, Tile, Tile, Tile]
+    dora_indicators: tuple[Tile, ...]
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class JiagangEvent(_MatchEventBase):
+    seat: Seat
+    added: Tile
+    dora_indicators: tuple[Tile, ...]
+
+
 type MatchEvent = (
     StartMatchEvent
     | NewRoundEvent
@@ -833,6 +849,15 @@ reducer は自家の `shoupai` と `zimopai` から、赤五と黒五を同じ�
 別の `zimopai` が残る場合は、そのツモ牌を `shoupai` に取り込む。暗槓は河へ追加せず、
 `previous_dapai` も変更しない。全員の `first_draw` / `yifa` を終了し、暗槓した seat の
 `lingshang_zimo` を真にする。
+
+`ActionAnGangAddGang(type=2)` は `JiagangEvent` に変換する。`tiles` は加えた牌1枚を表すため、
+赤牌と通常牌を正規化せず `added` にそのまま保持する。Event は元のポンの形を複製せず、
+成立した action の差分である `seat`、`added`、`dora_indicators` だけを持つ。
+reducer は同じ牌種の既存 `Peng` が対象 seat の `fulu` に一意に存在することを要求し、その
+`from_seat`、取得した `tile`、`consumed` を引き継いだ完全な `Jiagang` へ置換する。自家の加槓では
+`added` と完全一致する牌を `shoupai` または `zimopai` から消費する。手牌側の牌を加えた場合は、
+別に引いていた `zimopai` を `shoupai` に取り込む。他家の手牌は観測できないため、既存ポンの
+置換だけを行う。加槓した seat の `lingshang_zimo` を真にし、河は変更しない。
 
 雀魂では暗槓・加槓・北抜きのいずれも搶槓の対象になり得るため、成立直後の対象を
 `previous_qianggang` の `(seat, tile)` に保持する。通常の打牌と混同せず、河にも

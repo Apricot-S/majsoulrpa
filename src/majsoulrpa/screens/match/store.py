@@ -11,6 +11,7 @@ from majsoulrpa.screens.match.event import (
     ChiEvent,
     DaminggangEvent,
     DapaiEvent,
+    JiagangEvent,
     LiqiSuccess,
     MatchEvent,
     NewRoundEvent,
@@ -31,6 +32,7 @@ from majsoulrpa.screens.match.state import (
     Daminggang,
     Dapai,
     Fulu,
+    Jiagang,
     MatchState,
     Peng,
     RoundState,
@@ -127,6 +129,8 @@ class MatchStateStore:
                 return self._apply_daminggang(event, operation_specification)
             case AngangEvent():
                 return self._apply_angang(event, operation_specification)
+            case JiagangEvent():
+                return self._apply_jiagang(event, operation_specification)
             case StartMatchEvent() | NewRoundEvent():
                 msg = "A match initialization event cannot be applied again."
                 raise ValueError(msg)
@@ -147,7 +151,10 @@ class MatchStateStore:
             raise ValueError(msg)
         previous_event = round_state.events[-1]
         follows_gang = (
-            isinstance(previous_event, DaminggangEvent | AngangEvent)
+            isinstance(
+                previous_event,
+                DaminggangEvent | AngangEvent | JiagangEvent,
+            )
             and previous_event.seat == event.seat
             and round_state.lingshang_zimo[event.seat]
         )
@@ -436,6 +443,112 @@ class MatchStateStore:
             yifa=(False,) * player_count,
             lingshang_zimo=tuple(lingshang_zimo),
             previous_qianggang=(event.seat, event.consumed[0]),
+            operation_candidates=operation_candidates,
+            events=(*round_state.events, event),
+        )
+        self._state = replace(
+            state,
+            version=state.version + 1,
+            round=next_round,
+        )
+        return self._state
+
+    def _apply_jiagang(
+        self,
+        event: JiagangEvent,
+        operation_specification: _OperationCandidatesSpecification | None,
+    ) -> MatchState:
+        state = self._require_state()
+        round_state = state.round
+        player_count = len(state.players)
+        if event.action_step != round_state.step + 1:
+            msg = (
+                "ActionAnGangAddGang step must follow the current round step."
+            )
+            raise ValueError(msg)
+        if event.seat >= player_count:
+            msg = "ActionAnGangAddGang seat must identify a player."
+            raise ValueError(msg)
+        if round_state.previous_dapai is not None:
+            msg = "A jiagang cannot follow an unresolved discard."
+            raise ValueError(msg)
+        if round_state.previous_qianggang is not None:
+            msg = "A jiagang cannot follow an unresolved qianggang target."
+            raise ValueError(msg)
+
+        player_fulu = round_state.fulu[event.seat]
+        added_kind = normalize_tile_kind(event.added)
+        matching_pengs = [
+            (index, entry)
+            for index, entry in enumerate(player_fulu)
+            if isinstance(entry, Peng)
+            and normalize_tile_kind(entry.tile) == added_kind
+        ]
+        if len(matching_pengs) != 1:
+            msg = "A jiagang must replace exactly one matching peng."
+            raise ValueError(msg)
+        peng_index, peng = matching_pengs[0]
+
+        shoupai = list(round_state.shoupai)
+        zimopai = round_state.zimopai
+        if event.seat == state.self_seat:
+            if zimopai is None:
+                msg = "A self jiagang must follow a self draw."
+                raise ValueError(msg)
+            if zimopai == event.added:
+                zimopai = None
+            else:
+                try:
+                    shoupai.remove(event.added)
+                except ValueError:
+                    msg = (
+                        "A self jiagang must add a tile from the hand "
+                        "or drawn tile."
+                    )
+                    raise ValueError(msg) from None
+                shoupai.append(zimopai)
+                shoupai.sort(key=tile_sort_key)
+                zimopai = None
+        elif zimopai is not None:
+            msg = "An opponent jiagang cannot occur during a self draw."
+            raise ValueError(msg)
+
+        next_player_fulu = list(player_fulu)
+        next_player_fulu[peng_index] = Jiagang(
+            from_seat=peng.from_seat,
+            tile=peng.tile,
+            consumed=peng.consumed,
+            added=event.added,
+        )
+        fulu = list(round_state.fulu)
+        fulu[event.seat] = tuple(next_player_fulu)
+        next_fulu = tuple(fulu)
+
+        lingshang_zimo = list(round_state.lingshang_zimo)
+        lingshang_zimo[event.seat] = True
+        next_shoupai = tuple(shoupai)
+        operation_candidates = materialize_operation_candidates(
+            operation_specification,
+            event,
+            next_shoupai,
+            zimopai,
+            next_fulu[state.self_seat],
+            state.self_seat,
+            player_count,
+        )
+        next_round = replace(
+            round_state,
+            step=event.action_step,
+            dora_indicators=(
+                event.dora_indicators or round_state.dora_indicators
+            ),
+            shoupai=next_shoupai,
+            zimopai=zimopai,
+            fulu=next_fulu,
+            first_draw=(False,) * player_count,
+            yifa=(False,) * player_count,
+            lingshang_zimo=tuple(lingshang_zimo),
+            previous_qianggang=(event.seat, event.added),
             operation_candidates=operation_candidates,
             events=(*round_state.events, event),
         )

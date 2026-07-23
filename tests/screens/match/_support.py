@@ -187,6 +187,24 @@ def _live_angang_action(
     return _live_action(step=step, name="ActionAnGangAddGang", data=data)
 
 
+def _live_jiagang_action(
+    *,
+    step: int,
+    seat: int,
+    added: str,
+    doras: list[str] | None = None,
+    operation: liqi_pb2.OptionalOperationList | None = None,
+) -> DecodedNotice:
+    data = liqi_pb2.ActionAnGangAddGang(
+        seat=seat,
+        type=2,
+        tiles=added,
+        doras=[] if doras is None else doras,
+        operation=operation,
+    ).SerializeToString()
+    return _live_action(step=step, name="ActionAnGangAddGang", data=data)
+
+
 def _live_chi_peng_gang_action(
     *,
     step: int,
