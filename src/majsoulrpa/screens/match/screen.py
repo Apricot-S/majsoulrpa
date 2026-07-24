@@ -327,6 +327,24 @@ class MatchScreen(Screen):
             message.raw.observed_at if operation is not None else None
         )
 
+    @staticmethod
+    def _log_sniffer_message(
+        message: DecodedSnifferMessage,
+    ) -> None:
+        name = message.raw.name
+        formatted_message = _format_sniffer_message_for_log(message)
+        if name in _DEBUG_MESSAGE_NAMES:
+            # Heartbeats and network probes are frequent and carry no
+            # match state, so keep them out of the information log.
+            _logger.debug(formatted_message)
+            return
+        if name in _WARNING_MESSAGE_NAMES:
+            # Login traffic can indicate a reconnect. Make it visible
+            # without treating that as a failure.
+            _logger.warning(formatted_message)
+            return
+        _logger.info(formatted_message)
+
     def _apply_auth_game(self, message: DecodedSnifferMessage) -> None:
         if not isinstance(message, DecodedRequestResponse):
             msg = "authGame must be a request/response."
@@ -419,24 +437,6 @@ class MatchScreen(Screen):
                         "match state."
                     )
                     raise MatchActionDecodeError(msg) from error
-
-    @staticmethod
-    def _log_sniffer_message(
-        message: DecodedSnifferMessage,
-    ) -> None:
-        name = message.raw.name
-        formatted_message = _format_sniffer_message_for_log(message)
-        if name in _DEBUG_MESSAGE_NAMES:
-            # Heartbeats and network probes are frequent and carry no
-            # match state, so keep them out of the information log.
-            _logger.debug(formatted_message)
-            return
-        if name in _WARNING_MESSAGE_NAMES:
-            # Login traffic can indicate a reconnect. Make it visible
-            # without treating that as a failure.
-            _logger.warning(formatted_message)
-            return
-        _logger.info(formatted_message)
 
     async def _raise_inconsistent_message(
         self,
