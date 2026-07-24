@@ -359,22 +359,6 @@ class MatchScreen(Screen):
             raise MatchMetadataDecodeError(msg)
         self._metadata = metadata
 
-    def _try_initialize_state(self) -> None:
-        if self._state_store.state is not None:
-            return
-        if self._metadata is None or self._new_round_event is None:
-            return
-        try:
-            self._state_store.initialize(
-                self._metadata,
-                self._start_match_event,
-                self._new_round_event,
-                self._new_round_operation_specification,
-            )
-        except ValueError as error:
-            msg = "Initial match state is inconsistent."
-            raise MatchMetadataDecodeError(msg) from error
-
     def _apply_initialization_event(
         self,
         event: MatchEvent,
@@ -418,6 +402,22 @@ class MatchScreen(Screen):
                 raise MatchActionDecodeError(msg)
             case _ as unreachable:
                 assert_never(unreachable)
+
+    def _try_initialize_state(self) -> None:
+        if self._state_store.state is not None:
+            return
+        if self._metadata is None or self._new_round_event is None:
+            return
+        try:
+            self._state_store.initialize(
+                self._metadata,
+                self._start_match_event,
+                self._new_round_event,
+                self._new_round_operation_specification,
+            )
+        except ValueError as error:
+            msg = "Initial match state is inconsistent."
+            raise MatchMetadataDecodeError(msg) from error
 
     def _apply_active_event(
         self,
