@@ -438,12 +438,6 @@ class MatchScreen(Screen):
                     )
                     raise MatchActionDecodeError(msg) from error
 
-    async def _move_mouse_away_from_hand(self) -> None:
-        # Hovering over a tile in the hand can display winning-tile
-        # candidates. They may interfere with template matching, so keep
-        # the cursor in the empty area immediately above the hand.
-        await self.move_region(self.MOUSE_SAFE_REGION)
-
     async def _operate_dapai(
         self,
         state: MatchState,
@@ -767,6 +761,12 @@ class MatchScreen(Screen):
                 ),
             )
         return False
+
+    async def _move_mouse_away_from_hand(self) -> None:
+        # Hovering over a tile in the hand can display winning-tile
+        # candidates. They may interfere with template matching, so keep
+        # the cursor in the empty area immediately above the hand.
+        await self.move_region(self.MOUSE_SAFE_REGION)
 
     @classmethod
     def _get_chi_peng_combination_region(
