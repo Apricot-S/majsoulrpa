@@ -604,6 +604,29 @@ class MatchScreen(Screen):
             self.PENG_BUTTON_TEMPLATE,
         )
 
+    async def _operate_chi_peng[T: ChiOperation | PengOperation](
+        self,
+        operation: T,
+        operations: tuple[T, ...],
+        button_template: TemplateMatcher,
+    ) -> None:
+        if not await self._click_operation_button_or_detect_progress(
+            button_template
+        ):
+            return
+
+        if len(operations) >= _MIN_MULTIPLE_FULU_CANDIDATE_COUNT:
+            index = operations.index(operation)
+            selection_region = self._get_chi_peng_combination_region(
+                len(operations),
+                index,
+            )
+            await asyncio.sleep(OPERATION_OPTION_DISPLAY_DELAY_SECONDS)
+            if await self._put_back_pending_action_while_waiting_for_ui():
+                return
+            await self.click_region(selection_region)
+        await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
+
     async def _operate_daminggang(
         self,
         state: MatchState,
@@ -772,29 +795,6 @@ class MatchScreen(Screen):
             )
         await self._click_dapai_until_progress(region)
         await self._move_mouse_away_from_hand()
-
-    async def _operate_chi_peng[T: ChiOperation | PengOperation](
-        self,
-        operation: T,
-        operations: tuple[T, ...],
-        button_template: TemplateMatcher,
-    ) -> None:
-        if not await self._click_operation_button_or_detect_progress(
-            button_template
-        ):
-            return
-
-        if len(operations) >= _MIN_MULTIPLE_FULU_CANDIDATE_COUNT:
-            index = operations.index(operation)
-            selection_region = self._get_chi_peng_combination_region(
-                len(operations),
-                index,
-            )
-            await asyncio.sleep(OPERATION_OPTION_DISPLAY_DELAY_SECONDS)
-            if await self._put_back_pending_action_while_waiting_for_ui():
-                return
-            await self.click_region(selection_region)
-        await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
 
     async def _click_operation_button_or_detect_progress(
         self,
