@@ -683,8 +683,8 @@ class MatchScreen(Screen):
             )
 
         await self._operate_angang_jiagang(
-            angang_operations,
             operation,
+            angang_operations,
             operation_name="angang",
         )
 
@@ -744,15 +744,15 @@ class MatchScreen(Screen):
             )
 
         await self._operate_angang_jiagang(
-            jiagang_operations,
             operation,
+            jiagang_operations,
             operation_name="jiagang",
         )
 
     async def _operate_angang_jiagang[T: AngangOperation | JiagangOperation](
         self,
-        operations: tuple[T, ...],
         operation: T,
+        operations: tuple[T, ...],
         *,
         operation_name: str,
     ) -> None:
