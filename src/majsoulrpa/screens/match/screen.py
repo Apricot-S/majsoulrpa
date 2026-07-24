@@ -438,15 +438,6 @@ class MatchScreen(Screen):
                     )
                     raise MatchActionDecodeError(msg) from error
 
-    async def _raise_inconsistent_message(
-        self,
-        message: str,
-        *,
-        cause: BaseException,
-    ) -> NoReturn:
-        screenshot = await self.context.browser.screenshot()
-        raise ScreenInconsistentMessageError(message, screenshot) from cause
-
     async def _raise_unsupported_match(
         self,
         *,
@@ -960,3 +951,12 @@ class MatchScreen(Screen):
             width=cls.HAND_TILE_REGION.width,
             height=cls.HAND_TILE_REGION.height,
         )
+
+    async def _raise_inconsistent_message(
+        self,
+        message: str,
+        *,
+        cause: BaseException,
+    ) -> NoReturn:
+        screenshot = await self.context.browser.screenshot()
+        raise ScreenInconsistentMessageError(message, screenshot) from cause
