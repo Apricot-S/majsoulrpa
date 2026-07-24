@@ -627,6 +627,34 @@ class MatchScreen(Screen):
             await self.click_region(selection_region)
         await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
 
+    @classmethod
+    def _get_chi_peng_combination_region(
+        cls,
+        candidate_count: int,
+        index: int,
+    ) -> Region:
+        if not (
+            _MIN_MULTIPLE_FULU_CANDIDATE_COUNT
+            <= candidate_count
+            <= _MAX_CHI_CANDIDATE_COUNT
+        ):
+            msg = "Chi/peng combination count must be between 2 and 5."
+            raise ValueError(msg)
+        if not 0 <= index < candidate_count:
+            msg = "Chi combination index is out of range."
+            raise ValueError(msg)
+
+        return Region(
+            left=(
+                cls.CHI_PENG_COMBINATION_REGION.left
+                - candidate_count * cls.CHI_PENG_COMBINATION_CENTERING_INTERVAL
+                + index * cls.CHI_PENG_COMBINATION_HORIZONTAL_INTERVAL
+            ),
+            top=cls.CHI_PENG_COMBINATION_REGION.top,
+            width=cls.CHI_PENG_COMBINATION_REGION.width,
+            height=cls.CHI_PENG_COMBINATION_REGION.height,
+        )
+
     async def _operate_daminggang(
         self,
         state: MatchState,
@@ -830,34 +858,6 @@ class MatchScreen(Screen):
         # candidates. They may interfere with template matching, so keep
         # the cursor in the empty area immediately above the hand.
         await self.move_region(self.MOUSE_SAFE_REGION)
-
-    @classmethod
-    def _get_chi_peng_combination_region(
-        cls,
-        candidate_count: int,
-        index: int,
-    ) -> Region:
-        if not (
-            _MIN_MULTIPLE_FULU_CANDIDATE_COUNT
-            <= candidate_count
-            <= _MAX_CHI_CANDIDATE_COUNT
-        ):
-            msg = "Chi/peng combination count must be between 2 and 5."
-            raise ValueError(msg)
-        if not 0 <= index < candidate_count:
-            msg = "Chi combination index is out of range."
-            raise ValueError(msg)
-
-        return Region(
-            left=(
-                cls.CHI_PENG_COMBINATION_REGION.left
-                - candidate_count * cls.CHI_PENG_COMBINATION_CENTERING_INTERVAL
-                + index * cls.CHI_PENG_COMBINATION_HORIZONTAL_INTERVAL
-            ),
-            top=cls.CHI_PENG_COMBINATION_REGION.top,
-            width=cls.CHI_PENG_COMBINATION_REGION.width,
-            height=cls.CHI_PENG_COMBINATION_REGION.height,
-        )
 
     @staticmethod
     def _event_completes_operation(
