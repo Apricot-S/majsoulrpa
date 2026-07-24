@@ -641,7 +641,7 @@ class MatchScreen(Screen):
             msg = "Chi/peng combination count must be between 2 and 5."
             raise ValueError(msg)
         if not 0 <= index < candidate_count:
-            msg = "Chi combination index is out of range."
+            msg = "Chi/peng combination index is out of range."
             raise ValueError(msg)
 
         return Region(
