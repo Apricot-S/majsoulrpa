@@ -675,6 +675,12 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 自家の加槓は `added` と一致する手牌またはツモ牌を消費し、他のツモ牌は手牌へ取り込む
 - [x] 加槓は嶺上ツモと搶槓対象を設定し、河には牌を追加しない
 - [x] 対応する既存の `Peng` が一意に存在しない加槓は拒否する
+- [x] `ActionBaBei` を live / restore の両経路で同じ `BabeiEvent` へ変換する
+- [x] `BabeiEvent` は seat、手牌からかツモ牌からかを表す moqie、非空時に置換するドラ表示牌を保持する
+- [x] 北抜きは三人戦だけで受理し、seat ごとの `RoundState.babei` に `Babei(moqie=...)` を追加する
+- [x] 自家の北抜きは moqie=true ならツモ牌、false なら手牌の `4z` を消費し、手牌から抜いた場合は別のツモ牌を手牌へ取り込む
+- [x] 他家の北抜きは自家の手牌を変更しない
+- [x] 北抜きは河と副露を変更せず、全員の first_draw / yifa を終了し、対象seatの嶺上ツモと `4z` の搶槓対象を設定する
 - [x] `DapaiOperation` / `LiqiOperation` は tile と moqie を保持し、手出しとツモ切りを別 instance にする
 - [x] 同じ tile / moqie の物理牌が複数あっても同じ打牌 operation は重複させない
 - [x] 手牌と実ツモ牌の両方に同じ候補牌があれば、moqie=false / true の両 operation を生成する
@@ -844,7 +850,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] Angang は手牌から使った4枚の consumed を保持し、from_seat を持たない
 - [x] Jiagang は元の Peng の from_seat / tile / consumed と追加した added を区別して保持する
 - [x] 北抜きは `Fulu` に含めず、seat ごとの `tuple[Babei, ...]` として `RoundState.babei` に保持する
-- [x] `Babei` は `ActionBabei.moqie` に対応する `moqie` を保持する
+- [x] `Babei` は `ActionBaBei.moqie` に対応する `moqie` を保持する
 - [x] human player の四麻 `level4` と三麻 `level3` の AccountLevel ID / score を失わず decode する
 - [x] 通常友人戦の authGame response は players が human のみ、robots が CPU のみであることを実通信で確認する
 - [x] 観測した robots の account_id は 1 / 2 / 3、nickname は空文字列、level / level3 は field 自体がない

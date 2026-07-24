@@ -6,6 +6,7 @@ from pydantic import JsonValue
 from majsoulrpa.assets.protocol import liqi_pb2
 from majsoulrpa.screens.match import (
     AngangEvent,
+    BabeiEvent,
     ChiEvent,
     DaminggangEvent,
     JiagangEvent,
@@ -13,6 +14,8 @@ from majsoulrpa.screens.match import (
     PengEvent,
     StartMatchEvent,
     ZimoEvent,
+    validate_seat,
+    validate_tile,
 )
 from majsoulrpa.screens.match._action import (
     MatchActionDecodeError,
@@ -150,6 +153,34 @@ def test_live_and_restore_action_deal_tile_decode_to_same_event() -> None:
     assert live_event == restore_event
     assert live_operation is not None
     assert live_operation == restore_operation
+
+
+def test_live_and_restore_action_babei_decode_to_same_event() -> None:
+    data = liqi_pb2.ActionBaBei(
+        seat=1,
+        moqie=True,
+        doras=["3p", "4p"],
+    ).SerializeToString()
+    live_event, live_operation, _ = decode_live_action(
+        _live_action(step=3, name="ActionBaBei", data=data)
+    )
+    restore_event, restore_operation, _ = decode_restore_action(
+        {
+            "step": 3,
+            "name": "ActionBaBei",
+            "data": base64.b64encode(data).decode(),
+        }
+    )
+
+    assert live_event == BabeiEvent(
+        action_step=3,
+        seat=validate_seat(1),
+        moqie=True,
+        dora_indicators=(validate_tile("3p"), validate_tile("4p")),
+    )
+    assert restore_event == live_event
+    assert live_operation is None
+    assert restore_operation is None
 
 
 def test_live_and_restore_discard_decode_same_chi_specification() -> None:

@@ -11,6 +11,7 @@ from majsoulrpa.assets.protocol import liqi_pb2
 from majsoulrpa.screens.match._decode import _get_int
 from majsoulrpa.screens.match.event import (
     AngangEvent,
+    BabeiEvent,
     ChiEvent,
     DaminggangEvent,
     DapaiEvent,
@@ -80,6 +81,7 @@ _EVENT_DECODERS: dict[str, _EventDecoder] = {
     "ActionDiscardTile": DapaiEvent.from_dict,
     "ActionChiPengGang": _decode_chi_peng_gang_event,
     "ActionAnGangAddGang": _decode_angang_jiagang_event,
+    "ActionBaBei": BabeiEvent.from_dict,
 }
 
 

@@ -8,6 +8,7 @@ from majsoulrpa.screens.match._common import (
 from majsoulrpa.screens.match._metadata import MatchMetadata
 from majsoulrpa.screens.match.event import (
     AngangEvent,
+    BabeiEvent,
     ChiEvent,
     DaminggangEvent,
     DapaiEvent,
@@ -27,6 +28,7 @@ from majsoulrpa.screens.match.operation._specification import (
 )
 from majsoulrpa.screens.match.state import (
     Angang,
+    Babei,
     Chi,
     Daminggang,
     Dapai,
@@ -130,6 +132,8 @@ class MatchStateStore:
                 return self._apply_angang(event, operation_specification)
             case JiagangEvent():
                 return self._apply_jiagang(event, operation_specification)
+            case BabeiEvent():
+                return self._apply_babei(event, operation_specification)
             case StartMatchEvent() | NewRoundEvent():
                 msg = "A match initialization event cannot be applied again."
                 raise ValueError(msg)
@@ -546,6 +550,92 @@ class MatchStateStore:
             yifa=(False,) * player_count,
             lingshang_zimo=tuple(lingshang_zimo),
             previous_qianggang=(event.seat, event.added),
+            operation_candidates=operation_candidates,
+            events=(*round_state.events, event),
+        )
+        self._state = replace(
+            state,
+            version=state.version + 1,
+            round=next_round,
+        )
+        return self._state
+
+    def _apply_babei(
+        self,
+        event: BabeiEvent,
+        operation_specification: _OperationCandidatesSpecification | None,
+    ) -> MatchState:
+        state = self._require_state()
+        round_state = state.round
+        player_count = len(state.players)
+        if player_count != 3:  # noqa: PLR2004
+            msg = "ActionBaBei is only valid in a three-player match."
+            raise ValueError(msg)
+        if event.action_step != round_state.step + 1:
+            msg = "ActionBaBei step must follow the current round step."
+            raise ValueError(msg)
+        if event.seat >= player_count:
+            msg = "ActionBaBei seat must identify a player."
+            raise ValueError(msg)
+        if round_state.previous_dapai is not None:
+            msg = "A babei cannot follow an unresolved discard."
+            raise ValueError(msg)
+        if round_state.previous_qianggang is not None:
+            msg = "A babei cannot follow an unresolved qianggang target."
+            raise ValueError(msg)
+
+        north = Tile("4z")
+        shoupai = list(round_state.shoupai)
+        zimopai = round_state.zimopai
+        if event.seat == state.self_seat:
+            if zimopai is None:
+                msg = "A self babei must follow a self draw."
+                raise ValueError(msg)
+            if event.moqie:
+                if zimopai != north:
+                    msg = "A self moqie babei must consume the drawn north."
+                    raise ValueError(msg)
+            else:
+                try:
+                    shoupai.remove(north)
+                except ValueError:
+                    msg = "A self hand babei must consume a north in the hand."
+                    raise ValueError(msg) from None
+                shoupai.append(zimopai)
+                shoupai.sort(key=tile_sort_key)
+            zimopai = None
+        elif zimopai is not None:
+            msg = "An opponent babei cannot occur during a self draw."
+            raise ValueError(msg)
+
+        babei = [list(player_babei) for player_babei in round_state.babei]
+        babei[event.seat].append(Babei(moqie=event.moqie))
+        next_babei = tuple(tuple(player_babei) for player_babei in babei)
+        lingshang_zimo = list(round_state.lingshang_zimo)
+        lingshang_zimo[event.seat] = True
+        next_shoupai = tuple(shoupai)
+        operation_candidates = materialize_operation_candidates(
+            operation_specification,
+            event,
+            next_shoupai,
+            zimopai,
+            round_state.fulu[state.self_seat],
+            state.self_seat,
+            player_count,
+        )
+        next_round = replace(
+            round_state,
+            step=event.action_step,
+            dora_indicators=(
+                event.dora_indicators or round_state.dora_indicators
+            ),
+            shoupai=next_shoupai,
+            zimopai=zimopai,
+            babei=next_babei,
+            first_draw=(False,) * player_count,
+            yifa=(False,) * player_count,
+            lingshang_zimo=tuple(lingshang_zimo),
+            previous_qianggang=(event.seat, north),
             operation_candidates=operation_candidates,
             events=(*round_state.events, event),
         )

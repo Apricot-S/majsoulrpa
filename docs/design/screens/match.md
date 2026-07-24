@@ -190,7 +190,7 @@ class MatchState:
 `Daminggang` は取得元と取得牌を、`Jiagang` はさらに元の `Peng` の取得情報と追加牌を区別して保持する。
 これは Event 列の単純な複製ではなく、Event を適用して得られる現在の副露状態である。北抜きは面子の
 Union には含めず、seat ごとの `tuple[Babei, ...]` として `RoundState.babei` に保持する。`Babei` は
-`ActionBabei.moqie` を保持するが、北牌は常に `4z` なので tile field は持たない。
+`ActionBaBei.moqie` を保持するが、北牌は常に `4z` なので tile field は持たない。
 
 human player は正の `account_id`、`name`、四麻段位 `level4`、三麻段位 `level3` を必須とする。
 `MatchRank` は `AccountLevel.id` と `score` を失わず保持する。段位名への変換表を state の正本に
@@ -786,6 +786,14 @@ class JiagangEvent(_MatchEventBase):
     dora_indicators: tuple[Tile, ...]
 
 
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class BabeiEvent(_MatchEventBase):
+    seat: Seat
+    moqie: bool
+    dora_indicators: tuple[Tile, ...]
+
+
 type MatchEvent = (
     StartMatchEvent
     | NewRoundEvent
@@ -841,6 +849,12 @@ def event_name(event: MatchEvent) -> str:
 空文字列を `None` に正規化し、reducer は自家なら実牌、他家なら `None` であることを検証する。
 `doras` が非空なら現在のドラ表示牌を置き換え、空なら以前の表示牌を維持する。ツモを適用した時点で
 直前の打牌は解決済みとして `previous_dapai` を消去する。
+
+`ActionBaBei` は `BabeiEvent` に変換し、seat、`moqie`、ドラ表示牌を保持する。北牌は常に `4z` なので
+Event に tile field は持たない。reducer は三人戦だけで受理し、自家の `moqie=true` ではツモ牌、
+`moqie=false` では手牌から `4z` を消費する。手牌から抜いた場合は別のツモ牌を手牌へ取り込む。
+北抜きは河と `Fulu` を変更せず、seat ごとの `RoundState.babei` に履歴を追加し、対象 seat の
+嶺上ツモと `(seat, 4z)` の搶槓対象を設定する。
 
 `ActionChiPengGang(type=0)` は `ChiEvent` に変換する。雀魂の `tiles` は自家から消費する2枚を先に、
 直前の河から取得する牌を末尾に置く。protocol decoder で前2枚を固定長の `consumed`、末尾を `tile` に
