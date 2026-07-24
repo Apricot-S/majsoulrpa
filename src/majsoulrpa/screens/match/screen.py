@@ -518,6 +518,32 @@ class MatchScreen(Screen):
             height=cls.HAND_TILE_REGION.height,
         )
 
+    async def _click_dapai_until_progress(self, region: Region) -> None:
+        loop = asyncio.get_running_loop()
+        while True:
+            await self.click_region(region)
+            retry_at = loop.time() + DAPAI_CLICK_RETRY_INTERVAL_SECONDS
+            while True:
+                timeout = asyncio.timeout_at(retry_at)
+                try:
+                    async with timeout:
+                        message = await self._get_sniffer_message()
+                except TimeoutError:
+                    if not timeout.expired():
+                        raise
+                    break
+
+                if message.raw.name in _DAPAI_CLICK_PROGRESS_MESSAGE_NAMES:
+                    self._put_back_sniffer_message(message)
+                    return
+
+                await self._apply_match_message_with_screen_errors(
+                    message,
+                    inconsistent_message=(
+                        "Match state update failed while retrying a discard."
+                    ),
+                )
+
     async def _operate_chi(
         self,
         state: MatchState,
@@ -916,32 +942,6 @@ class MatchScreen(Screen):
             ):
                 return False
         assert_never(operation)
-
-    async def _click_dapai_until_progress(self, region: Region) -> None:
-        loop = asyncio.get_running_loop()
-        while True:
-            await self.click_region(region)
-            retry_at = loop.time() + DAPAI_CLICK_RETRY_INTERVAL_SECONDS
-            while True:
-                timeout = asyncio.timeout_at(retry_at)
-                try:
-                    async with timeout:
-                        message = await self._get_sniffer_message()
-                except TimeoutError:
-                    if not timeout.expired():
-                        raise
-                    break
-
-                if message.raw.name in _DAPAI_CLICK_PROGRESS_MESSAGE_NAMES:
-                    self._put_back_sniffer_message(message)
-                    return
-
-                await self._apply_match_message_with_screen_errors(
-                    message,
-                    inconsistent_message=(
-                        "Match state update failed while retrying a discard."
-                    ),
-                )
 
     async def _raise_inconsistent_message(
         self,
