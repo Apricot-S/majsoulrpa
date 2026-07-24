@@ -655,34 +655,6 @@ class MatchScreen(Screen):
             height=cls.CHI_PENG_COMBINATION_REGION.height,
         )
 
-    async def _operate_daminggang(
-        self,
-        state: MatchState,
-        operation: DaminggangOperation,
-    ) -> None:
-        candidates = state.round.operation_candidates
-        if candidates is None:
-            msg = "DaminggangOperation requires operation candidates."
-            raise RuntimeError(msg)
-        daminggang_operations = tuple(
-            candidate
-            for candidate in candidates.operations
-            if isinstance(candidate, DaminggangOperation)
-        )
-        if daminggang_operations != (operation,):
-            error = ValueError(
-                "The number of daminggang candidates must be one."
-            )
-            await self._raise_inconsistent_message(
-                "Daminggang candidates do not match the supported UI layout.",
-                cause=error,
-            )
-        if not await self._click_operation_button_or_detect_progress(
-            self.GANG_BUTTON_TEMPLATE
-        ):
-            return
-        await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
-
     async def _operate_angang(
         self,
         state: MatchState,
@@ -715,6 +687,34 @@ class MatchScreen(Screen):
             operation,
             operation_name="angang",
         )
+
+    async def _operate_daminggang(
+        self,
+        state: MatchState,
+        operation: DaminggangOperation,
+    ) -> None:
+        candidates = state.round.operation_candidates
+        if candidates is None:
+            msg = "DaminggangOperation requires operation candidates."
+            raise RuntimeError(msg)
+        daminggang_operations = tuple(
+            candidate
+            for candidate in candidates.operations
+            if isinstance(candidate, DaminggangOperation)
+        )
+        if daminggang_operations != (operation,):
+            error = ValueError(
+                "The number of daminggang candidates must be one."
+            )
+            await self._raise_inconsistent_message(
+                "Daminggang candidates do not match the supported UI layout.",
+                cause=error,
+            )
+        if not await self._click_operation_button_or_detect_progress(
+            self.GANG_BUTTON_TEMPLATE
+        ):
+            return
+        await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
 
     async def _operate_jiagang(
         self,
