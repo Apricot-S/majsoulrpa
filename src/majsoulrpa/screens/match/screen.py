@@ -283,6 +283,22 @@ class MatchScreen(Screen):
             message = await self._get_sniffer_message()
             self._apply_match_message(message)
 
+    async def _apply_match_message_with_screen_errors(
+        self,
+        message: DecodedSnifferMessage,
+        *,
+        inconsistent_message: str,
+    ) -> None:
+        try:
+            self._apply_match_message(message)
+        except MatchMetadataUnsupportedError as error:
+            await self._raise_unsupported_match(cause=error)
+        except (MatchActionDecodeError, MatchMetadataDecodeError) as error:
+            await self._raise_inconsistent_message(
+                inconsistent_message,
+                cause=error,
+            )
+
     def _apply_match_message(
         self,
         message: DecodedSnifferMessage,
@@ -310,22 +326,6 @@ class MatchScreen(Screen):
         self._operation_candidates_observed_at = (
             message.raw.observed_at if operation is not None else None
         )
-
-    async def _apply_match_message_with_screen_errors(
-        self,
-        message: DecodedSnifferMessage,
-        *,
-        inconsistent_message: str,
-    ) -> None:
-        try:
-            self._apply_match_message(message)
-        except MatchMetadataUnsupportedError as error:
-            await self._raise_unsupported_match(cause=error)
-        except (MatchActionDecodeError, MatchMetadataDecodeError) as error:
-            await self._raise_inconsistent_message(
-                inconsistent_message,
-                cause=error,
-            )
 
     def _apply_auth_game(self, message: DecodedSnifferMessage) -> None:
         if not isinstance(message, DecodedRequestResponse):
