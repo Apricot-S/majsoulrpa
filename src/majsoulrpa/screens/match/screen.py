@@ -438,15 +438,6 @@ class MatchScreen(Screen):
                     )
                     raise MatchActionDecodeError(msg) from error
 
-    async def _raise_unsupported_match(
-        self,
-        *,
-        cause: BaseException,
-    ) -> NoReturn:
-        screenshot = await self.context.browser.screenshot()
-        msg = "The detected match type is not supported."
-        raise ScreenUnexpectedStateError(msg, screenshot) from cause
-
     async def _move_mouse_away_from_hand(self) -> None:
         # Hovering over a tile in the hand can display winning-tile
         # candidates. They may interfere with template matching, so keep
@@ -960,3 +951,12 @@ class MatchScreen(Screen):
     ) -> NoReturn:
         screenshot = await self.context.browser.screenshot()
         raise ScreenInconsistentMessageError(message, screenshot) from cause
+
+    async def _raise_unsupported_match(
+        self,
+        *,
+        cause: BaseException,
+    ) -> NoReturn:
+        screenshot = await self.context.browser.screenshot()
+        msg = "The detected match type is not supported."
+        raise ScreenUnexpectedStateError(msg, screenshot) from cause
