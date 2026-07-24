@@ -62,6 +62,7 @@ def test_get_state_exposes_initial_match_events() -> None:
     assert len(state.players) == 4
     assert state.players[0].level4 == MatchRank(id=10101, score=0)
     assert state.players[0].level3 == MatchRank(id=20101, score=10)
+    assert state.round.babei == ((), (), (), ())
     assert state.round.events[0] == StartMatchEvent(action_step=0)
     assert isinstance(state.round.events[1], NewRoundEvent)
     assert state.round.events[1].action_step == 1

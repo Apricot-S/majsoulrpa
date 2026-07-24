@@ -111,6 +111,12 @@ class Jiagang:
 type Fulu = Chi | Peng | Daminggang | Angang | Jiagang
 
 
+@final
+@dataclass(frozen=True, slots=True)
+class Babei:
+    moqie: bool
+
+
 @dataclass(frozen=True, slots=True)
 class RoundState:
     generation: int
@@ -126,7 +132,7 @@ class RoundState:
     zimopai: Tile | None
     he: tuple[tuple[Dapai, ...], ...]
     fulu: tuple[tuple[Fulu, ...], ...]
-    num_babei: tuple[int, ...]
+    babei: tuple[tuple[Babei, ...], ...]
     liqi: tuple[bool, ...]
     wliqi: tuple[bool, ...]
     first_draw: tuple[bool, ...]
@@ -151,7 +157,7 @@ class RoundState:
         collections = (
             self.he,
             self.fulu,
-            self.num_babei,
+            self.babei,
             self.liqi,
             self.wliqi,
             self.first_draw,

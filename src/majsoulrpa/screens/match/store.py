@@ -88,7 +88,7 @@ class MatchStateStore:
             zimopai=new_round_event.zimopai,
             he=tuple(() for _ in range(player_count)),
             fulu=tuple(() for _ in range(player_count)),
-            num_babei=(0,) * player_count,
+            babei=tuple(() for _ in range(player_count)),
             liqi=(False,) * player_count,
             wliqi=(False,) * player_count,
             first_draw=(True,) * player_count,

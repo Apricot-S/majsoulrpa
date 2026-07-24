@@ -138,6 +138,12 @@ class Jiagang:
     added: Tile
 
 
+@final
+@dataclass(frozen=True, slots=True)
+class Babei:
+    moqie: bool
+
+
 type Fulu = Chi | Peng | Daminggang | Angang | Jiagang
 
 
@@ -156,7 +162,7 @@ class RoundState:
     zimopai: Tile | None
     he: tuple[tuple[Dapai, ...], ...]
     fulu: tuple[tuple[Fulu, ...], ...]
-    num_babei: tuple[int, ...]
+    babei: tuple[tuple[Babei, ...], ...]
     liqi: tuple[bool, ...]
     wliqi: tuple[bool, ...]
     first_draw: tuple[bool, ...]
@@ -183,7 +189,8 @@ class MatchState:
 絞り込み、各副露に存在しない field を `None` として分岐する必要がない。`Chi`、`Peng`、
 `Daminggang` は取得元と取得牌を、`Jiagang` はさらに元の `Peng` の取得情報と追加牌を区別して保持する。
 これは Event 列の単純な複製ではなく、Event を適用して得られる現在の副露状態である。北抜きは面子の
-Union には含めず、当面は seat ごとの `num_babei` で保持する。
+Union には含めず、seat ごとの `tuple[Babei, ...]` として `RoundState.babei` に保持する。`Babei` は
+`ActionBabei.moqie` を保持するが、北牌は常に `4z` なので tile field は持たない。
 
 human player は正の `account_id`、`name`、四麻段位 `level4`、三麻段位 `level3` を必須とする。
 `MatchRank` は `AccountLevel.id` と `score` を失わず保持する。段位名への変換表を state の正本に

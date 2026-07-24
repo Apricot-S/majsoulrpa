@@ -843,7 +843,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] Chi / Peng / Daminggang は from_seat、取得した tile、手牌から使った固定長 consumed を保持する
 - [x] Angang は手牌から使った4枚の consumed を保持し、from_seat を持たない
 - [x] Jiagang は元の Peng の from_seat / tile / consumed と追加した added を区別して保持する
-- [x] 北抜きは Fulu に含めず、RoundState.num_babei で保持する
+- [x] 北抜きは `Fulu` に含めず、seat ごとの `tuple[Babei, ...]` として `RoundState.babei` に保持する
+- [x] `Babei` は `ActionBabei.moqie` に対応する `moqie` を保持する
 - [x] human player の四麻 `level4` と三麻 `level3` の AccountLevel ID / score を失わず decode する
 - [x] 通常友人戦の authGame response は players が human のみ、robots が CPU のみであることを実通信で確認する
 - [x] 観測した robots の account_id は 1 / 2 / 3、nickname は空文字列、level / level3 は field 自体がない

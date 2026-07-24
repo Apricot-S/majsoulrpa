@@ -26,6 +26,7 @@ from majsoulrpa.screens.match.operation import (
 )
 from majsoulrpa.screens.match.state import (
     Angang,
+    Babei,
     Chi,
     Daminggang,
     Dapai,
@@ -52,6 +53,7 @@ __all__ = [
     "Angang",
     "AngangEvent",
     "AngangOperation",
+    "Babei",
     "Chi",
     "ChiEvent",
     "ChiOperation",
