@@ -481,6 +481,43 @@ class MatchScreen(Screen):
         if remaining_seconds > 0.0:
             await asyncio.sleep(remaining_seconds)
 
+    @classmethod
+    def _get_dapai_region(
+        cls,
+        state: MatchState,
+        operation: DapaiOperation | LiqiOperation,
+        *,
+        is_dealer_first_discard: bool,
+    ) -> Region:
+        round_state = state.round
+        use_zimopai_region = operation.moqie or (
+            is_dealer_first_discard and round_state.zimopai == operation.tile
+        )
+        if use_zimopai_region:
+            if round_state.zimopai != operation.tile:
+                msg = "The discard tile does not match zimopai."
+                raise ValueError(msg)
+            shoupai_count = len(round_state.shoupai)
+            if shoupai_count not in {1, 4, 7, 10, 13}:
+                msg = "The hand size has no zimopai display position."
+                raise ValueError(msg)
+            return cls.ZIMOPAI_REGIONS[(shoupai_count - 1) // 3]
+
+        try:
+            index = round_state.shoupai.index(operation.tile)
+        except ValueError:
+            msg = "The discard tile is not in shoupai."
+            raise ValueError(msg) from None
+        return Region(
+            left=(
+                cls.HAND_TILE_REGION.left
+                + int(index * cls.HAND_TILE_HORIZONTAL_INTERVAL)
+            ),
+            top=cls.HAND_TILE_REGION.top,
+            width=cls.HAND_TILE_REGION.width,
+            height=cls.HAND_TILE_REGION.height,
+        )
+
     async def _operate_chi(
         self,
         state: MatchState,
@@ -905,43 +942,6 @@ class MatchScreen(Screen):
                         "Match state update failed while retrying a discard."
                     ),
                 )
-
-    @classmethod
-    def _get_dapai_region(
-        cls,
-        state: MatchState,
-        operation: DapaiOperation | LiqiOperation,
-        *,
-        is_dealer_first_discard: bool,
-    ) -> Region:
-        round_state = state.round
-        use_zimopai_region = operation.moqie or (
-            is_dealer_first_discard and round_state.zimopai == operation.tile
-        )
-        if use_zimopai_region:
-            if round_state.zimopai != operation.tile:
-                msg = "The discard tile does not match zimopai."
-                raise ValueError(msg)
-            shoupai_count = len(round_state.shoupai)
-            if shoupai_count not in {1, 4, 7, 10, 13}:
-                msg = "The hand size has no zimopai display position."
-                raise ValueError(msg)
-            return cls.ZIMOPAI_REGIONS[(shoupai_count - 1) // 3]
-
-        try:
-            index = round_state.shoupai.index(operation.tile)
-        except ValueError:
-            msg = "The discard tile is not in shoupai."
-            raise ValueError(msg) from None
-        return Region(
-            left=(
-                cls.HAND_TILE_REGION.left
-                + int(index * cls.HAND_TILE_HORIZONTAL_INTERVAL)
-            ),
-            top=cls.HAND_TILE_REGION.top,
-            width=cls.HAND_TILE_REGION.width,
-            height=cls.HAND_TILE_REGION.height,
-        )
 
     async def _raise_inconsistent_message(
         self,
