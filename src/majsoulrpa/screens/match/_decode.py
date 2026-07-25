@@ -47,6 +47,19 @@ def _get_int_list(data: Mapping[str, JsonValue], name: str) -> list[int]:
     return value
 
 
+def _get_dict_list(
+    data: Mapping[str, JsonValue],
+    name: str,
+) -> list[dict[str, JsonValue]]:
+    value = data.get(_field_key(name))
+    if not isinstance(value, list) or not all(
+        isinstance(item, dict) for item in value
+    ):
+        msg = f"{name} must be a list of objects."
+        raise TypeError(msg)
+    return value
+
+
 def _get_optional_dict(
     data: Mapping[str, JsonValue],
     name: str,

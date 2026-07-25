@@ -825,6 +825,37 @@ class LiujuEvent(_MatchEventBase):
     liqi_success: LiqiSuccess | None = None
 
 
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HuleFan:
+    name: str
+    value: int
+    id: int
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Hule:
+    hand: tuple[Tile, ...]
+    ming: tuple[str, ...]
+    tile: Tile
+    seat: Seat
+    zimo: bool
+    # その他に親・立直、ドラ・裏ドラ、役、符、点数内訳を保持する。
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HuleEvent(_MatchEventBase):
+    hules: tuple[Hule, ...]
+    old_scores: tuple[int, ...]
+    delta_scores: tuple[int, ...]
+    scores: tuple[int, ...]
+    dora_indicators: tuple[Tile, ...]
+    game_end_scores: tuple[int, ...] | None
+    baopai: int
+
+
 type MatchEvent = (
     StartMatchEvent
     | NewRoundEvent
@@ -837,6 +868,7 @@ type MatchEvent = (
     | JiagangEvent
     | BabeiEvent
     | LiujuEvent
+    | HuleEvent
 )
 
 
@@ -864,6 +896,8 @@ def event_name(event: MatchEvent) -> str:
             return "babei"
         case LiujuEvent():
             return "liuju"
+        case HuleEvent():
+            return "hule"
     assert_never(event)
 ```
 
@@ -871,8 +905,8 @@ def event_name(event: MatchEvent) -> str:
 `assert_never(event)` を置く。`MatchEvent` union に新しい concrete class を追加して利用側が未対応の
 ままなら、`ty` は `assert_never()` の引数が `Never` でないことを報告する。`case _` は使わない。
 
-上記は active-round reducer と途中流局 Event の union であり、残る局終了 reducer と同時に
-`HuleEvent`、`NoTileEvent` を追加する。`ActionDiscardTile` は `DapaiEvent` 1 件に変換し、立直宣言牌か
+上記は和了・途中流局までを含む Event の union であり、残る局終了 reducer と同時に
+`NoTileEvent` を追加する。`ActionDiscardTile` は `DapaiEvent` 1 件に変換し、立直宣言牌か
 どうかを `liqi` / `wliqi` field に含める。独立した `LiqiEvent` は作らない。後続 action に埋め込まれた
 `LiQiSuccess` も独立 event に分離せず、その action に対応する event の `liqi_success` field として
 保持し、reducer が同じ event の適用中に点数と `liqibang` を更新する。これは雀魂の action 境界を
@@ -896,6 +930,15 @@ Event に tile field は持たない。reducer は三人戦だけで受理し、
 `None` に変換する。埋め込まれた `LiQiSuccess` は `liqi_success` に保持する。reducer は
 Event 列へ追加して未解決の打牌・搶槓対象と operation 候補を消去し、九種九牌では対象 seat が
 第一ツモ中であることを検証する。
+
+`ActionHule` は自摸和と栄和に共通の `HuleEvent` に変換する。protobuf の repeated `hules` は
+message の順序を保った `tuple[Hule, ...]` とし、自摸和は1要素、ダブロン・トリロンは複数要素で
+表す。`Hule` は和了者、`zimo`、和了牌、公開された手牌と副露、親・立直、ドラ・裏ドラ、役、符、
+点数内訳を保持する。`HuleEvent` は action 全体の和了前点数、点数差分、和了後点数、最終ドラ表示牌、
+試合終了時点数を保持する。自摸和 reducer は直前の同じ seat の `ZimoEvent`、または親の配牌直後の
+天和だけを受理する。自家に見えている和了牌、`qinjia`、点数遷移を検証し、Event 列へ追加して
+operation 候補と未解決の打牌・搶槓対象を消去する。栄和の decode は同じ Event で行うが、state への
+適用はロン対応時に追加する。
 
 `ActionChiPengGang(type=0)` は `ChiEvent` に変換する。雀魂の `tiles` は自家から消費する2枚を先に、
 直前の河から取得する牌を末尾に置く。protocol decoder で前2枚を固定長の `consumed`、末尾を `tile` に
@@ -1089,9 +1132,11 @@ nested message type は `liqi_pb2.DESCRIPTOR` から action 名で解決する�
 - `ActionChiPengGang`
 - `ActionAnGangAddGang`
 - `ActionBaBei`
+- `ActionLiuJu`
+- `ActionHule`
 
 active `game_state` の restore batch に round terminal action が含まれるかは手動 spike で確認する。
-`ActionHule`、`ActionNoTile` は局遷移設計と同時に追加し、初期化だけの段階では暗黙に
+`ActionNoTile` は局遷移設計と同時に追加し、初期化だけの段階では暗黙に
 無視しない。特殊 mode 専用 action、未知 action 名、壊れた data、不正 step は推測せず明示的な
 失敗にする。
 

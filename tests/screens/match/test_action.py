@@ -9,6 +9,7 @@ from majsoulrpa.screens.match import (
     BabeiEvent,
     ChiEvent,
     DaminggangEvent,
+    HuleEvent,
     JiagangEvent,
     LiujuEvent,
     LiujuType,
@@ -181,6 +182,40 @@ def test_live_and_restore_action_babei_decode_to_same_event() -> None:
         dora_indicators=(validate_tile("3p"), validate_tile("4p")),
     )
     assert restore_event == live_event
+    assert live_operation is None
+    assert restore_operation is None
+
+
+def test_live_and_restore_action_hule_decode_to_same_event() -> None:
+    data = liqi_pb2.ActionHule(
+        hules=[
+            liqi_pb2.HuleInfo(
+                hand=["1m"] * 13,
+                hu_tile="5p",
+                seat=2,
+                zimo=True,
+                doras=["5p"],
+                fu=30,
+            ),
+        ],
+        old_scores=[25000] * 4,
+        delta_scores=[-1000, -1000, 3000, -1000],
+        scores=[24000, 24000, 28000, 24000],
+        doras=["3p"],
+    ).SerializeToString()
+    live_event, live_operation, _ = decode_live_action(
+        _live_action(step=4, name="ActionHule", data=data)
+    )
+    restore_event, restore_operation, _ = decode_restore_action(
+        {
+            "step": 4,
+            "name": "ActionHule",
+            "data": base64.b64encode(data).decode(),
+        }
+    )
+
+    assert isinstance(live_event, HuleEvent)
+    assert live_event == restore_event
     assert live_operation is None
     assert restore_operation is None
 

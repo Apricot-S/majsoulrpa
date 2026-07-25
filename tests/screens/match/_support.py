@@ -237,6 +237,31 @@ def _live_liuju_action(
     return _live_action(step=step, name="ActionLiuJu", data=data)
 
 
+def _live_hule_action(
+    *,
+    step: int,
+    hules: list[liqi_pb2.HuleInfo],
+    old_scores: list[int],
+    delta_scores: list[int],
+    scores: list[int],
+    doras: list[str],
+    game_end_scores: list[int] | None = None,
+) -> DecodedNotice:
+    data = liqi_pb2.ActionHule(
+        hules=hules,
+        old_scores=old_scores,
+        delta_scores=delta_scores,
+        scores=scores,
+        doras=doras,
+        gameend=(
+            None
+            if game_end_scores is None
+            else liqi_pb2.GameEnd(scores=game_end_scores)
+        ),
+    ).SerializeToString()
+    return _live_action(step=step, name="ActionHule", data=data)
+
+
 def _live_chi_peng_gang_action(
     *,
     step: int,

@@ -12,6 +12,7 @@ from majsoulrpa.screens.match.event import (
     ChiEvent,
     DaminggangEvent,
     DapaiEvent,
+    HuleEvent,
     JiagangEvent,
     LiqiSuccess,
     LiujuEvent,
@@ -136,6 +137,8 @@ class MatchStateStore:
                 return self._apply_babei(event, operation_specification)
             case LiujuEvent():
                 return self._apply_liuju(event)
+            case HuleEvent():
+                return self._apply_hule(event)
             case StartMatchEvent() | NewRoundEvent():
                 msg = "A match initialization event cannot be applied again."
                 raise ValueError(msg)
@@ -680,6 +683,87 @@ class MatchStateStore:
             step=event.action_step,
             scores=scores,
             liqibang=liqibang,
+            previous_dapai=None,
+            previous_qianggang=None,
+            operation_candidates=None,
+            events=(*round_state.events, event),
+        )
+        self._state = replace(
+            state,
+            version=state.version + 1,
+            round=next_round,
+        )
+        return self._state
+
+    def _apply_hule(self, event: HuleEvent) -> MatchState:
+        state = self._require_state()
+        round_state = state.round
+        player_count = len(state.players)
+        if event.action_step != round_state.step + 1:
+            msg = "ActionHule step must follow the current round step."
+            raise ValueError(msg)
+        if len(event.scores) != player_count:
+            msg = "ActionHule scores must identify every player."
+            raise ValueError(msg)
+        if event.old_scores != round_state.scores:
+            msg = "ActionHule old scores must match the current scores."
+            raise ValueError(msg)
+        if (
+            tuple(
+                old_score + delta_score
+                for old_score, delta_score in zip(
+                    event.old_scores,
+                    event.delta_scores,
+                    strict=True,
+                )
+            )
+            != event.scores
+        ):
+            msg = "ActionHule score deltas must produce its scores."
+            raise ValueError(msg)
+
+        if len(event.hules) != 1 or not event.hules[0].zimo:
+            msg = "Only a single-player zimohu is currently supported."
+            raise ValueError(msg)
+        hule = event.hules[0]
+        if hule.seat >= player_count:
+            msg = "A hule seat must identify a player."
+            raise ValueError(msg)
+        if hule.qinjia is not (hule.seat == round_state.ju):
+            msg = "Hule qinjia must match the round dealer."
+            raise ValueError(msg)
+
+        previous_event = round_state.events[-1]
+        match previous_event:
+            case ZimoEvent():
+                if previous_event.seat != hule.seat:
+                    msg = "A zimohu must follow the winner's draw."
+                    raise ValueError(msg)
+                if (
+                    previous_event.tile is not None
+                    and previous_event.tile != hule.tile
+                ):
+                    msg = "A zimohu tile must match the preceding draw."
+                    raise ValueError(msg)
+            case NewRoundEvent():
+                if hule.seat != round_state.ju:
+                    msg = "A hule following the deal must be tenhou."
+                    raise ValueError(msg)
+                if (
+                    round_state.zimopai is not None
+                    and round_state.zimopai != hule.tile
+                ):
+                    msg = "A tenhou tile must match the dealt winning tile."
+                    raise ValueError(msg)
+            case _:
+                msg = "A zimohu must follow a draw or the initial deal."
+                raise ValueError(msg)
+
+        next_round = replace(
+            round_state,
+            step=event.action_step,
+            dora_indicators=event.dora_indicators,
+            scores=event.scores,
             previous_dapai=None,
             previous_qianggang=None,
             operation_candidates=None,
