@@ -708,17 +708,15 @@ class MatchStateStore:
         if event.old_scores != round_state.scores:
             msg = "ActionHule old scores must match the current scores."
             raise ValueError(msg)
-        if (
-            tuple(
-                old_score + delta_score
-                for old_score, delta_score in zip(
-                    event.old_scores,
-                    event.delta_scores,
-                    strict=True,
-                )
+        expected_scores = tuple(
+            old_score + delta_score
+            for old_score, delta_score in zip(
+                event.old_scores,
+                event.delta_scores,
+                strict=True,
             )
-            != event.scores
-        ):
+        )
+        if expected_scores != event.scores:
             msg = "ActionHule score deltas must produce its scores."
             raise ValueError(msg)
 
