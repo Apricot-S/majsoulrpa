@@ -838,10 +838,10 @@ class HuleFan:
 class Hule:
     hand: tuple[Tile, ...]
     ming: tuple[str, ...]
-    tile: Tile
+    hu_tile: Tile
     seat: Seat
     zimo: bool
-    # その他に親・立直、ドラ・裏ドラ、役、符、点数内訳を保持する。
+    # その他に親・立直、ドラ・裏ドラ表示牌、役、符、点数内訳を保持する。
 
 
 @final
@@ -853,7 +853,7 @@ class HuleEvent(_MatchEventBase):
     scores: tuple[int, ...]
     dora_indicators: tuple[Tile, ...]
     game_end_scores: tuple[int, ...] | None
-    baopai: int
+    baopai_seat: Seat | None
 
 
 type MatchEvent = (
@@ -933,12 +933,20 @@ Event 列へ追加して未解決の打牌・搶槓対象と operation 候補を
 
 `ActionHule` は自摸和と栄和に共通の `HuleEvent` に変換する。protobuf の repeated `hules` は
 message の順序を保った `tuple[Hule, ...]` とし、自摸和は1要素、ダブロン・トリロンは複数要素で
-表す。`Hule` は和了者、`zimo`、和了牌、公開された手牌と副露、親・立直、ドラ・裏ドラ、役、符、
+表す。`Hule` は和了者、`zimo`、`hu_tile`、公開された手牌と副露、親・立直、
+`dora_indicators` / `li_dora_indicators`、役、符、
 点数内訳を保持する。`HuleEvent` は action 全体の和了前点数、点数差分、和了後点数、最終ドラ表示牌、
 試合終了時点数を保持する。自摸和 reducer は直前の同じ seat の `ZimoEvent`、または親の配牌直後の
 天和だけを受理する。自家に見えている和了牌、`qinjia`、点数遷移を検証し、Event 列へ追加して
 operation 候補と未解決の打牌・搶槓対象を消去する。栄和の decode は同じ Event で行うが、state への
 適用はロン対応時に追加する。
+
+`Hule.baopai_seats` は和了ごとの包の対象 seat を複数保持でき、ダブロン・トリロンで別々の包が
+成立する場合も各 `Hule` に対応付けられる。旧 scalar の `HuleInfo.baopai` と action 直下の
+`ActionHule.baopai` は通常の seat と異なり、0が包なし、1〜4がそれぞれ起家・下家・対面・上家を表す。
+decoder はこの差を吸収し、0を `None`、1〜4を `Seat(0)`〜`Seat(3)` に変換して、それぞれ
+`Hule.baopai_seat` と `HuleEvent.baopai_seat` に保持する。旧 scalar が現在も使われるかは未検証で
+あるため、`baopai_seats` との整合条件や優先順位は設けない。
 
 `ActionChiPengGang(type=0)` は `ChiEvent` に変換する。雀魂の `tiles` は自家から消費する2枚を先に、
 直前の河から取得する牌を末尾に置く。protocol decoder で前2枚を固定長の `consumed`、末尾を `tile` に

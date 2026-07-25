@@ -741,7 +741,7 @@ class MatchStateStore:
                     raise ValueError(msg)
                 if (
                     previous_event.tile is not None
-                    and previous_event.tile != hule.tile
+                    and previous_event.tile != hule.hu_tile
                 ):
                     msg = "A zimohu tile must match the preceding draw."
                     raise ValueError(msg)
@@ -751,7 +751,7 @@ class MatchStateStore:
                     raise ValueError(msg)
                 if (
                     round_state.zimopai is not None
-                    and round_state.zimopai != hule.tile
+                    and round_state.zimopai != hule.hu_tile
                 ):
                     msg = "A tenhou tile must match the dealt winning tile."
                     raise ValueError(msg)

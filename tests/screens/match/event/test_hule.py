@@ -35,8 +35,8 @@ def test_hule_event_from_dict() -> None:
                     "title_id": 0,
                     "point_sum": 4000,
                     "dadian": 4000,
-                    "baopai": 0,
-                    "baopai_seats": [],
+                    "baopai": 2,
+                    "baopai_seats": [2, 3],
                 },
             ],
             "old_scores": [25000, 25000, 25000, 25000],
@@ -44,7 +44,7 @@ def test_hule_event_from_dict() -> None:
             "scores": [29300, 22900, 23900, 23900],
             "doras": ["3p"],
             "gameend": {"scores": [29300, 22900, 23900, 23900]},
-            "baopai": 0,
+            "baopai": 3,
         },
     )
 
@@ -58,13 +58,13 @@ def test_hule_event_from_dict() -> None:
                     validate_tile("3m"),
                 ),
                 ming=("kezi(4p,4p,4p)",),
-                tile=validate_tile("0s"),
+                hu_tile=validate_tile("0s"),
                 seat=validate_seat(0),
                 zimo=True,
                 qinjia=False,
                 liqi=True,
-                doras=(validate_tile("0s"),),
-                li_doras=(validate_tile("4z"),),
+                dora_indicators=(validate_tile("0s"),),
+                li_dora_indicators=(validate_tile("4z"),),
                 yiman=False,
                 count=3,
                 fans=(HuleFan(name="立直", value=1, id=2),),
@@ -76,8 +76,8 @@ def test_hule_event_from_dict() -> None:
                 title_id=0,
                 point_sum=4000,
                 dadian=4000,
-                baopai=0,
-                baopai_seats=(),
+                baopai_seat=validate_seat(1),
+                baopai_seats=(validate_seat(2), validate_seat(3)),
             ),
         ),
         old_scores=(25000, 25000, 25000, 25000),
@@ -85,7 +85,7 @@ def test_hule_event_from_dict() -> None:
         scores=(29300, 22900, 23900, 23900),
         dora_indicators=(validate_tile("3p"),),
         game_end_scores=(29300, 22900, 23900, 23900),
-        baopai=0,
+        baopai_seat=validate_seat(2),
     )
 
 
@@ -119,6 +119,45 @@ def test_hule_event_rejects_inconsistent_score_lengths() -> None:
                 "delta_scores": [0] * 3,
                 "scores": [25000] * 4,
                 "doras": ["3p"],
+                "gameend": None,
+                "baopai": 0,
+            },
+        )
+
+
+def test_hule_event_accepts_disabled_dora() -> None:
+    event = HuleEvent.from_dict(
+        3,
+        {
+            "hules": [_hule_data(seat=0, tile="1m", zimo=True)],
+            "old_scores": [25000] * 4,
+            "delta_scores": [0] * 4,
+            "scores": [25000] * 4,
+            "doras": [],
+            "gameend": None,
+            "baopai": 0,
+        },
+    )
+
+    assert event.dora_indicators == ()
+    assert event.baopai_seat is None
+    assert event.hules[0].baopai_seat is None
+
+
+@pytest.mark.parametrize("baopai", [-1, 5])
+def test_hule_event_rejects_invalid_legacy_baopai(baopai: int) -> None:
+    data = _hule_data(seat=0, tile="1m", zimo=True)
+    data["baopai"] = baopai
+
+    with pytest.raises(ValueError, match="baopai"):
+        HuleEvent.from_dict(
+            3,
+            {
+                "hules": [data],
+                "old_scores": [25000] * 4,
+                "delta_scores": [0] * 4,
+                "scores": [25000] * 4,
+                "doras": [],
                 "gameend": None,
                 "baopai": 0,
             },

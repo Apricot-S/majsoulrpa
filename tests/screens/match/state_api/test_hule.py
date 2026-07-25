@@ -118,7 +118,7 @@ def test_get_state_applies_tenhou_after_initial_deal() -> None:
     state = asyncio.run(screen.get_state())
 
     assert isinstance(state.round.events[-1], HuleEvent)
-    assert state.round.events[-1].hules[0].tile == "9s"
+    assert state.round.events[-1].hules[0].hu_tile == "9s"
 
 
 def test_get_state_rejects_self_zimohu_with_different_tile() -> None:

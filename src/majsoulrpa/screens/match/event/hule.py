@@ -22,6 +22,8 @@ from majsoulrpa.screens.match.types import (
     validate_tile,
 )
 
+_BAOPAI_SEAT_VALUES = range(1, 5)
+
 
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -52,13 +54,13 @@ class HuleFan:
 class Hule:
     hand: tuple[Tile, ...]
     ming: tuple[str, ...]
-    tile: Tile
+    hu_tile: Tile
     seat: Seat
     zimo: bool
     qinjia: bool
     liqi: bool
-    doras: tuple[Tile, ...]
-    li_doras: tuple[Tile, ...]
+    dora_indicators: tuple[Tile, ...]
+    li_dora_indicators: tuple[Tile, ...]
     yiman: bool
     count: int
     fans: tuple[HuleFan, ...]
@@ -70,7 +72,7 @@ class Hule:
     title_id: int
     point_sum: int
     dadian: int
-    baopai: int
+    baopai_seat: Seat | None
     baopai_seats: tuple[Seat, ...]
 
     def __post_init__(self) -> None:
@@ -83,10 +85,15 @@ class Hule:
             self.title_id,
             self.point_sum,
             self.dadian,
-            self.baopai,
         )
         if any(value < 0 for value in values):
             msg = "Hule numeric values must be nonnegative."
+            raise ValueError(msg)
+        if len(self.dora_indicators) > MAX_DORA_INDICATORS:
+            msg = "dora_indicators must contain at most five tiles."
+            raise ValueError(msg)
+        if len(self.li_dora_indicators) > MAX_DORA_INDICATORS:
+            msg = "li_dora_indicators must contain at most five tiles."
             raise ValueError(msg)
 
     @classmethod
@@ -97,16 +104,16 @@ class Hule:
                 for tile in _get_str_list(data, "HuleInfo.hand")
             ),
             ming=tuple(_get_str_list(data, "HuleInfo.ming")),
-            tile=validate_tile(_get_str(data, "HuleInfo.hu_tile")),
+            hu_tile=validate_tile(_get_str(data, "HuleInfo.hu_tile")),
             seat=validate_seat(_get_int(data, "HuleInfo.seat")),
             zimo=_get_bool(data, "HuleInfo.zimo"),
             qinjia=_get_bool(data, "HuleInfo.qinjia"),
             liqi=_get_bool(data, "HuleInfo.liqi"),
-            doras=tuple(
+            dora_indicators=tuple(
                 validate_tile(tile)
                 for tile in _get_str_list(data, "HuleInfo.doras")
             ),
-            li_doras=tuple(
+            li_dora_indicators=tuple(
                 validate_tile(tile)
                 for tile in _get_str_list(data, "HuleInfo.li_doras")
             ),
@@ -124,7 +131,7 @@ class Hule:
             title_id=_get_int(data, "HuleInfo.title_id"),
             point_sum=_get_int(data, "HuleInfo.point_sum"),
             dadian=_get_int(data, "HuleInfo.dadian"),
-            baopai=_get_int(data, "HuleInfo.baopai"),
+            baopai_seat=_decode_baopai_seat(_get_int(data, "HuleInfo.baopai")),
             baopai_seats=tuple(
                 validate_seat(seat)
                 for seat in _get_int_list(data, "HuleInfo.baopai_seats")
@@ -141,7 +148,7 @@ class HuleEvent(_MatchEventBase):
     scores: tuple[int, ...]
     dora_indicators: tuple[Tile, ...]
     game_end_scores: tuple[int, ...] | None
-    baopai: int
+    baopai_seat: Seat | None
 
     def __post_init__(self) -> None:
         _MatchEventBase.__post_init__(self)
@@ -162,8 +169,8 @@ class HuleEvent(_MatchEventBase):
         ):
             msg = "Game-end scores must match the Hule score count."
             raise ValueError(msg)
-        if not 1 <= len(self.dora_indicators) <= MAX_DORA_INDICATORS:
-            msg = "dora_indicators must contain between one and five tiles."
+        if len(self.dora_indicators) > MAX_DORA_INDICATORS:
+            msg = "dora_indicators must contain at most five tiles."
             raise ValueError(msg)
 
     @classmethod
@@ -191,5 +198,16 @@ class HuleEvent(_MatchEventBase):
                 if game_end is None
                 else tuple(_get_int_list(game_end, "GameEnd.scores"))
             ),
-            baopai=_get_int(data, "ActionHule.baopai"),
+            baopai_seat=_decode_baopai_seat(
+                _get_int(data, "ActionHule.baopai")
+            ),
         )
+
+
+def _decode_baopai_seat(value: int) -> Seat | None:
+    if value == 0:
+        return None
+    if value in _BAOPAI_SEAT_VALUES:
+        return validate_seat(value - 1)
+    msg = "baopai must be between 0 and 4."
+    raise ValueError(msg)
