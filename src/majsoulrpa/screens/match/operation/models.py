@@ -76,6 +76,12 @@ class LiqiOperation:
     moqie: bool
 
 
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class BabeiOperation:
+    pass
+
+
 type MatchOperation = (
     DapaiOperation
     | ChiOperation
@@ -84,6 +90,7 @@ type MatchOperation = (
     | DaminggangOperation
     | JiagangOperation
     | LiqiOperation
+    | BabeiOperation
 )
 
 

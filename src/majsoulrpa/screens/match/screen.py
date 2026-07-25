@@ -58,6 +58,7 @@ from majsoulrpa.screens.match.event import (
 )
 from majsoulrpa.screens.match.operation import (
     AngangOperation,
+    BabeiOperation,
     ChiOperation,
     DaminggangOperation,
     DapaiOperation,
@@ -241,6 +242,10 @@ class MatchScreen(Screen):
                 await self._operate_jiagang(state, operation)
             case LiqiOperation():
                 await self._operate_liqi(state, operation)
+            case BabeiOperation():
+                screenshot = await self.context.browser.screenshot()
+                msg = "Babei operation is not implemented."
+                raise ScreenNotImplementedOperationError(msg, screenshot)
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -920,6 +925,11 @@ class MatchScreen(Screen):
                     and event.moqie is operation.moqie
                     and (event.liqi or event.wliqi)
                 )
+            case BabeiOperation():
+                return (
+                    isinstance(event, BabeiEvent)
+                    and event.seat == state.self_seat
+                )
         assert_never(operation)
 
     @staticmethod
@@ -941,6 +951,7 @@ class MatchScreen(Screen):
                 | DaminggangOperation()
                 | JiagangOperation()
                 | LiqiOperation()
+                | BabeiOperation()
             ):
                 return False
         assert_never(operation)

@@ -661,7 +661,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] type 8 は空の `combination` と発生元 Event のツモ牌から `ZimohuOperation` を生成する
 - [ ] type 9 は空の `combination` と発生元 Event の対象 seat・対象牌から `RongOperation` を生成する
 - [ ] type 10 は空の `combination` から field のない `JiuzhongjiupaiOperation` を生成する
-- [ ] v1-develop の type 11 / `BabeiOperation` 対応を三人戦の実通信で再確認してから固定する
+- [x] type 11 は空の `combination` から field なしの `BabeiOperation` を生成する
+- [x] `BabeiOperation` は三人戦の親配牌または自家ツモに北が含まれる場合だけ生成する
+- [x] `BabeiOperation` は手牌・ツモ牌のどちらを抜くかを表す `moqie` を持たない
 - [x] type 2〜6 の区切り後の牌数が operation ごとの枚数と異なる場合は拒否する
 - [x] AngangOperation は4枚を consumed として保持する
 - [x] JiagangOperation は既存の `Peng` との差分が通常牌か赤牌かを added に保持する

@@ -9,6 +9,7 @@ from majsoulrpa.screens.match._decode import (
 )
 from majsoulrpa.screens.match.operation._specification import (
     _AngangOperationSpecification,
+    _BabeiOperationSpecification,
     _ChiOperationSpecification,
     _DaminggangOperationSpecification,
     _DapaiOperationSpecification,
@@ -64,6 +65,8 @@ def decode_operation_specification(
                 specification = _decode_jiagang_specification(item)
             case 7:
                 specification = _decode_liqi_specification(item)
+            case 11:
+                specification = _decode_babei_specification(item)
             case _:
                 msg = (
                     "OptionalOperation type is not supported: "
@@ -161,6 +164,15 @@ def _decode_liqi_specification(
         msg = "A liqi operation must contain a candidate tile."
         raise ValueError(msg)
     return _LiqiOperationSpecification(candidate_tiles=candidate_tiles)
+
+
+def _decode_babei_specification(
+    item: Mapping[str, JsonValue],
+) -> _BabeiOperationSpecification:
+    if _get_str_list(item, "OptionalOperation.combination"):
+        msg = "A babei operation must not contain a combination."
+        raise ValueError(msg)
+    return _BabeiOperationSpecification()
 
 
 def _decode_four_tile_combinations(

@@ -11,6 +11,7 @@ from majsoulrpa.screens.match.event import (
 )
 from majsoulrpa.screens.match.operation._specification import (
     _AngangOperationSpecification,
+    _BabeiOperationSpecification,
     _ChiOperationSpecification,
     _DaminggangOperationSpecification,
     _DapaiOperationSpecification,
@@ -22,6 +23,7 @@ from majsoulrpa.screens.match.operation._specification import (
 )
 from majsoulrpa.screens.match.operation.models import (
     AngangOperation,
+    BabeiOperation,
     ChiOperation,
     DaminggangOperation,
     DapaiOperation,
@@ -34,6 +36,7 @@ from majsoulrpa.screens.match.operation.models import (
 from majsoulrpa.screens.match.state import Angang, Fulu, Peng
 from majsoulrpa.screens.match.types import Seat, Tile
 
+_THREE_PLAYER_COUNT = 3
 _FOUR_PLAYER_COUNT = 4
 _MAX_FULU_COUNT = 4
 
@@ -149,6 +152,14 @@ def _materialize_operation_specification(
                 zimopai,
                 fulu,
                 self_seat,
+            )
+        case _BabeiOperationSpecification():
+            return _materialize_babei_specification(
+                event,
+                shoupai,
+                zimopai,
+                self_seat,
+                player_count,
             )
     assert_never(specification)
 
@@ -420,6 +431,29 @@ def _materialize_liqi_specification(
                 )
             )
     return operations
+
+
+def _materialize_babei_specification(
+    event: MatchEvent,
+    shoupai: tuple[Tile, ...],
+    zimopai: Tile | None,
+    self_seat: Seat,
+    player_count: int,
+) -> list[BabeiOperation]:
+    if player_count != _THREE_PLAYER_COUNT:
+        msg = "A babei operation is only valid in a three-player match."
+        raise ValueError(msg)
+    _validate_self_draw_operation_event(
+        event,
+        zimopai,
+        self_seat,
+        "babei",
+    )
+    north = Tile("4z")
+    if north not in shoupai and zimopai != north:
+        msg = "A babei operation requires a north in the hand or drawn tile."
+        raise ValueError(msg)
+    return [BabeiOperation()]
 
 
 def _validate_new_fulu_allowed(

@@ -305,7 +305,8 @@ class JiuzhongjiupaiOperation: ...
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class BabeiOperation: ...
+class BabeiOperation:
+    pass
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -365,6 +366,11 @@ type と concrete class の対応は次のとおりとする。
 | 9 | `RongOperation` | 空配列。和了対象 seat・牌は Event から補う |
 | 10 | `JiuzhongjiupaiOperation` | 空配列 |
 | 11 | `BabeiOperation` | 空配列。v1-develop の対応であり実通信で再確認する |
+
+`BabeiOperation` は親の14枚配牌または自家ツモの直後に、手牌か表示上のツモ牌へ `4z` が存在する場合
+だけ生成する。雀魂の画面では両方に北がある場合も抜く物理牌を選択できず自動的に決まるため、
+Operation には `moqie` を持たせない。実際に手牌とツモ牌のどちらから抜かれたかは、後続の
+`BabeiEvent.moqie` に記録する。
 
 type 1 の `combination` は選択可能な牌ではなく、食い替えによる禁止牌である。Event 適用後の
 `shoupai` と実際の `zimopai` から禁止牌を除いた打牌を列挙し、牌 1 種類と

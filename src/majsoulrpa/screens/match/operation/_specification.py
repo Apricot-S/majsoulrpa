@@ -46,6 +46,12 @@ class _LiqiOperationSpecification:
     candidate_tiles: tuple[Tile, ...]
 
 
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class _BabeiOperationSpecification:
+    pass
+
+
 type _MatchOperationSpecification = (
     _DapaiOperationSpecification
     | _ChiOperationSpecification
@@ -54,6 +60,7 @@ type _MatchOperationSpecification = (
     | _DaminggangOperationSpecification
     | _JiagangOperationSpecification
     | _LiqiOperationSpecification
+    | _BabeiOperationSpecification
 )
 
 

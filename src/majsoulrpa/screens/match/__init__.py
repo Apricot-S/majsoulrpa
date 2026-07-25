@@ -16,6 +16,7 @@ from majsoulrpa.screens.match.event import (
 )
 from majsoulrpa.screens.match.operation import (
     AngangOperation,
+    BabeiOperation,
     ChiOperation,
     DaminggangOperation,
     DapaiOperation,
@@ -56,6 +57,7 @@ __all__ = [
     "AngangOperation",
     "Babei",
     "BabeiEvent",
+    "BabeiOperation",
     "Chi",
     "ChiEvent",
     "ChiOperation",

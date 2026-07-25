@@ -6,6 +6,7 @@ from majsoulrpa.screens.match.operation._decode import (
 )
 from majsoulrpa.screens.match.operation._specification import (
     _AngangOperationSpecification,
+    _BabeiOperationSpecification,
     _ChiOperationSpecification,
     _DaminggangOperationSpecification,
     _DapaiOperationSpecification,
@@ -312,6 +313,35 @@ def test_decode_liqi_operation_rejects_invalid_combinations(
                     "operation_list": [
                         {"type": 7, "combination": combination}
                     ],
+                    "time_add": 0,
+                    "time_fixed": 0,
+                }
+            }
+        )
+
+
+def test_decode_babei_operation_specification() -> None:
+    specification = decode_operation_specification(
+        {
+            "operation": {
+                "operation_list": [{"type": 11, "combination": []}],
+                "time_add": 20000,
+                "time_fixed": 5000,
+            }
+        }
+    )
+
+    assert specification is not None
+    [operation] = specification.operations
+    assert isinstance(operation, _BabeiOperationSpecification)
+
+
+def test_decode_babei_operation_rejects_nonempty_combination() -> None:
+    with pytest.raises(ValueError, match="must not contain"):
+        decode_operation_specification(
+            {
+                "operation": {
+                    "operation_list": [{"type": 11, "combination": ["4z"]}],
                     "time_add": 0,
                     "time_fixed": 0,
                 }

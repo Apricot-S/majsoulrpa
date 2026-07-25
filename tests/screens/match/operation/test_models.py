@@ -1,9 +1,10 @@
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, fields
 
 import pytest
 
 from majsoulrpa.screens.match import (
     AngangOperation,
+    BabeiOperation,
     ChiOperation,
     DaminggangOperation,
     DapaiOperation,
@@ -164,6 +165,11 @@ def test_daminggang_operation_rejects_tiles_of_different_kinds() -> None:
                 validate_tile("5p"),
             ),
         )
+
+
+def test_babei_operation_is_a_fieldless_immutable_value() -> None:
+    assert BabeiOperation() == BabeiOperation()
+    assert fields(BabeiOperation) == ()
 
 
 def test_operation_candidates_is_an_immutable_value() -> None:
