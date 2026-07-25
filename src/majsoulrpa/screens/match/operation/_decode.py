@@ -15,6 +15,7 @@ from majsoulrpa.screens.match.operation._specification import (
     _DapaiOperationSpecification,
     _JiagangOperationSpecification,
     _LiqiOperationSpecification,
+    _LiujuOperationSpecification,
     _MatchOperationSpecification,
     _OperationCandidatesSpecification,
     _PengOperationSpecification,
@@ -65,6 +66,8 @@ def decode_operation_specification(
                 specification = _decode_jiagang_specification(item)
             case 7:
                 specification = _decode_liqi_specification(item)
+            case 10:
+                specification = _decode_liuju_specification(item)
             case 11:
                 specification = _decode_babei_specification(item)
             case _:
@@ -164,6 +167,15 @@ def _decode_liqi_specification(
         msg = "A liqi operation must contain a candidate tile."
         raise ValueError(msg)
     return _LiqiOperationSpecification(candidate_tiles=candidate_tiles)
+
+
+def _decode_liuju_specification(
+    item: Mapping[str, JsonValue],
+) -> _LiujuOperationSpecification:
+    if _get_str_list(item, "OptionalOperation.combination"):
+        msg = "A liuju operation must not contain a combination."
+        raise ValueError(msg)
+    return _LiujuOperationSpecification()
 
 
 def _decode_babei_specification(

@@ -17,6 +17,7 @@ from majsoulrpa.screens.match.operation._specification import (
     _DapaiOperationSpecification,
     _JiagangOperationSpecification,
     _LiqiOperationSpecification,
+    _LiujuOperationSpecification,
     _MatchOperationSpecification,
     _OperationCandidatesSpecification,
     _PengOperationSpecification,
@@ -29,6 +30,7 @@ from majsoulrpa.screens.match.operation.models import (
     DapaiOperation,
     JiagangOperation,
     LiqiOperation,
+    LiujuOperation,
     MatchOperation,
     OperationCandidates,
     PengOperation,
@@ -39,6 +41,23 @@ from majsoulrpa.screens.match.types import Seat, Tile
 _THREE_PLAYER_COUNT = 3
 _FOUR_PLAYER_COUNT = 4
 _MAX_FULU_COUNT = 4
+_ORPHAN_TILES = frozenset(
+    {
+        Tile("1m"),
+        Tile("9m"),
+        Tile("1p"),
+        Tile("9p"),
+        Tile("1s"),
+        Tile("9s"),
+        Tile("1z"),
+        Tile("2z"),
+        Tile("3z"),
+        Tile("4z"),
+        Tile("5z"),
+        Tile("6z"),
+        Tile("7z"),
+    }
+)
 
 
 def materialize_operation_candidates(
@@ -147,6 +166,14 @@ def _materialize_operation_specification(
         case _LiqiOperationSpecification():
             return _materialize_liqi_specification(
                 specification,
+                event,
+                shoupai,
+                zimopai,
+                fulu,
+                self_seat,
+            )
+        case _LiujuOperationSpecification():
+            return _materialize_liuju_specification(
                 event,
                 shoupai,
                 zimopai,
@@ -431,6 +458,29 @@ def _materialize_liqi_specification(
                 )
             )
     return operations
+
+
+def _materialize_liuju_specification(
+    event: MatchEvent,
+    shoupai: tuple[Tile, ...],
+    zimopai: Tile | None,
+    fulu: tuple[Fulu, ...],
+    self_seat: Seat,
+) -> list[LiujuOperation]:
+    if fulu:
+        msg = "A liuju operation cannot follow a fulu."
+        raise ValueError(msg)
+    _, liuju_zimopai = _validate_self_draw_operation_event(
+        event,
+        zimopai,
+        self_seat,
+        "liuju",
+    )
+    orphan_kinds = {*shoupai, liuju_zimopai} & _ORPHAN_TILES
+    if len(orphan_kinds) < 9:  # noqa: PLR2004
+        msg = "A liuju operation requires nine distinct orphan tiles."
+        raise ValueError(msg)
+    return [LiujuOperation()]
 
 
 def _materialize_babei_specification(

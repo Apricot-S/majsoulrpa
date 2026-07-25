@@ -660,7 +660,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] type 7 の各候補牌を 1 打牌 1 `LiqiOperation` に展開する
 - [ ] type 8 は空の `combination` と発生元 Event のツモ牌から `ZimohuOperation` を生成する
 - [ ] type 9 は空の `combination` と発生元 Event の対象 seat・対象牌から `RongOperation` を生成する
-- [ ] type 10 は空の `combination` から field のない `JiuzhongjiupaiOperation` を生成する
+- [x] type 10 は空の `combination` から field のない `LiujuOperation` を生成する
+- [x] `LiujuOperation` は親の配牌直後または自家ツモ直後に么九牌が9種類以上ある場合だけ生成する
+- [x] `LiujuOperation` は `Fulu` のない手牌だけで生成する
+- [x] `LiujuOperation` は現時点では九種九牌だけを表す
 - [x] type 11 は空の `combination` から field なしの `BabeiOperation` を生成する
 - [x] `BabeiOperation` は三人戦の親配牌または自家ツモに北が含まれる場合だけ生成する
 - [x] `BabeiOperation` は手牌・ツモ牌のどちらを抜くかを表す `moqie` を持たない

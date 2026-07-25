@@ -78,6 +78,12 @@ class LiqiOperation:
 
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
+class LiujuOperation:
+    pass
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
 class BabeiOperation:
     pass
 
@@ -90,6 +96,7 @@ type MatchOperation = (
     | DaminggangOperation
     | JiagangOperation
     | LiqiOperation
+    | LiujuOperation
     | BabeiOperation
 )
 

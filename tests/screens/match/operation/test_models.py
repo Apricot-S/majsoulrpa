@@ -10,6 +10,7 @@ from majsoulrpa.screens.match import (
     DapaiOperation,
     JiagangOperation,
     LiqiOperation,
+    LiujuOperation,
     OperationCandidates,
     PengOperation,
     validate_seat,
@@ -165,6 +166,11 @@ def test_daminggang_operation_rejects_tiles_of_different_kinds() -> None:
                 validate_tile("5p"),
             ),
         )
+
+
+def test_liuju_operation_is_a_fieldless_immutable_value() -> None:
+    assert LiujuOperation() == LiujuOperation()
+    assert fields(LiujuOperation) == ()
 
 
 def test_babei_operation_is_a_fieldless_immutable_value() -> None:

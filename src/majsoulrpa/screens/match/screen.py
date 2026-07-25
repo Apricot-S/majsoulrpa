@@ -52,6 +52,7 @@ from majsoulrpa.screens.match.event import (
     DapaiEvent,
     JiagangEvent,
     LiujuEvent,
+    LiujuType,
     MatchEvent,
     NewRoundEvent,
     PengEvent,
@@ -66,6 +67,7 @@ from majsoulrpa.screens.match.operation import (
     DapaiOperation,
     JiagangOperation,
     LiqiOperation,
+    LiujuOperation,
     MatchOperation,
     PengOperation,
 )
@@ -248,6 +250,10 @@ class MatchScreen(Screen):
                 await self._operate_jiagang(state, operation)
             case LiqiOperation():
                 await self._operate_liqi(state, operation)
+            case LiujuOperation():
+                screenshot = await self.context.browser.screenshot()
+                msg = "Liuju operation is not implemented."
+                raise ScreenNotImplementedOperationError(msg, screenshot)
             case BabeiOperation():
                 await self._operate_babei(state, operation)
             case _ as unreachable:
@@ -956,6 +962,12 @@ class MatchScreen(Screen):
                     and event.moqie is operation.moqie
                     and (event.liqi or event.wliqi)
                 )
+            case LiujuOperation():
+                return (
+                    isinstance(event, LiujuEvent)
+                    and event.type is LiujuType.JIUZHONGJIUPAI
+                    and event.seat == state.self_seat
+                )
             case BabeiOperation():
                 return (
                     isinstance(event, BabeiEvent)
@@ -982,6 +994,7 @@ class MatchScreen(Screen):
                 | DaminggangOperation()
                 | JiagangOperation()
                 | LiqiOperation()
+                | LiujuOperation()
                 | BabeiOperation()
             ):
                 return False

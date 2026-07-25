@@ -301,7 +301,7 @@ class RongOperation:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class JiuzhongjiupaiOperation: ...
+class LiujuOperation: ...
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -323,7 +323,7 @@ type MatchOperation = (
     | LiqiOperation
     | ZimohuOperation
     | RongOperation
-    | JiuzhongjiupaiOperation
+    | LiujuOperation
     | BabeiOperation
     | SkipOperation
 )
@@ -364,8 +364,13 @@ type と concrete class の対応は次のとおりとする。
 | 7 | `LiqiOperation` | 立直宣言牌の候補。各要素は単独の牌で、手出し／ツモ切りの選択肢へ展開する |
 | 8 | `ZimohuOperation` | 空配列。和了対象のツモ牌は Event から補う |
 | 9 | `RongOperation` | 空配列。和了対象 seat・牌は Event から補う |
-| 10 | `JiuzhongjiupaiOperation` | 空配列 |
+| 10 | `LiujuOperation` | 空配列。現時点では九種九牌だけを表す |
 | 11 | `BabeiOperation` | 空配列。v1-develop の対応であり実通信で再確認する |
+
+`LiujuOperation` は画面の「流局」ボタンに対応する。現時点で type 10 が表す選択可能な流局は
+九種九牌だけであり、親の配牌直後または自家ツモ直後に、`Fulu` がなく、手牌とツモ牌に
+么九牌が9種類以上ある場合だけ生成する。第一ツモかどうかは operation message を提示する
+サーバーと、成立後の `LiujuEvent` を適用する reducer の双方で保証する。
 
 `BabeiOperation` は親の14枚配牌または自家ツモの直後に、手牌か表示上のツモ牌へ `4z` が存在する場合
 だけ生成する。雀魂の画面では両方に北がある場合も抜く物理牌を選択できず自動的に決まるため、
