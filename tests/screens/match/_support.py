@@ -245,7 +245,6 @@ def _live_hule_action(
     delta_scores: list[int],
     scores: list[int],
     doras: list[str],
-    game_end_scores: list[int] | None = None,
 ) -> DecodedNotice:
     data = liqi_pb2.ActionHule(
         hules=hules,
@@ -253,11 +252,6 @@ def _live_hule_action(
         delta_scores=delta_scores,
         scores=scores,
         doras=doras,
-        gameend=(
-            None
-            if game_end_scores is None
-            else liqi_pb2.GameEnd(scores=game_end_scores)
-        ),
     ).SerializeToString()
     return _live_action(step=step, name="ActionHule", data=data)
 

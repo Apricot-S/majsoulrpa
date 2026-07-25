@@ -9,7 +9,6 @@ from majsoulrpa.screens.match._decode import (
     _get_dict_list,
     _get_int,
     _get_int_list,
-    _get_optional_dict,
     _get_str,
     _get_str_list,
 )
@@ -142,7 +141,6 @@ class HuleEvent(_MatchEventBase):
     old_scores: tuple[int, ...]
     delta_scores: tuple[int, ...]
     scores: tuple[int, ...]
-    game_end_scores: tuple[int, ...] | None
     baopai_seat: Seat | None
 
     def __post_init__(self) -> None:
@@ -158,12 +156,6 @@ class HuleEvent(_MatchEventBase):
         ):
             msg = "Hule score collections must contain three or four values."
             raise ValueError(msg)
-        if (
-            self.game_end_scores is not None
-            and len(self.game_end_scores) != score_count
-        ):
-            msg = "Game-end scores must match the Hule score count."
-            raise ValueError(msg)
 
     @classmethod
     def from_dict(
@@ -171,7 +163,6 @@ class HuleEvent(_MatchEventBase):
         action_step: int,
         data: Mapping[str, JsonValue],
     ) -> Self:
-        game_end = _get_optional_dict(data, "ActionHule.gameend")
         return cls(
             action_step=action_step,
             hules=tuple(
@@ -181,11 +172,6 @@ class HuleEvent(_MatchEventBase):
             old_scores=tuple(_get_int_list(data, "ActionHule.old_scores")),
             delta_scores=tuple(_get_int_list(data, "ActionHule.delta_scores")),
             scores=tuple(_get_int_list(data, "ActionHule.scores")),
-            game_end_scores=(
-                None
-                if game_end is None
-                else tuple(_get_int_list(game_end, "GameEnd.scores"))
-            ),
             baopai_seat=_decode_baopai_seat(
                 _get_int(data, "ActionHule.baopai")
             ),

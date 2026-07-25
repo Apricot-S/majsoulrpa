@@ -49,7 +49,6 @@ def _hule_event(*seats: int) -> HuleEvent:
         old_scores=(25000,) * 4,
         delta_scores=(0,) * 4,
         scores=(25000,) * 4,
-        game_end_scores=None,
         baopai_seat=None,
     )
 

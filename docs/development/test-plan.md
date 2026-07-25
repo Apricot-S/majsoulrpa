@@ -695,7 +695,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `LiujuEvent` を Event 列へ追加し、局終了前の operation 候補を消去する
 - [x] `ActionHule` を自摸和・栄和共通の `HuleEvent` に変換し、複数の和了情報を message の順序どおり保持する
 - [x] `Hule` は和了者、和了方法、和了牌、公開された手牌・副露、役ID、符、点数内訳を保持し、常に空の役名・titleは保持しない
-- [x] `HuleEvent` は局の和了前点数、点数差分、和了後点数、試合終了時点数を保持し、空の action 直下ドラ表示牌は保持しない
+- [x] `HuleEvent` は局の和了前点数、点数差分、和了後点数を保持し、未使用の gameend と空の action 直下ドラ表示牌は保持しない
 - [x] `ActionHule` を live / restore の両経路で同じ `HuleEvent` へ変換する
 - [x] 自摸和は和了者の直前の `ZimoEvent`、または親の配牌を表す `NewRoundEvent` に続く場合だけ受理する
 - [x] 自家の自摸和では `Hule.hu_tile` が表示中のツモ牌と一致することを検証する

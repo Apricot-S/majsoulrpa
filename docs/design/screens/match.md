@@ -864,7 +864,6 @@ class HuleEvent(_MatchEventBase):
     old_scores: tuple[int, ...]
     delta_scores: tuple[int, ...]
     scores: tuple[int, ...]
-    game_end_scores: tuple[int, ...] | None
     baopai_seat: Seat | None
 
 
@@ -949,8 +948,8 @@ message の順序を保った `tuple[Hule, ...]` とし、自摸和は1要素、
 `dora_indicators` / `li_dora_indicators`、役、符、
 点数内訳を保持する。役名は `HuleFan.id`、和了点の区分は `Hule.title_id` から特定できるため、
 実牌譜で常に空文字列の `FanInfo.name` / `HuleInfo.title` は公開 model に保持しない。
-`HuleEvent` は action 全体の和了前点数、点数差分、和了後点数、
-試合終了時点数を保持する。自摸和 reducer は直前の同じ seat の `ZimoEvent`、または親の配牌直後の
+`HuleEvent` は action 全体の和了前点数、点数差分、和了後点数を保持する。
+自摸和 reducer は直前の同じ seat の `ZimoEvent`、または親の配牌直後の
 天和だけを受理する。自家に見えている和了牌、`qinjia`、点数遷移を検証し、Event 列へ追加して
 operation 候補と未解決の打牌・搶槓対象を消去する。
 
@@ -961,6 +960,10 @@ message の順序を保ったまま各和了者を検証し、seat の重複を�
 `HuleEvent` に混在する場合も不整合とする。自摸和・ロンのいずれも、全和了者の seat が対局人数の
 範囲内であり、`qinjia` が局の親と一致することを検証する。適用後は点数を更新し、operation 候補と
 未解決対象を消去する。
+
+`ActionHule.gameend` は解析 Wiki でも値が設定された牌譜が確認されておらず、飛び終了した実牌譜でも
+空だったため、`HuleEvent` には取り込まない。decoded message のログには元の field が残るので、
+将来値が観測された場合も postmortem は可能である。
 
 action 直下の `ActionHule.doras` は実牌譜では空で、和了によって新しいドラ表示牌が捲られることも
 ないため `HuleEvent` には保持しない。最終的なドラ・裏ドラ表示牌は各 `Hule` の

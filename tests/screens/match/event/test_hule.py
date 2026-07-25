@@ -82,7 +82,6 @@ def test_hule_event_from_dict() -> None:
         old_scores=(25000, 25000, 25000, 25000),
         delta_scores=(4300, -2100, -1100, -1100),
         scores=(29300, 22900, 23900, 23900),
-        game_end_scores=(29300, 22900, 23900, 23900),
         baopai_seat=validate_seat(2),
     )
 
