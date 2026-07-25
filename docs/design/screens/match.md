@@ -862,7 +862,8 @@ def event_name(event: MatchEvent) -> str:
 Event に tile field は持たない。reducer は三人戦だけで受理し、自家の `moqie=true` ではツモ牌、
 `moqie=false` では手牌から `4z` を消費する。手牌から抜いた場合は別のツモ牌を手牌へ取り込む。
 北抜きは河と `Fulu` を変更せず、seat ごとの `RoundState.babei` に履歴を追加し、対象 seat の
-嶺上ツモと `(seat, 4z)` の搶槓対象を設定する。
+嶺上ツモと `(seat, 4z)` の搶槓対象を設定する。搶槓が成立しなければ、直後の同じ seat の
+`ActionDealTile` を嶺上ツモとして受理する。
 
 `ActionChiPengGang(type=0)` は `ChiEvent` に変換する。雀魂の `tiles` は自家から消費する2枚を先に、
 直前の河から取得する牌を末尾に置く。protocol decoder で前2枚を固定長の `consumed`、末尾を `tile` に

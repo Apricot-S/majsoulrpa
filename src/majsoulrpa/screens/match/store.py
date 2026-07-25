@@ -151,16 +151,22 @@ class MatchStateStore:
             msg = "ActionDealTile seat must identify a player."
             raise ValueError(msg)
         previous_event = round_state.events[-1]
-        follows_gang = (
+        follows_lingshang_operation = (
             isinstance(
                 previous_event,
-                DaminggangEvent | AngangEvent | JiagangEvent,
+                DaminggangEvent | AngangEvent | JiagangEvent | BabeiEvent,
             )
             and previous_event.seat == event.seat
             and round_state.lingshang_zimo[event.seat]
         )
-        if round_state.previous_dapai is None and not follows_gang:
-            msg = "ActionDealTile must follow an unresolved discard or gang."
+        if (
+            round_state.previous_dapai is None
+            and not follows_lingshang_operation
+        ):
+            msg = (
+                "ActionDealTile must follow an unresolved discard "
+                "or lingshang operation."
+            )
             raise ValueError(msg)
 
         zimopai = round_state.zimopai

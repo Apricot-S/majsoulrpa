@@ -683,6 +683,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 自家の北抜きは moqie=true ならツモ牌、false なら手牌の `4z` を消費し、手牌から抜いた場合は別のツモ牌を手牌へ取り込む
 - [x] 他家の北抜きは自家の手牌を変更しない
 - [x] 北抜きは河と副露を変更せず、全員の first_draw / yifa を終了し、対象seatの嶺上ツモと `4z` の搶槓対象を設定する
+- [x] 北抜き直後は同じ seat の `ActionDealTile` を嶺上ツモとして受理する
 - [x] `DapaiOperation` / `LiqiOperation` は tile と moqie を保持し、手出しとツモ切りを別 instance にする
 - [x] 同じ tile / moqie の物理牌が複数あっても同じ打牌 operation は重複させない
 - [x] 手牌と実ツモ牌の両方に同じ候補牌があれば、moqie=false / true の両 operation を生成する

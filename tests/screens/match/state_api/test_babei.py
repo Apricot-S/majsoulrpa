@@ -9,6 +9,7 @@ from majsoulrpa.screens.match import (
     Babei,
     BabeiEvent,
     MatchScreen,
+    ZimoEvent,
 )
 from majsoulrpa.sniffer.events import DecodedSnifferMessage
 from tests.screens._support import (
@@ -102,6 +103,35 @@ def test_get_state_applies_self_hand_babei() -> None:
     assert state.round.zimopai is None
     assert state.round.babei[0] == (Babei(moqie=False),)
     assert state.round.previous_qianggang == (0, "4z")
+
+
+def test_get_state_applies_lingshang_zimo_after_babei() -> None:
+    screen = _screen(
+        _auth_game(player_count=3),
+        _live_new_round_action(step=0, ju=1, scores=[35000] * 3),
+        _live_discard_action(step=1, seat=1, tile="1s", moqie=False),
+        _live_deal_action(
+            step=2,
+            seat=0,
+            tile="4z",
+            left_tile_count=54,
+        ),
+        _live_babei_action(step=3, seat=0, moqie=True),
+        _live_deal_action(
+            step=4,
+            seat=0,
+            tile="2p",
+            left_tile_count=53,
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+    state = asyncio.run(screen.get_state())
+
+    assert isinstance(state.round.events[-1], ZimoEvent)
+    assert state.round.zimopai == "2p"
+    assert state.round.previous_qianggang is None
+    assert state.round.lingshang_zimo == (True, False, False)
 
 
 def test_get_state_applies_opponent_babei() -> None:
