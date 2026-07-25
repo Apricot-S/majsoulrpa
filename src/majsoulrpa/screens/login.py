@@ -221,6 +221,11 @@ class LoginScreen(Screen):
             msg = "Server maintenance dialog was detected."
             raise ScreenUnexpectedStateError(msg, screenshot)
 
+    async def _click_login_2_and_wait_for_yostar_auth(self) -> object:
+        region = self.context.scale_region(self.LOGIN_2_REGION)
+        x, y = region.random_point(rng=self.context.rng)
+        return await self.context.browser.click_and_wait_for_yostar_auth(x, y)
+
     async def _click_agreement_region(
         self,
         region: Region,
@@ -230,8 +235,3 @@ class LoginScreen(Screen):
             await self._click_region(region_720p)
             return
         await self.click_region(region)
-
-    async def _click_login_2_and_wait_for_yostar_auth(self) -> object:
-        region = self.context.scale_region(self.LOGIN_2_REGION)
-        x, y = region.random_point(rng=self.context.rng)
-        return await self.context.browser.click_and_wait_for_yostar_auth(x, y)
