@@ -222,6 +222,21 @@ def _live_babei_action(
     return _live_action(step=step, name="ActionBaBei", data=data)
 
 
+def _live_liuju_action(
+    *,
+    step: int,
+    type_: int,
+    seat: int = 0,
+    liqi: liqi_pb2.LiQiSuccess | None = None,
+) -> DecodedNotice:
+    data = liqi_pb2.ActionLiuJu(
+        type=type_,
+        seat=seat,
+        liqi=liqi,
+    ).SerializeToString()
+    return _live_action(step=step, name="ActionLiuJu", data=data)
+
+
 def _live_chi_peng_gang_action(
     *,
     step: int,

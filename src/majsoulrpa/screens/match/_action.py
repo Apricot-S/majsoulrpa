@@ -16,6 +16,7 @@ from majsoulrpa.screens.match.event import (
     DaminggangEvent,
     DapaiEvent,
     JiagangEvent,
+    LiujuEvent,
     MatchEvent,
     NewRoundEvent,
     PengEvent,
@@ -82,6 +83,7 @@ _EVENT_DECODERS: dict[str, _EventDecoder] = {
     "ActionChiPengGang": _decode_chi_peng_gang_event,
     "ActionAnGangAddGang": _decode_angang_jiagang_event,
     "ActionBaBei": BabeiEvent.from_dict,
+    "ActionLiuJu": LiujuEvent.from_dict,
 }
 
 

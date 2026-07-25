@@ -5,6 +5,7 @@ from majsoulrpa.screens.match.event.daminggang import DaminggangEvent
 from majsoulrpa.screens.match.event.dapai import DapaiEvent
 from majsoulrpa.screens.match.event.jiagang import JiagangEvent
 from majsoulrpa.screens.match.event.liqi_success import LiqiSuccess
+from majsoulrpa.screens.match.event.liuju import LiujuEvent, LiujuType
 from majsoulrpa.screens.match.event.new_round import NewRoundEvent
 from majsoulrpa.screens.match.event.peng import PengEvent
 from majsoulrpa.screens.match.event.start_match import StartMatchEvent
@@ -21,6 +22,7 @@ type MatchEvent = (
     | AngangEvent
     | JiagangEvent
     | BabeiEvent
+    | LiujuEvent
 )
 
 __all__ = [
@@ -31,6 +33,8 @@ __all__ = [
     "DapaiEvent",
     "JiagangEvent",
     "LiqiSuccess",
+    "LiujuEvent",
+    "LiujuType",
     "MatchEvent",
     "NewRoundEvent",
     "PengEvent",

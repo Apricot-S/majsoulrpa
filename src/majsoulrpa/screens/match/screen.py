@@ -51,6 +51,7 @@ from majsoulrpa.screens.match.event import (
     DaminggangEvent,
     DapaiEvent,
     JiagangEvent,
+    LiujuEvent,
     MatchEvent,
     NewRoundEvent,
     PengEvent,
@@ -407,6 +408,7 @@ class MatchScreen(Screen):
                 | AngangEvent()
                 | JiagangEvent()
                 | BabeiEvent()
+                | LiujuEvent()
             ):
                 msg = f"{type(event).__name__} must follow ActionNewRound."
                 raise MatchActionDecodeError(msg)

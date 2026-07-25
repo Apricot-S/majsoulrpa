@@ -684,6 +684,12 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 他家の北抜きは自家の手牌を変更しない
 - [x] 北抜きは河と副露を変更せず、全員の first_draw / yifa を終了し、対象seatの嶺上ツモと `4z` の搶槓対象を設定する
 - [x] 北抜き直後は同じ seat の `ActionDealTile` を嶺上ツモとして受理する
+- [x] `ActionLiuJu` の type 1〜4 を `LiujuEvent` と `LiujuType` へ変換する
+- [x] `LiujuEvent.seat` は九種九牌だけ必須とし、他の流局種別では `None` にする
+- [x] `ActionLiuJu` の未知 type と、九種九牌以外で0ではない seat を拒否する
+- [x] `ActionLiuJu.liqi` を `LiujuEvent.liqi_success` に保持する
+- [x] `ActionLiuJu` を live / restore の両経路で同じ `LiujuEvent` へ変換する
+- [x] `LiujuEvent` を Event 列へ追加し、局終了前の operation 候補を消去する
 - [x] `DapaiOperation` / `LiqiOperation` は tile と moqie を保持し、手出しとツモ切りを別 instance にする
 - [x] 同じ tile / moqie の物理牌が複数あっても同じ打牌 operation は重複させない
 - [x] 手牌と実ツモ牌の両方に同じ候補牌があれば、moqie=false / true の両 operation を生成する

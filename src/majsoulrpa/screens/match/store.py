@@ -14,6 +14,8 @@ from majsoulrpa.screens.match.event import (
     DapaiEvent,
     JiagangEvent,
     LiqiSuccess,
+    LiujuEvent,
+    LiujuType,
     MatchEvent,
     NewRoundEvent,
     PengEvent,
@@ -132,6 +134,8 @@ class MatchStateStore:
                 return self._apply_jiagang(event, operation_specification)
             case BabeiEvent():
                 return self._apply_babei(event, operation_specification)
+            case LiujuEvent():
+                return self._apply_liuju(event)
             case StartMatchEvent() | NewRoundEvent():
                 msg = "A match initialization event cannot be applied again."
                 raise ValueError(msg)
@@ -641,6 +645,44 @@ class MatchStateStore:
             lingshang_zimo=tuple(lingshang_zimo),
             previous_qianggang=(event.seat, north),
             operation_candidates=operation_candidates,
+            events=(*round_state.events, event),
+        )
+        self._state = replace(
+            state,
+            version=state.version + 1,
+            round=next_round,
+        )
+        return self._state
+
+    def _apply_liuju(self, event: LiujuEvent) -> MatchState:
+        state = self._require_state()
+        round_state = state.round
+        player_count = len(state.players)
+        if event.action_step != round_state.step + 1:
+            msg = "ActionLiuJu step must follow the current round step."
+            raise ValueError(msg)
+        if event.type is LiujuType.JIUZHONGJIUPAI:
+            if event.seat is None or event.seat >= player_count:
+                msg = "A jiuzhongjiupai seat must identify a player."
+                raise ValueError(msg)
+            if not round_state.first_draw[event.seat]:
+                msg = "A jiuzhongjiupai must occur during the first draw."
+                raise ValueError(msg)
+
+        scores, liqibang = self._apply_liqi_success(
+            event.liqi_success,
+            round_state.scores,
+            round_state.liqibang,
+            player_count,
+        )
+        next_round = replace(
+            round_state,
+            step=event.action_step,
+            scores=scores,
+            liqibang=liqibang,
+            previous_dapai=None,
+            previous_qianggang=None,
+            operation_candidates=None,
             events=(*round_state.events, event),
         )
         self._state = replace(

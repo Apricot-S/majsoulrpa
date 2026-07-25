@@ -10,6 +10,8 @@ from majsoulrpa.screens.match import (
     ChiEvent,
     DaminggangEvent,
     JiagangEvent,
+    LiujuEvent,
+    LiujuType,
     NewRoundEvent,
     PengEvent,
     StartMatchEvent,
@@ -177,6 +179,32 @@ def test_live_and_restore_action_babei_decode_to_same_event() -> None:
         seat=validate_seat(1),
         moqie=True,
         dora_indicators=(validate_tile("3p"), validate_tile("4p")),
+    )
+    assert restore_event == live_event
+    assert live_operation is None
+    assert restore_operation is None
+
+
+def test_live_and_restore_action_liuju_decode_to_same_event() -> None:
+    data = liqi_pb2.ActionLiuJu(
+        type=1,
+        seat=2,
+    ).SerializeToString()
+    live_event, live_operation, _ = decode_live_action(
+        _live_action(step=4, name="ActionLiuJu", data=data)
+    )
+    restore_event, restore_operation, _ = decode_restore_action(
+        {
+            "step": 4,
+            "name": "ActionLiuJu",
+            "data": base64.b64encode(data).decode(),
+        }
+    )
+
+    assert live_event == LiujuEvent(
+        action_step=4,
+        type=LiujuType.JIUZHONGJIUPAI,
+        seat=validate_seat(2),
     )
     assert restore_event == live_event
     assert live_operation is None
