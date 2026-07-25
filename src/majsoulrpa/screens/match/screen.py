@@ -1062,17 +1062,20 @@ class MatchScreen(Screen):
         event: MatchEvent,
         operation: MatchOperation,
     ) -> bool:
+        is_opponents_hule = isinstance(event, HuleEvent) and all(
+            hule.seat != state.self_seat for hule in event.hules
+        )
         match operation:
             case ChiOperation():
                 return (
                     isinstance(event, PengEvent | DaminggangEvent)
                     and event.seat != state.self_seat
-                )
+                ) or is_opponents_hule
+            case PengOperation() | DaminggangOperation():
+                return is_opponents_hule
             case (
                 DapaiOperation()
-                | PengOperation()
                 | AngangOperation()
-                | DaminggangOperation()
                 | JiagangOperation()
                 | LiqiOperation()
                 | ZimohuOperation()

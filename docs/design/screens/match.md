@@ -625,8 +625,10 @@ button clickから候補表示まで0.4秒待ち、組合せを選択した後�
 完了時は自家の `ChiEvent`、`PengEvent` または `DaminggangEvent` の `from_seat`、`tile`、`consumed` が指定operationと
 一致することを要求する。buttonの描画待ち中に `ActionPrototype` を先読みした場合は1回だけqueueへ
 戻し、通常のevent pipelineで処理する。他家の `PengEvent` が先に成立した場合はチーが上位actionに
-preemptされたものとして、operation失敗にはせず更新後のstateを返す。ポンと大明槓は将来実装する
-他家の `HuleEvent` によるpreemptを許容する。button click後に同じ競合が起きた場合も同様とする。複数候補の
+preemptされたものとして、operation失敗にはせず更新後のstateを返す。他家だけを和了者とする
+`HuleEvent` が成立した場合は、チー・ポン・大明槓がロンにpreemptされたものとして許容する。
+自家の和了を含む `HuleEvent` は、要求していない自家操作が成立した不整合としてpreempt扱いしない。
+button click後に同じ競合が起きた場合も同様とする。複数候補の
 表示待ち中にも組合せ領域をクリックする直前にqueueを確認し、上位actionを先読みしていれば
 put-backして、すでに消えた選択UIの座標をクリックしない。上位actionを観測せずbuttonも検出できない
 場合は成功扱いせず、検出を続けて呼び出し側のtimeoutに委ねる。

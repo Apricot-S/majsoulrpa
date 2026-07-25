@@ -787,6 +787,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 自家の `ChiEvent` が指定した from_seat / tile / consumed と異なる場合は不整合にする
 - [x] チーボタン待機中に上位の `ActionChiPengGang` を先読みした場合は1回だけput_backする
 - [x] 別playerの `PengEvent` にpreemptされた場合はoperation失敗にせず、更新後のMatchStateを返す
+- [x] 他家だけの `HuleEvent` が先に成立した場合はチー操作をpreemptする
 - [x] 複数候補の表示待ち中に上位actionを受信した場合は、組合せ領域をクリックせず通常pipelineへ戻す
 - [x] 上位actionを確認できないチーボタン検出失敗を成功扱いしない
 
@@ -800,6 +801,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `operate()` は指定した自家の `PengEvent` までmessageをreduceし、更新後のMatchStateを返す
 - [x] 自家の `PengEvent` が指定した from_seat / tile / consumed と異なる場合は不整合にする
 - [ ] ポンボタン待機中に上位の `ActionHule` を先読みした場合は1回だけput_backする
+- [x] 他家だけの `HuleEvent` が先に成立した場合はポン操作をpreemptする
 - [ ] 複数候補の表示待ち中に上位actionを受信した場合は、組合せ領域をクリックせず通常pipelineへ戻す
 - [x] 上位actionを確認できないポンボタン検出失敗を成功扱いしない
 
@@ -813,7 +815,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 自家の `DaminggangEvent` が指定した from_seat / tile / consumed と異なる場合は不整合にする
 - [x] 槓ボタン待機中に `ActionPrototype` を先読みした場合は1回だけput_backし、ボタンをクリックしない
 - [x] 上位actionを確認できない槓ボタン検出失敗を成功扱いしない
-- [ ] 他家のロンが先に成立した場合は大明槓操作をpreemptする
+- [x] 他家のロンが先に成立した場合は大明槓操作をpreemptする
+- [x] 自家を含む `HuleEvent` はチー・ポン・大明槓操作のpreemptとして扱わない
 
 ### MatchScreen 暗槓操作 API
 
