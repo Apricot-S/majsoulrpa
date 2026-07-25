@@ -877,6 +877,15 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `operate()` は指定した自家の自摸和 `HuleEvent` まで message を reduce し、更新後の `MatchState` を返す
 - [x] 和了後に自動和了トグルをオフへ戻さない
 
+### MatchScreen ロン操作 API
+
+- [x] 自動和了トグルの領域を `warp=True` でクリックしてオンにする
+- [x] 四人麻雀と三人麻雀で自摸和と同じ自動和了トグル領域を使い分ける
+- [x] 自動和了トグルのクリック後に UI 待機を追加しない
+- [x] `operate()` は自家を含むロン `HuleEvent` まで message を reduce し、更新後の `MatchState` を返す
+- [x] ダブロン・トリロンでは自家の和了が含まれていればロン操作を完了する
+- [x] 和了後に自動和了トグルをオフへ戻さない
+
 ### MatchScreen operation のスキップ
 
 - [ ] チー、ポン、大明槓は「鳴きなし」toggleをonにして明示的にスキップする

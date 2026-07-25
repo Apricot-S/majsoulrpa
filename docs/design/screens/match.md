@@ -523,15 +523,16 @@ message を通常どおり log・reduce し、自家の
 `tile` / `moqie` と一致し、`liqi` または `wliqi` が真であることを完了条件とする。これにより通常の
 立直とダブル立直を同じ `LiqiOperation` で扱い、立直を伴わない同一打牌を成功扱いしない。
 
-#### 自摸和操作
+#### 自摸和・ロン操作
 
-`ZimohuOperation` は和了ボタンを直接探さず、基準 viewport 上の
+`ZimohuOperation` と `RongOperation` は和了ボタンを直接探さず、基準 viewport 上の
 自動和了トグルをオンにする。領域は四人麻雀では
 `Region(left=18, top=590, width=42, height=42)`、三人麻雀では
 `Region(left=18, top=558, width=42, height=42)` とする。
 和了判断を遅らせないため `warp=True` で直ちにクリックし、ボタン描画待ちや手牌スライド待機は
 追加しない。その後は通常の message pipeline で、自家の `hu_tile` が指定した `tile` と一致する
-自摸和 `HuleEvent` まで reduce して更新後の `MatchState` を返す。
+`HuleEvent` まで reduce して更新後の `MatchState` を返す。ロンではダブロン・トリロンの
+`hules` に自家のロンが含まれていれば完了とする。
 
 自動和了トグルは次局へ入ると雀魂側でオフへ戻るため、和了成立後に framework から再度クリックして
 オフへ戻す cleanup は行わない。

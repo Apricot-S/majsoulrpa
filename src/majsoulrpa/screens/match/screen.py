@@ -273,9 +273,7 @@ class MatchScreen(Screen):
             case ZimohuOperation():
                 await self._operate_zimohu(state, operation)
             case RongOperation():
-                screenshot = await self.context.browser.screenshot()
-                msg = "Rong operation is not implemented."
-                raise ScreenNotImplementedOperationError(msg, screenshot)
+                await self._operate_rong(state, operation)
             case LiujuOperation():
                 await self._operate_liuju(state, operation)
             case BabeiOperation():
@@ -888,6 +886,32 @@ class MatchScreen(Screen):
                 cause=error,
             )
 
+        await self._enable_auto_hule(state)
+
+    async def _operate_rong(
+        self,
+        state: MatchState,
+        operation: RongOperation,
+    ) -> None:
+        candidates = state.round.operation_candidates
+        if candidates is None:
+            msg = "RongOperation requires operation candidates."
+            raise RuntimeError(msg)
+        rong_operations = tuple(
+            candidate
+            for candidate in candidates.operations
+            if isinstance(candidate, RongOperation)
+        )
+        if rong_operations != (operation,):
+            error = ValueError("The number of rong candidates must be one.")
+            await self._raise_inconsistent_message(
+                "Rong candidates do not match the supported UI layout.",
+                cause=error,
+            )
+
+        await self._enable_auto_hule(state)
+
+    async def _enable_auto_hule(self, state: MatchState) -> None:
         region = (
             self.AUTO_HULE_TOGGLE_SANMA_REGION
             if len(state.players) == 3  # noqa: PLR2004
