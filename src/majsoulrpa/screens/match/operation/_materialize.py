@@ -41,7 +41,7 @@ from majsoulrpa.screens.match.types import Seat, Tile
 _THREE_PLAYER_COUNT = 3
 _FOUR_PLAYER_COUNT = 4
 _MAX_FULU_COUNT = 4
-_ORPHAN_TILES = frozenset(
+_NON_SIMPLE_TILES = frozenset(
     {
         Tile("1m"),
         Tile("9m"),
@@ -476,9 +476,9 @@ def _materialize_liuju_specification(
         self_seat,
         "liuju",
     )
-    orphan_kinds = {*shoupai, liuju_zimopai} & _ORPHAN_TILES
-    if len(orphan_kinds) < 9:  # noqa: PLR2004
-        msg = "A liuju operation requires nine distinct orphan tiles."
+    non_simple_kinds = {*shoupai, liuju_zimopai} & _NON_SIMPLE_TILES
+    if len(non_simple_kinds) < 9:  # noqa: PLR2004
+        msg = "A liuju operation requires nine distinct non-simple tiles."
         raise ValueError(msg)
     return [LiujuOperation()]
 

@@ -105,7 +105,7 @@ def test_liuju_materialization_rejects_opponent_draw() -> None:
         )
 
 
-def test_liuju_materialization_requires_nine_orphan_kinds() -> None:
+def test_liuju_materialization_requires_nine_non_simple_kinds() -> None:
     with pytest.raises(ValueError, match="nine distinct"):
         materialize_operation_candidates(
             _specification(),
