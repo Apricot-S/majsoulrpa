@@ -658,7 +658,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `ActionAnGangAddGang` の type 2 と未知 type は暗槓として受理しない
 - [x] type 6 は牌順に依存せず既存の `Peng` と4枚の multiset を比較し、元の from_seat / tile / consumed と差分の added を保持する `JiagangOperation` 1 instance へ変換する
 - [x] type 7 の各候補牌を 1 打牌 1 `LiqiOperation` に展開する
-- [ ] type 8 は空の `combination` と発生元 Event のツモ牌から `ZimohuOperation` を生成する
+- [x] type 8 は空の `combination` と発生元 Event のツモ牌から `ZimohuOperation` を生成する
 - [ ] type 9 は空の `combination` と発生元 Event の対象 seat・対象牌から `RongOperation` を生成する
 - [x] type 10 は空の `combination` から field のない `LiujuOperation` を生成する
 - [x] `LiujuOperation` は親の配牌直後または自家ツモ直後に么九牌が9種類以上ある場合だけ生成する
@@ -722,11 +722,12 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] Chi / Peng / Daminggang operation は from_seat、tile、consumed だけで選択内容を完全に表す
 - [x] from_seat / tile は候補が付随した DapaiEvent.seat / tile と一致し、赤牌を通常牌へ正規化しない
 - [x] 直前の打牌がない状態で type 2 / 3 / 5 を public operation へ展開しない
-- [ ] ZimohuOperation.tile は ActionDealTile のツモ牌と一致し、赤牌を通常牌へ正規化しない
-- [ ] ActionNewRound の天和候補は presentation zimopai を ZimohuOperation.tile に保持する
-- [ ] 天和の ZimohuOperation.tile を決めても、同じ牌の打牌 operation は moqie=false のままにする
+- [x] ZimohuOperation.tile は ActionDealTile のツモ牌と一致し、赤牌を通常牌へ正規化しない
+- [x] ActionNewRound の天和候補は presentation zimopai を ZimohuOperation.tile に保持する
+- [x] 天和の ZimohuOperation.tile を決めても、同じ牌の打牌 operation は moqie=false のままにする
 - [ ] RongOperation.from_seat / tile は放銃者と放銃牌、または槓を行った player と搶槓対象牌に一致し、赤牌を通常牌へ正規化しない
-- [ ] 和了対象牌を特定できない Event に type 8 / 9 が付随した場合は public operation へ展開しない
+- [x] 和了対象牌を特定できない Event に type 8 が付随した場合は public operation へ展開しない
+- [ ] 和了対象牌を特定できない Event に type 9 が付随した場合は public operation へ展開しない
 - [x] live / restore action adapter は同じ decoded operation から等しい immutable な内部 specification を返す
 - [x] store は Event 適用後の手牌と内部 specification から `OperationCandidates | None` を生成する
 - [x] action decoder は `MatchEvent` と operation specification を別に返し、operation event を生成しない

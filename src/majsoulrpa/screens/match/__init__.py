@@ -31,6 +31,7 @@ from majsoulrpa.screens.match.operation import (
     MatchOperation,
     OperationCandidates,
     PengOperation,
+    ZimohuOperation,
 )
 from majsoulrpa.screens.match.state import (
     Angang,
@@ -102,6 +103,7 @@ __all__ = [
     "StartMatchEvent",
     "Tile",
     "ZimoEvent",
+    "ZimohuOperation",
     "validate_seat",
     "validate_tile",
 ]

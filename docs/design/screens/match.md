@@ -447,10 +447,10 @@ type 7 は `|` で分割せず、各要素を立直宣言牌として検証す�
 `src/annotation/annotation.cpp` に残された知見に基づく。
 
 type 8 の `ZimohuOperation.tile` は候補を発生させた
-`ActionDealTile` のツモ牌、または `ActionNewRound` の天和判定に使う牌から補う。type 9 の
+`ActionDealTile` のツモ牌、または `ActionNewRound` の天和判定に使う牌から補う。
 `ActionNewRound` の天和候補では、表示のため分離した `zimopai` を `ZimohuOperation.tile` として使う。
 これは和了 operation の対象牌を確定するための規約であり、同じ牌の打牌 operation を
-`moqie=True` に変更するものではない。`RongOperation.tile` と `from_seat` は放銃牌と放銃者、
+`moqie=True` に変更するものではない。type 9 の `RongOperation.tile` と `from_seat` は放銃牌と放銃者、
 搶槓対象牌と槓を行った player など、候補を発生させた Event から補う。
 いずれも赤牌を通常牌へ正規化しない。type 8〜11 は `combination` が空でなければ不整合とする。
 未知 type は将来の候補として黙って保持せず decode error にする。`seat`、`change_tiles`、

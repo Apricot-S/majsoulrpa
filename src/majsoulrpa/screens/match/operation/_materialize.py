@@ -21,6 +21,7 @@ from majsoulrpa.screens.match.operation._specification import (
     _MatchOperationSpecification,
     _OperationCandidatesSpecification,
     _PengOperationSpecification,
+    _ZimohuOperationSpecification,
 )
 from majsoulrpa.screens.match.operation.models import (
     AngangOperation,
@@ -34,6 +35,7 @@ from majsoulrpa.screens.match.operation.models import (
     MatchOperation,
     OperationCandidates,
     PengOperation,
+    ZimohuOperation,
 )
 from majsoulrpa.screens.match.state import Angang, Fulu, Peng
 from majsoulrpa.screens.match.types import Seat, Tile
@@ -170,6 +172,12 @@ def _materialize_operation_specification(
                 shoupai,
                 zimopai,
                 fulu,
+                self_seat,
+            )
+        case _ZimohuOperationSpecification():
+            return _materialize_zimohu_specification(
+                event,
+                zimopai,
                 self_seat,
             )
         case _LiujuOperationSpecification():
@@ -458,6 +466,28 @@ def _materialize_liqi_specification(
                 )
             )
     return operations
+
+
+def _materialize_zimohu_specification(
+    event: MatchEvent,
+    zimopai: Tile | None,
+    self_seat: Seat,
+) -> list[ZimohuOperation]:
+    draw_event, zimohu_tile = _validate_self_draw_operation_event(
+        event,
+        zimopai,
+        self_seat,
+        "zimohu",
+    )
+    event_tile = (
+        draw_event.zimopai
+        if isinstance(draw_event, NewRoundEvent)
+        else draw_event.tile
+    )
+    if event_tile != zimohu_tile:
+        msg = "A zimohu tile must match the event's drawn tile."
+        raise ValueError(msg)
+    return [ZimohuOperation(tile=zimohu_tile)]
 
 
 def _materialize_liuju_specification(

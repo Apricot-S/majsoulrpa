@@ -72,6 +72,7 @@ from majsoulrpa.screens.match.operation import (
     LiujuOperation,
     MatchOperation,
     PengOperation,
+    ZimohuOperation,
 )
 from majsoulrpa.screens.match.operation._specification import (
     _OperationCandidatesSpecification,
@@ -256,6 +257,10 @@ class MatchScreen(Screen):
                 await self._operate_jiagang(state, operation)
             case LiqiOperation():
                 await self._operate_liqi(state, operation)
+            case ZimohuOperation():
+                screenshot = await self.context.browser.screenshot()
+                msg = "Zimohu operation is not implemented."
+                raise ScreenNotImplementedOperationError(msg, screenshot)
             case LiujuOperation():
                 await self._operate_liuju(state, operation)
             case BabeiOperation():
@@ -992,6 +997,14 @@ class MatchScreen(Screen):
                     and event.moqie is operation.moqie
                     and (event.liqi or event.wliqi)
                 )
+            case ZimohuOperation():
+                return (
+                    isinstance(event, HuleEvent)
+                    and len(event.hules) == 1
+                    and event.hules[0].seat == state.self_seat
+                    and event.hules[0].zimo
+                    and event.hules[0].hu_tile == operation.tile
+                )
             case LiujuOperation():
                 return (
                     isinstance(event, LiujuEvent)
@@ -1024,6 +1037,7 @@ class MatchScreen(Screen):
                 | DaminggangOperation()
                 | JiagangOperation()
                 | LiqiOperation()
+                | ZimohuOperation()
                 | LiujuOperation()
                 | BabeiOperation()
             ):
