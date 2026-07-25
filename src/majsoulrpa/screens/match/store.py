@@ -40,8 +40,6 @@ from majsoulrpa.screens.match.state import (
 )
 from majsoulrpa.screens.match.types import Tile
 
-_FOUR_PLAYER_COUNT = 4
-
 
 class MatchStateStore:
     def __init__(self) -> None:
@@ -313,7 +311,7 @@ class MatchStateStore:
     ) -> MatchState:
         state = self._require_state()
         player_count = len(state.players)
-        if player_count != _FOUR_PLAYER_COUNT:
+        if player_count != 4:  # noqa: PLR2004
             msg = "A chi is only valid in a four-player match."
             raise ValueError(msg)
         if not is_preceding_seat(
