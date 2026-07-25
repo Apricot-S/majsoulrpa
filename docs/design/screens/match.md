@@ -525,7 +525,9 @@ message を通常どおり log・reduce し、自家の
 #### 自摸和操作
 
 `ZimohuOperation` は和了ボタンを直接探さず、基準 viewport 上の
-`Region(left=18, top=590, width=42, height=42)` にある自動和了トグルをオンにする。
+自動和了トグルをオンにする。領域は四人麻雀では
+`Region(left=18, top=590, width=42, height=42)`、三人麻雀では
+`Region(left=18, top=558, width=42, height=42)` とする。
 和了判断を遅らせないため `warp=True` で直ちにクリックし、ボタン描画待ちや手牌スライド待機は
 追加しない。その後は通常の message pipeline で、自家の `hu_tile` が指定した `tile` と一致する
 自摸和 `HuleEvent` まで reduce して更新後の `MatchState` を返す。

@@ -48,15 +48,33 @@ class _MessagesOnClickBrowser(BrowserControllerSpy):
             self._messages.enqueue(message)
 
 
+@pytest.mark.parametrize(
+    ("player_count", "old_scores", "delta_scores", "scores", "region_top"),
+    [
+        (
+            4,
+            [25000] * 4,
+            [3000, -1000, -1000, -1000],
+            [28000, 24000, 24000, 24000],
+            590,
+        ),
+        (3, [35000] * 3, [2000, -1000, -1000], [37000, 34000, 34000], 558),
+    ],
+)
 def test_operate_enables_auto_hule_and_waits_for_zimohu(
     monkeypatch: pytest.MonkeyPatch,
+    player_count: int,
+    old_scores: list[int],
+    delta_scores: list[int],
+    scores: list[int],
+    region_top: int,
 ) -> None:
     messages = _message_queue(
-        _auth_game(),
-        _live_new_round_action(step=0, ju=1),
+        _auth_game(player_count=player_count),
+        _live_new_round_action(step=0, ju=1, scores=old_scores),
         _live_discard_action(
             step=1,
-            seat=3,
+            seat=2,
             tile="9s",
             moqie=False,
         ),
@@ -86,9 +104,9 @@ def test_operate_enables_auto_hule_and_waits_for_zimohu(
                     fu=30,
                 ),
             ],
-            old_scores=[25000] * 4,
-            delta_scores=[3000, -1000, -1000, -1000],
-            scores=[28000, 24000, 24000, 24000],
+            old_scores=old_scores,
+            delta_scores=delta_scores,
+            scores=scores,
             doras=[],
         ),
     )
@@ -124,4 +142,4 @@ def test_operate_enables_auto_hule_and_waits_for_zimohu(
     assert browser.click_warps == [True]
     [(x, y)] = browser.clicked_points
     assert 18 < x < 60
-    assert 590 < y < 632
+    assert region_top < y < region_top + 42

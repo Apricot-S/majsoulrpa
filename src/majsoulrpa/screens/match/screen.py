@@ -143,7 +143,18 @@ class MatchScreen(Screen):
         Region(left=601, top=692, width=317, height=117),
         Region(left=961, top=692, width=317, height=117),
     )
-    AUTO_HULE_TOGGLE_REGION = Region(left=18, top=590, width=42, height=42)
+    AUTO_HULE_TOGGLE_YONMA_REGION = Region(
+        left=18,
+        top=590,
+        width=42,
+        height=42,
+    )
+    AUTO_HULE_TOGGLE_SANMA_REGION = Region(
+        left=18,
+        top=558,
+        width=42,
+        height=42,
+    )
 
     SEAT_INDICATOR_TEMPLATES = tuple(
         load_png_template_matcher(
@@ -872,7 +883,12 @@ class MatchScreen(Screen):
                 cause=error,
             )
 
-        await self.click_region(self.AUTO_HULE_TOGGLE_REGION, warp=True)
+        region = (
+            self.AUTO_HULE_TOGGLE_SANMA_REGION
+            if len(state.players) == 3  # noqa: PLR2004
+            else self.AUTO_HULE_TOGGLE_YONMA_REGION
+        )
+        await self.click_region(region, warp=True)
 
     async def _operate_liuju(
         self,
