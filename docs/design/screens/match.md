@@ -953,8 +953,15 @@ message の順序を保った `tuple[Hule, ...]` とし、自摸和は1要素、
 `HuleEvent` は action 全体の和了前点数、点数差分、和了後点数、
 試合終了時点数を保持する。自摸和 reducer は直前の同じ seat の `ZimoEvent`、または親の配牌直後の
 天和だけを受理する。自家に見えている和了牌、`qinjia`、点数遷移を検証し、Event 列へ追加して
-operation 候補と未解決の打牌・搶槓対象を消去する。栄和の decode は同じ Event で行うが、state への
-適用はロン対応時に追加する。
+operation 候補と未解決の打牌・搶槓対象を消去する。
+
+ロン reducer は `previous_dapai` または `previous_qianggang` のどちらか一方だけが未解決であることを
+要求し、その `(seat, tile)` を放銃元または搶槓対象として使う。各 `Hule` は `zimo=False`、
+`hu_tile` が対象牌と一致し、和了者が対象 seat と異なることを要求する。ダブロン・トリロンでは
+message の順序を保ったまま各和了者を検証し、seat の重複を拒否する。自摸和とロンが同じ
+`HuleEvent` に混在する場合も不整合とする。自摸和・ロンのいずれも、全和了者の seat が対局人数の
+範囲内であり、`qinjia` が局の親と一致することを検証する。適用後は点数を更新し、operation 候補と
+両方の未解決対象を消去する。
 
 action 直下の `ActionHule.doras` は実牌譜では空で、和了によって新しいドラ表示牌が捲られることも
 ないため `HuleEvent` には保持しない。最終的なドラ・裏ドラ表示牌は各 `Hule` の

@@ -701,6 +701,11 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 自家の自摸和では `Hule.hu_tile` が表示中のツモ牌と一致することを検証する
 - [x] 自摸和の `Hule.qinjia` が局の親と一致することを検証する
 - [x] `HuleEvent` を Event 列へ追加し、和了後点数を反映して局終了前の operation 候補を消去する
+- [x] ロンは未解決の直前打牌と和了牌が一致し、和了者が放銃者と異なる場合だけ受理する
+- [x] 搶槓ロンは未解決の搶槓対象と和了牌が一致し、和了者が槓・北抜きした seat と異なる場合だけ受理する
+- [x] ダブロン・トリロンは message の和了者順を保って受理し、全和了者の seat / qinjia / hu_tile を検証する
+- [x] 自摸和とロンが混在する `HuleEvent`、重複する和了者、和了対象のないロンを拒否する
+- [x] ロン適用後は点数を更新し、operation 候補と未解決の打牌・搶槓対象を消去する
 - [x] `DapaiOperation` / `LiqiOperation` は tile と moqie を保持し、手出しとツモ切りを別 instance にする
 - [x] 同じ tile / moqie の物理牌が複数あっても同じ打牌 operation は重複させない
 - [x] 手牌と実ツモ牌の両方に同じ候補牌があれば、moqie=false / true の両 operation を生成する

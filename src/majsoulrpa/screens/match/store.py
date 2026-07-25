@@ -722,42 +722,70 @@ class MatchStateStore:
             msg = "ActionHule score deltas must produce its scores."
             raise ValueError(msg)
 
-        if len(event.hules) != 1 or not event.hules[0].zimo:
-            msg = "Only a single-player zimohu is currently supported."
+        hule_seats = tuple(hule.seat for hule in event.hules)
+        if len(hule_seats) != len(set(hule_seats)):
+            msg = "ActionHule winners must be unique."
             raise ValueError(msg)
-        hule = event.hules[0]
-        if hule.seat >= player_count:
-            msg = "A hule seat must identify a player."
-            raise ValueError(msg)
-        if hule.qinjia is not (hule.seat == round_state.ju):
-            msg = "Hule qinjia must match the round dealer."
-            raise ValueError(msg)
-
-        previous_event = round_state.events[-1]
-        match previous_event:
-            case ZimoEvent():
-                if previous_event.seat != hule.seat:
-                    msg = "A zimohu must follow the winner's draw."
-                    raise ValueError(msg)
-                if (
-                    previous_event.tile is not None
-                    and previous_event.tile != hule.hu_tile
-                ):
-                    msg = "A zimohu tile must match the preceding draw."
-                    raise ValueError(msg)
-            case NewRoundEvent():
-                if hule.seat != round_state.ju:
-                    msg = "A hule following the deal must be tenhou."
-                    raise ValueError(msg)
-                if (
-                    round_state.zimopai is not None
-                    and round_state.zimopai != hule.hu_tile
-                ):
-                    msg = "A tenhou tile must match the dealt winning tile."
-                    raise ValueError(msg)
-            case _:
-                msg = "A zimohu must follow a draw or the initial deal."
+        for hule in event.hules:
+            if hule.seat >= player_count:
+                msg = "A hule seat must identify a player."
                 raise ValueError(msg)
+            if hule.qinjia is not (hule.seat == round_state.ju):
+                msg = "Hule qinjia must match the round dealer."
+                raise ValueError(msg)
+
+        if len(event.hules) == 1 and event.hules[0].zimo:
+            hule = event.hules[0]
+            previous_event = round_state.events[-1]
+            match previous_event:
+                case ZimoEvent():
+                    if previous_event.seat != hule.seat:
+                        msg = "A zimohu must follow the winner's draw."
+                        raise ValueError(msg)
+                    if (
+                        previous_event.tile is not None
+                        and previous_event.tile != hule.hu_tile
+                    ):
+                        msg = "A zimohu tile must match the preceding draw."
+                        raise ValueError(msg)
+                case NewRoundEvent():
+                    if hule.seat != round_state.ju:
+                        msg = "A hule following the deal must be tenhou."
+                        raise ValueError(msg)
+                    if (
+                        round_state.zimopai is not None
+                        and round_state.zimopai != hule.hu_tile
+                    ):
+                        msg = (
+                            "A tenhou tile must match the dealt winning tile."
+                        )
+                        raise ValueError(msg)
+                case _:
+                    msg = "A zimohu must follow a draw or the initial deal."
+                    raise ValueError(msg)
+        elif all(not hule.zimo for hule in event.hules):
+            unresolved_targets = tuple(
+                target
+                for target in (
+                    round_state.previous_dapai,
+                    round_state.previous_qianggang,
+                )
+                if target is not None
+            )
+            if len(unresolved_targets) != 1:
+                msg = "A rong must follow exactly one unresolved target."
+                raise ValueError(msg)
+            from_seat, hu_tile = unresolved_targets[0]
+            for hule in event.hules:
+                if hule.seat == from_seat:
+                    msg = "A rong winner must differ from the source seat."
+                    raise ValueError(msg)
+                if hule.hu_tile != hu_tile:
+                    msg = "A rong tile must match the unresolved target."
+                    raise ValueError(msg)
+        else:
+            msg = "Zimohu and rong must not coexist in one ActionHule."
+            raise ValueError(msg)
 
         next_round = replace(
             round_state,
