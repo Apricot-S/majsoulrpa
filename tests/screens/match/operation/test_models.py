@@ -27,15 +27,6 @@ def test_dapai_operation_is_an_immutable_value() -> None:
         operation.moqie = False  # ty: ignore[invalid-assignment]
 
 
-def test_liqi_operation_is_an_immutable_value() -> None:
-    operation = LiqiOperation(tile=validate_tile("0m"), moqie=True)
-
-    assert operation.tile == "0m"
-    assert operation.moqie is True
-    with pytest.raises(FrozenInstanceError):
-        operation.moqie = False  # ty: ignore[invalid-assignment]
-
-
 def test_chi_operation_is_an_immutable_value() -> None:
     operation = ChiOperation(
         from_seat=validate_seat(3),
@@ -166,6 +157,15 @@ def test_daminggang_operation_rejects_tiles_of_different_kinds() -> None:
                 validate_tile("5p"),
             ),
         )
+
+
+def test_liqi_operation_is_an_immutable_value() -> None:
+    operation = LiqiOperation(tile=validate_tile("0m"), moqie=True)
+
+    assert operation.tile == "0m"
+    assert operation.moqie is True
+    with pytest.raises(FrozenInstanceError):
+        operation.moqie = False  # ty: ignore[invalid-assignment]
 
 
 def test_liuju_operation_is_a_fieldless_immutable_value() -> None:
