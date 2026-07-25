@@ -14,6 +14,7 @@ from majsoulrpa.screens.match.operation._specification import (
     _LiqiOperationSpecification,
     _LiujuOperationSpecification,
     _PengOperationSpecification,
+    _RongOperationSpecification,
     _ZimohuOperationSpecification,
 )
 
@@ -344,6 +345,35 @@ def test_decode_zimohu_operation_rejects_nonempty_combination() -> None:
             {
                 "operation": {
                     "operation_list": [{"type": 8, "combination": ["5m"]}],
+                    "time_add": 0,
+                    "time_fixed": 0,
+                }
+            }
+        )
+
+
+def test_decode_rong_operation_specification() -> None:
+    specification = decode_operation_specification(
+        {
+            "operation": {
+                "operation_list": [{"type": 9, "combination": []}],
+                "time_add": 20000,
+                "time_fixed": 5000,
+            }
+        }
+    )
+
+    assert specification is not None
+    [operation] = specification.operations
+    assert isinstance(operation, _RongOperationSpecification)
+
+
+def test_decode_rong_operation_rejects_nonempty_combination() -> None:
+    with pytest.raises(ValueError, match="must not contain"):
+        decode_operation_specification(
+            {
+                "operation": {
+                    "operation_list": [{"type": 9, "combination": ["5m"]}],
                     "time_add": 0,
                     "time_fixed": 0,
                 }

@@ -54,6 +54,12 @@ class _ZimohuOperationSpecification:
 
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
+class _RongOperationSpecification:
+    pass
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
 class _LiujuOperationSpecification:
     pass
 
@@ -73,6 +79,7 @@ type _MatchOperationSpecification = (
     | _JiagangOperationSpecification
     | _LiqiOperationSpecification
     | _ZimohuOperationSpecification
+    | _RongOperationSpecification
     | _LiujuOperationSpecification
     | _BabeiOperationSpecification
 )

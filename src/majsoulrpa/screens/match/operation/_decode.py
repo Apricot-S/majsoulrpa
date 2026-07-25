@@ -19,6 +19,7 @@ from majsoulrpa.screens.match.operation._specification import (
     _MatchOperationSpecification,
     _OperationCandidatesSpecification,
     _PengOperationSpecification,
+    _RongOperationSpecification,
     _ZimohuOperationSpecification,
 )
 from majsoulrpa.screens.match.types import Tile, validate_tile
@@ -69,6 +70,8 @@ def decode_operation_specification(
                 specification = _decode_liqi_specification(item)
             case 8:
                 specification = _decode_zimohu_specification(item)
+            case 9:
+                specification = _decode_rong_specification(item)
             case 10:
                 specification = _decode_liuju_specification(item)
             case 11:
@@ -179,6 +182,15 @@ def _decode_zimohu_specification(
         msg = "A zimohu operation must not contain a combination."
         raise ValueError(msg)
     return _ZimohuOperationSpecification()
+
+
+def _decode_rong_specification(
+    item: Mapping[str, JsonValue],
+) -> _RongOperationSpecification:
+    if _get_str_list(item, "OptionalOperation.combination"):
+        msg = "A rong operation must not contain a combination."
+        raise ValueError(msg)
+    return _RongOperationSpecification()
 
 
 def _decode_liuju_specification(

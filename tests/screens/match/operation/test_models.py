@@ -13,6 +13,7 @@ from majsoulrpa.screens.match import (
     LiujuOperation,
     OperationCandidates,
     PengOperation,
+    RongOperation,
     ZimohuOperation,
     validate_seat,
     validate_tile,
@@ -172,6 +173,18 @@ def test_liqi_operation_is_an_immutable_value() -> None:
 def test_zimohu_operation_is_an_immutable_value() -> None:
     operation = ZimohuOperation(tile=validate_tile("0m"))
 
+    assert operation.tile == "0m"
+    with pytest.raises(FrozenInstanceError):
+        operation.tile = validate_tile("5m")  # ty: ignore[invalid-assignment]
+
+
+def test_rong_operation_is_an_immutable_value() -> None:
+    operation = RongOperation(
+        from_seat=validate_seat(2),
+        tile=validate_tile("0m"),
+    )
+
+    assert operation.from_seat == 2
     assert operation.tile == "0m"
     with pytest.raises(FrozenInstanceError):
         operation.tile = validate_tile("5m")  # ty: ignore[invalid-assignment]

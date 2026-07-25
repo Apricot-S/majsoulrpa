@@ -10,6 +10,7 @@ from majsoulrpa.screens.match.operation.models import (
     MatchOperation,
     OperationCandidates,
     PengOperation,
+    RongOperation,
     ZimohuOperation,
 )
 
@@ -25,5 +26,6 @@ __all__ = [
     "MatchOperation",
     "OperationCandidates",
     "PengOperation",
+    "RongOperation",
     "ZimohuOperation",
 ]

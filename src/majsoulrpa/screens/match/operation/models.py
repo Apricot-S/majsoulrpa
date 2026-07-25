@@ -84,6 +84,13 @@ class ZimohuOperation:
 
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
+class RongOperation:
+    from_seat: Seat
+    tile: Tile
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
 class LiujuOperation:
     pass
 
@@ -103,6 +110,7 @@ type MatchOperation = (
     | JiagangOperation
     | LiqiOperation
     | ZimohuOperation
+    | RongOperation
     | LiujuOperation
     | BabeiOperation
 )

@@ -659,7 +659,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] type 6 は牌順に依存せず既存の `Peng` と4枚の multiset を比較し、元の from_seat / tile / consumed と差分の added を保持する `JiagangOperation` 1 instance へ変換する
 - [x] type 7 の各候補牌を 1 打牌 1 `LiqiOperation` に展開する
 - [x] type 8 は空の `combination` と発生元 Event のツモ牌から `ZimohuOperation` を生成する
-- [ ] type 9 は空の `combination` と発生元 Event の対象 seat・対象牌から `RongOperation` を生成する
+- [x] type 9 は空の `combination` と発生元 Event の対象 seat・対象牌から `RongOperation` を生成する
 - [x] type 10 は空の `combination` から field のない `LiujuOperation` を生成する
 - [x] `LiujuOperation` は親の配牌直後または自家ツモ直後に么九牌が9種類以上ある場合だけ生成する
 - [x] `LiujuOperation` は `Fulu` のない手牌だけで生成する
@@ -717,7 +717,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 親の ActionNewRound の14枚はすべて moqie=false の DapaiOperation に展開する
 - [x] 親の ActionNewRound の presentation zimopai にある立直候補も moqie=false の LiqiOperation にする
 - [x] 親の初期打牌でツモ牌位置を click する必要があっても operation を moqie=true に変換しない
-- [ ] type 8〜11 の `combination` が空でない場合は拒否する
+- [x] type 8〜11 の `combination` が空でない場合は拒否する
 - [x] operation 内の不正な牌表現を拒否する
 - [x] 未知 type を無視したり generic operation として保持したりせず decode error にする
 - [x] 未実装の既知 type が混在する場合も、対応済み候補だけを部分的に公開せず decode error にする
@@ -730,9 +730,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] ZimohuOperation.tile は ActionDealTile のツモ牌と一致し、赤牌を通常牌へ正規化しない
 - [x] ActionNewRound の天和候補は presentation zimopai を ZimohuOperation.tile に保持する
 - [x] 天和の ZimohuOperation.tile を決めても、同じ牌の打牌 operation は moqie=false のままにする
-- [ ] RongOperation.from_seat / tile は放銃者と放銃牌、または槓を行った player と搶槓対象牌に一致し、赤牌を通常牌へ正規化しない
+- [x] RongOperation.from_seat / tile は放銃者と放銃牌、または槓・北抜きを行った player と搶槓対象牌に一致し、赤牌を通常牌へ正規化しない
 - [x] 和了対象牌を特定できない Event に type 8 が付随した場合は public operation へ展開しない
-- [ ] 和了対象牌を特定できない Event に type 9 が付随した場合は public operation へ展開しない
+- [x] 和了対象牌を特定できない Event に type 9 が付随した場合は public operation へ展開しない
 - [x] live / restore action adapter は同じ decoded operation から等しい immutable な内部 specification を返す
 - [x] store は Event 適用後の手牌と内部 specification から `OperationCandidates | None` を生成する
 - [x] action decoder は `MatchEvent` と operation specification を別に返し、operation event を生成しない

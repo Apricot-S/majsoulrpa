@@ -4,7 +4,10 @@ from typing import assert_never
 
 from majsoulrpa.screens.match._common import is_preceding_seat
 from majsoulrpa.screens.match.event import (
+    AngangEvent,
+    BabeiEvent,
     DapaiEvent,
+    JiagangEvent,
     MatchEvent,
     NewRoundEvent,
     ZimoEvent,
@@ -21,6 +24,7 @@ from majsoulrpa.screens.match.operation._specification import (
     _MatchOperationSpecification,
     _OperationCandidatesSpecification,
     _PengOperationSpecification,
+    _RongOperationSpecification,
     _ZimohuOperationSpecification,
 )
 from majsoulrpa.screens.match.operation.models import (
@@ -35,6 +39,7 @@ from majsoulrpa.screens.match.operation.models import (
     MatchOperation,
     OperationCandidates,
     PengOperation,
+    RongOperation,
     ZimohuOperation,
 )
 from majsoulrpa.screens.match.state import Angang, Fulu, Peng
@@ -179,6 +184,13 @@ def _materialize_operation_specification(
                 event,
                 zimopai,
                 self_seat,
+            )
+        case _RongOperationSpecification():
+            return _materialize_rong_specification(
+                event,
+                zimopai,
+                self_seat,
+                player_count,
             )
         case _LiujuOperationSpecification():
             return _materialize_liuju_specification(
@@ -488,6 +500,41 @@ def _materialize_zimohu_specification(
         msg = "A zimohu tile must match the event's drawn tile."
         raise ValueError(msg)
     return [ZimohuOperation(tile=zimohu_tile)]
+
+
+def _materialize_rong_specification(
+    event: MatchEvent,
+    zimopai: Tile | None,
+    self_seat: Seat,
+    player_count: int,
+) -> list[RongOperation]:
+    match event:
+        case DapaiEvent():
+            from_seat = event.seat
+            tile = event.tile
+        case AngangEvent():
+            from_seat = event.seat
+            tile = event.consumed[0]
+        case JiagangEvent():
+            from_seat = event.seat
+            tile = event.added
+        case BabeiEvent():
+            from_seat = event.seat
+            tile = Tile("4z")
+        case _:
+            msg = "A rong operation must follow an action target."
+            raise TypeError(msg)
+
+    if from_seat >= player_count:
+        msg = "A rong source seat must identify a player."
+        raise ValueError(msg)
+    if from_seat == self_seat:
+        msg = "A rong cannot claim the self player's action target."
+        raise ValueError(msg)
+    if zimopai is not None:
+        msg = "A rong cannot be selected with an unresolved draw."
+        raise ValueError(msg)
+    return [RongOperation(from_seat=from_seat, tile=tile)]
 
 
 def _materialize_liuju_specification(

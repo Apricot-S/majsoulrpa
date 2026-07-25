@@ -31,6 +31,7 @@ from majsoulrpa.screens.match.operation import (
     MatchOperation,
     OperationCandidates,
     PengOperation,
+    RongOperation,
     ZimohuOperation,
 )
 from majsoulrpa.screens.match.state import (
@@ -98,6 +99,7 @@ __all__ = [
     "Peng",
     "PengEvent",
     "PengOperation",
+    "RongOperation",
     "RoundState",
     "Seat",
     "StartMatchEvent",
