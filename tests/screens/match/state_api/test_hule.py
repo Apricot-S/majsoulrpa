@@ -63,7 +63,7 @@ def test_get_state_applies_self_zimohu() -> None:
                     old_scores=[25000] * 4,
                     delta_scores=[3000, -1000, -1000, -1000],
                     scores=[28000, 24000, 24000, 24000],
-                    doras=["3p"],
+                    doras=[],
                 ),
             ),
         ),
@@ -75,6 +75,7 @@ def test_get_state_applies_self_zimohu() -> None:
     assert state.version == 4
     assert state.round.step == 3
     assert state.round.scores == (28000, 24000, 24000, 24000)
+    assert state.round.dora_indicators == ("3p",)
     assert state.round.operation_candidates is None
     assert isinstance(state.round.events[-1], HuleEvent)
 

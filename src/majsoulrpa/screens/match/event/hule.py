@@ -28,7 +28,6 @@ _BAOPAI_SEAT_VALUES = range(1, 5)
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class HuleFan:
-    name: str
     value: int
     id: int
 
@@ -43,7 +42,6 @@ class HuleFan:
     @classmethod
     def from_dict(cls, data: Mapping[str, JsonValue]) -> Self:
         return cls(
-            name=_get_str(data, "FanInfo.name"),
             value=_get_int(data, "FanInfo.val"),
             id=_get_int(data, "FanInfo.id"),
         )
@@ -65,7 +63,6 @@ class Hule:
     count: int
     fans: tuple[HuleFan, ...]
     fu: int
-    title: str
     point_rong: int
     point_zimo_qin: int
     point_zimo_xian: int
@@ -124,7 +121,6 @@ class Hule:
                 for fan in _get_dict_list(data, "HuleInfo.fans")
             ),
             fu=_get_int(data, "HuleInfo.fu"),
-            title=_get_str(data, "HuleInfo.title"),
             point_rong=_get_int(data, "HuleInfo.point_rong"),
             point_zimo_qin=_get_int(data, "HuleInfo.point_zimo_qin"),
             point_zimo_xian=_get_int(data, "HuleInfo.point_zimo_xian"),
@@ -146,7 +142,6 @@ class HuleEvent(_MatchEventBase):
     old_scores: tuple[int, ...]
     delta_scores: tuple[int, ...]
     scores: tuple[int, ...]
-    dora_indicators: tuple[Tile, ...]
     game_end_scores: tuple[int, ...] | None
     baopai_seat: Seat | None
 
@@ -169,9 +164,6 @@ class HuleEvent(_MatchEventBase):
         ):
             msg = "Game-end scores must match the Hule score count."
             raise ValueError(msg)
-        if len(self.dora_indicators) > MAX_DORA_INDICATORS:
-            msg = "dora_indicators must contain at most five tiles."
-            raise ValueError(msg)
 
     @classmethod
     def from_dict(
@@ -189,10 +181,6 @@ class HuleEvent(_MatchEventBase):
             old_scores=tuple(_get_int_list(data, "ActionHule.old_scores")),
             delta_scores=tuple(_get_int_list(data, "ActionHule.delta_scores")),
             scores=tuple(_get_int_list(data, "ActionHule.scores")),
-            dora_indicators=tuple(
-                validate_tile(tile)
-                for tile in _get_str_list(data, "ActionHule.doras")
-            ),
             game_end_scores=(
                 None
                 if game_end is None

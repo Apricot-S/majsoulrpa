@@ -762,7 +762,6 @@ class MatchStateStore:
         next_round = replace(
             round_state,
             step=event.action_step,
-            dora_indicators=event.dora_indicators,
             scores=event.scores,
             previous_dapai=None,
             previous_qianggang=None,

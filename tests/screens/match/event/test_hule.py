@@ -26,7 +26,7 @@ def test_hule_event_from_dict() -> None:
                     "li_doras": ["4z"],
                     "yiman": False,
                     "count": 3,
-                    "fans": [{"name": "立直", "val": 1, "id": 2}],
+                    "fans": [{"name": "", "val": 1, "id": 2}],
                     "fu": 30,
                     "title": "",
                     "point_rong": 0,
@@ -67,9 +67,8 @@ def test_hule_event_from_dict() -> None:
                 li_dora_indicators=(validate_tile("4z"),),
                 yiman=False,
                 count=3,
-                fans=(HuleFan(name="立直", value=1, id=2),),
+                fans=(HuleFan(value=1, id=2),),
                 fu=30,
-                title="",
                 point_rong=0,
                 point_zimo_qin=2000,
                 point_zimo_xian=1000,
@@ -83,7 +82,6 @@ def test_hule_event_from_dict() -> None:
         old_scores=(25000, 25000, 25000, 25000),
         delta_scores=(4300, -2100, -1100, -1100),
         scores=(29300, 22900, 23900, 23900),
-        dora_indicators=(validate_tile("3p"),),
         game_end_scores=(29300, 22900, 23900, 23900),
         baopai_seat=validate_seat(2),
     )
@@ -125,7 +123,7 @@ def test_hule_event_rejects_inconsistent_score_lengths() -> None:
         )
 
 
-def test_hule_event_accepts_disabled_dora() -> None:
+def test_hule_event_normalizes_absent_legacy_baopai() -> None:
     event = HuleEvent.from_dict(
         3,
         {
@@ -139,7 +137,6 @@ def test_hule_event_accepts_disabled_dora() -> None:
         },
     )
 
-    assert event.dora_indicators == ()
     assert event.baopai_seat is None
     assert event.hules[0].baopai_seat is None
 
