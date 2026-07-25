@@ -24,6 +24,7 @@ from tests.screens._support import (
 from tests.screens.match._support import (
     SELF_ACCOUNT_ID,
     _auth_game,
+    _live_angang_action,
     _live_discard_action,
     _live_new_round_action,
     _live_peng_action,
@@ -74,7 +75,7 @@ def test_get_state_applies_self_peng() -> None:
             consumed=(validate_tile("0m"), validate_tile("5m")),
         ),
     )
-    assert state.round.previous_dapai is None
+    assert state.round.pending_action_target is None
     assert state.round.first_draw == (False,) * 4
     assert state.round.yifa == (False,) * 4
     assert state.round.operation_candidates is not None
@@ -130,7 +131,7 @@ def test_get_state_applies_opponent_peng_and_liqi_success() -> None:
     assert state.round.liqibang == 1
     assert state.round.first_draw == (False,) * 4
     assert state.round.yifa == (False,) * 4
-    assert state.round.previous_dapai is None
+    assert state.round.pending_action_target is None
     assert state.round.operation_candidates is None
 
 
@@ -168,6 +169,37 @@ def test_get_state_rejects_inconsistent_self_peng(
                     seat=0,
                     tiles=peng_tiles,
                     froms=[0, 0, from_seat],
+                ),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+    with pytest.raises(ScreenInconsistentMessageError) as exc_info:
+        asyncio.run(screen.get_state())
+
+    assert exc_info.value.screenshot == b"inconsistent-screenshot"
+
+
+def test_get_state_rejects_peng_of_qianggang_target() -> None:
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"inconsistent-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(),
+                _live_new_round_action(step=0, ju=1),
+                _live_angang_action(
+                    step=1,
+                    seat=1,
+                    tile="5m",
+                ),
+                _live_peng_action(
+                    step=2,
+                    seat=2,
+                    tiles=["5m", "5m", "5m"],
+                    froms=[2, 2, 1],
                 ),
             ),
         ),

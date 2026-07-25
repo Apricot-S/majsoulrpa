@@ -74,8 +74,7 @@ def test_get_state_applies_self_angang_with_drawn_tile() -> None:
     assert state.round.fulu[0] == (Angang(consumed=consumed),)
     assert state.round.dora_indicators == ("3p", "4p")
     assert state.round.he[0] == ()
-    assert state.round.previous_dapai is None
-    assert state.round.previous_qianggang == (0, "0m")
+    assert state.round.pending_action_target == (0, "0m")
     assert state.round.first_draw == (False,) * 4
     assert state.round.yifa == (False,) * 4
     assert state.round.lingshang_zimo == (True, False, False, False)
@@ -141,7 +140,7 @@ def test_get_state_applies_opponent_angang() -> None:
             )
         ),
     )
-    assert state.round.previous_qianggang == (1, "7z")
+    assert state.round.pending_action_target == (1, "7z")
 
 
 def test_get_state_clears_qianggang_target_on_lingshang_draw() -> None:
@@ -168,7 +167,7 @@ def test_get_state_clears_qianggang_target_on_lingshang_draw() -> None:
     asyncio.run(screen.before_callback())
     state = asyncio.run(screen.get_state())
 
-    assert state.round.previous_qianggang is None
+    assert state.round.pending_action_target is None
     assert state.round.zimopai == "2p"
 
 

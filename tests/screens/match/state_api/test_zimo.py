@@ -67,7 +67,7 @@ def test_get_state_applies_self_draw() -> None:
     assert state.round.dora_indicators == ("4p",)
     assert state.round.scores[3] == 24000
     assert state.round.liqibang == 1
-    assert state.round.previous_dapai is None
+    assert state.round.pending_action_target is None
     assert isinstance(state.round.events[-1], ZimoEvent)
 
 
@@ -107,7 +107,7 @@ def test_get_state_continues_after_opponents_concealed_draw() -> None:
 
     assert state.round.zimopai is None
     assert state.round.dora_indicators == ("3p",)
-    assert state.round.previous_dapai == (1, "5p")
+    assert state.round.pending_action_target == (1, "5p")
     event = state.round.events[-2]
     assert isinstance(event, ZimoEvent)
     assert event.tile is None

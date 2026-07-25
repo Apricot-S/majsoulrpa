@@ -74,7 +74,7 @@ def test_get_state_applies_self_daminggang() -> None:
             ),
         ),
     )
-    assert state.round.previous_dapai is None
+    assert state.round.pending_action_target is None
     assert state.round.first_draw == (False,) * 4
     assert state.round.yifa == (False,) * 4
     assert state.round.lingshang_zimo == (True, False, False, False)
@@ -133,7 +133,7 @@ def test_get_state_applies_opponent_daminggang_and_liqi_success() -> None:
     assert state.round.first_draw == (False,) * 4
     assert state.round.yifa == (False,) * 4
     assert state.round.lingshang_zimo == (False, True, False, False)
-    assert state.round.previous_dapai is None
+    assert state.round.pending_action_target is None
     assert state.round.operation_candidates is None
 
 

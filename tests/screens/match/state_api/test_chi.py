@@ -74,7 +74,7 @@ def test_get_state_applies_self_chi() -> None:
             consumed=(validate_tile("2m"), validate_tile("3m")),
         ),
     )
-    assert state.round.previous_dapai is None
+    assert state.round.pending_action_target is None
     assert state.round.first_draw == (False,) * 4
     assert state.round.yifa == (False,) * 4
     assert state.round.operation_candidates is not None
@@ -133,7 +133,7 @@ def test_get_state_applies_opponent_chi_and_liqi_success() -> None:
     assert state.round.liqibang == 1
     assert state.round.first_draw == (False,) * 4
     assert state.round.yifa == (False,) * 4
-    assert state.round.previous_dapai is None
+    assert state.round.pending_action_target is None
     assert state.round.operation_candidates is None
 
 

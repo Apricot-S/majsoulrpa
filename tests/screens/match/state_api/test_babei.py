@@ -69,8 +69,7 @@ def test_get_state_applies_self_moqie_babei() -> None:
     assert state.round.fulu[0] == ()
     assert state.round.he[0] == ()
     assert state.round.dora_indicators == ("3p", "4p")
-    assert state.round.previous_dapai is None
-    assert state.round.previous_qianggang == (0, "4z")
+    assert state.round.pending_action_target == (0, "4z")
     assert state.round.first_draw == (False,) * 3
     assert state.round.yifa == (False,) * 3
     assert state.round.lingshang_zimo == (True, False, False)
@@ -102,7 +101,7 @@ def test_get_state_applies_self_hand_babei() -> None:
     assert state.round.shoupai == (*(("1m",) * 12), "2p")
     assert state.round.zimopai is None
     assert state.round.babei[0] == (Babei(moqie=False),)
-    assert state.round.previous_qianggang == (0, "4z")
+    assert state.round.pending_action_target == (0, "4z")
 
 
 def test_get_state_applies_lingshang_zimo_after_babei() -> None:
@@ -130,7 +129,7 @@ def test_get_state_applies_lingshang_zimo_after_babei() -> None:
 
     assert isinstance(state.round.events[-1], ZimoEvent)
     assert state.round.zimopai == "2p"
-    assert state.round.previous_qianggang is None
+    assert state.round.pending_action_target is None
     assert state.round.lingshang_zimo == (True, False, False)
 
 
@@ -146,7 +145,7 @@ def test_get_state_applies_opponent_babei() -> None:
 
     assert state.round.shoupai == ("1m",) * 13
     assert state.round.babei[1] == (Babei(moqie=True),)
-    assert state.round.previous_qianggang == (1, "4z")
+    assert state.round.pending_action_target == (1, "4z")
     assert state.round.lingshang_zimo == (False, True, False)
 
 

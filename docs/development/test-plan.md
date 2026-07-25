@@ -938,9 +938,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 暗槓を手牌内の4枚で行った場合は、別の zimopai を shoupai へ取り込んで sort する
 - [x] 赤なし対局の黒五4枚も、赤あり表現へ正規化した AngangEvent から reducer を継続できる
 - [x] 他家の暗槓は自家の shoupai / zimopai を変更せず、対象 seat の fulu に Angang を追加する
-- [x] 暗槓は河と previous_dapai を変更せず、全員の first_draw / yifa を終了し、対象 seat の lingshang_zimo を有効にする
-- [x] 暗槓は previous_qianggang に `(seat, tile)` を設定し、後続の嶺上 ZimoEvent が消去する
-- [x] previous_dapai / previous_qianggang は seat と tile を単一 tuple にまとめ、存在条件の不整合を表現できない
+- [x] 暗槓は河を変更せず、全員の first_draw / yifa を終了し、対象 seat の lingshang_zimo を有効にする
+- [x] 暗槓は pending_action_target に `(seat, tile)` を設定し、後続の嶺上 ZimoEvent が消去する
+- [x] 打牌と搶槓対象は同時に存在しないため、単一の pending_action_target に `(seat, tile)` を保持する
+- [x] 副露時は直前 Event が DapaiEvent であることを要求し、pending_action_target が搶槓牌の場合は拒否する
 - [x] 暗槓の不連続 step、不正 seat、未解決打牌、自家の消費牌不足を不整合として拒否する
 - [x] 未実装の画面操作用に screenshot 付き `ScreenNotImplementedOperationError` を公開する
 - [x] 暗槓の3候補 UI は座標を推測せず、調査協力を求める専用例外で停止する

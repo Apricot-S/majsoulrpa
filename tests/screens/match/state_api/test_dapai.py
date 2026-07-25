@@ -64,6 +64,6 @@ def test_get_state_applies_dealers_first_discard() -> None:
         ),
     )
     assert state.round.first_draw[0] is False
-    assert state.round.previous_dapai == (0, "9s")
+    assert state.round.pending_action_target == (0, "9s")
     assert isinstance(state.round.events[-1], DapaiEvent)
     assert state.round.events[-1].action_step == 2

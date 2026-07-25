@@ -184,8 +184,7 @@ def test_get_state_applies_self_jiagang_with_drawn_tile() -> None:
             wliqi=False,
         ),
     )
-    assert state.round.previous_dapai is None
-    assert state.round.previous_qianggang == (0, "5m")
+    assert state.round.pending_action_target == (0, "5m")
     assert state.round.first_draw == (False,) * 4
     assert state.round.yifa == (False,) * 4
     assert state.round.lingshang_zimo == (True, False, False, False)
@@ -320,7 +319,7 @@ def test_get_state_applies_opponent_jiagang() -> None:
             added=validate_tile("5m"),
         ),
     )
-    assert state.round.previous_qianggang == (1, "5m")
+    assert state.round.pending_action_target == (1, "5m")
     assert state.round.lingshang_zimo == (False, True, False, False)
 
 

@@ -138,8 +138,7 @@ class RoundState:
     first_draw: tuple[bool, ...]
     yifa: tuple[bool, ...]
     lingshang_zimo: tuple[bool, ...]
-    previous_dapai: tuple[Seat, Tile] | None
-    previous_qianggang: tuple[Seat, Tile] | None
+    pending_action_target: tuple[Seat, Tile] | None
     operation_candidates: OperationCandidates | None
     events: tuple[MatchEvent, ...]
 

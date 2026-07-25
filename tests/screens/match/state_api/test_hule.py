@@ -269,8 +269,7 @@ def test_get_state_applies_rong() -> None:
     assert isinstance(event, HuleEvent)
     assert tuple(hule.seat for hule in event.hules) == (0,)
     assert state.round.scores == (33000, 17000, 25000, 25000)
-    assert state.round.previous_dapai is None
-    assert state.round.previous_qianggang is None
+    assert state.round.pending_action_target is None
     assert state.round.operation_candidates is None
 
 
@@ -342,7 +341,7 @@ def test_get_state_applies_qianggang_rong() -> None:
     state = asyncio.run(screen.get_state())
 
     assert isinstance(state.round.events[-1], HuleEvent)
-    assert state.round.previous_qianggang is None
+    assert state.round.pending_action_target is None
 
 
 @pytest.mark.parametrize(

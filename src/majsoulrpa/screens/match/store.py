@@ -97,8 +97,7 @@ class MatchStateStore:
             first_draw=(True,) * player_count,
             yifa=(False,) * player_count,
             lingshang_zimo=(False,) * player_count,
-            previous_dapai=None,
-            previous_qianggang=None,
+            pending_action_target=None,
             operation_candidates=operation_candidates,
             events=events,
         )
@@ -166,10 +165,11 @@ class MatchStateStore:
             and previous_event.seat == event.seat
             and round_state.lingshang_zimo[event.seat]
         )
-        if (
-            round_state.previous_dapai is None
-            and not follows_lingshang_operation
-        ):
+        follows_dapai = (
+            isinstance(previous_event, DapaiEvent)
+            and round_state.pending_action_target is not None
+        )
+        if not follows_dapai and not follows_lingshang_operation:
             msg = (
                 "ActionDealTile must follow an unresolved discard "
                 "or lingshang operation."
@@ -215,8 +215,7 @@ class MatchStateStore:
             scores=scores,
             liqibang=liqibang,
             zimopai=zimopai,
-            previous_dapai=None,
-            previous_qianggang=None,
+            pending_action_target=None,
             operation_candidates=operation_candidates,
             events=(*round_state.events, event),
         )
@@ -240,11 +239,8 @@ class MatchStateStore:
         if event.seat >= len(state.players):
             msg = "ActionDiscardTile seat must identify a player."
             raise ValueError(msg)
-        if round_state.previous_dapai is not None:
-            msg = "A discard cannot follow an unresolved discard."
-            raise ValueError(msg)
-        if round_state.previous_qianggang is not None:
-            msg = "A discard cannot follow an unresolved qianggang target."
+        if round_state.pending_action_target is not None:
+            msg = "A discard cannot follow an unresolved action target."
             raise ValueError(msg)
 
         shoupai = list(round_state.shoupai)
@@ -306,7 +302,7 @@ class MatchStateStore:
             first_draw=tuple(first_draw),
             yifa=tuple(yifa),
             lingshang_zimo=tuple(lingshang_zimo),
-            previous_dapai=(event.seat, event.tile),
+            pending_action_target=(event.seat, event.tile),
             operation_candidates=operation_candidates,
             events=(*round_state.events, event),
         )
@@ -391,11 +387,8 @@ class MatchStateStore:
         if event.seat >= player_count:
             msg = "ActionAnGangAddGang seat must identify a player."
             raise ValueError(msg)
-        if round_state.previous_dapai is not None:
-            msg = "An angang cannot follow an unresolved discard."
-            raise ValueError(msg)
-        if round_state.previous_qianggang is not None:
-            msg = "An angang cannot follow an unresolved qianggang target."
+        if round_state.pending_action_target is not None:
+            msg = "An angang cannot follow an unresolved action target."
             raise ValueError(msg)
         shoupai = list(round_state.shoupai)
         zimopai = round_state.zimopai
@@ -450,7 +443,7 @@ class MatchStateStore:
             first_draw=(False,) * player_count,
             yifa=(False,) * player_count,
             lingshang_zimo=tuple(lingshang_zimo),
-            previous_qianggang=(event.seat, event.consumed[0]),
+            pending_action_target=(event.seat, event.consumed[0]),
             operation_candidates=operation_candidates,
             events=(*round_state.events, event),
         )
@@ -477,11 +470,8 @@ class MatchStateStore:
         if event.seat >= player_count:
             msg = "ActionAnGangAddGang seat must identify a player."
             raise ValueError(msg)
-        if round_state.previous_dapai is not None:
-            msg = "A jiagang cannot follow an unresolved discard."
-            raise ValueError(msg)
-        if round_state.previous_qianggang is not None:
-            msg = "A jiagang cannot follow an unresolved qianggang target."
+        if round_state.pending_action_target is not None:
+            msg = "A jiagang cannot follow an unresolved action target."
             raise ValueError(msg)
 
         player_fulu = round_state.fulu[event.seat]
@@ -560,7 +550,7 @@ class MatchStateStore:
             first_draw=(False,) * player_count,
             yifa=(False,) * player_count,
             lingshang_zimo=tuple(lingshang_zimo),
-            previous_qianggang=(event.seat, event.added),
+            pending_action_target=(event.seat, event.added),
             operation_candidates=operation_candidates,
             events=(*round_state.events, event),
         )
@@ -588,11 +578,8 @@ class MatchStateStore:
         if event.seat >= player_count:
             msg = "ActionBaBei seat must identify a player."
             raise ValueError(msg)
-        if round_state.previous_dapai is not None:
-            msg = "A babei cannot follow an unresolved discard."
-            raise ValueError(msg)
-        if round_state.previous_qianggang is not None:
-            msg = "A babei cannot follow an unresolved qianggang target."
+        if round_state.pending_action_target is not None:
+            msg = "A babei cannot follow an unresolved action target."
             raise ValueError(msg)
 
         north = Tile("4z")
@@ -646,7 +633,7 @@ class MatchStateStore:
             first_draw=(False,) * player_count,
             yifa=(False,) * player_count,
             lingshang_zimo=tuple(lingshang_zimo),
-            previous_qianggang=(event.seat, north),
+            pending_action_target=(event.seat, north),
             operation_candidates=operation_candidates,
             events=(*round_state.events, event),
         )
@@ -683,8 +670,7 @@ class MatchStateStore:
             step=event.action_step,
             scores=scores,
             liqibang=liqibang,
-            previous_dapai=None,
-            previous_qianggang=None,
+            pending_action_target=None,
             operation_candidates=None,
             events=(*round_state.events, event),
         )
@@ -762,18 +748,11 @@ class MatchStateStore:
                     msg = "A zimohu must follow a draw or the initial deal."
                     raise ValueError(msg)
         elif all(not hule.zimo for hule in event.hules):
-            unresolved_targets = tuple(
-                target
-                for target in (
-                    round_state.previous_dapai,
-                    round_state.previous_qianggang,
-                )
-                if target is not None
-            )
-            if len(unresolved_targets) != 1:
-                msg = "A rong must follow exactly one unresolved target."
+            action_target = round_state.pending_action_target
+            if action_target is None:
+                msg = "A rong must follow an unresolved action target."
                 raise ValueError(msg)
-            from_seat, hu_tile = unresolved_targets[0]
+            from_seat, hu_tile = action_target
             for hule in event.hules:
                 if hule.seat == from_seat:
                     msg = "A rong winner must differ from the source seat."
@@ -789,8 +768,7 @@ class MatchStateStore:
             round_state,
             step=event.action_step,
             scores=event.scores,
-            previous_dapai=None,
-            previous_qianggang=None,
+            pending_action_target=None,
             operation_candidates=None,
             events=(*round_state.events, event),
         )
@@ -816,18 +794,20 @@ class MatchStateStore:
         if event.seat >= player_count or event.from_seat >= player_count:
             msg = "ActionChiPengGang seats must identify players."
             raise ValueError(msg)
-        previous_dapai = round_state.previous_dapai
-        if previous_dapai is None or event.from_seat != previous_dapai[0]:
+        previous_event = round_state.events[-1]
+        action_target = round_state.pending_action_target
+        if (
+            not isinstance(previous_event, DapaiEvent)
+            or action_target is None
+            or event.from_seat != action_target[0]
+        ):
             msg = "A call must claim the unresolved discard."
             raise ValueError(msg)
-        if event.tile != previous_dapai[1]:
+        if event.tile != action_target[1]:
             msg = "A called tile must match the unresolved discard."
             raise ValueError(msg)
         if round_state.zimopai is not None:
             msg = "A call cannot occur while a self draw is unresolved."
-            raise ValueError(msg)
-        if round_state.previous_qianggang is not None:
-            msg = "A call cannot follow an unresolved qianggang target."
             raise ValueError(msg)
         if (
             event.seat != state.self_seat
@@ -878,7 +858,7 @@ class MatchStateStore:
             first_draw=(False,) * player_count,
             yifa=(False,) * player_count,
             lingshang_zimo=tuple(lingshang_zimo),
-            previous_dapai=None,
+            pending_action_target=None,
             operation_candidates=operation_candidates,
             events=(*round_state.events, event),
         )
