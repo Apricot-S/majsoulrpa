@@ -522,6 +522,17 @@ message を通常どおり log・reduce し、自家の
 `tile` / `moqie` と一致し、`liqi` または `wliqi` が真であることを完了条件とする。これにより通常の
 立直とダブル立直を同じ `LiqiOperation` で扱い、立直を伴わない同一打牌を成功扱いしない。
 
+#### 自摸和操作
+
+`ZimohuOperation` は和了ボタンを直接探さず、基準 viewport 上の
+`Region(left=18, top=590, width=42, height=42)` にある自動和了トグルをオンにする。
+和了判断を遅らせないため `warp=True` で直ちにクリックし、ボタン描画待ちや手牌スライド待機は
+追加しない。その後は通常の message pipeline で、自家の `hu_tile` が指定した `tile` と一致する
+自摸和 `HuleEvent` まで reduce して更新後の `MatchState` を返す。
+
+自動和了トグルは次局へ入ると雀魂側でオフへ戻るため、和了成立後に framework から再度クリックして
+オフへ戻す cleanup は行わない。
+
 #### 打牌・立直打牌のクリック再試行
 
 `DapaiOperation` と `LiqiOperation` は、対象牌を1回クリックしただけで入力済みとみなしてはならない。

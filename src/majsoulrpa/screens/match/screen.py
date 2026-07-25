@@ -143,6 +143,7 @@ class MatchScreen(Screen):
         Region(left=601, top=692, width=317, height=117),
         Region(left=961, top=692, width=317, height=117),
     )
+    AUTO_HULE_TOGGLE_REGION = Region(left=18, top=590, width=42, height=42)
 
     SEAT_INDICATOR_TEMPLATES = tuple(
         load_png_template_matcher(
@@ -258,9 +259,7 @@ class MatchScreen(Screen):
             case LiqiOperation():
                 await self._operate_liqi(state, operation)
             case ZimohuOperation():
-                screenshot = await self.context.browser.screenshot()
-                msg = "Zimohu operation is not implemented."
-                raise ScreenNotImplementedOperationError(msg, screenshot)
+                await self._operate_zimohu(state, operation)
             case LiujuOperation():
                 await self._operate_liuju(state, operation)
             case BabeiOperation():
@@ -851,6 +850,29 @@ class MatchScreen(Screen):
             )
         await self._click_dapai_until_progress(region)
         await self._move_mouse_away_from_hand()
+
+    async def _operate_zimohu(
+        self,
+        state: MatchState,
+        operation: ZimohuOperation,
+    ) -> None:
+        candidates = state.round.operation_candidates
+        if candidates is None:
+            msg = "ZimohuOperation requires operation candidates."
+            raise RuntimeError(msg)
+        zimohu_operations = tuple(
+            candidate
+            for candidate in candidates.operations
+            if isinstance(candidate, ZimohuOperation)
+        )
+        if zimohu_operations != (operation,):
+            error = ValueError("The number of zimohu candidates must be one.")
+            await self._raise_inconsistent_message(
+                "Zimohu candidates do not match the supported UI layout.",
+                cause=error,
+            )
+
+        await self.click_region(self.AUTO_HULE_TOGGLE_REGION, warp=True)
 
     async def _operate_liuju(
         self,

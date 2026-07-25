@@ -862,6 +862,13 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 流局ボタン待機中に `ActionPrototype` を先読みした場合は1回だけ put_back し、ボタンをクリックしない
 - [x] 上位 action を確認できない流局ボタン検出失敗を成功扱いしない
 
+### MatchScreen 自摸和操作 API
+
+- [x] 自動和了トグルの領域を `warp=True` でクリックしてオンにする
+- [x] 自動和了トグルのクリック後に UI 待機を追加しない
+- [x] `operate()` は指定した自家の自摸和 `HuleEvent` まで message を reduce し、更新後の `MatchState` を返す
+- [x] 和了後に自動和了トグルをオフへ戻さない
+
 ### MatchScreen operation のスキップ
 
 - [ ] チー、ポン、大明槓は「鳴きなし」toggleをonにして明示的にスキップする
