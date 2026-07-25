@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, NoReturn, assert_never, override
 
 from majsoulrpa._clock import utc_now
 from majsoulrpa.assets.templates.match import (
+    BABEI_TEMPLATE_PATH,
     BUTTON_AREA_SETTINGS_PATH,
     CHI_TEMPLATE_PATH,
     GANG_TEMPLATE_PATH,
@@ -160,6 +161,10 @@ class MatchScreen(Screen):
         template_path=LIQI_TEMPLATE_PATH,
         settings_path=BUTTON_AREA_SETTINGS_PATH,
     )
+    BABEI_BUTTON_TEMPLATE = load_png_template_matcher(
+        template_path=BABEI_TEMPLATE_PATH,
+        settings_path=BUTTON_AREA_SETTINGS_PATH,
+    )
 
     def __init__(self, context: ScreenContext | None = None) -> None:
         super().__init__(context=context)
@@ -243,9 +248,7 @@ class MatchScreen(Screen):
             case LiqiOperation():
                 await self._operate_liqi(state, operation)
             case BabeiOperation():
-                screenshot = await self.context.browser.screenshot()
-                msg = "Babei operation is not implemented."
-                raise ScreenNotImplementedOperationError(msg, screenshot)
+                await self._operate_babei(state, operation)
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -830,6 +833,32 @@ class MatchScreen(Screen):
             )
         await self._click_dapai_until_progress(region)
         await self._move_mouse_away_from_hand()
+
+    async def _operate_babei(
+        self,
+        state: MatchState,
+        operation: BabeiOperation,
+    ) -> None:
+        candidates = state.round.operation_candidates
+        if candidates is None:
+            msg = "BabeiOperation requires operation candidates."
+            raise RuntimeError(msg)
+        babei_operations = tuple(
+            candidate
+            for candidate in candidates.operations
+            if isinstance(candidate, BabeiOperation)
+        )
+        if babei_operations != (operation,):
+            error = ValueError("The number of babei candidates must be one.")
+            await self._raise_inconsistent_message(
+                "Babei candidates do not match the supported UI layout.",
+                cause=error,
+            )
+        if not await self._click_operation_button_or_detect_progress(
+            self.BABEI_BUTTON_TEMPLATE
+        ):
+            return
+        await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
 
     async def _click_operation_button_or_detect_progress(
         self,

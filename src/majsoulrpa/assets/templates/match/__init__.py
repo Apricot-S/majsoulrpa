@@ -11,8 +11,10 @@ CHI_TEMPLATE_PATH = TEMPLATES_DIR / "match" / "chi.png"
 PENG_TEMPLATE_PATH = TEMPLATES_DIR / "match" / "peng.png"
 GANG_TEMPLATE_PATH = TEMPLATES_DIR / "match" / "gang.png"
 LIQI_TEMPLATE_PATH = TEMPLATES_DIR / "match" / "liqi.png"
+BABEI_TEMPLATE_PATH = TEMPLATES_DIR / "match" / "babei.png"
 
 __all__ = [
+    "BABEI_TEMPLATE_PATH",
     "BUTTON_AREA_SETTINGS_PATH",
     "CHI_TEMPLATE_PATH",
     "GANG_TEMPLATE_PATH",

@@ -823,6 +823,16 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 槓ボタンまたは複数候補の表示待ち中に `ActionPrototype` を先読みした場合は1回だけput_backし、次の領域をクリックしない
 - [x] 上位actionを確認できない槓ボタン検出失敗を成功扱いしない
 
+### MatchScreen 北抜き操作 API
+
+- [x] `button-area.toml` の search region 内から `babei.png` を検出し、検出したボタン領域をクリックする
+- [x] 北抜きボタンがまだ描画されていない場合は、呼び出し側 timeout まで検出を再試行する
+- [x] 北抜きボタンをクリックした後、手牌のスライド完了を1.5秒待ってから API を返す
+- [x] `operate()` は自家の `BabeiEvent` まで message を reduce し、更新後の `MatchState` を返す
+- [x] `BabeiEvent.moqie` は雀魂の自動選択に任せ、`BabeiOperation` との照合条件にしない
+- [x] 北抜きボタン待機中に `ActionPrototype` を先読みした場合は1回だけ put_back し、ボタンをクリックしない
+- [x] 上位 action を確認できない北抜きボタン検出失敗を成功扱いしない
+
 ### MatchScreen operation のスキップ
 
 - [ ] チー、ポン、大明槓は「鳴きなし」toggleをonにして明示的にスキップする

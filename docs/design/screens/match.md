@@ -371,6 +371,8 @@ type と concrete class の対応は次のとおりとする。
 だけ生成する。雀魂の画面では両方に北がある場合も抜く物理牌を選択できず自動的に決まるため、
 Operation には `moqie` を持たせない。実際に手牌とツモ牌のどちらから抜かれたかは、後続の
 `BabeiEvent.moqie` に記録する。
+操作時は `button-area.toml` の search region から `babei.png` を待ってクリックする。
+クリック後は手牌のスライド完了を1.5秒待ち、物理牌を選択する追加操作は行わない。
 
 type 1 の `combination` は選択可能な牌ではなく、食い替えによる禁止牌である。Event 適用後の
 `shoupai` と実際の `zimopai` から禁止牌を除いた打牌を列挙し、牌 1 種類と
