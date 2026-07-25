@@ -843,6 +843,16 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 北抜きボタン待機中に `ActionPrototype` を先読みした場合は1回だけ put_back し、ボタンをクリックしない
 - [x] 上位 action を確認できない北抜きボタン検出失敗を成功扱いしない
 
+### MatchScreen 流局操作 API
+
+- [x] `button-area.toml` の search region 内から `liuju.png` を検出し、検出したボタン領域をクリックする
+- [x] 流局ボタンがまだ描画されていない場合は、呼び出し側 timeout まで検出を再試行する
+- [x] 流局ボタンのクリック後に手牌スライド待機を追加しない
+- [x] `operate()` は自家の九種九牌 `LiujuEvent` まで message を reduce し、更新後の `MatchState` を返す
+- [x] 九種九牌以外の `LiujuEvent` を `LiujuOperation` の完了として扱わない
+- [x] 流局ボタン待機中に `ActionPrototype` を先読みした場合は1回だけ put_back し、ボタンをクリックしない
+- [x] 上位 action を確認できない流局ボタン検出失敗を成功扱いしない
+
 ### MatchScreen operation のスキップ
 
 - [ ] チー、ポン、大明槓は「鳴きなし」toggleをonにして明示的にスキップする
