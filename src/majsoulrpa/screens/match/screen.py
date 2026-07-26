@@ -118,10 +118,17 @@ _MAX_CHI_CANDIDATE_COUNT = 5
 _MAX_PENG_CANDIDATE_COUNT = 2
 _MAX_ANGANG_JIAGANG_CANDIDATE_COUNT = 3
 
+_INPUT_CHI_PENG_GANG_NAME = ".lq.FastTest.inputChiPengGang"
 _DAPAI_CLICK_PROGRESS_MESSAGE_NAMES = frozenset(
     {
         ".lq.FastTest.inputOperation",
-        ".lq.FastTest.inputChiPengGang",
+        _INPUT_CHI_PENG_GANG_NAME,
+        ACTION_PROTOTYPE_NAME,
+    }
+)
+_NO_CALL_SKIP_COMPLETION_MESSAGE_NAMES = frozenset(
+    {
+        _INPUT_CHI_PENG_GANG_NAME,
         ACTION_PROTOTYPE_NAME,
     }
 )
@@ -1082,7 +1089,7 @@ class MatchScreen(Screen):
         try:
             while True:
                 message = await self._get_sniffer_message()
-                if message.raw.name == ACTION_PROTOTYPE_NAME:
+                if message.raw.name in _NO_CALL_SKIP_COMPLETION_MESSAGE_NAMES:
                     self._put_back_sniffer_message(message)
                     return
                 await self._apply_match_message_with_screen_errors(

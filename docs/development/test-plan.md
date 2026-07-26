@@ -906,6 +906,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 - [x] チー、ポン、大明槓は「鳴きなし」toggleをonにして明示的にスキップする
 - [x] 「鳴きなし」によるスキップの進行後はtoggleをoffへ戻し、将来の鳴きを再び許可する
+- [x] `inputChiPengGang` responseも「鳴きなし」によるスキップの完了markerとして扱い、
+  queueへ戻して通常pipelineで処理する
 - [x] 「鳴きなし」をonにした後に上位actionでpreemptされても、toggleをoffへ戻してからAPIを返す
 - [x] 「鳴きなし」をoffへ戻せない場合は、preempt自体を許容しても正常完了扱いにしない
 - [x] ロンはスキップbuttonで明示的にスキップする

@@ -21,6 +21,7 @@ from tests.screens._support import (
     BrowserControllerSpy,
     ScreenContext,
     _message_queue,
+    _request_response,
     _synthetic_blank_screenshot,
     _synthetic_template_screenshot,
 )
@@ -72,6 +73,34 @@ class _FailToDisableNoCallBrowser(_MessageOnFirstClickBrowser):
             msg = "cannot disable no-call"
             raise RuntimeError(msg)
         await super().click(x, y, warp=warp)
+
+
+class _MessageOnEachClickBrowser(BrowserControllerSpy):
+    def __init__(
+        self,
+        screenshot: bytes,
+        messages: SnifferMessageQueue,
+        *click_messages: DecodedSnifferMessage,
+    ) -> None:
+        super().__init__(screenshot)
+        self._messages = messages
+        self._click_messages = iter(click_messages)
+        self.click_warps: list[bool] = []
+
+    async def click(
+        self,
+        x: float,
+        y: float,
+        *,
+        warp: bool = False,
+    ) -> None:
+        self.click_warps.append(warp)
+        await super().click(x, y, warp=warp)
+        try:
+            message = next(self._click_messages)
+        except StopIteration:
+            return
+        self._messages.enqueue(message)
 
 
 @pytest.mark.parametrize(
@@ -137,6 +166,58 @@ def test_operate_skip_toggles_no_call_until_next_action(
     for x, y in browser.clicked_points:
         assert 18 < x < 60
         assert toggle_top < y < toggle_top + 42
+
+
+def test_no_call_toggle_accepts_input_chi_peng_gang_response() -> None:
+    messages = _message_queue(
+        _auth_game(player_count=4),
+        _live_new_round_action(
+            step=0,
+            ju=3,
+            tiles=["5m", "5m", *["1p"] * 11],
+        ),
+        _live_discard_action(
+            step=1,
+            seat=3,
+            tile="5m",
+            moqie=False,
+            operation=liqi_pb2.OptionalOperationList(
+                operation_list=[
+                    liqi_pb2.OptionalOperation(
+                        type=3,
+                        combination=["5m|5m"],
+                    ),
+                ],
+            ),
+        ),
+    )
+    browser = _MessageOnEachClickBrowser(
+        b"synthetic-screenshot",
+        messages,
+        _request_response(".lq.FastTest.inputChiPengGang", response={}),
+        _live_deal_action(
+            step=2,
+            seat=0,
+            tile="9s",
+            left_tile_count=68,
+        ),
+    )
+    screen = _screen(browser, messages)
+
+    asyncio.run(screen.before_callback())
+    initial = asyncio.run(screen.get_state())
+    candidates = initial.round.operation_candidates
+    assert candidates is not None
+
+    state = asyncio.run(
+        asyncio.wait_for(
+            screen.operate(candidates.operations[-1]),
+            timeout=1.0,
+        )
+    )
+
+    assert isinstance(state.round.events[-1], ZimoEvent)
+    assert browser.click_warps == [True, True]
 
 
 def test_operate_skip_detects_skip_button_at_short_interval(

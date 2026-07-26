@@ -765,8 +765,9 @@ put-backして、すでに消えた選択UIの座標をクリックしない。�
 
 チー、ポン、大明槓、ロンは、候補を選ばず待つだけではスキップできない。frameworkは対応するUIを
 明示的に操作する。チー、ポン、大明槓は「鳴きなし」toggleをonにして現在の候補をスキップし、
-actionの進行を確認してからoffへ戻して、将来の鳴きを再び許可する。ロンはスキップbuttonを
-クリックする。
+`.lq.FastTest.inputChiPengGang` responseまたは次の `ActionPrototype` で進行を確認してから
+offへ戻し、将来の鳴きを再び許可する。確認に使ったmessageはqueueへ戻し、通常pipelineで
+一度だけ処理する。ロンはスキップbuttonをクリックする。
 
 自家のツモ番に北抜き・暗槓・加槓・ツモ和了が提示された場合、立直の有無で候補の構成と操作を変える。
 非立直時は `SkipOperation` を候補へ追加せず、利用者が選んだ `DapaiOperation` の打牌によって
