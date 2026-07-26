@@ -109,6 +109,7 @@ DAPAI_CLICK_RETRY_INTERVAL_SECONDS = 0.5
 OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.2
 OPERATION_OPTION_DISPLAY_DELAY_SECONDS = 0.4
 HAND_SLIDE_DELAY_SECONDS = 1.5
+CONFIRMATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
 
 _SINGLE_FULU_CANDIDATE_COUNT = 1
 _MIN_MULTIPLE_FULU_CANDIDATE_COUNT = 2
@@ -1214,7 +1215,7 @@ class MatchScreen(Screen):
             # These confirmation screens advance when their on-screen
             # three-count finishes, even if the button cannot be used.
             await asyncio.sleep(
-                OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
+                CONFIRMATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
             )
 
     async def _wait_for_round_transition(self) -> MatchState | None:

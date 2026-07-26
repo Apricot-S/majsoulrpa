@@ -4,7 +4,6 @@ from types import SimpleNamespace
 
 import pytest
 
-import majsoulrpa.screens.match.screen as match_screen_module
 from majsoulrpa.assets.protocol import liqi_pb2
 from majsoulrpa.assets.templates.match import (
     HULE_CONFIRM_SETTINGS_PATH,
@@ -305,9 +304,7 @@ def test_wait_for_state_change_waits_for_delayed_confirmation_button(
 
     assert state is None
     assert len(browser.clicked_points) == 3
-    assert sleeps == [
-        match_screen_module.OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS,
-    ]
+    assert sleeps == [0.5]
 
 
 def test_wait_for_state_change_advances_liujumanguan_presentations(
