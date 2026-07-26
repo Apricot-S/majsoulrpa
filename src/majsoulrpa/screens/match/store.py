@@ -19,6 +19,7 @@ from majsoulrpa.screens.match.event import (
     LiujuType,
     MatchEvent,
     NewRoundEvent,
+    NoTileEvent,
     PengEvent,
     StartMatchEvent,
     ZimoEvent,
@@ -138,6 +139,9 @@ class MatchStateStore:
                 return self._apply_liuju(event)
             case HuleEvent():
                 return self._apply_hule(event)
+            case NoTileEvent():
+                msg = "ActionNoTile reducer is not implemented."
+                raise ValueError(msg)
             case StartMatchEvent() | NewRoundEvent():
                 msg = "A match initialization event cannot be applied again."
                 raise ValueError(msg)

@@ -844,6 +844,34 @@ class LiujuEvent(_MatchEventBase):
 
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
+class NoTilePlayer:
+    tingpai: bool
+    hand: tuple[Tile, ...]
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class NoTileScore:
+    seat: Seat
+    old_scores: tuple[int, ...]
+    delta_scores: tuple[int, ...]
+    hand: tuple[Tile, ...]
+    ming: tuple[str, ...]
+    dora_indicators: tuple[Tile, ...]
+    score: int
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class NoTileEvent(_MatchEventBase):
+    liujumanguan: bool
+    players: tuple[NoTilePlayer, ...]
+    scores: tuple[NoTileScore, ...]
+    game_end: bool
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
 class HuleFan:
     value: int
     id: int
@@ -882,6 +910,7 @@ type MatchEvent = (
     | JiagangEvent
     | BabeiEvent
     | LiujuEvent
+    | NoTileEvent
     | HuleEvent
 )
 
@@ -910,6 +939,8 @@ def event_name(event: MatchEvent) -> str:
             return "babei"
         case LiujuEvent():
             return "liuju"
+        case NoTileEvent():
+            return "no_tile"
         case HuleEvent():
             return "hule"
     assert_never(event)
@@ -919,8 +950,7 @@ def event_name(event: MatchEvent) -> str:
 `assert_never(event)` を置く。`MatchEvent` union に新しい concrete class を追加して利用側が未対応の
 ままなら、`ty` は `assert_never()` の引数が `Never` でないことを報告する。`case _` は使わない。
 
-上記は和了・途中流局までを含む Event の union であり、残る局終了 reducer と同時に
-`NoTileEvent` を追加する。`ActionDiscardTile` は `DapaiEvent` 1 件に変換し、立直宣言牌か
+`ActionDiscardTile` は `DapaiEvent` 1 件に変換し、立直宣言牌か
 どうかを `liqi` / `wliqi` field に含める。独立した `LiqiEvent` は作らない。後続 action に埋め込まれた
 `LiQiSuccess` も独立 event に分離せず、その action に対応する event の `liqi_success` field として
 保持し、reducer が同じ event の適用中に点数と `liqibang` を更新する。これは雀魂の action 境界を
@@ -944,6 +974,17 @@ Event に tile field は持たない。reducer は三人戦だけで受理し、
 `None` に変換する。埋め込まれた `LiQiSuccess` は `liqi_success` に保持する。reducer は
 Event 列へ追加して未解決の打牌・搶槓対象と operation 候補を消去し、九種九牌では対象 seat が
 第一ツモ中であることを検証する。
+
+`ActionNoTile` は通常の荒牌平局と流し満貫に共通の `NoTileEvent` に変換する。
+`players` は protobuf の順序を保ち、各 player の聴牌状態と公開手牌を
+`NoTilePlayer` に保持する。`tings` は通常ルールでも使用されるが、他の Action Event と同様に
+待ち情報を RPA の公開型へ取り込まない。`already_hule` は通常ルールで利用しないため無視する。
+流し満貫の精算情報は `NoTileScore` に変換し、seat、点数列、公開手牌・副露、
+ドラ表示牌、最終点数を保持する。通常ルールで利用しない `taxes` / `lines` は無視する。
+player 数は3人または4人とし、
+各 score の点数列は player 数と一致し、score seat は重複しないことを要求する。
+特殊 mode 用の `muyu` / `hules_history` は公開 model に取り込まないが、decoded message の
+ログには残す。局終了時の state reducer は別工程で追加する。
 
 `ActionHule` は自摸和と栄和に共通の `HuleEvent` に変換する。protobuf の repeated `hules` は
 message の順序を保った `tuple[Hule, ...]` とし、自摸和は1要素、ダブロン・トリロンは複数要素で
@@ -1176,11 +1217,11 @@ nested message type は `liqi_pb2.DESCRIPTOR` から action 名で解決する�
 - `ActionAnGangAddGang`
 - `ActionBaBei`
 - `ActionLiuJu`
+- `ActionNoTile`
 - `ActionHule`
 
 active `game_state` の restore batch に round terminal action が含まれるかは手動 spike で確認する。
-`ActionNoTile` は局遷移設計と同時に追加し、初期化だけの段階では暗黙に
-無視しない。特殊 mode 専用 action、未知 action 名、壊れた data、不正 step は推測せず明示的な
+特殊 mode 専用 action、未知 action 名、壊れた data、不正 step は推測せず明示的な
 失敗にする。
 
 live の mask 解除は v1-develop で確認済みの byte algorithm を Match 固有 pure function として移植

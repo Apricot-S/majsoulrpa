@@ -8,6 +8,11 @@ from majsoulrpa.screens.match.event.jiagang import JiagangEvent
 from majsoulrpa.screens.match.event.liqi_success import LiqiSuccess
 from majsoulrpa.screens.match.event.liuju import LiujuEvent, LiujuType
 from majsoulrpa.screens.match.event.new_round import NewRoundEvent
+from majsoulrpa.screens.match.event.no_tile import (
+    NoTileEvent,
+    NoTilePlayer,
+    NoTileScore,
+)
 from majsoulrpa.screens.match.event.peng import PengEvent
 from majsoulrpa.screens.match.event.start_match import StartMatchEvent
 from majsoulrpa.screens.match.event.zimo import ZimoEvent
@@ -24,6 +29,7 @@ type MatchEvent = (
     | JiagangEvent
     | BabeiEvent
     | LiujuEvent
+    | NoTileEvent
     | HuleEvent
 )
 
@@ -42,6 +48,9 @@ __all__ = [
     "LiujuType",
     "MatchEvent",
     "NewRoundEvent",
+    "NoTileEvent",
+    "NoTilePlayer",
+    "NoTileScore",
     "PengEvent",
     "StartMatchEvent",
     "ZimoEvent",

@@ -693,6 +693,14 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `ActionLiuJu.liqi` を `LiujuEvent.liqi_success` に保持する
 - [x] `ActionLiuJu` を live / restore の両経路で同じ `LiujuEvent` へ変換する
 - [x] `LiujuEvent` を Event 列へ追加し、局終了前の operation 候補を消去する
+- [x] `ActionNoTile` を live / restore の両経路で同じ `NoTileEvent` へ変換する
+- [x] `NoTilePlayer` は protobuf の player 順を保ち、聴牌状態と公開手牌を保持する
+- [x] 通常ルールでも使用される `NoTilePlayerInfo.tings` は、他の Action Event と同様に公開 model に取り込まない
+- [x] 通常ルールで利用しない `NoTilePlayerInfo.already_hule` は公開 model に取り込まない
+- [x] `NoTileScore` は流し満貫の seat、和了前点数、点数差分、公開手牌・副露・ドラ表示牌、最終点数を保持する
+- [x] 通常ルールで利用しない `NoTileScoreInfo.taxes` / `lines` は公開 model に取り込まない
+- [x] `NoTileEvent` は流し満貫と試合終了のflagを保持し、特殊mode用のmuyu / hules_historyは公開modelへ取り込まない
+- [x] `NoTileEvent.players` は3人または4人、各 `NoTileScore` の点数列はplayer数と一致し、score seatは重複しない
 - [x] `ActionHule` を自摸和・栄和共通の `HuleEvent` に変換し、複数の和了情報を message の順序どおり保持する
 - [x] `Hule` は和了者、和了方法、和了牌、公開された手牌・副露、役ID、符、点数内訳を保持し、常に空の役名・titleは保持しない
 - [x] `HuleEvent` は局の和了前点数、点数差分、和了後点数を保持し、未使用の gameend と空の action 直下ドラ表示牌は保持しない

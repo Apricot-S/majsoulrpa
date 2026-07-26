@@ -14,6 +14,7 @@ from majsoulrpa.screens.match import (
     LiujuEvent,
     LiujuType,
     NewRoundEvent,
+    NoTileEvent,
     PengEvent,
     StartMatchEvent,
     ZimoEvent,
@@ -242,6 +243,46 @@ def test_live_and_restore_action_liuju_decode_to_same_event() -> None:
         seat=validate_seat(2),
     )
     assert restore_event == live_event
+    assert live_operation is None
+    assert restore_operation is None
+
+
+def test_live_and_restore_action_no_tile_decode_to_same_event() -> None:
+    data = liqi_pb2.ActionNoTile(
+        players=[
+            liqi_pb2.NoTilePlayerInfo(
+                tingpai=index == 0,
+                hand=["1m"] * 13 if index == 0 else [],
+                tings=(
+                    [
+                        liqi_pb2.TingPaiInfo(
+                            tile="2m",
+                            haveyi=True,
+                            count=2,
+                            fu=30,
+                        )
+                    ]
+                    if index == 0
+                    else []
+                ),
+            )
+            for index in range(3)
+        ],
+        gameend=True,
+    ).SerializeToString()
+    live_event, live_operation, _ = decode_live_action(
+        _live_action(step=4, name="ActionNoTile", data=data)
+    )
+    restore_event, restore_operation, _ = decode_restore_action(
+        {
+            "step": 4,
+            "name": "ActionNoTile",
+            "data": base64.b64encode(data).decode(),
+        }
+    )
+
+    assert isinstance(live_event, NoTileEvent)
+    assert live_event == restore_event
     assert live_operation is None
     assert restore_operation is None
 
