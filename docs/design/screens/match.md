@@ -137,21 +137,45 @@ UIのtemplate待機とSniffer message待機は直列にしない。短い間隔�
 終局のauthoritative messageが先に到着した場合は、存在しなくなった確認buttonを待ち続けない。
 通常のstate messageと同様に、待機中に取得したmessageは共通のlog処理を通す。
 
-v1-developには次の順序差と遅延に対するworkaroundがある。これらは推測による一般化ではなく、
-対応する分岐の直前に理由を説明するcode commentを残す。
+v1-developに残されたworkaroundを次に列挙する。これらは推測による一般化ではなく、対応する分岐の
+直前に理由を説明するcode commentを残す。
 
-- 和了確認画面が表示されないまま `ActionNewRound` が届き、次局が始まる場合がある。
-- `inputOperation` / `inputChiPengGang` のresponseが局終了eventより後に届く場合がある。
-  遅延responseとしてlogへ残すが、局状態へ再適用しない。
-- `.lq.FastTest.confirmNewRound` と `ActionNewRound` の観測順は逆転する場合がある。
-  `ActionNewRound` をauthoritativeな次局開始markerとし、confirm responseとの順序は要求しない。
-- `.lq.FastTest.confirmNewRound` 自体が観測されず、次局のstep 1以降の
-  `ActionPrototype` がstep 0の `ActionNewRound` より先に届く場合がある。この経路だけは
-  小さな上限を持つlocal bufferへactionを退避し、step 0を取得後にstep順でqueueへ戻す。
-  同じstepの異なるduplicate、上限超過、step 0が `ActionNewRound` でない場合は
-  `ScreenInconsistentMessageError` とする。
-- `NotifyGameEndResult` が結果画面のclickより先に届く場合がある。終局markerとして保持し、
-  次局開始と誤認しない。
+| 観測された現象 | v1-developの処理 | 現行方針 |
+|---|---|---|
+| recoveryの `authGame` / `syncGame` 後にlive actionまたは入力responseが続く | `ActionPrototype` / `inputOperation` / `inputChiPengGang` を1回put backしてrestore drainを終了 | recovery bootstrapとlive pipelineの所有権境界として維持する |
+| 対局中のreload後に `syncGame` / `finishSyncGame` が届く | active instanceへ同期内容を反映して処理を返す | reload前のinstanceは再利用せず、callbackからreturnした後の新しい `MatchScreen` がrecovery bootstrapで復元する |
+| `inputOperation` / `inputChiPengGang` responseが局終了eventより遅れて届く | 遅延responseとしてlogへ出し、局状態へ再適用せず続行 | 同じmessageを通常formatterで1回だけlogし、state versionを増やさない |
+| live `ActionPrototype.step` が観測順と異なる | 欠けたstepまで先読みし、step順にqueueへ戻す | 汎用並べ替えにはせず、実例が残る次局遷移直後だけに限定する |
+| `confirmNewRound` と `ActionNewRound` の観測順が逆転する | 先着側を保持して後着側を待つ | `ActionNewRound` をauthoritativeな次局開始markerとし、confirm responseとの順序を要求しない |
+| `confirmNewRound` が省略され、次局step 1以降がstep 0より先着する | step 0まで先読みしてAction列を並べ直す | bounded local bufferでstep 0を待ち、重複・上限超過・不正なstep 0を拒否する |
+| 次局の親が自家の場合に `confirmNewRound` responseが来ないことがある | warningを出してresponse待ちを打ち切る | 親かどうかに依存せず、`ActionNewRound` と次局画面を確認できれば遷移を完了する |
+| 和了確認画面が表示されないまま `ActionNewRound` が届く | Actionをput backし、存在しない和了確認buttonを待たない | 同じ。通常pipelineでActionを一度だけ処理する |
+| 和了確認buttonを押す前に `NotifyGameEndResult` が届く | notificationをput backし、和了確認buttonの処理を継続 | notificationを終局markerとして保持し、必須の確認処理を省略しない |
+| 和了確認中に `confirmNewRound` だけが届き画面が進まない | 描画不整合としてbrowser reloadを要求 | 自動reloadせず、screenshot付き `ScreenInconsistentMessageError` を送出する |
+| match result確認後にRoom / tournament復帰messageが届く | 次Screenのmessageをput backしてMatch drainを終了 | match result確認buttonを必ずclickした後、同じ所有権境界で次Screenへ渡す |
+| 入力messageがUI描画より先に届き、打牌clickが反応しない | 入力進行messageまで同じ牌を再clickし、先読みmessageをput back | click間隔を維持しながら同じ牌領域を再試行し、境界messageを通常pipelineへ戻す |
+| チー・ポン・大明槓のbutton待機または候補選択中に上位actionが成立する | 上位actionをput backし、要求した操作の失敗にしない | eventの優先関係を検証したうえでpreemptとして更新後stateを返す |
+| 「鳴きなし」中に入力responseまたは上位actionが届く | response / actionをput backしてスキップ完了とし、toggleをoffへ戻す | cleanupを必須とし、offへ戻してから通常pipelineでmessageを処理する |
+| buttonが消えた後に `inputChiPengGang` responseだけが得られる | 描画不整合としてbrowser reloadを要求 | 成功fallbackにはせず、進行actionもbuttonも確認できなければscreenshot付きerrorにする |
+| 暗槓・加槓が3候補になる | 未確認UIとしてscreenshot保存付き専用例外を送出 | `ScreenNotImplementedOperationError` と情報提供依頼で停止する |
+| イベント開催期間中の終局後に `fetchAccountInfo` / activity messageが届く | 更新messageを処理し、短時間後続messageがなければ前の画面へ戻る | 友人戦・大会戦でも発生する終局処理として許容し、Room / tournament復帰までdrainを継続する |
+| `NotifyActivityRewardV2` によりイベント報酬演出が表示される | 確認buttonを誤clickしない領域をclickして演出を進め、追加のmatch result確認buttonを表示する | safe regionのclickと追加確認buttonのclickを必須とし、報酬画面を残したままstaleにしない |
+
+`NotifyGameEndResult` は結果画面のclickより先に届く場合がある。次局開始とは解釈せず、終局markerとして
+保持する。match result確認buttonは自動遷移しないため、Room / tournament復帰messageが先着しても
+clickを省略しない。
+
+activity関連messageの「イベント」はイベント戦という対局種別ではなく、季節イベントなどの開催期間を
+意味する。したがって友人戦・大会戦でも、終局報酬にイベントitemが含まれれば発生し得る。
+`NotifyAccountUpdate`、`NotifyGameFinishReward`、`NotifyActivityReward`、`NotifyActivityPoint`、
+`NotifyLeaderboardPoint` は共通formatterでlogへ出して終局drainを続ける。`fetchAccountInfo` と
+`NotifyActivityPointV2` も同様に処理し、後続のRoom / tournament復帰messageまたは画面遷移を待つ。
+
+`NotifyActivityRewardV2` はlogだけでは不十分である。イベント報酬演出が入力待ちになり得るため、
+match result確認buttonと重ならないsafe regionをclickして演出を進める。追加の
+`match-result-confirm` templateが表示されたら、その検出位置をclickする。追加確認が連続する場合は、
+表示された確認buttonをすべて順に処理する。この一連のUI処理が完了するまでは `MatchScreen` を
+staleにせず、次Screenのmessageを消費しない。
 
 初回の `ActionMJStart` / `ActionNewRound` は受信順を入れ替えないという既存方針を維持する。
 上記の並べ替えは、v1-developで現象が記録されている局終了直後の次局遷移に限定した
