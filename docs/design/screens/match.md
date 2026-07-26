@@ -100,9 +100,9 @@ operation候補が残っていないことも要求する。内部timeoutは設�
 呼び出し側の `asyncio.timeout()` に上限を委ねる。
 
 terminal snapshotを渡して `wait_for_state_change()` を呼ぶと、まずUI描画を1.0秒待ち、
-以下の固有確認画面を進める。点数授受結果画面のtemplateを採取する暫定実装では、固有確認後の
-描画を3.0秒待ってscreenshotを取得し、`ScreenNotImplementedOperationError` を送出する。
-利用者は例外の `save_screenshot()` を使って次のtemplate画像を保存できる。
+以下の固有確認画面と点数授受結果画面を進める。次局または試合結果画面の処理前の暫定実装では、
+点数授受結果の確認後に3.0秒待ってscreenshotを取得し、`ScreenNotImplementedOperationError` を
+送出する。利用者は例外の `save_screenshot()` を使って次のtemplate画像を保存できる。
 
 ### 結果画面の処理
 

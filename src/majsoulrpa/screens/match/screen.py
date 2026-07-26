@@ -15,6 +15,8 @@ from majsoulrpa.assets.templates.match import (
     LIUJU_CONFIRM_TEMPLATE_PATH,
     LIUJU_TEMPLATE_PATH,
     PENG_TEMPLATE_PATH,
+    ROUND_RESULT_CONFIRM_SETTINGS_PATH,
+    ROUND_RESULT_CONFIRM_TEMPLATE_PATH,
     SEAT_INDICATOR_SETTINGS_PATH,
     SEAT_INDICATOR_TEMPLATE_PATHS,
     SKIP_SETTINGS_PATH,
@@ -223,6 +225,10 @@ class MatchScreen(Screen):
         template_path=LIUJU_CONFIRM_TEMPLATE_PATH,
         settings_path=LIUJU_CONFIRM_SETTINGS_PATH,
     )
+    ROUND_RESULT_CONFIRM_TEMPLATE = load_png_template_matcher(
+        template_path=ROUND_RESULT_CONFIRM_TEMPLATE_PATH,
+        settings_path=ROUND_RESULT_CONFIRM_SETTINGS_PATH,
+    )
 
     def __init__(self, context: ScreenContext | None = None) -> None:
         super().__init__(context=context)
@@ -304,12 +310,15 @@ class MatchScreen(Screen):
             if not isinstance(event, HuleEvent | NoTileEvent | LiujuEvent):
                 msg = "A terminal match state must end with a terminal event."
                 raise RuntimeError(msg)
-            await self._advance_terminal_event_screen(event)
+            if await self._advance_terminal_event_screen(event):
+                await self._click_result_confirmation_or_wait(
+                    self.ROUND_RESULT_CONFIRM_TEMPLATE
+                )
             await asyncio.sleep(SCORE_RESULT_SCREEN_DISPLAY_DELAY_SECONDS)
             screenshot = await self.context.browser.screenshot()
             msg = (
-                f"The score result after {type(event).__name__} is not "
-                "implemented."
+                f"The screen after the {type(event).__name__} round result "
+                "is not implemented."
             )
             raise ScreenNotImplementedOperationError(msg, screenshot)
 
@@ -1172,7 +1181,7 @@ class MatchScreen(Screen):
     async def _advance_terminal_event_screen(
         self,
         event: HuleEvent | NoTileEvent | LiujuEvent,
-    ) -> None:
+    ) -> bool:
         await asyncio.sleep(TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS)
         match event:
             case HuleEvent():
@@ -1190,7 +1199,8 @@ class MatchScreen(Screen):
 
         for template in templates:
             if not await self._click_result_confirmation_or_wait(template):
-                return
+                return False
+        return True
 
     async def _click_result_confirmation_or_wait(
         self,
