@@ -1015,18 +1015,18 @@ class MatchScreen(Screen):
                 cause=error,
             )
 
-        has_rong = any(
-            isinstance(candidate, RongOperation)
-            for candidate in candidates.operations
-        )
-        has_call = any(
-            isinstance(
+        uses_no_call_toggle = False
+        for candidate in candidates.operations:
+            if isinstance(candidate, RongOperation):
+                uses_no_call_toggle = False
+                break
+            if isinstance(
                 candidate,
                 ChiOperation | PengOperation | DaminggangOperation,
-            )
-            for candidate in candidates.operations
-        )
-        if has_call and not has_rong:
+            ):
+                uses_no_call_toggle = True
+
+        if uses_no_call_toggle:
             await self._skip_call_with_no_call_toggle(state)
             return
         await self._click_skip_button_or_detect_progress()
