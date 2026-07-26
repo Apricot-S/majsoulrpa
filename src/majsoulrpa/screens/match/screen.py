@@ -90,8 +90,9 @@ from majsoulrpa.screens.match.operation import (
 from majsoulrpa.screens.match.operation._specification import (
     _OperationCandidatesSpecification,
 )
-from majsoulrpa.screens.match.state import MatchState
+from majsoulrpa.screens.match.state import MatchState, RoundState
 from majsoulrpa.screens.match.store import MatchStateStore
+from majsoulrpa.screens.match.types import Seat
 from majsoulrpa.sniffer.events import (
     DecodedNotice,
     DecodedRequestResponse,
@@ -349,31 +350,35 @@ class MatchScreen(Screen):
             msg = "operation is not one of the current candidates."
             raise ScreenInvalidArgumentError(msg, screenshot)
 
+        operations = candidates.operations
+        round_state = state.round
+        self_seat = state.self_seat
+        player_count = len(state.players)
         match operation:
             case DapaiOperation():
-                await self._operate_dapai(state, operation)
+                await self._operate_dapai(operation, round_state, self_seat)
             case ChiOperation():
-                await self._operate_chi(state, operation)
+                await self._operate_chi(operation, operations)
             case PengOperation():
-                await self._operate_peng(state, operation)
+                await self._operate_peng(operation, operations)
             case AngangOperation():
-                await self._operate_angang(state, operation)
+                await self._operate_angang(operation, operations)
             case DaminggangOperation():
-                await self._operate_daminggang(state, operation)
+                await self._operate_daminggang(operation, operations)
             case JiagangOperation():
-                await self._operate_jiagang(state, operation)
+                await self._operate_jiagang(operation, operations)
             case LiqiOperation():
-                await self._operate_liqi(state, operation)
+                await self._operate_liqi(operation, round_state, self_seat)
             case ZimohuOperation():
-                await self._operate_zimohu(state, operation)
+                await self._operate_zimohu(operation, operations, player_count)
             case RongOperation():
-                await self._operate_rong(state, operation)
+                await self._operate_rong(operation, operations, player_count)
             case LiujuOperation():
-                await self._operate_liuju(state, operation)
+                await self._operate_liuju(operation, operations)
             case BabeiOperation():
-                await self._operate_babei(state, operation)
+                await self._operate_babei(operation, operations)
             case SkipOperation():
-                await self._operate_skip(state, operation)
+                await self._operate_skip(operation, operations, player_count)
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -578,13 +583,12 @@ class MatchScreen(Screen):
 
     async def _operate_dapai(
         self,
-        state: MatchState,
         operation: DapaiOperation,
+        round_state: RoundState,
+        self_seat: Seat,
     ) -> None:
-        round_state = state.round
         is_dealer_first_discard = (
-            round_state.ju == state.self_seat
-            and round_state.first_draw[state.self_seat]
+            round_state.ju == self_seat and round_state.first_draw[self_seat]
         )
         if is_dealer_first_discard:
             # Wait for the dealing animation. Moving tiles could turn
@@ -595,7 +599,7 @@ class MatchScreen(Screen):
 
         try:
             region = self._get_dapai_region(
-                state,
+                round_state,
                 operation,
                 is_dealer_first_discard=is_dealer_first_discard,
             )
@@ -622,12 +626,11 @@ class MatchScreen(Screen):
     @classmethod
     def _get_dapai_region(
         cls,
-        state: MatchState,
+        round_state: RoundState,
         operation: DapaiOperation | LiqiOperation,
         *,
         is_dealer_first_discard: bool,
     ) -> Region:
-        round_state = state.round
         use_zimopai_region = operation.moqie or (
             is_dealer_first_discard and round_state.zimopai == operation.tile
         )
@@ -684,16 +687,12 @@ class MatchScreen(Screen):
 
     async def _operate_chi(
         self,
-        state: MatchState,
         operation: ChiOperation,
+        operations: tuple[MatchOperation, ...],
     ) -> None:
-        candidates = state.round.operation_candidates
-        if candidates is None:
-            msg = "ChiOperation requires operation candidates."
-            raise RuntimeError(msg)
         chi_operations = tuple(
             candidate
-            for candidate in candidates.operations
+            for candidate in operations
             if isinstance(candidate, ChiOperation)
         )
         if not (
@@ -714,16 +713,12 @@ class MatchScreen(Screen):
 
     async def _operate_peng(
         self,
-        state: MatchState,
         operation: PengOperation,
+        operations: tuple[MatchOperation, ...],
     ) -> None:
-        candidates = state.round.operation_candidates
-        if candidates is None:
-            msg = "PengOperation requires operation candidates."
-            raise RuntimeError(msg)
         peng_operations = tuple(
             candidate
-            for candidate in candidates.operations
+            for candidate in operations
             if isinstance(candidate, PengOperation)
         )
         if not (
@@ -795,16 +790,12 @@ class MatchScreen(Screen):
 
     async def _operate_angang(
         self,
-        state: MatchState,
         operation: AngangOperation,
+        operations: tuple[MatchOperation, ...],
     ) -> None:
-        candidates = state.round.operation_candidates
-        if candidates is None:
-            msg = "AngangOperation requires operation candidates."
-            raise RuntimeError(msg)
         angang_operations = tuple(
             candidate
-            for candidate in candidates.operations
+            for candidate in operations
             if isinstance(candidate, AngangOperation)
         )
         if not (
@@ -828,16 +819,12 @@ class MatchScreen(Screen):
 
     async def _operate_daminggang(
         self,
-        state: MatchState,
         operation: DaminggangOperation,
+        operations: tuple[MatchOperation, ...],
     ) -> None:
-        candidates = state.round.operation_candidates
-        if candidates is None:
-            msg = "DaminggangOperation requires operation candidates."
-            raise RuntimeError(msg)
         daminggang_operations = tuple(
             candidate
-            for candidate in candidates.operations
+            for candidate in operations
             if isinstance(candidate, DaminggangOperation)
         )
         if daminggang_operations != (operation,):
@@ -856,16 +843,12 @@ class MatchScreen(Screen):
 
     async def _operate_jiagang(
         self,
-        state: MatchState,
         operation: JiagangOperation,
+        operations: tuple[MatchOperation, ...],
     ) -> None:
-        candidates = state.round.operation_candidates
-        if candidates is None:
-            msg = "JiagangOperation requires operation candidates."
-            raise RuntimeError(msg)
         jiagang_operations = tuple(
             candidate
-            for candidate in candidates.operations
+            for candidate in operations
             if isinstance(candidate, JiagangOperation)
         )
         if not (
@@ -924,8 +907,9 @@ class MatchScreen(Screen):
 
     async def _operate_liqi(
         self,
-        state: MatchState,
         operation: LiqiOperation,
+        round_state: RoundState,
+        self_seat: Seat,
     ) -> None:
         # The button may not be drawn when its operation message
         # arrives.
@@ -943,14 +927,12 @@ class MatchScreen(Screen):
         if await self._put_back_pending_action_while_waiting_for_ui():
             return
 
-        round_state = state.round
         is_dealer_first_discard = (
-            round_state.ju == state.self_seat
-            and round_state.first_draw[state.self_seat]
+            round_state.ju == self_seat and round_state.first_draw[self_seat]
         )
         try:
             region = self._get_dapai_region(
-                state,
+                round_state,
                 operation,
                 is_dealer_first_discard=is_dealer_first_discard,
             )
@@ -964,16 +946,13 @@ class MatchScreen(Screen):
 
     async def _operate_zimohu(
         self,
-        state: MatchState,
         operation: ZimohuOperation,
+        operations: tuple[MatchOperation, ...],
+        player_count: int,
     ) -> None:
-        candidates = state.round.operation_candidates
-        if candidates is None:
-            msg = "ZimohuOperation requires operation candidates."
-            raise RuntimeError(msg)
         zimohu_operations = tuple(
             candidate
-            for candidate in candidates.operations
+            for candidate in operations
             if isinstance(candidate, ZimohuOperation)
         )
         if zimohu_operations != (operation,):
@@ -983,20 +962,17 @@ class MatchScreen(Screen):
                 cause=error,
             )
 
-        await self._enable_auto_hule(state)
+        await self._enable_auto_hule(player_count)
 
     async def _operate_rong(
         self,
-        state: MatchState,
         operation: RongOperation,
+        operations: tuple[MatchOperation, ...],
+        player_count: int,
     ) -> None:
-        candidates = state.round.operation_candidates
-        if candidates is None:
-            msg = "RongOperation requires operation candidates."
-            raise RuntimeError(msg)
         rong_operations = tuple(
             candidate
-            for candidate in candidates.operations
+            for candidate in operations
             if isinstance(candidate, RongOperation)
         )
         if rong_operations != (operation,):
@@ -1006,28 +982,24 @@ class MatchScreen(Screen):
                 cause=error,
             )
 
-        await self._enable_auto_hule(state)
+        await self._enable_auto_hule(player_count)
 
-    async def _enable_auto_hule(self, state: MatchState) -> None:
+    async def _enable_auto_hule(self, player_count: int) -> None:
         region = (
             self.AUTO_HULE_TOGGLE_SANMA_REGION
-            if len(state.players) == 3  # noqa: PLR2004
+            if player_count == 3  # noqa: PLR2004
             else self.AUTO_HULE_TOGGLE_YONMA_REGION
         )
         await self.click_region(region, warp=True)
 
     async def _operate_liuju(
         self,
-        state: MatchState,
         operation: LiujuOperation,
+        operations: tuple[MatchOperation, ...],
     ) -> None:
-        candidates = state.round.operation_candidates
-        if candidates is None:
-            msg = "LiujuOperation requires operation candidates."
-            raise RuntimeError(msg)
         liuju_operations = tuple(
             candidate
-            for candidate in candidates.operations
+            for candidate in operations
             if isinstance(candidate, LiujuOperation)
         )
         if liuju_operations != (operation,):
@@ -1043,16 +1015,12 @@ class MatchScreen(Screen):
 
     async def _operate_babei(
         self,
-        state: MatchState,
         operation: BabeiOperation,
+        operations: tuple[MatchOperation, ...],
     ) -> None:
-        candidates = state.round.operation_candidates
-        if candidates is None:
-            msg = "BabeiOperation requires operation candidates."
-            raise RuntimeError(msg)
         babei_operations = tuple(
             candidate
-            for candidate in candidates.operations
+            for candidate in operations
             if isinstance(candidate, BabeiOperation)
         )
         if babei_operations != (operation,):
@@ -1069,16 +1037,13 @@ class MatchScreen(Screen):
 
     async def _operate_skip(
         self,
-        state: MatchState,
         operation: SkipOperation,
+        operations: tuple[MatchOperation, ...],
+        player_count: int,
     ) -> None:
-        candidates = state.round.operation_candidates
-        if candidates is None:
-            msg = "SkipOperation requires operation candidates."
-            raise RuntimeError(msg)
         skip_operations = tuple(
             candidate
-            for candidate in candidates.operations
+            for candidate in operations
             if isinstance(candidate, SkipOperation)
         )
         if skip_operations != (operation,):
@@ -1089,7 +1054,7 @@ class MatchScreen(Screen):
             )
 
         uses_no_call_toggle = False
-        for candidate in candidates.operations:
+        for candidate in operations:
             if isinstance(candidate, RongOperation):
                 uses_no_call_toggle = False
                 break
@@ -1100,14 +1065,17 @@ class MatchScreen(Screen):
                 uses_no_call_toggle = True
 
         if uses_no_call_toggle:
-            await self._skip_call_with_no_call_toggle(state)
+            await self._skip_call_with_no_call_toggle(player_count)
             return
         await self._click_skip_button_or_detect_progress()
 
-    async def _skip_call_with_no_call_toggle(self, state: MatchState) -> None:
+    async def _skip_call_with_no_call_toggle(
+        self,
+        player_count: int,
+    ) -> None:
         region = (
             self.NO_CALL_TOGGLE_SANMA_REGION
-            if len(state.players) == 3  # noqa: PLR2004
+            if player_count == 3  # noqa: PLR2004
             else self.NO_CALL_TOGGLE_YONMA_REGION
         )
         await self.click_region(region, warp=True)
