@@ -340,9 +340,10 @@ class Screen(ABC):
         template: TemplateMatcher,
         *,
         message: str,
+        warp: bool = False,
     ) -> TemplateMatchResult:
         result = await self.require_template(template, message=message)
-        await self._click_region(result.region)
+        await self._click_region(result.region, warp=warp)
         return result
 
     @_requires_active
@@ -363,12 +364,14 @@ class Screen(ABC):
     async def wait_and_click_template(
         self,
         template: TemplateMatcher,
+        *,
+        warp: bool = False,
     ) -> TemplateMatchResult:
         while True:
             screenshot = await self.context.browser.screenshot()
             result = template.find(screenshot)
             if result is not None:
-                await self._click_region(result.region)
+                await self._click_region(result.region, warp=warp)
                 return result
             await asyncio.sleep(TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS)
 

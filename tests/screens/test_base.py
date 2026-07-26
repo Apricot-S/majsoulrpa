@@ -877,6 +877,27 @@ def test_screen_clicks_required_template_without_scaling() -> None:
     assert 150 < y < 153
 
 
+def test_screen_forwards_warp_for_all_template_click_apis() -> None:
+    browser = BrowserControllerSpy()
+    browser.screenshot_bytes = b"match"
+    template = TemplateSpy(matches=True)
+    screen = LoginScreen(
+        context=ScreenContext(browser=browser, rng=Random(0)),
+    )
+
+    asyncio.run(
+        screen.click_template(
+            template,
+            message="missing template",
+            warp=True,
+        )
+    )
+    asyncio.run(screen.click_template_if_present(template, warp=True))
+    asyncio.run(screen.wait_and_click_template(template, warp=True))
+
+    assert browser.click_warps == [True, True, True]
+
+
 def test_screen_raises_when_required_template_does_not_match() -> None:
     browser = BrowserControllerSpy()
     browser.screenshot_bytes = b"miss"
