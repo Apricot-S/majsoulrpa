@@ -40,6 +40,7 @@ from majsoulrpa.screens.match.operation.models import (
     OperationCandidates,
     PengOperation,
     RongOperation,
+    SkipOperation,
     ZimohuOperation,
 )
 from majsoulrpa.screens.match.state import Angang, Fulu, Peng
@@ -75,6 +76,8 @@ def materialize_operation_candidates(
     fulu: tuple[Fulu, ...],
     self_seat: Seat,
     player_count: int,
+    *,
+    liqi: bool = False,
 ) -> OperationCandidates | None:
     if specification is None:
         return None
@@ -92,6 +95,35 @@ def materialize_operation_candidates(
                 player_count,
             )
         )
+
+    specifications = specification.operations
+    if any(
+        isinstance(
+            item,
+            (
+                _ChiOperationSpecification,
+                _PengOperationSpecification,
+                _DaminggangOperationSpecification,
+                _RongOperationSpecification,
+            ),
+        )
+        for item in specifications
+    ) or (
+        liqi
+        and any(
+            isinstance(
+                item,
+                (
+                    _AngangOperationSpecification,
+                    _JiagangOperationSpecification,
+                    _ZimohuOperationSpecification,
+                    _BabeiOperationSpecification,
+                ),
+            )
+            for item in specifications
+        )
+    ):
+        operations.append(SkipOperation())
 
     deduplicated_operations = tuple(dict.fromkeys(operations))
     if not deduplicated_operations:

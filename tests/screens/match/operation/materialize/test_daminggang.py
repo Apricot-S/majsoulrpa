@@ -3,6 +3,7 @@ import pytest
 from majsoulrpa.screens.match import (
     DaminggangOperation,
     DapaiEvent,
+    SkipOperation,
     StartMatchEvent,
     validate_seat,
     validate_tile,
@@ -71,6 +72,7 @@ def test_daminggang_materialization_preserves_wire_order() -> None:
                 validate_tile("5m"),
             ),
         ),
+        SkipOperation(),
     )
 
 

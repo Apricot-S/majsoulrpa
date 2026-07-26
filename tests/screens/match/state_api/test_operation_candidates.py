@@ -15,6 +15,7 @@ from majsoulrpa.screens.match import (
     DapaiOperation,
     MatchScreen,
     PengOperation,
+    SkipOperation,
     validate_seat,
     validate_tile,
 )
@@ -76,6 +77,7 @@ def test_get_state_exposes_chi_operations_after_opponent_discard() -> None:
             tile=validate_tile("0m"),
             consumed=(validate_tile("3m"), validate_tile("4m")),
         ),
+        SkipOperation(),
     )
 
 
@@ -123,6 +125,7 @@ def test_get_state_exposes_peng_operations_after_opponent_discard() -> None:
             tile=validate_tile("5m"),
             consumed=(validate_tile("0m"), validate_tile("5m")),
         ),
+        SkipOperation(),
     )
 
 
@@ -174,6 +177,7 @@ def test_get_state_exposes_daminggang_after_opponent_discard() -> None:
                 validate_tile("5m"),
             ),
         ),
+        SkipOperation(),
     )
 
 

@@ -8,6 +8,7 @@ from majsoulrpa.screens.match import (
     DapaiEvent,
     MatchScreen,
     RongOperation,
+    SkipOperation,
     validate_seat,
     validate_tile,
 )
@@ -108,4 +109,5 @@ def test_get_state_materializes_rong_candidate_from_discard() -> None:
             from_seat=validate_seat(1),
             tile=validate_tile("0m"),
         ),
+        SkipOperation(),
     )

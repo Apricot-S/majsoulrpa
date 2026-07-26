@@ -3,6 +3,7 @@ import pytest
 from majsoulrpa.screens.match import (
     DapaiEvent,
     PengOperation,
+    SkipOperation,
     StartMatchEvent,
     validate_seat,
     validate_tile,
@@ -63,6 +64,7 @@ def test_peng_materialization_expands_each_combination_in_wire_order() -> None:
             tile=validate_tile("5m"),
             consumed=(validate_tile("5m"), validate_tile("5m")),
         ),
+        SkipOperation(),
     )
 
 

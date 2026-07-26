@@ -349,12 +349,14 @@ class Screen(ABC):
     async def click_template_if_present(
         self,
         template: TemplateMatcher,
+        *,
+        warp: bool = False,
     ) -> bool:
         result = await self.find_template(template)
         if result is None:
             return False
 
-        await self._click_region(result.region)
+        await self._click_region(result.region, warp=warp)
         return True
 
     @_requires_active

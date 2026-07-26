@@ -207,6 +207,10 @@ class MatchStateStore:
             round_state.fulu[state.self_seat],
             state.self_seat,
             len(state.players),
+            liqi=(
+                round_state.liqi[state.self_seat]
+                or round_state.wliqi[state.self_seat]
+            ),
         )
         next_round = replace(
             round_state,
@@ -290,6 +294,7 @@ class MatchStateStore:
             round_state.fulu[state.self_seat],
             state.self_seat,
             len(state.players),
+            liqi=liqi[state.self_seat] or wliqi[state.self_seat],
         )
         next_round = replace(
             round_state,
@@ -433,6 +438,10 @@ class MatchStateStore:
             next_fulu[state.self_seat],
             state.self_seat,
             player_count,
+            liqi=(
+                round_state.liqi[state.self_seat]
+                or round_state.wliqi[state.self_seat]
+            ),
         )
         next_round = replace(
             round_state,
@@ -540,6 +549,10 @@ class MatchStateStore:
             next_fulu[state.self_seat],
             state.self_seat,
             player_count,
+            liqi=(
+                round_state.liqi[state.self_seat]
+                or round_state.wliqi[state.self_seat]
+            ),
         )
         next_round = replace(
             round_state,
@@ -623,6 +636,10 @@ class MatchStateStore:
             round_state.fulu[state.self_seat],
             state.self_seat,
             player_count,
+            liqi=(
+                round_state.liqi[state.self_seat]
+                or round_state.wliqi[state.self_seat]
+            ),
         )
         next_round = replace(
             round_state,
@@ -908,6 +925,10 @@ class MatchStateStore:
             next_fulu[state.self_seat],
             state.self_seat,
             player_count,
+            liqi=(
+                round_state.liqi[state.self_seat]
+                or round_state.wliqi[state.self_seat]
+            ),
         )
         next_round = replace(
             round_state,

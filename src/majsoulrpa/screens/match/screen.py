@@ -13,6 +13,8 @@ from majsoulrpa.assets.templates.match import (
     PENG_TEMPLATE_PATH,
     SEAT_INDICATOR_SETTINGS_PATH,
     SEAT_INDICATOR_TEMPLATE_PATHS,
+    SKIP_SETTINGS_PATH,
+    SKIP_TEMPLATE_PATH,
 )
 from majsoulrpa.presentation import Region
 from majsoulrpa.presentation.template import load_png_template_matcher
@@ -96,6 +98,7 @@ DEALER_FIRST_DISCARD_DELAY_SECONDS = 2.0
 DAPAI_UI_READY_DELAY_SECONDS = 0.4
 DAPAI_CLICK_RETRY_INTERVAL_SECONDS = 0.5
 OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
+SKIP_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.2
 OPERATION_OPTION_DISPLAY_DELAY_SECONDS = 0.4
 HAND_SLIDE_DELAY_SECONDS = 1.5
 
@@ -158,6 +161,18 @@ class MatchScreen(Screen):
         width=42,
         height=42,
     )
+    NO_CALL_TOGGLE_YONMA_REGION = Region(
+        left=18,
+        top=655,
+        width=42,
+        height=42,
+    )
+    NO_CALL_TOGGLE_SANMA_REGION = Region(
+        left=18,
+        top=623,
+        width=42,
+        height=42,
+    )
 
     SEAT_INDICATOR_TEMPLATES = tuple(
         load_png_template_matcher(
@@ -189,6 +204,10 @@ class MatchScreen(Screen):
     BABEI_BUTTON_TEMPLATE = load_png_template_matcher(
         template_path=BABEI_TEMPLATE_PATH,
         settings_path=BUTTON_AREA_SETTINGS_PATH,
+    )
+    SKIP_BUTTON_TEMPLATE = load_png_template_matcher(
+        template_path=SKIP_TEMPLATE_PATH,
+        settings_path=SKIP_SETTINGS_PATH,
     )
 
     def __init__(self, context: ScreenContext | None = None) -> None:
@@ -281,9 +300,7 @@ class MatchScreen(Screen):
             case BabeiOperation():
                 await self._operate_babei(state, operation)
             case SkipOperation():
-                screenshot = await self.context.browser.screenshot()
-                msg = "SkipOperation is not implemented."
-                raise ScreenInvalidOperationError(msg, screenshot)
+                await self._operate_skip(state, operation)
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -976,6 +993,76 @@ class MatchScreen(Screen):
         ):
             return
         await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
+
+    async def _operate_skip(
+        self,
+        state: MatchState,
+        operation: SkipOperation,
+    ) -> None:
+        candidates = state.round.operation_candidates
+        if candidates is None:
+            msg = "SkipOperation requires operation candidates."
+            raise RuntimeError(msg)
+        skip_operations = tuple(
+            candidate
+            for candidate in candidates.operations
+            if isinstance(candidate, SkipOperation)
+        )
+        if skip_operations != (operation,):
+            error = ValueError("The number of skip candidates must be one.")
+            await self._raise_inconsistent_message(
+                "Skip candidates do not match the supported UI layout.",
+                cause=error,
+            )
+
+        has_rong = any(
+            isinstance(candidate, RongOperation)
+            for candidate in candidates.operations
+        )
+        has_call = any(
+            isinstance(
+                candidate,
+                ChiOperation | PengOperation | DaminggangOperation,
+            )
+            for candidate in candidates.operations
+        )
+        if has_call and not has_rong:
+            await self._skip_call_with_no_call_toggle(state)
+            return
+        await self._click_skip_button_or_detect_progress()
+
+    async def _skip_call_with_no_call_toggle(self, state: MatchState) -> None:
+        region = (
+            self.NO_CALL_TOGGLE_SANMA_REGION
+            if len(state.players) == 3  # noqa: PLR2004
+            else self.NO_CALL_TOGGLE_YONMA_REGION
+        )
+        await self.click_region(region, warp=True)
+        try:
+            while True:
+                message = await self._get_sniffer_message()
+                if message.raw.name == ACTION_PROTOTYPE_NAME:
+                    self._put_back_sniffer_message(message)
+                    return
+                await self._apply_match_message_with_screen_errors(
+                    message,
+                    inconsistent_message=(
+                        "Match state update failed while skipping a call."
+                    ),
+                )
+        finally:
+            await self.click_region(region, warp=True)
+
+    async def _click_skip_button_or_detect_progress(self) -> None:
+        while True:
+            if await self._put_back_pending_action_while_waiting_for_ui():
+                return
+            if await self.click_template_if_present(
+                self.SKIP_BUTTON_TEMPLATE,
+                warp=True,
+            ):
+                return
+            await asyncio.sleep(SKIP_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS)
 
     async def _click_operation_button_or_detect_progress(
         self,

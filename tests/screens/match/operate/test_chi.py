@@ -198,7 +198,11 @@ def test_operate_selects_only_chi_candidate(
     initial = asyncio.run(screen.get_state())
     candidates = initial.round.operation_candidates
     assert candidates is not None
-    [operation] = candidates.operations
+    operation = next(
+        item
+        for item in candidates.operations
+        if isinstance(item, ChiOperation)
+    )
     assert isinstance(operation, ChiOperation)
 
     state = asyncio.run(screen.operate(operation))
@@ -355,7 +359,11 @@ def test_operate_accepts_opponent_peng_preemption_after_click(
     initial = asyncio.run(screen.get_state())
     candidates = initial.round.operation_candidates
     assert candidates is not None
-    [operation] = candidates.operations
+    operation = next(
+        item
+        for item in candidates.operations
+        if isinstance(item, ChiOperation)
+    )
     assert isinstance(operation, ChiOperation)
 
     state = asyncio.run(screen.operate(operation))
@@ -423,7 +431,11 @@ def test_operate_accepts_opponent_daminggang_preemption_after_click(
     initial = asyncio.run(screen.get_state())
     candidates = initial.round.operation_candidates
     assert candidates is not None
-    [operation] = candidates.operations
+    operation = next(
+        item
+        for item in candidates.operations
+        if isinstance(item, ChiOperation)
+    )
     assert isinstance(operation, ChiOperation)
 
     state = asyncio.run(screen.operate(operation))
@@ -566,7 +578,11 @@ def test_operate_puts_back_preemption_while_waiting_for_chi_button(
     initial = asyncio.run(screen.get_state())
     candidates = initial.round.operation_candidates
     assert candidates is not None
-    [operation] = candidates.operations
+    operation = next(
+        item
+        for item in candidates.operations
+        if isinstance(item, ChiOperation)
+    )
     assert isinstance(operation, ChiOperation)
 
     async def operate_with_deadline() -> MatchState:
@@ -642,7 +658,11 @@ def test_operate_retries_until_chi_button_is_drawn(
     asyncio.run(screen.before_callback())
     state = asyncio.run(screen.get_state())
     assert state.round.operation_candidates is not None
-    [operation] = state.round.operation_candidates.operations
+    operation = next(
+        item
+        for item in state.round.operation_candidates.operations
+        if isinstance(item, ChiOperation)
+    )
 
     result = asyncio.run(screen.operate(operation))
 
@@ -707,7 +727,11 @@ def test_operate_rejects_chi_event_for_different_combination(
     asyncio.run(screen.before_callback())
     state = asyncio.run(screen.get_state())
     assert state.round.operation_candidates is not None
-    [operation] = state.round.operation_candidates.operations
+    operation = next(
+        item
+        for item in state.round.operation_candidates.operations
+        if isinstance(item, ChiOperation)
+    )
 
     with pytest.raises(ScreenInconsistentMessageError) as exc_info:
         asyncio.run(screen.operate(operation))
@@ -758,7 +782,11 @@ def test_operate_does_not_succeed_without_button_or_preemption(
     asyncio.run(screen.before_callback())
     state = asyncio.run(screen.get_state())
     assert state.round.operation_candidates is not None
-    [operation] = state.round.operation_candidates.operations
+    operation = next(
+        item
+        for item in state.round.operation_candidates.operations
+        if isinstance(item, ChiOperation)
+    )
 
     async def operate_with_deadline() -> None:
         async with asyncio.timeout(0.05):

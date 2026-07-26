@@ -13,6 +13,8 @@ GANG_TEMPLATE_PATH = TEMPLATES_DIR / "match" / "gang.png"
 LIQI_TEMPLATE_PATH = TEMPLATES_DIR / "match" / "liqi.png"
 LIUJU_TEMPLATE_PATH = TEMPLATES_DIR / "match" / "liuju.png"
 BABEI_TEMPLATE_PATH = TEMPLATES_DIR / "match" / "babei.png"
+SKIP_SETTINGS_PATH = TEMPLATES_DIR / "match" / "skip.toml"
+SKIP_TEMPLATE_PATH = TEMPLATES_DIR / "match" / "skip.png"
 
 __all__ = [
     "BABEI_TEMPLATE_PATH",
@@ -24,4 +26,6 @@ __all__ = [
     "PENG_TEMPLATE_PATH",
     "SEAT_INDICATOR_SETTINGS_PATH",
     "SEAT_INDICATOR_TEMPLATE_PATHS",
+    "SKIP_SETTINGS_PATH",
+    "SKIP_TEMPLATE_PATH",
 ]

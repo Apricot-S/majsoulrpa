@@ -3,6 +3,7 @@ import pytest
 from majsoulrpa.screens.match import (
     ChiOperation,
     DapaiEvent,
+    SkipOperation,
     StartMatchEvent,
     validate_seat,
     validate_tile,
@@ -71,6 +72,7 @@ def test_chi_materialization_expands_each_combination_in_wire_order() -> None:
             tile=validate_tile("0m"),
             consumed=(validate_tile("6m"), validate_tile("7m")),
         ),
+        SkipOperation(),
     )
 
 

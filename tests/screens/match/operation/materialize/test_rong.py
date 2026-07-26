@@ -7,6 +7,7 @@ from majsoulrpa.screens.match import (
     JiagangEvent,
     MatchEvent,
     RongOperation,
+    SkipOperation,
     ZimoEvent,
     validate_seat,
     validate_tile,
@@ -120,6 +121,7 @@ def test_rong_materialization_uses_event_action_target(
             from_seat=validate_seat(from_seat),
             tile=validate_tile(tile),
         ),
+        SkipOperation(),
     )
 
 

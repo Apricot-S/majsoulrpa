@@ -904,24 +904,27 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### MatchScreen operation のスキップ
 
-- [ ] チー、ポン、大明槓は「鳴きなし」toggleをonにして明示的にスキップする
-- [ ] 「鳴きなし」によるスキップの進行後はtoggleをoffへ戻し、将来の鳴きを再び許可する
-- [ ] 「鳴きなし」をonにした後に上位actionでpreemptされても、toggleをoffへ戻してからAPIを返す
-- [ ] 「鳴きなし」をoffへ戻せない場合は、preempt自体を許容しても正常完了扱いにしない
-- [ ] ロンはスキップbuttonで明示的にスキップする
+- [x] チー、ポン、大明槓は「鳴きなし」toggleをonにして明示的にスキップする
+- [x] 「鳴きなし」によるスキップの進行後はtoggleをoffへ戻し、将来の鳴きを再び許可する
+- [x] 「鳴きなし」をonにした後に上位actionでpreemptされても、toggleをoffへ戻してからAPIを返す
+- [x] 「鳴きなし」をoffへ戻せない場合は、preempt自体を許容しても正常完了扱いにしない
+- [x] ロンはスキップbuttonで明示的にスキップする
 - [ ] 非立直時の北抜き・暗槓・加槓・ツモ和了には `SkipOperation` を追加しない
 - [ ] 非立直時の北抜き・暗槓・加槓・ツモ和了は `DapaiOperation` の打牌で暗黙にキャンセルする
 - [ ] 非立直時の北抜き・暗槓・加槓・ツモ和了を見送るためにスキップbuttonを押さない
 - [ ] 立直中の北抜き・暗槓・加槓・ツモ和了がある場合はツモ切りの `DapaiOperation` を候補に含めない
 - [ ] 立直中の北抜き・暗槓・加槓・ツモ和了がある場合は `SkipOperation` を候補に追加する
-- [ ] 立直中の `SkipOperation` はスキップbuttonをクリックして実行する
-- [ ] スキップ用の「鳴きなし」toggleとスキップbuttonは `warp=True` でclickする
+- [x] 立直中の `SkipOperation` はスキップbuttonをクリックして実行する
+- [x] スキップ用の「鳴きなし」toggleとスキップbuttonは `warp=True` でclickする
+- [x] 「鳴きなし」toggleは四麻 `(18, 655, 42, 42)`、三麻 `(18, 623, 42, 42)` の領域を使う
+- [x] スキップbuttonは `skip.png` / `skip.toml` で検出し、0.2秒間隔で再検出する
+- [x] スキップbuttonは検出後に1回だけclickし、推定座標を連打しない
 - [ ] チーの選択・スキップ中に別playerのポン・大明槓・ロンが成立してもoperation失敗にしない
 - [ ] ポン・大明槓の選択・スキップ中に別playerのロンが成立してもoperation失敗にしない
 - [ ] 上位actionの ActionChiPengGang / ActionHule を先読みした場合は1回だけput_backして通常pipelineで処理する
 - [ ] 上位actionを確認できないbutton検出失敗を黙ってスキップ成功にしない
 - [ ] ロンのスキップはダブロン・トリロンでも自家の選択まで待たれ、別playerのActionHuleによるpreempt成功扱いをしない
-- [ ] publicなスキップ表現は field のない `SkipOperation` とし、他の候補と同じ `operate()` APIへ渡す
+- [x] publicなスキップ表現は field のない `SkipOperation` とし、他の候補と同じ `operate()` APIへ渡す
 
 ### immutable state / reducer
 

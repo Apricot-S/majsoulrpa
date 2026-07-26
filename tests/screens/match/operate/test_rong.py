@@ -136,7 +136,11 @@ def test_operate_enables_auto_hule_and_waits_for_rong(
     initial = asyncio.run(screen.get_state())
     candidates = initial.round.operation_candidates
     assert candidates is not None
-    [operation] = candidates.operations
+    operation = next(
+        item
+        for item in candidates.operations
+        if isinstance(item, RongOperation)
+    )
     assert isinstance(operation, RongOperation)
 
     state = asyncio.run(screen.operate(operation))

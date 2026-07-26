@@ -653,7 +653,14 @@ actionの進行を確認してからoffへ戻して、将来の鳴きを再び�
 スキップbuttonをクリックして明示的に候補を見送る。
 
 「鳴きなし」toggleとスキップbuttonのclickは判断の遅延を避けるため `warp=True` とし、通常clickの
-cursor移動とhover待機を省略する。
+cursor移動とhover待機を省略する。「鳴きなし」toggleの領域は、四人麻雀では
+`(left=18, top=655, width=42, height=42)`、三人麻雀では
+`(left=18, top=623, width=42, height=42)` とする。
+
+スキップbuttonは `skip.png` と `skip.toml` で毎回検出し、通常の行動buttonより短い0.2秒間隔で
+再検出する。検出に成功した領域を1回だけclickし、推定座標を連打しない。スキップbuttonの位置へ
+座標clickを繰り返すと、画面遷移後に表示された自家ツモの選択buttonを誤って消すおそれがあるためで
+ある。
 実画面での確認結果は
 [対局中のスキップボタン押下要否](../../investigations/match-skip-button.md) に記録する。
 

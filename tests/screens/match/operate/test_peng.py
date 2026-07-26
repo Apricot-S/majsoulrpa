@@ -136,7 +136,11 @@ def test_operate_selects_only_peng_candidate(
     initial = asyncio.run(screen.get_state())
     candidates = initial.round.operation_candidates
     assert candidates is not None
-    [operation] = candidates.operations
+    operation = next(
+        item
+        for item in candidates.operations
+        if isinstance(item, PengOperation)
+    )
     assert isinstance(operation, PengOperation)
 
     state = asyncio.run(screen.operate(operation))
@@ -287,7 +291,11 @@ def test_operate_retries_until_peng_button_is_drawn(
     asyncio.run(screen.before_callback())
     state = asyncio.run(screen.get_state())
     assert state.round.operation_candidates is not None
-    [operation] = state.round.operation_candidates.operations
+    operation = next(
+        item
+        for item in state.round.operation_candidates.operations
+        if isinstance(item, PengOperation)
+    )
 
     result = asyncio.run(screen.operate(operation))
 
@@ -352,7 +360,11 @@ def test_operate_rejects_peng_event_for_different_combination(
     asyncio.run(screen.before_callback())
     state = asyncio.run(screen.get_state())
     assert state.round.operation_candidates is not None
-    [operation] = state.round.operation_candidates.operations
+    operation = next(
+        item
+        for item in state.round.operation_candidates.operations
+        if isinstance(item, PengOperation)
+    )
 
     with pytest.raises(ScreenInconsistentMessageError) as exc_info:
         asyncio.run(screen.operate(operation))
@@ -403,7 +415,11 @@ def test_operate_does_not_succeed_without_button_or_preemption(
     asyncio.run(screen.before_callback())
     state = asyncio.run(screen.get_state())
     assert state.round.operation_candidates is not None
-    [operation] = state.round.operation_candidates.operations
+    operation = next(
+        item
+        for item in state.round.operation_candidates.operations
+        if isinstance(item, PengOperation)
+    )
 
     async def operate_with_deadline() -> None:
         async with asyncio.timeout(0.05):
