@@ -59,6 +59,120 @@ framework が試合終了として補完しない。早期 return を検出す�
 境界である。呼び出し後は同じ Screen を使わず、user data を return して runtime の Screen 検出へ
 制御を戻す。
 
+## 局終了後の遷移
+
+### state 待機と自動進行
+
+結果画面を進めるための専用operation APIは設けない。RoomScreenと同じstate待機APIが、
+渡されたsnapshotに応じて通常のmessage待機または局終了後の自動進行を行う。
+
+```python
+async def wait_for_state_change(
+    self,
+    state: MatchState,
+) -> MatchState | None: ...
+```
+
+渡されたstateが局の途中なら、通常どおりそれより新しいsnapshotを待って返す。その結果が
+`HuleEvent`、`NoTileEvent`、`LiujuEvent` のいずれかで終わる場合も、まず局終了eventを含む
+snapshotをそのまま返す。同じterminal snapshotを渡してもう一度state変化を待ったときに、
+frameworkが結果画面を自動で進める。これにより、利用者は局終了eventを必ず観測できる一方、
+結果画面ごとのoperationを選択する必要はない。
+
+ここでいう自動進行は `wait_for_state_change()` の呼び出し中にframeworkが処理することを意味し、
+Match専用background taskは追加しない。`get_state()` は引き続きclickを行わないため、利用者は
+terminal snapshotを処理した後、次のstateを待つ通常のloopを継続すればよい。
+
+次局がある場合は、同じ `MatchScreen` とcallback invocationを維持したまま
+`ActionNewRound` をreduceし、新しいcurrent roundを持つ `MatchState` を返す。試合が終了した
+場合は結果画面の処理と遷移先画面への移動を完了し、`MatchScreen` をstaleにして `None` を返す。
+したがって利用者は `None` を受け取ったらcallbackからreturnし、runtimeのScreen検出へ制御を戻す。
+
+`get_state()` は局終了eventをreduceした時点でqueueのdrainを停止する。current stateがすでに
+局終了状態なら、後続messageを消費せずそのstateを返す。これにより、結果画面が自動的に
+スキップされて次局のmessageまで到着していても、利用者は終了した局のevent列を少なくとも一度
+観測できる。局境界を越えるmessageは、terminal snapshotを受け取った
+`wait_for_state_change()` だけが消費する。
+
+`wait_for_state_change()` は渡されたsnapshotが同じmatch instanceの履歴に属し、未来のversionや
+同一versionで矛盾する内容でないことをRoomScreenと同様に検証する。局終了時には
+operation候補が残っていないことも要求する。内部timeoutは設けず、他のScreen APIと同様に
+呼び出し側の `asyncio.timeout()` に上限を委ねる。
+
+### 結果画面の処理
+
+局終了eventごとのUI処理はv1-developで確認された順序を基準とする。
+
+- `HuleEvent` は和了確認buttonを `len(event.hules)` 回処理する。ダブロン・トリロンでは和了者
+  ごとの確認画面が順に表示されるためである。
+- `NoTileEvent` は流局確認buttonを1回処理する。流し満貫の場合もこの確認を省略せず、通常の
+  荒牌平局と同じ画面を最初に進める。
+- 流し満貫の場合は、荒牌平局の確認後に表示される流し満貫演出の確認buttonを、和了演出と同じ
+  方法で達成者ごとに処理する。複数人が達成した場合も、`NoTileScore.seat is not None` である
+  要素数と同じ回数だけ順にclickする。
+- `LiujuEvent` も途中流局の確認buttonを1回処理する。UI上は通常の流局と同じ確認buttonを使う。
+- 以上の固有画面の後、通常の荒牌平局・和了後と同じ点数授受結果の確認buttonを1回処理する。
+
+したがって流し満貫の遷移順は、荒牌平局の確認、達成者ごとの流し満貫演出の確認、点数授受結果の
+確認の3段階となる。
+
+各buttonは専用templateで検出してからclickし、座標を推測して連打しない。実装前に
+和了確認、流局確認、局結果確認、試合結果確認のscreenshotとtemplate設定を用意する。
+
+### messageとUIの競合
+
+UIのtemplate待機とSniffer message待機は直列にしない。短い間隔で両方を確認し、次局または
+終局のauthoritative messageが先に到着した場合は、存在しなくなった確認buttonを待ち続けない。
+通常のstate messageと同様に、待機中に取得したmessageは共通のlog処理を通す。
+
+v1-developには次の順序差と遅延に対するworkaroundがある。これらは推測による一般化ではなく、
+対応する分岐の直前に理由を説明するcode commentを残す。
+
+- 和了確認画面が表示されないまま `ActionNewRound` が届き、次局が始まる場合がある。
+- `inputOperation` / `inputChiPengGang` のresponseが局終了eventより後に届く場合がある。
+  遅延responseとしてlogへ残すが、局状態へ再適用しない。
+- `.lq.FastTest.confirmNewRound` と `ActionNewRound` の観測順は逆転する場合がある。
+  `ActionNewRound` をauthoritativeな次局開始markerとし、confirm responseとの順序は要求しない。
+- `.lq.FastTest.confirmNewRound` 自体が観測されず、次局のstep 1以降の
+  `ActionPrototype` がstep 0の `ActionNewRound` より先に届く場合がある。この経路だけは
+  小さな上限を持つlocal bufferへactionを退避し、step 0を取得後にstep順でqueueへ戻す。
+  同じstepの異なるduplicate、上限超過、step 0が `ActionNewRound` でない場合は
+  `ScreenInconsistentMessageError` とする。
+- `NotifyGameEndResult` が結果画面のclickより先に届く場合がある。終局markerとして保持し、
+  次局開始と誤認しない。
+
+初回の `ActionMJStart` / `ActionNewRound` は受信順を入れ替えないという既存方針を維持する。
+上記の並べ替えは、v1-developで現象が記録されている局終了直後の次局遷移に限定した
+workaroundとし、汎用action並べ替え機構にはしない。
+
+和了確認を待っている段階で `.lq.FastTest.confirmNewRound` だけが到着し、次局画面も検出できない
+場合は画面描画不整合とする。v1-developのようにframeworkが自動reloadを要求・実行するのではなく、
+screenshot付き `ScreenInconsistentMessageError` を送出する。利用者が `Screen.reload()` を選んだ
+場合は、既存契約どおりcallbackからreturnし、新しい `MatchScreen` が `syncGame` から復元する。
+
+### reducer
+
+liveの次局 `ActionNewRound` は初期化専用経路へ戻さず、storeの局遷移methodへ渡す。遷移時には
+次を検証・更新する。
+
+- 現在局の末尾が `HuleEvent`、`NoTileEvent`、`LiujuEvent` のいずれかである。
+- 次局の `NewRoundEvent.action_step` は0であり、player数とscore列の長さがmatch metadataと一致する。
+- 前局終了後の `RoundState.scores` と `NewRoundEvent.scores` が一致する。
+- `MatchState.version` と `RoundState.generation` をそれぞれ1増やす。
+- match ID、origin、origin ID、self seat、player metadataは維持する。
+- 河、副露、北抜き、立直、一発、第一ツモ、嶺上ツモ、未解決action対象を初期値へ戻す。
+- event列は `NewRoundEvent` だけから開始し、初回専用の `StartMatchEvent` は引き継がない。
+- `ActionNewRound` のoperationから、初回と同じmaterializerで親の第一打牌などの候補を生成する。
+
+局・本場・供託の遷移規則は連荘、途中流局、延長戦、customized contest設定によって変わるため、
+framework側で麻雀ルールを再計算しない。`chang`、`ju`、`ben`、`liqibang` はprotobuf値を採用し、
+型・値域とscore連続性だけを検証する。
+
+`ActionNewRound` を先読みした場合でも、新しいseat indicatorの検出が完了するまでは
+`wait_for_state_change()` を返さない。messageはUI描画より先に届くため、state更新だけを成功条件に
+すると返却直後の操作が旧結果画面へ当たる可能性がある。ここでも既存のseat indicator templateを
+再利用し、検出できない場合は呼び出し側timeoutに委ねる。
+
 ## 状態の所有
 
 ### immutable snapshot
