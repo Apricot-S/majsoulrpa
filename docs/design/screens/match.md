@@ -1561,7 +1561,8 @@ authoritative な完全 snapshot として 1 回だけ `put_back()` する。run
 v1-developと同様に、終局結果画面の待機中は `.lq.Lobby.fetchRoom`、および tournamentへ戻る
 `enterCustomizedContest` / `joinCustomizedContestChatRoom` /
 `fetchCustomizedContestOnlineInfo` を次の Screen に属する遷移markerとする。Match側ではこれらを
-消費せずqueueへ戻し、結果確認buttonが自動遷移ですでに消えたものとしてmessage drainを終了する。
+消費せずqueueへ戻してmessage drainを終了する。ただし、試合結果の確認buttonは他の確認画面と異なり
+自動遷移しないため、遷移markerの観測後もtemplate検出を続けて必ずclickしてからstaleにする。
 
 ## 整合性と失敗モデル
 

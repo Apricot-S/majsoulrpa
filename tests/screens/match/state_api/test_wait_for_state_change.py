@@ -97,7 +97,9 @@ def test_wait_for_state_change_clicks_liuju_and_match_result_confirmations(
     assert len(browser.clicked_points) == 3
 
 
-def test_match_result_wait_puts_back_fetch_room() -> None:
+def test_match_result_wait_puts_back_fetch_room_and_clicks_confirmation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     confirmation = _synthetic_template_screenshot(
         template_path=LIUJU_CONFIRM_TEMPLATE_PATH,
         settings_path=LIUJU_CONFIRM_SETTINGS_PATH,
@@ -117,9 +119,15 @@ def test_match_result_wait_puts_back_fetch_room() -> None:
         confirmation,
         _round_result_confirmation(),
         _synthetic_blank_screenshot(),
+        _match_result_confirmation(),
     )
     screen = _screen(browser, messages)
+    sleeps: list[float] = []
 
+    async def record_sleep(delay: float) -> None:
+        sleeps.append(delay)
+
+    monkeypatch.setattr(asyncio, "sleep", record_sleep)
     asyncio.run(screen.before_callback())
     terminal = asyncio.run(screen.get_state())
     state = asyncio.run(
@@ -131,6 +139,8 @@ def test_match_result_wait_puts_back_fetch_room() -> None:
 
     assert state is None
     assert screen._stale
+    assert len(browser.clicked_points) == 3
+    assert sleeps == [0.5]
     assert messages.get_nowait() is fetch_room
 
 

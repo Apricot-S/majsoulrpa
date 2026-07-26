@@ -1196,24 +1196,42 @@ class MatchScreen(Screen):
     async def _click_result_confirmation_or_wait(
         self,
         template: TemplateMatcher,
-        *,
-        additional_progress_message_names: frozenset[str] = frozenset(),
     ) -> bool:
         while True:
             if await self.click_template_if_present(template):
                 return True
-            if await self._put_back_pending_action_while_waiting_for_ui(
-                additional_progress_message_names=(
-                    additional_progress_message_names
-                )
-            ):
+            if await self._put_back_pending_action_while_waiting_for_ui():
                 # The confirmation screen can advance automatically
                 # after its on-screen countdown. A subsequent action or
-                # Screen transition message proves that the button no
-                # longer needs to be clicked.
+                # Screen transition proves that the button no longer
+                # needs to be clicked.
                 return False
             # These confirmation screens advance when their on-screen
             # three-count finishes, even if the button cannot be used.
+            await asyncio.sleep(
+                CONFIRMATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
+            )
+
+    async def _click_match_result_confirmation(self) -> None:
+        message_drain_stopped = False
+        while True:
+            if await self.click_template_if_present(
+                self.MATCH_RESULT_CONFIRM_TEMPLATE
+            ):
+                return
+            if not message_drain_stopped:
+                message_drain_stopped = (
+                    await self._put_back_pending_action_while_waiting_for_ui(
+                        additional_progress_message_names=(
+                            _MATCH_EXIT_MESSAGE_NAMES
+                        )
+                    )
+                )
+            # Unlike the other result confirmations, the match result
+            # screen does not advance automatically. A transition
+            # message stops MatchScreen from draining the next Screen's
+            # messages, but the confirmation button must still be
+            # clicked.
             await asyncio.sleep(
                 CONFIRMATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
             )
@@ -1232,10 +1250,7 @@ class MatchScreen(Screen):
                 await self._wait_for_next_round_screen()
                 return state
 
-        await self._click_result_confirmation_or_wait(
-            self.MATCH_RESULT_CONFIRM_TEMPLATE,
-            additional_progress_message_names=_MATCH_EXIT_MESSAGE_NAMES,
-        )
+        await self._click_match_result_confirmation()
         self._mark_stale()
         return None
 

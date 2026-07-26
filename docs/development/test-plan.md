@@ -952,8 +952,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 流し満貫では荒牌平局確認、達成者ごとの演出確認、点数授受結果確認の順序を維持する
 - [x] 結果確認buttonはtemplate検出位置だけをclickし、推定座標を連打しない
 - [x] `NotifyGameEndResult` を受信した試合終了時は `match-result-confirm` をclickして `MatchScreen` をstaleにする
-- [x] 終局結果画面の待機中に `fetchRoom` を先読みした場合はqueueへ戻し、
-  Match側のmessage drainを終了する
+- [x] 終局結果画面の待機中に `fetchRoom` を先読みした場合はqueueへ戻してMatch側の
+  message drainだけを終了し、必須の `match-result-confirm` は検出してclickする
 - [ ] 結果画面待機中もSniffer messageを処理し、全messageを共通formatterでlogへ出す
 - [ ] 局終了後に遅れて届く `inputOperation` / `inputChiPengGang` responseを許容し、stateへ重複適用しない
 - [ ] `.lq.FastTest.confirmNewRound` と `ActionNewRound` のどちらが先着しても同じ次局stateへ遷移する
