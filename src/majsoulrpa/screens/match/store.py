@@ -119,6 +119,8 @@ class MatchStateStore:
         operation_specification: _OperationCandidatesSpecification | None,
     ) -> MatchState:
         match event:
+            case NewRoundEvent():
+                return self._apply_new_round(event, operation_specification)
             case ZimoEvent():
                 return self._apply_zimo(event, operation_specification)
             case DapaiEvent():
@@ -141,10 +143,71 @@ class MatchStateStore:
                 return self._apply_hule(event)
             case NoTileEvent():
                 return self._apply_no_tile(event)
-            case StartMatchEvent() | NewRoundEvent():
+            case StartMatchEvent():
                 msg = "A match initialization event cannot be applied again."
                 raise ValueError(msg)
         assert_never(event)
+
+    def _apply_new_round(
+        self,
+        event: NewRoundEvent,
+        operation_specification: _OperationCandidatesSpecification | None,
+    ) -> MatchState:
+        state = self._require_state()
+        previous_round = state.round
+        match previous_round.events[-1]:
+            case HuleEvent() | NoTileEvent() | LiujuEvent():
+                pass
+            case _:
+                msg = "ActionNewRound must follow a terminal round event."
+                raise ValueError(msg)
+        if event.action_step != 0:
+            msg = "A subsequent ActionNewRound must use step zero."
+            raise ValueError(msg)
+        if event.scores != previous_round.scores:
+            msg = "ActionNewRound scores must match the previous round."
+            raise ValueError(msg)
+
+        player_count = len(state.players)
+        operation_candidates = materialize_operation_candidates(
+            operation_specification,
+            event,
+            event.shoupai,
+            event.zimopai,
+            (),
+            state.self_seat,
+            player_count,
+        )
+        next_round = RoundState(
+            generation=previous_round.generation + 1,
+            step=event.action_step,
+            chang=event.chang,
+            ju=event.ju,
+            ben=event.ben,
+            liqibang=event.liqibang,
+            dora_indicators=event.dora_indicators,
+            left_tile_count=event.left_tile_count,
+            scores=event.scores,
+            shoupai=event.shoupai,
+            zimopai=event.zimopai,
+            he=tuple(() for _ in range(player_count)),
+            fulu=tuple(() for _ in range(player_count)),
+            babei=tuple(() for _ in range(player_count)),
+            liqi=(False,) * player_count,
+            wliqi=(False,) * player_count,
+            first_draw=(True,) * player_count,
+            yifa=(False,) * player_count,
+            lingshang_zimo=(False,) * player_count,
+            pending_action_target=None,
+            operation_candidates=operation_candidates,
+            events=(event,),
+        )
+        self._state = replace(
+            state,
+            version=state.version + 1,
+            round=next_round,
+        )
+        return self._state
 
     def _apply_zimo(
         self,

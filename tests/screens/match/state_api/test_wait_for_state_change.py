@@ -11,11 +11,15 @@ from majsoulrpa.assets.templates.match import (
     HULE_CONFIRM_TEMPLATE_PATH,
     LIUJU_CONFIRM_SETTINGS_PATH,
     LIUJU_CONFIRM_TEMPLATE_PATH,
+    MATCH_RESULT_CONFIRM_SETTINGS_PATH,
+    MATCH_RESULT_CONFIRM_TEMPLATE_PATH,
     ROUND_RESULT_CONFIRM_SETTINGS_PATH,
     ROUND_RESULT_CONFIRM_TEMPLATE_PATH,
+    SEAT_INDICATOR_SETTINGS_PATH,
+    SEAT_INDICATOR_TEMPLATE_PATHS,
 )
-from majsoulrpa.screens.errors import ScreenNotImplementedOperationError
-from majsoulrpa.screens.match import LiujuEvent, MatchScreen
+from majsoulrpa.screens.errors import ScreenInconsistentMessageError
+from majsoulrpa.screens.match import LiujuEvent, MatchScreen, NewRoundEvent
 from majsoulrpa.sniffer.message_queue import SnifferMessageQueue
 from tests.screens._support import (
     BrowserControllerSpy,
@@ -55,7 +59,7 @@ def test_wait_for_state_change_returns_terminal_state_before_capture() -> None:
     assert browser.clicked_points == []
 
 
-def test_wait_for_state_change_clicks_liuju_confirmation_before_capture(
+def test_wait_for_state_change_clicks_liuju_and_match_result_confirmations(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     confirmation = _synthetic_template_screenshot(
@@ -63,16 +67,17 @@ def test_wait_for_state_change_clicks_liuju_confirmation_before_capture(
         settings_path=LIUJU_CONFIRM_SETTINGS_PATH,
     )
     round_result_confirmation = _round_result_confirmation()
-    next_screen = b"next-screen"
+    match_result_confirmation = _match_result_confirmation()
     messages = _message_queue(
         _auth_game(),
         _live_new_round_action(step=0, ju=0),
         _live_liuju_action(step=1, type_=1, seat=0),
+        ".lq.NotifyGameEndResult",
     )
     browser = BrowserControllerSpy(
         confirmation,
         round_result_confirmation,
-        next_screen,
+        match_result_confirmation,
     )
     screen = _screen(browser, messages)
     sleeps: list[float] = []
@@ -84,16 +89,14 @@ def test_wait_for_state_change_clicks_liuju_confirmation_before_capture(
     asyncio.run(screen.before_callback())
     terminal = asyncio.run(screen.get_state())
 
-    with pytest.raises(ScreenNotImplementedOperationError) as exc_info:
-        asyncio.run(screen.wait_for_state_change(terminal))
+    state = asyncio.run(screen.wait_for_state_change(terminal))
 
     assert sleeps == [
         match_screen_module.TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS,
-        match_screen_module.SCORE_RESULT_SCREEN_DISPLAY_DELAY_SECONDS,
     ]
-    assert exc_info.value.screenshot == next_screen
-    assert "LiujuEvent" in str(exc_info.value)
-    assert len(browser.clicked_points) == 2
+    assert state is None
+    assert screen._stale
+    assert len(browser.clicked_points) == 3
 
 
 def test_wait_for_state_change_clicks_each_hule_confirmation(
@@ -104,7 +107,7 @@ def test_wait_for_state_change_clicks_each_hule_confirmation(
         settings_path=HULE_CONFIRM_SETTINGS_PATH,
     )
     round_result_confirmation = _round_result_confirmation()
-    next_screen = b"next-screen"
+    match_result_confirmation = _match_result_confirmation()
     messages = _message_queue(
         _auth_game(),
         _live_new_round_action(
@@ -129,12 +132,13 @@ def test_wait_for_state_change_clicks_each_hule_confirmation(
             scores=[17000, 29000, 29000, 25000],
             doras=[],
         ),
+        ".lq.NotifyGameEndResult",
     )
     browser = BrowserControllerSpy(
         confirmation,
         confirmation,
         round_result_confirmation,
-        next_screen,
+        match_result_confirmation,
     )
     screen = _screen(browser, messages)
 
@@ -145,18 +149,17 @@ def test_wait_for_state_change_clicks_each_hule_confirmation(
     asyncio.run(screen.before_callback())
     terminal = asyncio.run(screen.get_state())
 
-    with pytest.raises(ScreenNotImplementedOperationError) as exc_info:
-        asyncio.run(screen.wait_for_state_change(terminal))
+    state = asyncio.run(screen.wait_for_state_change(terminal))
 
-    assert exc_info.value.screenshot == next_screen
-    assert len(browser.clicked_points) == 3
+    assert state is None
+    assert len(browser.clicked_points) == 4
 
 
 def test_wait_for_state_change_accepts_confirmation_auto_transition(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     blank = _synthetic_blank_screenshot()
-    next_screen = b"next-screen"
+    next_round_screen = _next_round_screen()
     next_round = _live_new_round_action(step=0, ju=1)
     messages = _message_queue(
         _auth_game(),
@@ -164,7 +167,7 @@ def test_wait_for_state_change_accepts_confirmation_auto_transition(
         _live_liuju_action(step=1, type_=1, seat=0),
         next_round,
     )
-    browser = BrowserControllerSpy(blank, next_screen)
+    browser = BrowserControllerSpy(blank, next_round_screen)
     screen = _screen(browser, messages)
     sleeps: list[float] = []
 
@@ -175,16 +178,61 @@ def test_wait_for_state_change_accepts_confirmation_auto_transition(
     asyncio.run(screen.before_callback())
     terminal = asyncio.run(screen.get_state())
 
-    with pytest.raises(ScreenNotImplementedOperationError) as exc_info:
-        asyncio.run(screen.wait_for_state_change(terminal))
+    state = asyncio.run(screen.wait_for_state_change(terminal))
 
-    assert exc_info.value.screenshot == next_screen
+    assert state is not None
+    assert state.version == terminal.version + 1
+    assert state.match_id == terminal.match_id
+    assert state.origin == terminal.origin
+    assert state.origin_id == terminal.origin_id
+    assert state.self_seat == terminal.self_seat
+    assert state.players == terminal.players
+    assert state.round.generation == terminal.round.generation + 1
+    assert state.round.ju == 1
+    assert len(state.round.events) == 1
+    assert isinstance(state.round.events[0], NewRoundEvent)
+    assert state.round.he == ((), (), (), ())
+    assert state.round.fulu == ((), (), (), ())
+    assert state.round.babei == ((), (), (), ())
+    assert state.round.liqi == (False,) * 4
+    assert state.round.first_draw == (True,) * 4
+    assert state.round.pending_action_target is None
+    assert state.round.operation_candidates is None
     assert browser.clicked_points == []
     assert sleeps == [
         match_screen_module.TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS,
-        match_screen_module.SCORE_RESULT_SCREEN_DISPLAY_DELAY_SECONDS,
     ]
-    assert messages.get_nowait() is next_round
+    assert messages.get_nowait() is None
+
+
+def test_wait_for_state_change_rejects_next_round_score_mismatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    blank = _synthetic_blank_screenshot()
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(step=0, ju=0),
+        _live_liuju_action(step=1, type_=1, seat=0),
+        _live_new_round_action(
+            step=0,
+            ju=1,
+            scores=[26000, 25000, 25000, 24000],
+        ),
+    )
+    screen = _screen(
+        BrowserControllerSpy(blank, b"inconsistent-screen"),
+        messages,
+    )
+
+    async def skip_sleep(delay: float) -> None:
+        _ = delay
+
+    monkeypatch.setattr(asyncio, "sleep", skip_sleep)
+    asyncio.run(screen.before_callback())
+    terminal = asyncio.run(screen.get_state())
+
+    with pytest.raises(ScreenInconsistentMessageError):
+        asyncio.run(screen.wait_for_state_change(terminal))
 
 
 def test_wait_for_state_change_waits_for_delayed_confirmation_button(
@@ -196,17 +244,18 @@ def test_wait_for_state_change_waits_for_delayed_confirmation_button(
         settings_path=LIUJU_CONFIRM_SETTINGS_PATH,
     )
     round_result_confirmation = _round_result_confirmation()
-    next_screen = b"next-screen"
+    match_result_confirmation = _match_result_confirmation()
     messages = _message_queue(
         _auth_game(),
         _live_new_round_action(step=0, ju=0),
         _live_liuju_action(step=1, type_=1, seat=0),
+        ".lq.NotifyGameEndResult",
     )
     browser = BrowserControllerSpy(
         blank,
         confirmation,
         round_result_confirmation,
-        next_screen,
+        match_result_confirmation,
     )
     screen = _screen(browser, messages)
     sleeps: list[float] = []
@@ -218,15 +267,13 @@ def test_wait_for_state_change_waits_for_delayed_confirmation_button(
     asyncio.run(screen.before_callback())
     terminal = asyncio.run(screen.get_state())
 
-    with pytest.raises(ScreenNotImplementedOperationError) as exc_info:
-        asyncio.run(screen.wait_for_state_change(terminal))
+    state = asyncio.run(screen.wait_for_state_change(terminal))
 
-    assert exc_info.value.screenshot == next_screen
-    assert len(browser.clicked_points) == 2
+    assert state is None
+    assert len(browser.clicked_points) == 3
     assert sleeps == [
         match_screen_module.TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS,
         match_screen_module.OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS,
-        match_screen_module.SCORE_RESULT_SCREEN_DISPLAY_DELAY_SECONDS,
     ]
 
 
@@ -242,7 +289,7 @@ def test_wait_for_state_change_advances_liujumanguan_presentations(
         settings_path=HULE_CONFIRM_SETTINGS_PATH,
     )
     round_result_confirmation = _round_result_confirmation()
-    next_screen = b"next-screen"
+    match_result_confirmation = _match_result_confirmation()
     messages = _message_queue(
         _auth_game(),
         _live_new_round_action(step=0),
@@ -289,13 +336,14 @@ def test_wait_for_state_change_advances_liujumanguan_presentations(
             ],
             liujumanguan=True,
         ),
+        ".lq.NotifyGameEndResult",
     )
     browser = BrowserControllerSpy(
         liuju_confirmation,
         hule_confirmation,
         hule_confirmation,
         round_result_confirmation,
-        next_screen,
+        match_result_confirmation,
     )
     screen = _screen(browser, messages)
 
@@ -306,11 +354,10 @@ def test_wait_for_state_change_advances_liujumanguan_presentations(
     asyncio.run(screen.before_callback())
     terminal = asyncio.run(screen.get_state())
 
-    with pytest.raises(ScreenNotImplementedOperationError) as exc_info:
-        asyncio.run(screen.wait_for_state_change(terminal))
+    state = asyncio.run(screen.wait_for_state_change(terminal))
 
-    assert exc_info.value.screenshot == next_screen
-    assert len(browser.clicked_points) == 4
+    assert state is None
+    assert len(browser.clicked_points) == 5
 
 
 def test_get_state_stops_consuming_messages_at_terminal_state() -> None:
@@ -359,4 +406,18 @@ def _round_result_confirmation() -> bytes:
     return _synthetic_template_screenshot(
         template_path=ROUND_RESULT_CONFIRM_TEMPLATE_PATH,
         settings_path=ROUND_RESULT_CONFIRM_SETTINGS_PATH,
+    )
+
+
+def _match_result_confirmation() -> bytes:
+    return _synthetic_template_screenshot(
+        template_path=MATCH_RESULT_CONFIRM_TEMPLATE_PATH,
+        settings_path=MATCH_RESULT_CONFIRM_SETTINGS_PATH,
+    )
+
+
+def _next_round_screen() -> bytes:
+    return _synthetic_template_screenshot(
+        template_path=SEAT_INDICATOR_TEMPLATE_PATHS[0],
+        settings_path=SEAT_INDICATOR_SETTINGS_PATH,
     )

@@ -931,9 +931,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] `wait_for_state_change()` は渡されたsnapshotより新しい通常の局内stateを返す
 - [ ] 別match、未来version、同一versionで内容が矛盾するsnapshotを拒否する
 - [x] 局途中のsnapshotから待って局終了eventを受信した場合は、結果画面を進める前にterminal snapshotを1回返す
-- [ ] terminal snapshotを渡して再度待つと、frameworkが結果画面を自動で進める
-- [x] 結果画面templateの準備前はterminal snapshotからの待機時に1.0秒待ち、screenshot付き `ScreenNotImplementedOperationError` を送出する
-- [x] 結果画面撮影用の暫定処理では画面をclickしない
+- [x] terminal snapshotを渡して再度待つと、frameworkが結果画面を自動で進める
 - [ ] 局終了stateにoperation候補が残っている場合は不整合にする
 - [x] `get_state()` は局終了eventをreduceした時点でdrainを止め、次局messageを利用者の観測前に消費しない
 - [x] current stateが局終了済みなら `get_state()` は後続messageを消費せず同じsnapshotを返す
@@ -950,27 +948,28 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 荒牌平局・流し満貫・途中流局・和了の固有画面後に共通の点数授受結果確認templateを1回clickする
 - [x] 流し満貫では荒牌平局確認、達成者ごとの演出確認、点数授受結果確認の順序を維持する
 - [x] 結果確認buttonはtemplate検出位置だけをclickし、推定座標を連打しない
+- [x] `NotifyGameEndResult` を受信した試合終了時は `match-result-confirm` をclickして `MatchScreen` をstaleにする
 - [ ] 結果画面待機中もSniffer messageを処理し、全messageを共通formatterでlogへ出す
 - [ ] 局終了後に遅れて届く `inputOperation` / `inputChiPengGang` responseを許容し、stateへ重複適用しない
 - [ ] `.lq.FastTest.confirmNewRound` と `ActionNewRound` のどちらが先着しても同じ次局stateへ遷移する
-- [ ] confirm responseがなくても `ActionNewRound` と新しいseat indicatorを確認できれば次局遷移を完了する
+- [x] confirm responseがなくても `ActionNewRound` と新しいseat indicatorを確認できれば次局遷移を完了する
 - [ ] confirm interaction省略時にstep 1以降がstep 0より先着した場合はbounded local bufferでstep順へ戻す
 - [ ] 並べ替えbufferは異なる同一step、上限超過、step 0が `ActionNewRound` 以外なら不整合にする
 - [ ] 次局遷移の並べ替えworkaroundを初回 `ActionMJStart` / `ActionNewRound` へ適用しない
-- [ ] `NotifyGameEndResult` の先着を次局開始と誤認せず、終局処理へ引き渡す
+- [x] `NotifyGameEndResult` の先着を次局開始と誤認せず、終局処理へ引き渡す
 - [ ] 和了確認中にconfirm responseだけが先着して画面も進まない場合はscreenshot付き不整合errorにする
-- [ ] 次局のseat indicatorを検出するまで `wait_for_state_change()` を返さない
-- [ ] 次局遷移時も同じ `MatchScreen` instanceとcallback invocationを維持し、staleにしない
-- [ ] 次局の `ActionNewRound` はstep 0だけを受理し、round generationとmatch versionを1増やす
-- [ ] 次局へ移ってもmatch ID、origin、origin ID、self seat、player metadataを維持する
-- [ ] 次局開始時に河、副露、北抜き、立直、一発、第一ツモ、嶺上ツモ、未解決action対象を初期化する
-- [ ] 前局終了scoreと `ActionNewRound.scores` が一致しない場合は不整合にする
-- [ ] 次局のevent列は `NewRoundEvent` だけから開始し、`StartMatchEvent` を引き継がない
+- [x] 次局のseat indicatorを検出するまで `wait_for_state_change()` を返さない
+- [x] 次局遷移時も同じ `MatchScreen` instanceとcallback invocationを維持し、staleにしない
+- [x] 次局の `ActionNewRound` はstep 0だけを受理し、round generationとmatch versionを1増やす
+- [x] 次局へ移ってもmatch ID、origin、origin ID、self seat、player metadataを維持する
+- [x] 次局開始時に河、副露、北抜き、立直、一発、第一ツモ、嶺上ツモ、未解決action対象を初期化する
+- [x] 前局終了scoreと `ActionNewRound.scores` が一致しない場合は不整合にする
+- [x] 次局のevent列は `NewRoundEvent` だけから開始し、`StartMatchEvent` を引き継がない
 - [ ] 次局 `ActionNewRound` のoperation候補を初回と同じmaterializerで生成する
 - [ ] `chang` / `ju` / `ben` / `liqibang` の遷移をframeworkで再計算せずprotobuf値を採用する
-- [ ] 次局がある場合は更新後の `MatchState`、試合終了時は画面遷移とstale化の完了後に `None` を返す
-- [ ] 結果画面専用のpublic operationや `advance_round()` を設けない
-- [ ] `wait_for_state_change()` のtimeoutは呼び出し側の `asyncio.timeout()` に委ねる
+- [x] 次局がある場合は更新後の `MatchState`、試合終了時は画面遷移とstale化の完了後に `None` を返す
+- [x] 結果画面専用のpublic operationや `advance_round()` を設けない
+- [x] `wait_for_state_change()` のtimeoutは呼び出し側の `asyncio.timeout()` に委ねる
 - [ ] 順序差・遅延・画面省略に対応するworkaround分岐には理由を説明するcode commentを残す
 
 ### immutable state / reducer

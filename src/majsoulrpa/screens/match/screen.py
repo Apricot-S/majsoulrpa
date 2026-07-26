@@ -14,6 +14,8 @@ from majsoulrpa.assets.templates.match import (
     LIUJU_CONFIRM_SETTINGS_PATH,
     LIUJU_CONFIRM_TEMPLATE_PATH,
     LIUJU_TEMPLATE_PATH,
+    MATCH_RESULT_CONFIRM_SETTINGS_PATH,
+    MATCH_RESULT_CONFIRM_TEMPLATE_PATH,
     PENG_TEMPLATE_PATH,
     ROUND_RESULT_CONFIRM_SETTINGS_PATH,
     ROUND_RESULT_CONFIRM_TEMPLATE_PATH,
@@ -108,7 +110,6 @@ SKIP_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.2
 OPERATION_OPTION_DISPLAY_DELAY_SECONDS = 0.4
 HAND_SLIDE_DELAY_SECONDS = 1.5
 TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS = 1.0
-SCORE_RESULT_SCREEN_DISPLAY_DELAY_SECONDS = 3.0
 
 _SINGLE_FULU_CANDIDATE_COUNT = 1
 _MIN_MULTIPLE_FULU_CANDIDATE_COUNT = 2
@@ -130,6 +131,7 @@ _DEBUG_MESSAGE_NAMES = frozenset(
 _WARNING_MESSAGE_NAMES = frozenset(
     {".lq.Lobby.loginBeat", ".lq.Lobby.oauth2Login"}
 )
+_GAME_END_NOTIFICATION_NAME = ".lq.NotifyGameEndResult"
 
 _logger = getLogger(__name__)
 
@@ -229,6 +231,10 @@ class MatchScreen(Screen):
         template_path=ROUND_RESULT_CONFIRM_TEMPLATE_PATH,
         settings_path=ROUND_RESULT_CONFIRM_SETTINGS_PATH,
     )
+    MATCH_RESULT_CONFIRM_TEMPLATE = load_png_template_matcher(
+        template_path=MATCH_RESULT_CONFIRM_TEMPLATE_PATH,
+        settings_path=MATCH_RESULT_CONFIRM_SETTINGS_PATH,
+    )
 
     def __init__(self, context: ScreenContext | None = None) -> None:
         super().__init__(context=context)
@@ -240,6 +246,7 @@ class MatchScreen(Screen):
         ) = None
         self._operation_candidates_observed_at: datetime.datetime | None = None
         self._state_store = MatchStateStore()
+        self._game_end_notified = False
 
     @classmethod
     @override
@@ -314,13 +321,7 @@ class MatchScreen(Screen):
                 await self._click_result_confirmation_or_wait(
                     self.ROUND_RESULT_CONFIRM_TEMPLATE
                 )
-            await asyncio.sleep(SCORE_RESULT_SCREEN_DISPLAY_DELAY_SECONDS)
-            screenshot = await self.context.browser.screenshot()
-            msg = (
-                f"The screen after the {type(event).__name__} round result "
-                "is not implemented."
-            )
-            raise ScreenNotImplementedOperationError(msg, screenshot)
+            return await self._wait_for_round_transition()
 
         while True:
             message = await self._get_sniffer_message()
@@ -437,6 +438,10 @@ class MatchScreen(Screen):
         message: DecodedSnifferMessage,
     ) -> None:
         name = message.raw.name
+        if name == _GAME_END_NOTIFICATION_NAME:
+            self._log_sniffer_message(message)
+            self._game_end_notified = True
+            return
         if name == AUTH_GAME_NAME:
             self._log_sniffer_message(message)
             self._apply_auth_game(message)
@@ -562,7 +567,7 @@ class MatchScreen(Screen):
         operation: _OperationCandidatesSpecification | None,
     ) -> None:
         match event:
-            case StartMatchEvent() | NewRoundEvent():
+            case StartMatchEvent():
                 msg = "A match initialization action must not be repeated."
                 raise MatchActionDecodeError(msg)
             case _:
@@ -1216,6 +1221,35 @@ class MatchScreen(Screen):
                 return False
             # These confirmation screens advance when their on-screen
             # three-count finishes, even if the button cannot be used.
+            await asyncio.sleep(
+                OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
+            )
+
+    async def _wait_for_round_transition(self) -> MatchState | None:
+        while not self._game_end_notified:
+            message = await self._get_sniffer_message()
+            await self._apply_match_message_with_screen_errors(
+                message,
+                inconsistent_message=(
+                    "Match state update failed while changing rounds."
+                ),
+            )
+            state = self._get_match_state()
+            if not self._is_round_terminal_state(state):
+                await self._wait_for_next_round_screen()
+                return state
+
+        await self._click_result_confirmation_or_wait(
+            self.MATCH_RESULT_CONFIRM_TEMPLATE
+        )
+        self._mark_stale()
+        return None
+
+    async def _wait_for_next_round_screen(self) -> None:
+        while True:
+            screenshot = await self.context.browser.screenshot()
+            if self._matches_seat_indicator(screenshot):
+                return
             await asyncio.sleep(
                 OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
             )

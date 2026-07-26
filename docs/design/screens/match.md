@@ -100,9 +100,10 @@ operation候補が残っていないことも要求する。内部timeoutは設�
 呼び出し側の `asyncio.timeout()` に上限を委ねる。
 
 terminal snapshotを渡して `wait_for_state_change()` を呼ぶと、まずUI描画を1.0秒待ち、
-以下の固有確認画面と点数授受結果画面を進める。次局または試合結果画面の処理前の暫定実装では、
-点数授受結果の確認後に3.0秒待ってscreenshotを取得し、`ScreenNotImplementedOperationError` を
-送出する。利用者は例外の `save_screenshot()` を使って次のtemplate画像を保存できる。
+以下の固有確認画面と点数授受結果画面を進める。その後、`ActionNewRound` を受信した場合は
+同じ `MatchScreen` の次局stateを構築し、新しいseat indicatorの表示を待って返す。
+`NotifyGameEndResult` を受信した場合は試合結果確認buttonを処理し、`MatchScreen` をstaleにして
+`None` を返す。
 
 ### 結果画面の処理
 
@@ -117,12 +118,13 @@ terminal snapshotを渡して `wait_for_state_change()` を呼ぶと、まずUI�
   要素数と同じ回数だけ順にclickする。
 - `LiujuEvent` も途中流局の確認buttonを1回処理する。UI上は通常の流局と同じ確認buttonを使う。
 - 以上の固有画面の後、通常の荒牌平局・和了後と同じ点数授受結果の確認buttonを1回処理する。
+- `NotifyGameEndResult` を受信した試合終了時は、試合結果確認buttonを1回処理して画面を閉じる。
 
 したがって流し満貫の遷移順は、荒牌平局の確認、達成者ごとの流し満貫演出の確認、点数授受結果の
 確認の3段階となる。
 
-各buttonは専用templateで検出してからclickし、座標を推測して連打しない。実装前に
-和了確認、流局確認、局結果確認、試合結果確認のscreenshotとtemplate設定を用意する。
+各buttonは和了確認、流局確認、局結果確認、試合結果確認それぞれの専用templateで検出してから
+clickし、座標を推測して連打しない。
 和了・流局の固有確認画面はbuttonを操作しなくても、button表示後の3カウントで自動遷移する。
 このカウントは終局message受信時には始まっておらず、和了時には手牌・役の読み上げ演出が先行する。
 そのためmessage受信からの固定3秒timeoutは設けず、templateを検出するまで再試行する。自動遷移で
