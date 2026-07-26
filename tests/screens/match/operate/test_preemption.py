@@ -12,6 +12,7 @@ from majsoulrpa.screens.match import (
     MatchScreen,
     MatchState,
     PengOperation,
+    SkipOperation,
 )
 from majsoulrpa.screens.match.types import validate_seat, validate_tile
 
@@ -125,3 +126,27 @@ def test_hule_containing_self_does_not_preempt_fulu_operation(
     event = _hule_event(0, 1)
 
     assert not MatchScreen._event_preempts_operation(state, event, operation)
+
+
+def test_any_applied_event_completes_skip_operation(
+    state: MatchState,
+) -> None:
+    event = _hule_event(1)
+
+    assert MatchScreen._event_completes_operation(
+        state,
+        event,
+        SkipOperation(),
+    )
+
+
+def test_event_does_not_preempt_skip_operation(
+    state: MatchState,
+) -> None:
+    event = _hule_event(1)
+
+    assert not MatchScreen._event_preempts_operation(
+        state,
+        event,
+        SkipOperation(),
+    )

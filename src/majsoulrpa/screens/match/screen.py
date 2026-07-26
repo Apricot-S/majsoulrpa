@@ -1098,8 +1098,7 @@ class MatchScreen(Screen):
                     and event.seat == state.self_seat
                 )
             case SkipOperation():
-                msg = "SkipOperation is not implemented."
-                raise RuntimeError(msg)
+                return True
         assert_never(operation)
 
     @staticmethod
@@ -1128,11 +1127,9 @@ class MatchScreen(Screen):
                 | RongOperation()
                 | LiujuOperation()
                 | BabeiOperation()
+                | SkipOperation()
             ):
                 return False
-            case SkipOperation():
-                msg = "SkipOperation is not implemented."
-                raise RuntimeError(msg)
         assert_never(operation)
 
     async def _raise_inconsistent_message(
