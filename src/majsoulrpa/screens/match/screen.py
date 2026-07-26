@@ -8,7 +8,11 @@ from majsoulrpa.assets.templates.match import (
     BUTTON_AREA_SETTINGS_PATH,
     CHI_TEMPLATE_PATH,
     GANG_TEMPLATE_PATH,
+    HULE_CONFIRM_SETTINGS_PATH,
+    HULE_CONFIRM_TEMPLATE_PATH,
     LIQI_TEMPLATE_PATH,
+    LIUJU_CONFIRM_SETTINGS_PATH,
+    LIUJU_CONFIRM_TEMPLATE_PATH,
     LIUJU_TEMPLATE_PATH,
     PENG_TEMPLATE_PATH,
     SEAT_INDICATOR_SETTINGS_PATH,
@@ -101,8 +105,9 @@ OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
 SKIP_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.2
 OPERATION_OPTION_DISPLAY_DELAY_SECONDS = 0.4
 HAND_SLIDE_DELAY_SECONDS = 1.5
+RESULT_CONFIRM_AUTO_ADVANCE_SECONDS = 3.0
 
-RESULT_SCREEN_CAPTURE_DELAY_SECONDS = 1.0
+TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS = 1.0
 
 _SINGLE_FULU_CANDIDATE_COUNT = 1
 _MIN_MULTIPLE_FULU_CANDIDATE_COUNT = 2
@@ -211,6 +216,14 @@ class MatchScreen(Screen):
         template_path=SKIP_TEMPLATE_PATH,
         settings_path=SKIP_SETTINGS_PATH,
     )
+    HULE_CONFIRM_TEMPLATE = load_png_template_matcher(
+        template_path=HULE_CONFIRM_TEMPLATE_PATH,
+        settings_path=HULE_CONFIRM_SETTINGS_PATH,
+    )
+    LIUJU_CONFIRM_TEMPLATE = load_png_template_matcher(
+        template_path=LIUJU_CONFIRM_TEMPLATE_PATH,
+        settings_path=LIUJU_CONFIRM_SETTINGS_PATH,
+    )
 
     def __init__(self, context: ScreenContext | None = None) -> None:
         super().__init__(context=context)
@@ -288,11 +301,14 @@ class MatchScreen(Screen):
         if current.version > state.version:
             return current
         if self._is_round_terminal_state(current):
-            await asyncio.sleep(RESULT_SCREEN_CAPTURE_DELAY_SECONDS)
-            screenshot = await self.context.browser.screenshot()
             event = current.round.events[-1]
+            if not isinstance(event, HuleEvent | NoTileEvent | LiujuEvent):
+                msg = "A terminal match state must end with a terminal event."
+                raise RuntimeError(msg)
+            await self._advance_terminal_event_screen(event)
+            screenshot = await self.context.browser.screenshot()
             msg = (
-                f"{type(event).__name__} result screen handling is not "
+                f"The score result after {type(event).__name__} is not "
                 "implemented."
             )
             raise ScreenNotImplementedOperationError(msg, screenshot)
@@ -1152,6 +1168,44 @@ class MatchScreen(Screen):
             msg = "MatchScreen has not been initialized."
             raise RuntimeError(msg)
         return state
+
+    async def _advance_terminal_event_screen(
+        self,
+        event: HuleEvent | NoTileEvent | LiujuEvent,
+    ) -> None:
+        await asyncio.sleep(TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS)
+        match event:
+            case HuleEvent():
+                templates = (self.HULE_CONFIRM_TEMPLATE,) * len(event.hules)
+            case NoTileEvent():
+                hule_confirmation_count = sum(
+                    score.seat is not None for score in event.scores
+                )
+                templates = (
+                    self.LIUJU_CONFIRM_TEMPLATE,
+                    *((self.HULE_CONFIRM_TEMPLATE,) * hule_confirmation_count),
+                )
+            case LiujuEvent():
+                templates = (self.LIUJU_CONFIRM_TEMPLATE,)
+
+        for template in templates:
+            await self._click_result_confirmation_or_wait(template)
+
+    async def _click_result_confirmation_or_wait(
+        self,
+        template: TemplateMatcher,
+    ) -> None:
+        started_at = utc_now()
+        while (
+            utc_now() - started_at
+        ).total_seconds() < RESULT_CONFIRM_AUTO_ADVANCE_SECONDS:
+            if await self.click_template_if_present(template):
+                return
+            # These confirmation screens advance when their on-screen
+            # three-count finishes, even if the button cannot be used.
+            await asyncio.sleep(
+                OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
+            )
 
     @staticmethod
     def _is_round_terminal_state(state: MatchState) -> bool:

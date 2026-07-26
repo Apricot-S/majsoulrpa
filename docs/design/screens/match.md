@@ -99,11 +99,10 @@ terminal snapshotを処理した後、次のstateを待つ通常のloopを継続
 operation候補が残っていないことも要求する。内部timeoutは設けず、他のScreen APIと同様に
 呼び出し側の `asyncio.timeout()` に上限を委ねる。
 
-結果画面templateを採取する暫定実装では、terminal snapshotを渡して
-`wait_for_state_change()` を呼ぶと、UI描画を1.0秒待ってscreenshotを取得し、
-`ScreenNotImplementedOperationError` を送出する。結果画面はclickしない。利用者は例外の
-`save_screenshot()` を使って、和了・荒牌平局・途中流局それぞれの画像を保存できる。
-templateを用意した後、この暫定分岐を以下の自動進行処理へ置き換える。
+terminal snapshotを渡して `wait_for_state_change()` を呼ぶと、まずUI描画を1.0秒待ち、
+以下の固有確認画面を進める。点数授受結果画面のtemplateを採取する暫定実装では、固有確認後の
+screenshotを取得して `ScreenNotImplementedOperationError` を送出する。利用者は例外の
+`save_screenshot()` を使って次のtemplate画像を保存できる。
 
 ### 結果画面の処理
 
@@ -124,6 +123,9 @@ templateを用意した後、この暫定分岐を以下の自動進行処理へ
 
 各buttonは専用templateで検出してからclickし、座標を推測して連打しない。実装前に
 和了確認、流局確認、局結果確認、試合結果確認のscreenshotとtemplate設定を用意する。
+和了・流局の固有確認画面はbuttonを操作しなくても3カウント後に自動遷移する。templateを
+検出できない場合は3秒間だけ再検出し、自動遷移したものとして次の固有画面へ進む。この経路を
+template検出失敗として扱ったり、存在しなくなったbuttonを無期限に待ったりしない。
 
 ### messageとUIの競合
 
