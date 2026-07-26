@@ -256,6 +256,23 @@ def _live_hule_action(
     return _live_action(step=step, name="ActionHule", data=data)
 
 
+def _live_no_tile_action(
+    *,
+    step: int,
+    players: list[liqi_pb2.NoTilePlayerInfo],
+    scores: list[liqi_pb2.NoTileScoreInfo],
+    liujumanguan: bool = False,
+    game_end: bool = False,
+) -> DecodedNotice:
+    data = liqi_pb2.ActionNoTile(
+        liujumanguan=liujumanguan,
+        players=players,
+        scores=scores,
+        gameend=game_end,
+    ).SerializeToString()
+    return _live_action(step=step, name="ActionNoTile", data=data)
+
+
 def _live_chi_peng_gang_action(
     *,
     step: int,

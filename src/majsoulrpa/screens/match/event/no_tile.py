@@ -105,7 +105,7 @@ class NoTileEvent(_MatchEventBase):
             if (
                 (score.seat is not None and score.seat >= player_count)
                 or len(score.old_scores) != player_count
-                or len(score.delta_scores) != player_count
+                or len(score.delta_scores) not in (0, player_count)
             ):
                 msg = "NoTile score collections must match the player count."
                 raise ValueError(msg)

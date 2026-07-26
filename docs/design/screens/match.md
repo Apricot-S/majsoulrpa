@@ -983,10 +983,18 @@ Event 列へ追加して未解決の打牌・搶槓対象と operation 候補を
 ドラ表示牌、流し満貫の獲得点を保持する。通常ルールで利用しない `taxes` / `lines` は無視する。
 `NoTileScoreInfo.seat` は流し満貫達成者がいない場合も wire 上は0になるため、
 `score == 0` なら `NoTileScore.seat` を `None` に正規化し、非0の場合だけ `Seat` として扱う。
-player 数は3人または4人とし、
-各 score の点数列は player 数と一致し、score seat は重複しないことを要求する。
+`scores` は通常1要素で、流し満貫達成者が複数いる場合だけ複数要素になる。全員聴牌または
+全員不聴では `delta_scores` が空になるため、空の差分は全員0点として扱う。player 数は
+3人または4人とし、各 score の `old_scores` と非空の `delta_scores` は player 数と一致し、
+score seat は重複しないことを要求する。
 特殊 mode 用の `muyu` / `hules_history` は公開 model に取り込まないが、decoded message の
-ログには残す。局終了時の state reducer は別工程で追加する。
+ログには残す。
+
+reducer は Event の player 数が対局人数と一致し、残り自摸回数0の最終打牌直後であることを
+要求する。各 `NoTileScore.old_scores` は現在の点数と一致させ、複数の `delta_scores` を
+seat ごとに合算して更新後の点数を求める。`liujumanguan` flag は `seat` が `None` でない
+score の有無と一致させる。適用後は Event 列へ追加し、未解決の行動対象と operation 候補を
+消去する。
 
 `ActionHule` は自摸和と栄和に共通の `HuleEvent` に変換する。protobuf の repeated `hules` は
 message の順序を保った `tuple[Hule, ...]` とし、自摸和は1要素、ダブロン・トリロンは複数要素で

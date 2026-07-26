@@ -140,8 +140,7 @@ class MatchStateStore:
             case HuleEvent():
                 return self._apply_hule(event)
             case NoTileEvent():
-                msg = "ActionNoTile reducer is not implemented."
-                raise ValueError(msg)
+                return self._apply_no_tile(event)
             case StartMatchEvent() | NewRoundEvent():
                 msg = "A match initialization event cannot be applied again."
                 raise ValueError(msg)
@@ -772,6 +771,64 @@ class MatchStateStore:
             round_state,
             step=event.action_step,
             scores=event.scores,
+            pending_action_target=None,
+            operation_candidates=None,
+            events=(*round_state.events, event),
+        )
+        self._state = replace(
+            state,
+            version=state.version + 1,
+            round=next_round,
+        )
+        return self._state
+
+    def _apply_no_tile(self, event: NoTileEvent) -> MatchState:
+        state = self._require_state()
+        round_state = state.round
+        player_count = len(state.players)
+        if event.action_step != round_state.step + 1:
+            msg = "ActionNoTile step must follow the current round step."
+            raise ValueError(msg)
+        if len(event.players) != player_count:
+            msg = "ActionNoTile players must identify every player."
+            raise ValueError(msg)
+        if round_state.left_tile_count != 0:
+            msg = "ActionNoTile requires an exhausted wall."
+            raise ValueError(msg)
+        if (
+            not isinstance(round_state.events[-1], DapaiEvent)
+            or round_state.pending_action_target is None
+        ):
+            msg = "ActionNoTile must follow an unresolved final discard."
+            raise ValueError(msg)
+
+        has_liujumanguan = any(
+            score.seat is not None for score in event.scores
+        )
+        if event.liujumanguan is not has_liujumanguan:
+            msg = "ActionNoTile liujumanguan flag is inconsistent."
+            raise ValueError(msg)
+
+        total_delta_scores = [0] * player_count
+        for score in event.scores:
+            if score.old_scores != round_state.scores:
+                msg = "ActionNoTile old scores must match the current scores."
+                raise ValueError(msg)
+            for seat, delta_score in enumerate(score.delta_scores):
+                total_delta_scores[seat] += delta_score
+        scores = tuple(
+            old_score + delta_score
+            for old_score, delta_score in zip(
+                round_state.scores,
+                total_delta_scores,
+                strict=True,
+            )
+        )
+
+        next_round = replace(
+            round_state,
+            step=event.action_step,
+            scores=scores,
             pending_action_target=None,
             operation_candidates=None,
             events=(*round_state.events, event),

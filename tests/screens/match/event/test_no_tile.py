@@ -162,6 +162,20 @@ def test_no_tile_score_uses_none_seat_without_liujumanguan() -> None:
     assert score.seat is None
 
 
+def test_no_tile_event_accepts_empty_delta_scores() -> None:
+    event = NoTileEvent.from_dict(
+        8,
+        {
+            "liujumanguan": False,
+            "players": [_player_data() for _ in range(4)],
+            "scores": [_score_data(seat=0)],
+            "gameend": False,
+        },
+    )
+
+    assert event.scores[0].delta_scores == ()
+
+
 def _player_data() -> dict[str, JsonValue]:
     return {
         "tingpai": False,
@@ -175,7 +189,7 @@ def _score_data(*, seat: int, score: int = 0) -> dict[str, JsonValue]:
     return {
         "seat": seat,
         "old_scores": [25000] * 4,
-        "delta_scores": [0] * 4,
+        "delta_scores": [],
         "hand": [],
         "ming": [],
         "doras": [],

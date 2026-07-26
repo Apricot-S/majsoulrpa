@@ -702,6 +702,13 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 通常ルールで利用しない `NoTileScoreInfo.taxes` / `lines` は公開 model に取り込まない
 - [x] `NoTileEvent` は流し満貫と試合終了のflagを保持し、特殊mode用のmuyu / hules_historyは公開modelへ取り込まない
 - [x] `NoTileEvent.players` は3人または4人、各 `NoTileScore` の点数列はplayer数と一致し、score seatは重複しない
+- [x] 全員聴牌または全員不聴を表す空の `NoTileScore.delta_scores` を受理する
+- [x] `NoTileEvent.players` の要素数は対局人数と一致する
+- [x] 各 `NoTileScore.old_scores` は現在の点数と一致する
+- [x] 複数の流し満貫では各 `NoTileScore.delta_scores` を合算して点数へ反映する
+- [x] `NoTileEvent.liujumanguan` と流し満貫達成者の有無が一致する
+- [x] `NoTileEvent` は最終打牌後かつ残り自摸回数0でのみ受理する
+- [x] `NoTileEvent` を Event 列へ追加し、未解決の行動対象と operation 候補を消去する
 - [x] `ActionHule` を自摸和・栄和共通の `HuleEvent` に変換し、複数の和了情報を message の順序どおり保持する
 - [x] `Hule` は和了者、和了方法、和了牌、公開された手牌・副露、役ID、符、点数内訳を保持し、常に空の役名・titleは保持しない
 - [x] `HuleEvent` は局の和了前点数、点数差分、和了後点数を保持し、未使用の gameend と空の action 直下ドラ表示牌は保持しない
