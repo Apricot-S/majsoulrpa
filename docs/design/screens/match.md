@@ -852,7 +852,7 @@ class NoTilePlayer:
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class NoTileScore:
-    seat: Seat
+    seat: Seat | None
     old_scores: tuple[int, ...]
     delta_scores: tuple[int, ...]
     hand: tuple[Tile, ...]
@@ -980,7 +980,9 @@ Event 列へ追加して未解決の打牌・搶槓対象と operation 候補を
 `NoTilePlayer` に保持する。`tings` は通常ルールでも使用されるが、他の Action Event と同様に
 待ち情報を RPA の公開型へ取り込まない。`already_hule` は通常ルールで利用しないため無視する。
 流し満貫の精算情報は `NoTileScore` に変換し、seat、点数列、公開手牌・副露、
-ドラ表示牌、最終点数を保持する。通常ルールで利用しない `taxes` / `lines` は無視する。
+ドラ表示牌、流し満貫の獲得点を保持する。通常ルールで利用しない `taxes` / `lines` は無視する。
+`NoTileScoreInfo.seat` は流し満貫達成者がいない場合も wire 上は0になるため、
+`score == 0` なら `NoTileScore.seat` を `None` に正規化し、非0の場合だけ `Seat` として扱う。
 player 数は3人または4人とし、
 各 score の点数列は player 数と一致し、score seat は重複しないことを要求する。
 特殊 mode 用の `muyu` / `hules_history` は公開 model に取り込まないが、decoded message の

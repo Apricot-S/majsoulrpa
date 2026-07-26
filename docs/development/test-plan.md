@@ -697,7 +697,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `NoTilePlayer` は protobuf の player 順を保ち、聴牌状態と公開手牌を保持する
 - [x] 通常ルールでも使用される `NoTilePlayerInfo.tings` は、他の Action Event と同様に公開 model に取り込まない
 - [x] 通常ルールで利用しない `NoTilePlayerInfo.already_hule` は公開 model に取り込まない
-- [x] `NoTileScore` は流し満貫の seat、和了前点数、点数差分、公開手牌・副露・ドラ表示牌、最終点数を保持する
+- [x] `NoTileScore` は流し満貫の seat、和了前点数、点数差分、公開手牌・副露・ドラ表示牌、流し満貫の獲得点を保持する
+- [x] `NoTileScoreInfo.score == 0` なら流し満貫達成者はいないため `NoTileScore.seat` を `None` にする
 - [x] 通常ルールで利用しない `NoTileScoreInfo.taxes` / `lines` は公開 model に取り込まない
 - [x] `NoTileEvent` は流し満貫と試合終了のflagを保持し、特殊mode用のmuyu / hules_historyは公開modelへ取り込まない
 - [x] `NoTileEvent.players` は3人または4人、各 `NoTileScore` の点数列はplayer数と一致し、score seatは重複しない

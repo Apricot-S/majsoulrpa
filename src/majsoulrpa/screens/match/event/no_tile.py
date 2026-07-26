@@ -41,7 +41,7 @@ class NoTilePlayer:
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class NoTileScore:
-    seat: Seat
+    seat: Seat | None
     old_scores: tuple[int, ...]
     delta_scores: tuple[int, ...]
     hand: tuple[Tile, ...]
@@ -59,8 +59,13 @@ class NoTileScore:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, JsonValue]) -> Self:
+        score = _get_int(data, "NoTileScoreInfo.score")
         return cls(
-            seat=validate_seat(_get_int(data, "NoTileScoreInfo.seat")),
+            seat=(
+                validate_seat(_get_int(data, "NoTileScoreInfo.seat"))
+                if score != 0
+                else None
+            ),
             old_scores=tuple(
                 _get_int_list(data, "NoTileScoreInfo.old_scores")
             ),
@@ -76,7 +81,7 @@ class NoTileScore:
                 validate_tile(tile)
                 for tile in _get_str_list(data, "NoTileScoreInfo.doras")
             ),
-            score=_get_int(data, "NoTileScoreInfo.score"),
+            score=score,
         )
 
 
@@ -98,12 +103,14 @@ class NoTileEvent(_MatchEventBase):
         score_seats: set[Seat] = set()
         for score in self.scores:
             if (
-                score.seat >= player_count
+                (score.seat is not None and score.seat >= player_count)
                 or len(score.old_scores) != player_count
                 or len(score.delta_scores) != player_count
             ):
                 msg = "NoTile score collections must match the player count."
                 raise ValueError(msg)
+            if score.seat is None:
+                continue
             if score.seat in score_seats:
                 msg = "NoTile score seats must be unique."
                 raise ValueError(msg)

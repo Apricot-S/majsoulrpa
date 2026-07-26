@@ -55,7 +55,7 @@ def test_no_tile_event_from_dict() -> None:
                     "hand": ["1z"] * 13,
                     "ming": ["kezi(2z,2z,2z)"],
                     "doras": ["3p"],
-                    "score": 43000,
+                    "score": 8000,
                     "taxes": [0, 0, 0],
                     "lines": ["liujumanguan"],
                 }
@@ -99,7 +99,7 @@ def test_no_tile_event_from_dict() -> None:
                 hand=(validate_tile("1z"),) * 13,
                 ming=("kezi(2z,2z,2z)",),
                 dora_indicators=(validate_tile("3p"),),
-                score=43000,
+                score=8000,
             ),
         ),
         game_end=True,
@@ -147,10 +147,19 @@ def test_no_tile_event_rejects_duplicate_score_seats() -> None:
             {
                 "liujumanguan": True,
                 "players": [_player_data() for _ in range(4)],
-                "scores": [_score_data(seat=1), _score_data(seat=1)],
+                "scores": [
+                    _score_data(seat=1, score=8000),
+                    _score_data(seat=1, score=8000),
+                ],
                 "gameend": False,
             },
         )
+
+
+def test_no_tile_score_uses_none_seat_without_liujumanguan() -> None:
+    score = NoTileScore.from_dict(_score_data(seat=0))
+
+    assert score.seat is None
 
 
 def _player_data() -> dict[str, JsonValue]:
@@ -162,7 +171,7 @@ def _player_data() -> dict[str, JsonValue]:
     }
 
 
-def _score_data(*, seat: int) -> dict[str, JsonValue]:
+def _score_data(*, seat: int, score: int = 0) -> dict[str, JsonValue]:
     return {
         "seat": seat,
         "old_scores": [25000] * 4,
@@ -170,7 +179,7 @@ def _score_data(*, seat: int) -> dict[str, JsonValue]:
         "hand": [],
         "ming": [],
         "doras": [],
-        "score": 25000,
+        "score": score,
         "taxes": [],
         "lines": [],
     }
