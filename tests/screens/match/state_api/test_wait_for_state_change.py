@@ -25,6 +25,7 @@ from tests.screens._support import (
     BrowserControllerSpy,
     ScreenContext,
     _message_queue,
+    _request_response,
     _synthetic_blank_screenshot,
     _synthetic_template_screenshot,
 )
@@ -97,6 +98,55 @@ def test_wait_for_state_change_clicks_liuju_and_match_result_confirmations(
     assert state is None
     assert screen._stale
     assert len(browser.clicked_points) == 3
+
+
+def test_match_result_wait_puts_back_fetch_room(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    confirmation = _synthetic_template_screenshot(
+        template_path=LIUJU_CONFIRM_TEMPLATE_PATH,
+        settings_path=LIUJU_CONFIRM_SETTINGS_PATH,
+    )
+    fetch_room = _request_response(
+        ".lq.Lobby.fetchRoom",
+        response={"room": {}},
+    )
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(step=0, ju=0),
+        _live_liuju_action(step=1, type_=1, seat=0),
+        ".lq.NotifyGameEndResult",
+        fetch_room,
+    )
+    browser = BrowserControllerSpy(
+        confirmation,
+        _round_result_confirmation(),
+        _synthetic_blank_screenshot(),
+    )
+    screen = _screen(browser, messages)
+    original_sleep = asyncio.sleep
+
+    async def skip_sleep(delay: float) -> None:
+        terminal_delay = (
+            match_screen_module.TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS
+        )
+        if delay == terminal_delay:
+            return
+        await original_sleep(delay)
+
+    monkeypatch.setattr(asyncio, "sleep", skip_sleep)
+    asyncio.run(screen.before_callback())
+    terminal = asyncio.run(screen.get_state())
+    state = asyncio.run(
+        asyncio.wait_for(
+            screen.wait_for_state_change(terminal),
+            timeout=1.0,
+        )
+    )
+
+    assert state is None
+    assert screen._stale
+    assert messages.get_nowait() is fetch_room
 
 
 def test_wait_for_state_change_clicks_each_hule_confirmation(

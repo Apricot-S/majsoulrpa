@@ -140,6 +140,14 @@ _WARNING_MESSAGE_NAMES = frozenset(
     {".lq.Lobby.loginBeat", ".lq.Lobby.oauth2Login"}
 )
 _GAME_END_NOTIFICATION_NAME = ".lq.NotifyGameEndResult"
+_MATCH_EXIT_MESSAGE_NAMES = frozenset(
+    {
+        ".lq.Lobby.enterCustomizedContest",
+        ".lq.Lobby.joinCustomizedContestChatRoom",
+        ".lq.Lobby.fetchCustomizedContestOnlineInfo",
+        ".lq.Lobby.fetchRoom",
+    }
+)
 
 _logger = getLogger(__name__)
 
@@ -1128,9 +1136,16 @@ class MatchScreen(Screen):
                 OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
             )
 
-    async def _put_back_pending_action_while_waiting_for_ui(self) -> bool:
+    async def _put_back_pending_action_while_waiting_for_ui(
+        self,
+        *,
+        additional_progress_message_names: frozenset[str] = frozenset(),
+    ) -> bool:
         while (message := self._get_sniffer_message_nowait()) is not None:
-            if message.raw.name == ACTION_PROTOTYPE_NAME:
+            if (
+                message.raw.name == ACTION_PROTOTYPE_NAME
+                or message.raw.name in additional_progress_message_names
+            ):
                 self._put_back_sniffer_message(message)
                 return True
             await self._apply_match_message_with_screen_errors(
@@ -1181,14 +1196,21 @@ class MatchScreen(Screen):
     async def _click_result_confirmation_or_wait(
         self,
         template: TemplateMatcher,
+        *,
+        additional_progress_message_names: frozenset[str] = frozenset(),
     ) -> bool:
         while True:
             if await self.click_template_if_present(template):
                 return True
-            if await self._put_back_pending_action_while_waiting_for_ui():
+            if await self._put_back_pending_action_while_waiting_for_ui(
+                additional_progress_message_names=(
+                    additional_progress_message_names
+                )
+            ):
                 # The confirmation screen can advance automatically
-                # after its on-screen countdown. A subsequent action
-                # proves that the button no longer needs to be clicked.
+                # after its on-screen countdown. A subsequent action or
+                # Screen transition message proves that the button no
+                # longer needs to be clicked.
                 return False
             # These confirmation screens advance when their on-screen
             # three-count finishes, even if the button cannot be used.
@@ -1211,7 +1233,8 @@ class MatchScreen(Screen):
                 return state
 
         await self._click_result_confirmation_or_wait(
-            self.MATCH_RESULT_CONFIRM_TEMPLATE
+            self.MATCH_RESULT_CONFIRM_TEMPLATE,
+            additional_progress_message_names=_MATCH_EXIT_MESSAGE_NAMES,
         )
         self._mark_stale()
         return None
