@@ -133,6 +133,31 @@ def test_jiagang_materialization_identifies_normal_five_as_added() -> None:
     )
 
 
+def test_liqi_flag_does_not_add_skip_to_jiagang() -> None:
+    peng = _peng(from_seat=3, tile="1m", consumed=("1m", "1m"))
+
+    candidates = materialize_operation_candidates(
+        _specification("1m|1m|1m|1m"),
+        _zimo_event(),
+        (validate_tile("1m"),),
+        validate_tile("9s"),
+        (peng,),
+        validate_seat(0),
+        4,
+        liqi=True,
+    )
+
+    assert candidates is not None
+    assert candidates.operations == (
+        JiagangOperation(
+            from_seat=peng.from_seat,
+            tile=peng.tile,
+            consumed=peng.consumed,
+            added=validate_tile("1m"),
+        ),
+    )
+
+
 def test_jiagang_materialization_allows_replacing_one_of_four_fulu() -> None:
     peng = _peng(from_seat=2, tile="7z", consumed=("7z", "7z"))
     concealed_tile = validate_tile("1m")

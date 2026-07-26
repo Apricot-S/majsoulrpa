@@ -647,9 +647,10 @@ actionの進行を確認してからoffへ戻して、将来の鳴きを再び�
 他の候補を暗黙にキャンセルする。雀魂のUIではスキップbuttonでも候補を消せるが、その後に打牌選択が
 必要になるため、frameworkの標準操作では使用しない。
 
-立直中はツモ切りの牌を含めて打牌を選択できない。ツモ切りを表す `DapaiOperation` は行動候補へ
-含めず、frameworkが合成する `SkipOperation` を追加する。利用者は提示された北抜き・暗槓・加槓・
-ツモ和了、または `SkipOperation` のいずれかを選ぶ。`SkipOperation` を実行したときは
+立直中に加槓が提示されることはない。北抜き・暗槓・ツモ和了が提示された場合は、ツモ切りの牌を
+含めて打牌を選択できないため、ツモ切りを表す `DapaiOperation` を行動候補へ含めず、frameworkが
+合成する `SkipOperation` を追加する。利用者は提示された北抜き・暗槓・ツモ和了、または
+`SkipOperation` のいずれかを選ぶ。`SkipOperation` を実行したときは
 スキップbuttonをクリックして明示的に候補を見送る。
 
 「鳴きなし」toggleとスキップbuttonのclickは判断の遅延を避けるため `warp=True` とし、通常clickの

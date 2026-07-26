@@ -115,7 +115,6 @@ def materialize_operation_candidates(
                 item,
                 (
                     _AngangOperationSpecification,
-                    _JiagangOperationSpecification,
                     _ZimohuOperationSpecification,
                     _BabeiOperationSpecification,
                 ),
