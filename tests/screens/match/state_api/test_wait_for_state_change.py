@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 from random import Random
 from types import SimpleNamespace
 
@@ -83,6 +82,7 @@ def test_wait_for_state_change_clicks_liuju_confirmation_before_capture(
 
     assert sleeps == [
         match_screen_module.TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS,
+        match_screen_module.SCORE_RESULT_SCREEN_DISPLAY_DELAY_SECONDS,
     ]
     assert exc_info.value.screenshot == result_screen
     assert "LiujuEvent" in str(exc_info.value)
@@ -148,32 +148,21 @@ def test_wait_for_state_change_accepts_confirmation_auto_transition(
 ) -> None:
     blank = _synthetic_blank_screenshot()
     result_screen = b"result-screen"
+    next_round = _live_new_round_action(step=0, ju=1)
     messages = _message_queue(
         _auth_game(),
         _live_new_round_action(step=0, ju=0),
         _live_liuju_action(step=1, type_=1, seat=0),
+        next_round,
     )
     browser = BrowserControllerSpy(blank, result_screen)
     screen = _screen(browser, messages)
-    current_time = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
-    clock = iter(
-        (
-            current_time,
-            current_time,
-            current_time
-            + datetime.timedelta(
-                seconds=(
-                    match_screen_module.RESULT_CONFIRM_AUTO_ADVANCE_SECONDS
-                ),
-            ),
-        )
-    )
+    sleeps: list[float] = []
 
     async def skip_sleep(delay: float) -> None:
-        _ = delay
+        sleeps.append(delay)
 
     monkeypatch.setattr(asyncio, "sleep", skip_sleep)
-    monkeypatch.setattr(match_screen_module, "utc_now", lambda: next(clock))
     asyncio.run(screen.before_callback())
     terminal = asyncio.run(screen.get_state())
 
@@ -182,6 +171,48 @@ def test_wait_for_state_change_accepts_confirmation_auto_transition(
 
     assert exc_info.value.screenshot == result_screen
     assert browser.clicked_points == []
+    assert sleeps == [
+        match_screen_module.TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS,
+        match_screen_module.SCORE_RESULT_SCREEN_DISPLAY_DELAY_SECONDS,
+    ]
+    assert messages.get_nowait() is next_round
+
+
+def test_wait_for_state_change_waits_for_delayed_confirmation_button(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    blank = _synthetic_blank_screenshot()
+    confirmation = _synthetic_template_screenshot(
+        template_path=LIUJU_CONFIRM_TEMPLATE_PATH,
+        settings_path=LIUJU_CONFIRM_SETTINGS_PATH,
+    )
+    result_screen = b"result-screen"
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(step=0, ju=0),
+        _live_liuju_action(step=1, type_=1, seat=0),
+    )
+    browser = BrowserControllerSpy(blank, confirmation, result_screen)
+    screen = _screen(browser, messages)
+    sleeps: list[float] = []
+
+    async def skip_sleep(delay: float) -> None:
+        sleeps.append(delay)
+
+    monkeypatch.setattr(asyncio, "sleep", skip_sleep)
+    asyncio.run(screen.before_callback())
+    terminal = asyncio.run(screen.get_state())
+
+    with pytest.raises(ScreenNotImplementedOperationError) as exc_info:
+        asyncio.run(screen.wait_for_state_change(terminal))
+
+    assert exc_info.value.screenshot == result_screen
+    assert len(browser.clicked_points) == 1
+    assert sleeps == [
+        match_screen_module.TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS,
+        match_screen_module.OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS,
+        match_screen_module.SCORE_RESULT_SCREEN_DISPLAY_DELAY_SECONDS,
+    ]
 
 
 def test_wait_for_state_change_advances_liujumanguan_presentations(

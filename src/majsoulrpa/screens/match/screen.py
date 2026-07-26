@@ -105,9 +105,8 @@ OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
 SKIP_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.2
 OPERATION_OPTION_DISPLAY_DELAY_SECONDS = 0.4
 HAND_SLIDE_DELAY_SECONDS = 1.5
-RESULT_CONFIRM_AUTO_ADVANCE_SECONDS = 3.0
-
 TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS = 1.0
+SCORE_RESULT_SCREEN_DISPLAY_DELAY_SECONDS = 3.0
 
 _SINGLE_FULU_CANDIDATE_COUNT = 1
 _MIN_MULTIPLE_FULU_CANDIDATE_COUNT = 2
@@ -306,6 +305,7 @@ class MatchScreen(Screen):
                 msg = "A terminal match state must end with a terminal event."
                 raise RuntimeError(msg)
             await self._advance_terminal_event_screen(event)
+            await asyncio.sleep(SCORE_RESULT_SCREEN_DISPLAY_DELAY_SECONDS)
             screenshot = await self.context.browser.screenshot()
             msg = (
                 f"The score result after {type(event).__name__} is not "
@@ -1151,7 +1151,7 @@ class MatchScreen(Screen):
             await self._apply_match_message_with_screen_errors(
                 message,
                 inconsistent_message=(
-                    "Match state update failed while waiting for operation UI."
+                    "Match state update failed while waiting for UI."
                 ),
             )
         return False
@@ -1189,18 +1189,21 @@ class MatchScreen(Screen):
                 templates = (self.LIUJU_CONFIRM_TEMPLATE,)
 
         for template in templates:
-            await self._click_result_confirmation_or_wait(template)
+            if not await self._click_result_confirmation_or_wait(template):
+                return
 
     async def _click_result_confirmation_or_wait(
         self,
         template: TemplateMatcher,
-    ) -> None:
-        started_at = utc_now()
-        while (
-            utc_now() - started_at
-        ).total_seconds() < RESULT_CONFIRM_AUTO_ADVANCE_SECONDS:
+    ) -> bool:
+        while True:
             if await self.click_template_if_present(template):
-                return
+                return True
+            if await self._put_back_pending_action_while_waiting_for_ui():
+                # The confirmation screen can advance automatically
+                # after its on-screen countdown. A subsequent action
+                # proves that the button no longer needs to be clicked.
+                return False
             # These confirmation screens advance when their on-screen
             # three-count finishes, even if the button cannot be used.
             await asyncio.sleep(

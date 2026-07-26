@@ -101,8 +101,8 @@ operation候補が残っていないことも要求する。内部timeoutは設�
 
 terminal snapshotを渡して `wait_for_state_change()` を呼ぶと、まずUI描画を1.0秒待ち、
 以下の固有確認画面を進める。点数授受結果画面のtemplateを採取する暫定実装では、固有確認後の
-screenshotを取得して `ScreenNotImplementedOperationError` を送出する。利用者は例外の
-`save_screenshot()` を使って次のtemplate画像を保存できる。
+描画を3.0秒待ってscreenshotを取得し、`ScreenNotImplementedOperationError` を送出する。
+利用者は例外の `save_screenshot()` を使って次のtemplate画像を保存できる。
 
 ### 結果画面の処理
 
@@ -123,9 +123,11 @@ screenshotを取得して `ScreenNotImplementedOperationError` を送出する�
 
 各buttonは専用templateで検出してからclickし、座標を推測して連打しない。実装前に
 和了確認、流局確認、局結果確認、試合結果確認のscreenshotとtemplate設定を用意する。
-和了・流局の固有確認画面はbuttonを操作しなくても3カウント後に自動遷移する。templateを
-検出できない場合は3秒間だけ再検出し、自動遷移したものとして次の固有画面へ進む。この経路を
-template検出失敗として扱ったり、存在しなくなったbuttonを無期限に待ったりしない。
+和了・流局の固有確認画面はbuttonを操作しなくても、button表示後の3カウントで自動遷移する。
+このカウントは終局message受信時には始まっておらず、和了時には手牌・役の読み上げ演出が先行する。
+そのためmessage受信からの固定3秒timeoutは設けず、templateを検出するまで再試行する。自動遷移で
+確認画面が省略された場合は、後続の `ActionPrototype` をauthoritativeな遷移根拠とし、そのmessageを
+通常pipeline用にput backして存在しなくなったbuttonの待機を終える。
 
 ### messageとUIの競合
 

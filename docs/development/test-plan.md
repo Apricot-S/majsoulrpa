@@ -939,13 +939,14 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] current stateが局終了済みなら `get_state()` は後続messageを消費せず同じsnapshotを返す
 - [x] `HuleEvent` は和了者数と同じ回数だけ和了確認templateをclickする
 - [x] ダブロン・トリロンの各和了確認画面をmessage順に処理する
-- [ ] 和了確認画面が省略されて `ActionNewRound` が先着した場合は存在しないbuttonを待ち続けない
+- [x] 和了確認画面が省略されて `ActionNewRound` が先着した場合は存在しないbuttonを待ち続けない
 - [x] `NoTileEvent` は流局確認templateを1回clickする
 - [x] 流し満貫でも最初に通常の荒牌平局と同じ流局確認templateを1回clickする
 - [x] 流し満貫では流局確認後に達成者ごとの流し満貫演出確認画面を和了演出と同じ方法で処理する
 - [x] 複数人の流し満貫では `NoTileScore.seat is not None` の要素数だけ和了確認templateをclickする
 - [x] `LiujuEvent` は通常流局と同じ流局確認templateを1回clickする
-- [x] 和了・流局の固有確認buttonを検出できなくても、3カウントによる自動遷移を待って次の画面へ進む
+- [x] 和了・流局の固有確認buttonが役読み上げ後に遅れて表示されても、受信時刻基準の固定timeoutで検出を打ち切らない
+- [x] 3カウントによる自動遷移後に次の `ActionPrototype` が先着した場合は、messageをput backして存在しない確認buttonの待機を終える
 - [ ] 荒牌平局・流し満貫・途中流局・和了の固有画面後に共通の点数授受結果確認templateを1回clickする
 - [ ] 流し満貫では荒牌平局確認、達成者ごとの演出確認、点数授受結果確認の順序を維持する
 - [ ] 結果確認buttonはtemplate検出位置だけをclickし、推定座標を連打しない
