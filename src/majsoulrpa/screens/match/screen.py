@@ -102,6 +102,8 @@ SKIP_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.2
 OPERATION_OPTION_DISPLAY_DELAY_SECONDS = 0.4
 HAND_SLIDE_DELAY_SECONDS = 1.5
 
+RESULT_SCREEN_CAPTURE_DELAY_SECONDS = 1.0
+
 _SINGLE_FULU_CANDIDATE_COUNT = 1
 _MIN_MULTIPLE_FULU_CANDIDATE_COUNT = 2
 _MAX_CHI_CANDIDATE_COUNT = 5
@@ -251,16 +253,61 @@ class MatchScreen(Screen):
     @_screen_api
     @_requires_active
     async def get_state(self) -> MatchState:
+        state = self._get_match_state()
+        if self._is_round_terminal_state(state):
+            return state
         while (message := self._get_sniffer_message_nowait()) is not None:
             await self._apply_match_message_with_screen_errors(
                 message,
                 inconsistent_message="Match state update failed.",
             )
-        state = self._state_store.state
-        if state is None:
-            msg = "MatchScreen has not been initialized."
-            raise RuntimeError(msg)
+            state = self._get_match_state()
+            if self._is_round_terminal_state(state):
+                break
         return state
+
+    @_screen_api
+    @_requires_active
+    async def wait_for_state_change(
+        self,
+        state: MatchState,
+    ) -> MatchState | None:
+        current = await self.get_state()
+        if (
+            state.match_id != current.match_id
+            or state.self_seat != current.self_seat
+            or state.version > current.version
+            or (state.version == current.version and state != current)
+        ):
+            screenshot = await self.context.browser.screenshot()
+            msg = (
+                "state does not belong to the current match snapshot history."
+            )
+            raise ScreenInvalidArgumentError(msg, screenshot)
+
+        if current.version > state.version:
+            return current
+        if self._is_round_terminal_state(current):
+            await asyncio.sleep(RESULT_SCREEN_CAPTURE_DELAY_SECONDS)
+            screenshot = await self.context.browser.screenshot()
+            event = current.round.events[-1]
+            msg = (
+                f"{type(event).__name__} result screen handling is not "
+                "implemented."
+            )
+            raise ScreenNotImplementedOperationError(msg, screenshot)
+
+        while True:
+            message = await self._get_sniffer_message()
+            await self._apply_match_message_with_screen_errors(
+                message,
+                inconsistent_message=(
+                    "Match state update failed while waiting."
+                ),
+            )
+            current = self._get_match_state()
+            if current.version > state.version:
+                return current
 
     @_screen_api
     @_requires_active
@@ -1098,6 +1145,20 @@ class MatchScreen(Screen):
         # candidates. They may interfere with template matching, so keep
         # the cursor in the empty area immediately above the hand.
         await self.move_region(self.MOUSE_SAFE_REGION)
+
+    def _get_match_state(self) -> MatchState:
+        state = self._state_store.state
+        if state is None:
+            msg = "MatchScreen has not been initialized."
+            raise RuntimeError(msg)
+        return state
+
+    @staticmethod
+    def _is_round_terminal_state(state: MatchState) -> bool:
+        return isinstance(
+            state.round.events[-1],
+            HuleEvent | NoTileEvent | LiujuEvent,
+        )
 
     @staticmethod
     def _event_completes_operation(

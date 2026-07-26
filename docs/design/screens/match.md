@@ -99,6 +99,12 @@ terminal snapshotを処理した後、次のstateを待つ通常のloopを継続
 operation候補が残っていないことも要求する。内部timeoutは設けず、他のScreen APIと同様に
 呼び出し側の `asyncio.timeout()` に上限を委ねる。
 
+結果画面templateを採取する暫定実装では、terminal snapshotを渡して
+`wait_for_state_change()` を呼ぶと、UI描画を1.0秒待ってscreenshotを取得し、
+`ScreenNotImplementedOperationError` を送出する。結果画面はclickしない。利用者は例外の
+`save_screenshot()` を使って、和了・荒牌平局・途中流局それぞれの画像を保存できる。
+templateを用意した後、この暫定分岐を以下の自動進行処理へ置き換える。
+
 ### 結果画面の処理
 
 局終了eventごとのUI処理はv1-developで確認された順序を基準とする。

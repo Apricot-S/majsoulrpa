@@ -930,11 +930,13 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 - [ ] `wait_for_state_change()` は渡されたsnapshotより新しい通常の局内stateを返す
 - [ ] 別match、未来version、同一versionで内容が矛盾するsnapshotを拒否する
-- [ ] 局途中のsnapshotから待って局終了eventを受信した場合は、結果画面を進める前にterminal snapshotを1回返す
+- [x] 局途中のsnapshotから待って局終了eventを受信した場合は、結果画面を進める前にterminal snapshotを1回返す
 - [ ] terminal snapshotを渡して再度待つと、frameworkが結果画面を自動で進める
+- [x] 結果画面templateの準備前はterminal snapshotからの待機時に1.0秒待ち、screenshot付き `ScreenNotImplementedOperationError` を送出する
+- [x] 結果画面撮影用の暫定処理では画面をclickしない
 - [ ] 局終了stateにoperation候補が残っている場合は不整合にする
-- [ ] `get_state()` は局終了eventをreduceした時点でdrainを止め、次局messageを利用者の観測前に消費しない
-- [ ] current stateが局終了済みなら `get_state()` は後続messageを消費せず同じsnapshotを返す
+- [x] `get_state()` は局終了eventをreduceした時点でdrainを止め、次局messageを利用者の観測前に消費しない
+- [x] current stateが局終了済みなら `get_state()` は後続messageを消費せず同じsnapshotを返す
 - [ ] `HuleEvent` は和了者数と同じ回数だけ和了確認templateをclickする
 - [ ] ダブロン・トリロンの各和了確認画面をmessage順に処理する
 - [ ] 和了確認画面が省略されて `ActionNewRound` が先着した場合は存在しないbuttonを待ち続けない
