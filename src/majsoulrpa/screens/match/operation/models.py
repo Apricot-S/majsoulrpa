@@ -101,6 +101,12 @@ class BabeiOperation:
     pass
 
 
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SkipOperation:
+    pass
+
+
 type MatchOperation = (
     DapaiOperation
     | ChiOperation
@@ -113,6 +119,7 @@ type MatchOperation = (
     | RongOperation
     | LiujuOperation
     | BabeiOperation
+    | SkipOperation
 )
 
 

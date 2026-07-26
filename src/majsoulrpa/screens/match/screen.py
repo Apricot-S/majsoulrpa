@@ -74,6 +74,7 @@ from majsoulrpa.screens.match.operation import (
     MatchOperation,
     PengOperation,
     RongOperation,
+    SkipOperation,
     ZimohuOperation,
 )
 from majsoulrpa.screens.match.operation._specification import (
@@ -279,6 +280,10 @@ class MatchScreen(Screen):
                 await self._operate_liuju(state, operation)
             case BabeiOperation():
                 await self._operate_babei(state, operation)
+            case SkipOperation():
+                screenshot = await self.context.browser.screenshot()
+                msg = "SkipOperation is not implemented."
+                raise ScreenInvalidOperationError(msg, screenshot)
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -1092,6 +1097,9 @@ class MatchScreen(Screen):
                     isinstance(event, BabeiEvent)
                     and event.seat == state.self_seat
                 )
+            case SkipOperation():
+                msg = "SkipOperation is not implemented."
+                raise RuntimeError(msg)
         assert_never(operation)
 
     @staticmethod
@@ -1122,6 +1130,9 @@ class MatchScreen(Screen):
                 | BabeiOperation()
             ):
                 return False
+            case SkipOperation():
+                msg = "SkipOperation is not implemented."
+                raise RuntimeError(msg)
         assert_never(operation)
 
     async def _raise_inconsistent_message(

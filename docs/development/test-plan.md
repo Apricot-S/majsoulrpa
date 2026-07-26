@@ -629,7 +629,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 - [x] concrete operation は `@final`、`frozen=True`、`slots=True`、`kw_only=True` の dataclass である
 - [x] public `MatchOperation` type alias はすべての concrete operation class を列挙し、type discriminator を持たない
-- [ ] field のない `SkipOperation` を public `MatchOperation` に含める
+- [x] field のない `SkipOperation` を public `MatchOperation` に含める
 - [x] `OperationCandidates` は非負の millisecond 単位の fixed / add time、非空 tuple の operation を保持する
 - [x] operation field の欠落と空の `operation_list` はどちらも `None` に正規化する
 - [x] operation field が object でない、time / type が bool または int 以外、operation_list が list でない場合は拒否する

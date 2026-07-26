@@ -14,6 +14,7 @@ from majsoulrpa.screens.match import (
     OperationCandidates,
     PengOperation,
     RongOperation,
+    SkipOperation,
     ZimohuOperation,
     validate_seat,
     validate_tile,
@@ -198,6 +199,11 @@ def test_liuju_operation_is_a_fieldless_immutable_value() -> None:
 def test_babei_operation_is_a_fieldless_immutable_value() -> None:
     assert BabeiOperation() == BabeiOperation()
     assert fields(BabeiOperation) == ()
+
+
+def test_skip_operation_is_a_fieldless_immutable_value() -> None:
+    assert SkipOperation() == SkipOperation()
+    assert fields(SkipOperation) == ()
 
 
 def test_operation_candidates_is_an_immutable_value() -> None:
