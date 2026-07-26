@@ -218,7 +218,7 @@ def test_operate_retries_until_gang_button_is_drawn(
     result = asyncio.run(screen.operate(operation))
 
     assert isinstance(result.round.events[-1], DaminggangEvent)
-    assert sleep_delays == [0.5, 1.5]
+    assert sleep_delays == [0.2, 1.5]
 
 
 def test_operate_rejects_daminggang_event_for_different_combination(

@@ -218,7 +218,7 @@ def test_operate_retries_liqi_button_detection(
     operation = _get_liqi_operation(screen, tile="9s", moqie=True)
     asyncio.run(screen.operate(operation))
 
-    assert sleep_delays == [0.5, 0.4]
+    assert sleep_delays == [0.2, 0.4]
     assert len(browser.clicked_points) == 2
 
 

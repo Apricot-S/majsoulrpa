@@ -207,7 +207,7 @@ def test_operate_retries_until_liuju_button_is_drawn(
     result = asyncio.run(screen.operate(operation))
 
     assert isinstance(result.round.events[-1], LiujuEvent)
-    assert sleep_delays == [0.5]
+    assert sleep_delays == [0.2]
 
 
 def test_operate_puts_back_progress_while_waiting_for_liuju_button(

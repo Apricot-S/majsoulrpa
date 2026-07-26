@@ -215,7 +215,7 @@ def test_operate_retries_until_babei_button_is_drawn(
     result = asyncio.run(screen.operate(operation))
 
     assert isinstance(result.round.events[-1], BabeiEvent)
-    assert sleep_delays == [0.5, 1.5]
+    assert sleep_delays == [0.2, 1.5]
 
 
 def test_operate_accepts_automatically_selected_hand_babei(
