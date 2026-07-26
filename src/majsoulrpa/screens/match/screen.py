@@ -110,7 +110,6 @@ OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
 SKIP_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS = 0.2
 OPERATION_OPTION_DISPLAY_DELAY_SECONDS = 0.4
 HAND_SLIDE_DELAY_SECONDS = 1.5
-TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS = 1.0
 
 _SINGLE_FULU_CANDIDATE_COUNT = 1
 _MIN_MULTIPLE_FULU_CANDIDATE_COUNT = 2
@@ -1173,7 +1172,6 @@ class MatchScreen(Screen):
         self,
         event: HuleEvent | NoTileEvent | LiujuEvent,
     ) -> bool:
-        await asyncio.sleep(TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS)
         match event:
             case HuleEvent():
                 templates = (self.HULE_CONFIRM_TEMPLATE,) * len(event.hules)

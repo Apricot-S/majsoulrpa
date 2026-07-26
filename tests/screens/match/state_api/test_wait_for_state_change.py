@@ -92,17 +92,13 @@ def test_wait_for_state_change_clicks_liuju_and_match_result_confirmations(
 
     state = asyncio.run(screen.wait_for_state_change(terminal))
 
-    assert sleeps == [
-        match_screen_module.TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS,
-    ]
+    assert sleeps == []
     assert state is None
     assert screen._stale
     assert len(browser.clicked_points) == 3
 
 
-def test_match_result_wait_puts_back_fetch_room(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_match_result_wait_puts_back_fetch_room() -> None:
     confirmation = _synthetic_template_screenshot(
         template_path=LIUJU_CONFIRM_TEMPLATE_PATH,
         settings_path=LIUJU_CONFIRM_SETTINGS_PATH,
@@ -124,17 +120,7 @@ def test_match_result_wait_puts_back_fetch_room(
         _synthetic_blank_screenshot(),
     )
     screen = _screen(browser, messages)
-    original_sleep = asyncio.sleep
 
-    async def skip_sleep(delay: float) -> None:
-        terminal_delay = (
-            match_screen_module.TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS
-        )
-        if delay == terminal_delay:
-            return
-        await original_sleep(delay)
-
-    monkeypatch.setattr(asyncio, "sleep", skip_sleep)
     asyncio.run(screen.before_callback())
     terminal = asyncio.run(screen.get_state())
     state = asyncio.run(
@@ -249,9 +235,7 @@ def test_wait_for_state_change_accepts_confirmation_auto_transition(
     assert state.round.pending_action_target is None
     assert state.round.operation_candidates is None
     assert browser.clicked_points == []
-    assert sleeps == [
-        match_screen_module.TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS,
-    ]
+    assert sleeps == []
     assert messages.get_nowait() is None
 
 
@@ -322,7 +306,6 @@ def test_wait_for_state_change_waits_for_delayed_confirmation_button(
     assert state is None
     assert len(browser.clicked_points) == 3
     assert sleeps == [
-        match_screen_module.TERMINAL_EVENT_SCREEN_DISPLAY_DELAY_SECONDS,
         match_screen_module.OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS,
     ]
 
