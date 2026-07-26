@@ -566,19 +566,15 @@ class MatchScreen(Screen):
         event: MatchEvent,
         operation: _OperationCandidatesSpecification | None,
     ) -> None:
-        match event:
-            case StartMatchEvent():
-                msg = "A match initialization action must not be repeated."
-                raise MatchActionDecodeError(msg)
-            case _:
-                try:
-                    self._state_store.apply_event(event, operation)
-                except ValueError as error:
-                    msg = (
-                        f"{type(event).__name__} is inconsistent with "
-                        "match state."
-                    )
-                    raise MatchActionDecodeError(msg) from error
+        if isinstance(event, StartMatchEvent):
+            msg = "A match initialization action must not be repeated."
+            raise MatchActionDecodeError(msg)
+
+        try:
+            self._state_store.apply_event(event, operation)
+        except ValueError as error:
+            msg = f"{type(event).__name__} is inconsistent with match state."
+            raise MatchActionDecodeError(msg) from error
 
     async def _operate_dapai(
         self,
