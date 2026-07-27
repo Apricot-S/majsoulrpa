@@ -351,6 +351,44 @@ def test_confirm_new_round_and_action_new_round_may_be_reordered(
     assert messages.get_nowait() is None
 
 
+def test_next_round_actions_are_reordered_from_step_one() -> None:
+    step_one = _live_discard_action(
+        step=1,
+        seat=1,
+        tile="9s",
+        moqie=False,
+    )
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(step=0, ju=0),
+        _live_liuju_action(step=1, type_=1, seat=0),
+        step_one,
+        _live_new_round_action(step=0, ju=1),
+    )
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=LIUJU_CONFIRM_TEMPLATE_PATH,
+            settings_path=LIUJU_CONFIRM_SETTINGS_PATH,
+        ),
+        _round_result_confirmation(),
+        _next_round_screen(),
+    )
+    screen = _screen(browser, messages)
+
+    asyncio.run(screen.before_callback())
+    terminal = asyncio.run(screen.get_state())
+
+    state = asyncio.run(screen.wait_for_state_change(terminal))
+
+    assert state is not None
+    assert state.version == terminal.version + 1
+    assert state.round.step == 0
+    assert state.round.ju == 1
+    assert len(state.round.events) == 1
+    assert isinstance(state.round.events[0], NewRoundEvent)
+    assert messages.get_nowait() is step_one
+
+
 def test_wait_for_state_change_rejects_next_round_score_mismatch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

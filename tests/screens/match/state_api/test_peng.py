@@ -170,6 +170,12 @@ def test_get_state_rejects_inconsistent_self_peng(
                     tiles=peng_tiles,
                     froms=[0, 0, from_seat],
                 ),
+                _live_discard_action(
+                    step=1,
+                    seat=2,
+                    tile="5m",
+                    moqie=False,
+                ),
             ),
         ),
     )

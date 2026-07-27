@@ -71,6 +71,39 @@ def test_get_state_applies_self_draw() -> None:
     assert isinstance(state.round.events[-1], ZimoEvent)
 
 
+def test_get_state_reorders_out_of_step_live_actions() -> None:
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"synthetic-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(),
+                _live_new_round_action(step=0, ju=1),
+                _live_deal_action(
+                    step=2,
+                    seat=0,
+                    tile="0m",
+                    left_tile_count=68,
+                ),
+                _live_discard_action(
+                    step=1,
+                    seat=3,
+                    tile="9s",
+                    moqie=False,
+                ),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+    state = asyncio.run(screen.get_state())
+
+    assert state.version == 3
+    assert state.round.step == 2
+    assert isinstance(state.round.events[-1], ZimoEvent)
+
+
 def test_get_state_continues_after_opponents_concealed_draw() -> None:
     screen = MatchScreen(
         context=ScreenContext(
@@ -159,6 +192,12 @@ def test_get_state_rejects_draw_with_nonconsecutive_step() -> None:
                     seat=0,
                     tile="1p",
                     left_tile_count=68,
+                ),
+                _live_discard_action(
+                    step=1,
+                    seat=3,
+                    tile="8s",
+                    moqie=False,
                 ),
             ),
         ),

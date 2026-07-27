@@ -116,6 +116,7 @@ _MIN_MULTIPLE_FULU_CANDIDATE_COUNT = 2
 _MAX_CHI_CANDIDATE_COUNT = 5
 _MAX_PENG_CANDIDATE_COUNT = 2
 _MAX_ANGANG_JIAGANG_CANDIDATE_COUNT = 3
+_LIVE_ACTION_REORDER_BUFFER_CAPACITY = 8
 
 _INPUT_CHI_PENG_GANG_NAME = ".lq.FastTest.inputChiPengGang"
 _DAPAI_CLICK_PROGRESS_MESSAGE_NAMES = frozenset(
@@ -443,6 +444,8 @@ class MatchScreen(Screen):
         inconsistent_message: str,
     ) -> None:
         try:
+            if await self._put_back_reordered_live_actions(message):
+                return
             self._apply_match_message(message)
         except MatchMetadataUnsupportedError as error:
             await self._raise_unsupported_match(cause=error)
@@ -1253,6 +1256,105 @@ class MatchScreen(Screen):
         await self._click_match_result_confirmation()
         self._mark_stale()
         return None
+
+    async def _put_back_reordered_live_actions(
+        self,
+        message: DecodedSnifferMessage,
+    ) -> bool:
+        state = self._state_store.state
+        if state is None:
+            # Match initialization keeps its strict arrival-order
+            # checks.
+            return False
+
+        expected_step = (
+            0 if self._is_round_terminal_state(state) else state.round.step + 1
+        )
+        identity = self._get_live_action_identity(message)
+        if identity is None or identity[0] <= expected_step:
+            return False
+
+        # Live actions can arrive before an earlier step. Buffer the
+        # missing contiguous range and return it to the normal pipeline.
+        buffered_messages = {identity[0]: message}
+        while True:
+            if len(buffered_messages) > _LIVE_ACTION_REORDER_BUFFER_CAPACITY:
+                error = ValueError(
+                    "Too many live actions arrived out of order."
+                )
+                await self._raise_inconsistent_message(
+                    "Live actions could not be reordered.",
+                    cause=error,
+                )
+
+            expected_message = buffered_messages.get(expected_step)
+            if expected_message is not None:
+                expected_identity = self._get_live_action_identity(
+                    expected_message
+                )
+                if expected_step == 0 and (
+                    expected_identity is None
+                    or expected_identity[1] != "ActionNewRound"
+                ):
+                    error = ValueError(
+                        "A terminal round must be followed by "
+                        "ActionNewRound at step zero."
+                    )
+                    await self._raise_inconsistent_message(
+                        "Live actions could not be reordered.",
+                        cause=error,
+                    )
+                max_step = max(buffered_messages)
+                if len(buffered_messages) == max_step - expected_step + 1:
+                    for step in range(expected_step, max_step + 1):
+                        self._put_back_sniffer_message(buffered_messages[step])
+                    return True
+
+            next_message = await self._get_sniffer_message()
+            next_identity = self._get_live_action_identity(next_message)
+            if next_identity is None:
+                await self._apply_match_message_with_screen_errors(
+                    next_message,
+                    inconsistent_message=(
+                        "Match state update failed while reordering "
+                        "live actions."
+                    ),
+                )
+                continue
+            if next_identity[0] < expected_step:
+                error = ValueError(
+                    "A stale live action arrived while reordering."
+                )
+                await self._raise_inconsistent_message(
+                    "Live actions could not be reordered.",
+                    cause=error,
+                )
+            if next_identity[0] in buffered_messages:
+                error = ValueError("Live actions contain a duplicate step.")
+                await self._raise_inconsistent_message(
+                    "Live actions could not be reordered.",
+                    cause=error,
+                )
+            buffered_messages[next_identity[0]] = next_message
+
+    @staticmethod
+    def _get_live_action_identity(
+        message: DecodedSnifferMessage,
+    ) -> tuple[int, str] | None:
+        if message.raw.name != ACTION_PROTOTYPE_NAME or not isinstance(
+            message, DecodedNotice
+        ):
+            return None
+        step = message.message.get("step")
+        name = message.message.get("name")
+        if (
+            isinstance(step, bool)
+            or not isinstance(step, int)
+            or step < 0
+            or not isinstance(name, str)
+        ):
+            return None
+        return step, name
 
     async def _wait_for_next_round_screen(self) -> None:
         while True:
