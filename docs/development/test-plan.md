@@ -956,7 +956,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
   message drainだけを終了し、必須の `match-result-confirm` は検出してclickする
 - [ ] 結果画面待機中もSniffer messageを処理し、全messageを共通formatterでlogへ出す
 - [x] 局終了後に遅れて届く `inputOperation` / `inputChiPengGang` responseを許容し、stateへ重複適用しない
-- [ ] `.lq.FastTest.confirmNewRound` と `ActionNewRound` のどちらが先着しても同じ次局stateへ遷移する
+- [x] `.lq.FastTest.confirmNewRound` と `ActionNewRound` のどちらが先着しても同じ次局stateへ遷移する
 - [x] confirm responseがなくても `ActionNewRound` と新しいseat indicatorを確認できれば次局遷移を完了する
 - [ ] confirm interaction省略時にstep 1以降がstep 0より先着した場合はbounded local bufferでstep順へ戻す
 - [ ] 並べ替えbufferは異なる同一step、上限超過、step 0が `ActionNewRound` 以外なら不整合にする
@@ -990,8 +990,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
   通常formatterで1回logし、state versionを増やさない
 - [x] `HuleEvent` / `NoTileEvent` / `LiujuEvent` 後に遅れて届く `inputChiPengGang` responseを
   通常formatterで1回logし、state versionを増やさない
-- [ ] `confirmNewRound` が先着してから `ActionNewRound` が届く順序で次局へ遷移する
-- [ ] `ActionNewRound` が先着してから `confirmNewRound` が届く順序でも同じ次局へ遷移する
+- [x] `confirmNewRound` が先着してから `ActionNewRound` が届く順序で次局へ遷移する
+- [x] `ActionNewRound` が先着してから `confirmNewRound` が届く順序でも同じ次局へ遷移する
 - [x] `confirmNewRound` responseがなくても `ActionNewRound` と次局seat indicatorを確認できれば、
   次局の親が自家かどうかにかかわらず遷移を完了する
 - [ ] `confirmNewRound` が省略されてstep 1以降がstep 0より先着した場合は、bounded local bufferで

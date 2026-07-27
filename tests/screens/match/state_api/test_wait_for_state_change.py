@@ -296,6 +296,61 @@ def test_delayed_input_response_is_logged_without_state_change(
     )
 
 
+@pytest.mark.parametrize("confirm_first", [True, False])
+def test_confirm_new_round_and_action_new_round_may_be_reordered(
+    caplog: pytest.LogCaptureFixture,
+    confirm_first: bool,  # noqa: FBT001
+) -> None:
+    confirm = _request_response(
+        ".lq.FastTest.confirmNewRound",
+        response={},
+    )
+    new_round = _live_new_round_action(step=0, ju=1)
+    transition_messages = (
+        (confirm, new_round) if confirm_first else (new_round, confirm)
+    )
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(step=0, ju=0),
+        _live_liuju_action(step=1, type_=1, seat=0),
+        *transition_messages,
+    )
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=LIUJU_CONFIRM_TEMPLATE_PATH,
+            settings_path=LIUJU_CONFIRM_SETTINGS_PATH,
+        ),
+        _round_result_confirmation(),
+        _next_round_screen(),
+    )
+    screen = _screen(browser, messages)
+
+    asyncio.run(screen.before_callback())
+    terminal = asyncio.run(screen.get_state())
+    caplog.clear()
+
+    with caplog.at_level(
+        logging.INFO,
+        logger="majsoulrpa.screens.match.screen",
+    ):
+        state = asyncio.run(screen.wait_for_state_change(terminal))
+        current = asyncio.run(screen.get_state())
+
+    assert state is not None
+    assert isinstance(state.round.events[0], NewRoundEvent)
+    assert state.round.ju == 1
+    assert state.version == terminal.version + 1
+    assert current == state
+    assert (
+        sum(
+            '"name":".lq.FastTest.confirmNewRound"' in record.getMessage()
+            for record in caplog.records
+        )
+        == 1
+    )
+    assert messages.get_nowait() is None
+
+
 def test_wait_for_state_change_rejects_next_round_score_mismatch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
