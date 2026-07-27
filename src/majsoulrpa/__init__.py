@@ -5,6 +5,6 @@ from majsoulrpa.config import AppConfig
 
 getLogger(__name__).addHandler(NullHandler())
 
-__version__ = "0.1.0.dev1"
+__version__ = "0.1.0.dev2"
 
 __all__ = ["AppConfig", "RPAApp", "__version__"]
