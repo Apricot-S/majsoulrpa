@@ -22,7 +22,7 @@ from majsoulrpa.screens.base import (
     Screen,
     ScreenContext,
     ScreenDetectionSpec,
-    _format_sniffer_message,
+    _format_sniffer_message_for_log,
     _requires_active,
     _screen_api,
 )
@@ -40,6 +40,7 @@ from majsoulrpa.screens.room.errors import (
     RoomOperationRejectedError,
 )
 from majsoulrpa.screens.room.state import RoomState, RoomStatus
+from majsoulrpa.screens.room.store import RoomStateStore
 from majsoulrpa.sniffer.events import (
     DecodedNotice,
     DecodedRequestResponse,
@@ -90,7 +91,8 @@ class RoomScreen(Screen):
 
     def __init__(self, context: ScreenContext | None = None) -> None:
         super().__init__(context=context)
-        self._room_generation: int | None = None
+        self._room_state_store = RoomStateStore()
+        self._room_state_initialized = False
 
     @classmethod
     @override
@@ -115,22 +117,22 @@ class RoomScreen(Screen):
             screenshot = await self.context.browser.screenshot()
             msg = "An active room snapshot did not arrive."
             raise ScreenInconsistentMessageError(msg, screenshot) from error
-        self._room_generation = self.context.room_state_cache.generation
+        self._room_state_initialized = True
 
     @_screen_api
     @_requires_active
     async def get_state(self) -> RoomState:
         await self._drain_room_messages(await self._get_self_account_id())
-        await self._ensure_current_generation()
-        return self._get_cached_state()
+        await self._ensure_room_state_initialized()
+        return self._get_room_state()
 
     @_screen_api
     @_requires_active
     async def wait_for_state_change(self, state: RoomState) -> RoomState:
         self_account_id = await self._get_self_account_id()
         await self._drain_room_messages(self_account_id)
-        await self._ensure_current_generation()
-        current = self._get_cached_state()
+        await self._ensure_room_state_initialized()
+        current = self._get_room_state()
         if (
             state.room_id != current.room_id
             or state.self_account_id != current.self_account_id
@@ -142,7 +144,7 @@ class RoomScreen(Screen):
             raise ScreenInvalidArgumentError(msg, screenshot)
 
         while True:
-            current = self._get_cached_state()
+            current = self._get_room_state()
             if current.version > state.version:
                 if current.status is RoomStatus.MATCH_STARTED:
                     try:
@@ -155,7 +157,7 @@ class RoomScreen(Screen):
 
             message = await self._get_sniffer_message()
             await self._apply_room_message(message, self_account_id)
-            await self._ensure_current_generation()
+            await self._ensure_room_state_initialized()
 
     @_screen_api
     @_requires_active
@@ -169,8 +171,8 @@ class RoomScreen(Screen):
         while True:
             message = await self._get_sniffer_message()
             await self._apply_room_message(message, self_account_id)
-            await self._ensure_current_generation()
-            state = self._get_cached_state()
+            await self._ensure_room_state_initialized()
+            state = self._get_room_state()
 
             if message.raw.name == LEAVE_API_NAME:
                 response = await self._require_operation_response(message)
@@ -210,9 +212,9 @@ class RoomScreen(Screen):
         ):
             message = await self._get_sniffer_message()
             await self._apply_room_message(message, self_account_id)
-            await self._ensure_current_generation()
+            await self._ensure_room_state_initialized()
             await self._ensure_waiting_state()
-            state = self._get_cached_state()
+            state = self._get_room_state()
 
             if message.raw.name == ADD_AI_API_NAME:
                 response = await self._require_operation_response(message)
@@ -243,8 +245,8 @@ class RoomScreen(Screen):
             while not (response_succeeded and game_start_succeeded):
                 message = await self._get_sniffer_message()
                 await self._apply_room_message(message, self_account_id)
-                await self._ensure_current_generation()
-                state = self._get_cached_state()
+                await self._ensure_room_state_initialized()
+                state = self._get_room_state()
 
                 if message.raw.name == START_MATCH_API_NAME:
                     response = await self._require_operation_response(message)
@@ -299,9 +301,9 @@ class RoomScreen(Screen):
         ):
             message = await self._get_sniffer_message()
             await self._apply_room_message(message, self_account_id)
-            await self._ensure_current_generation()
+            await self._ensure_room_state_initialized()
             await self._ensure_waiting_state()
-            state = self._get_cached_state()
+            state = self._get_room_state()
 
             if message.raw.name == SET_READY_API_NAME:
                 response = await self._require_operation_response(message)
@@ -330,9 +332,9 @@ class RoomScreen(Screen):
     async def _prepare_room_operation(self) -> tuple[int, RoomState]:
         self_account_id = await self._get_self_account_id()
         await self._drain_room_messages(self_account_id)
-        await self._ensure_current_generation()
+        await self._ensure_room_state_initialized()
         await self._ensure_waiting_state()
-        return self_account_id, self._get_cached_state()
+        return self_account_id, self._get_room_state()
 
     async def _require_operation_response(
         self,
@@ -465,30 +467,23 @@ class RoomScreen(Screen):
         return self_account_id
 
     def _has_active_room_state(self) -> bool:
-        state = self.context.room_state_cache.state
+        state = self._room_state_store.state
         return state is not None and state.status is RoomStatus.WAITING
 
-    def _get_cached_state(self) -> RoomState:
-        state = self.context.room_state_cache.state
+    def _get_room_state(self) -> RoomState:
+        state = self._room_state_store.state
         if state is None:
             msg = "Room state is not initialized."
             raise RuntimeError(msg)
         return state
 
-    async def _ensure_current_generation(self) -> None:
-        if self._room_generation is None:
+    async def _ensure_room_state_initialized(self) -> None:
+        if not self._room_state_initialized:
             msg = "RoomScreen has not been initialized."
             raise RuntimeError(msg)
-        if self._room_generation == self.context.room_state_cache.generation:
-            return
-
-        screenshot = await self.context.browser.screenshot()
-        self._mark_stale()
-        msg = "RoomScreen belongs to an old room generation."
-        raise ScreenStaleError(msg, screenshot)
 
     async def _ensure_waiting_state(self) -> None:
-        if self._get_cached_state().status is RoomStatus.WAITING:
+        if self._get_room_state().status is RoomStatus.WAITING:
             return
         screenshot = await self.context.browser.screenshot()
         self._mark_stale()
@@ -504,12 +499,9 @@ class RoomScreen(Screen):
         message: DecodedSnifferMessage,
         self_account_id: int,
     ) -> None:
-        _logger.info(
-            "Sniffer message: %s",
-            _format_sniffer_message(message),
-        )
+        _logger.info(_format_sniffer_message_for_log(message))
         try:
-            self.context.room_state_cache.apply(message, self_account_id)
+            self._room_state_store.apply(message, self_account_id)
         except Exception as error:
             screenshot = await self.context.browser.screenshot()
             msg = "Room state message is inconsistent."

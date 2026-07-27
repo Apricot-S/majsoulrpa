@@ -4,8 +4,8 @@ from dataclasses import replace
 import pytest
 from pydantic import JsonValue
 
-from majsoulrpa.screens.room.cache import (
-    RoomStateCache,
+from majsoulrpa.screens.room.store import (
+    RoomStateStore,
     RoomStateTransitionError,
 )
 from majsoulrpa.sniffer.events import (
@@ -80,10 +80,9 @@ def _room(
     }
 
 
-def test_cache_applies_created_room_as_first_generation() -> None:
-    cache = RoomStateCache()
+def test_store_applies_created_room_as_initial_state() -> None:
+    cache = RoomStateStore()
     assert cache.state is None
-    assert cache.generation == 0
 
     state = cache.apply(
         _create_room_message(
@@ -109,11 +108,10 @@ def test_cache_applies_created_room_as_first_generation() -> None:
     assert state.version == 1
     assert state.room_id == 12345
     assert state.self_is_host is True
-    assert cache.generation == 1
 
 
-def test_cache_does_not_increment_version_for_identical_snapshot() -> None:
-    cache = RoomStateCache()
+def test_store_does_not_increment_version_for_identical_snapshot() -> None:
+    cache = RoomStateStore()
     message = _create_room_message(
         {
             "room": {
@@ -136,15 +134,14 @@ def test_cache_does_not_increment_version_for_identical_snapshot() -> None:
     assert second is first
     assert second is not None
     assert second.version == 1
-    assert cache.generation == 1
 
 
 @pytest.mark.parametrize(
     "name",
     [".lq.Lobby.joinRoom", ".lq.Lobby.fetchRoom"],
 )
-def test_cache_accepts_other_complete_room_snapshots(name: str) -> None:
-    cache = RoomStateCache()
+def test_store_accepts_other_complete_room_snapshots(name: str) -> None:
+    cache = RoomStateStore()
 
     state = cache.apply(
         _request_response(name, {"room": _room()}),
@@ -154,7 +151,6 @@ def test_cache_accepts_other_complete_room_snapshots(name: str) -> None:
     assert state is not None
     assert state.version == 1
     assert state.room_id == 12345
-    assert cache.generation == 1
 
 
 @pytest.mark.parametrize(
@@ -165,8 +161,8 @@ def test_cache_accepts_other_complete_room_snapshots(name: str) -> None:
         ".lq.Lobby.fetchRoom",
     ],
 )
-def test_cache_does_not_initialize_from_failed_response(name: str) -> None:
-    cache = RoomStateCache()
+def test_store_does_not_initialize_from_failed_response(name: str) -> None:
+    cache = RoomStateStore()
 
     state = cache.apply(
         _request_response(name, {"error": {"code": 9999}}),
@@ -175,11 +171,10 @@ def test_cache_does_not_initialize_from_failed_response(name: str) -> None:
 
     assert state is None
     assert cache.state is None
-    assert cache.generation == 0
 
 
-def test_cache_increments_version_for_changed_snapshot() -> None:
-    cache = RoomStateCache()
+def test_store_increments_version_for_changed_snapshot() -> None:
+    cache = RoomStateStore()
     cache.apply(
         _create_room_message({"room": _room()}),
         100002,
@@ -196,11 +191,10 @@ def test_cache_increments_version_for_changed_snapshot() -> None:
     assert state is not None
     assert state.version == 2
     assert state.players[1].is_ready is True
-    assert cache.generation == 1
 
 
-def test_cache_rejects_different_room_during_active_generation() -> None:
-    cache = RoomStateCache()
+def test_store_rejects_different_room_while_active() -> None:
+    cache = RoomStateStore()
     cache.apply(
         _create_room_message({"room": _room()}),
         100002,
@@ -216,8 +210,8 @@ def test_cache_rejects_different_room_during_active_generation() -> None:
         )
 
 
-def test_cache_starts_new_generation_after_game_start() -> None:
-    cache = RoomStateCache()
+def test_store_rejects_reinitialization_after_game_start() -> None:
+    cache = RoomStateStore()
     cache.apply(
         _create_room_message({"room": _room()}),
         100002,
@@ -227,26 +221,24 @@ def test_cache_starts_new_generation_after_game_start() -> None:
         _notice(".lq.NotifyRoomGameStart"),
         100002,
     )
-    next_room = cache.apply(
-        _request_response(
-            ".lq.Lobby.joinRoom",
-            {"room": _room(room_id=54321)},
-        ),
-        100002,
-    )
-
     assert terminal is not None
     assert terminal.status.value == "match_started"
     assert terminal.version == 2
-    assert next_room is not None
-    assert next_room.status.value == "waiting"
-    assert next_room.version == 3
-    assert next_room.room_id == 54321
-    assert cache.generation == 2
+    with pytest.raises(
+        RoomStateTransitionError,
+        match="cannot be reinitialized",
+    ):
+        cache.apply(
+            _request_response(
+                ".lq.Lobby.joinRoom",
+                {"room": _room(room_id=54321)},
+            ),
+            100002,
+        )
 
 
-def test_cache_marks_successful_leave_as_terminal() -> None:
-    cache = RoomStateCache()
+def test_store_marks_successful_leave_as_terminal() -> None:
+    cache = RoomStateStore()
     initial = cache.apply(
         _create_room_message({"room": _room()}),
         100002,
@@ -263,11 +255,10 @@ def test_cache_marks_successful_leave_as_terminal() -> None:
     assert terminal.version == 2
     assert terminal.room_id == initial.room_id
     assert terminal.players == initial.players
-    assert cache.generation == 1
 
 
-def test_cache_keeps_waiting_state_after_rejected_leave() -> None:
-    cache = RoomStateCache()
+def test_store_keeps_waiting_state_after_rejected_leave() -> None:
+    cache = RoomStateStore()
     initial = cache.apply(
         _create_room_message({"room": _room()}),
         100002,
@@ -287,8 +278,8 @@ def test_cache_keeps_waiting_state_after_rejected_leave() -> None:
     assert state.version == 1
 
 
-def test_cache_requires_leave_request_to_be_outbound() -> None:
-    cache = RoomStateCache()
+def test_store_requires_leave_request_to_be_outbound() -> None:
+    cache = RoomStateStore()
     cache.apply(_create_room_message({"room": _room()}), 100002)
     message = _request_response(".lq.Lobby.leaveRoom", {})
     message = replace(
@@ -300,8 +291,8 @@ def test_cache_requires_leave_request_to_be_outbound() -> None:
         cache.apply(message, 100002)
 
 
-def test_cache_marks_kick_notice_as_terminal() -> None:
-    cache = RoomStateCache()
+def test_store_marks_kick_notice_as_terminal() -> None:
+    cache = RoomStateStore()
     initial = cache.apply(
         _create_room_message({"room": _room()}),
         100002,
@@ -320,8 +311,8 @@ def test_cache_marks_kick_notice_as_terminal() -> None:
     assert terminal.players == initial.players
 
 
-def test_cache_applies_player_update_and_rederives_host() -> None:
-    cache = RoomStateCache()
+def test_store_applies_player_update_and_rederives_host() -> None:
+    cache = RoomStateStore()
     cache.apply(
         _create_room_message({"room": _room()}),
         100002,
@@ -350,11 +341,10 @@ def test_cache_applies_player_update_and_rederives_host() -> None:
     assert state.players[0].is_host is False
     assert state.players[1].is_host is True
     assert state.ai_count == 1
-    assert cache.generation == 1
 
 
-def test_cache_applies_ready_notice_to_target_player() -> None:
-    cache = RoomStateCache()
+def test_store_applies_ready_notice_to_target_player() -> None:
+    cache = RoomStateStore()
     cache.apply(
         _create_room_message({"room": _room()}),
         100002,
@@ -372,7 +362,6 @@ def test_cache_applies_ready_notice_to_target_player() -> None:
     assert state.version == 2
     assert state.players[0].is_ready is False
     assert state.players[1].is_ready is True
-    assert cache.generation == 1
 
 
 @pytest.mark.parametrize(
@@ -382,8 +371,8 @@ def test_cache_applies_ready_notice_to_target_player() -> None:
         ".lq.NotifyRoomPlayerReady",
     ],
 )
-def test_cache_rejects_outbound_player_notice(name: str) -> None:
-    cache = RoomStateCache()
+def test_store_rejects_outbound_player_notice(name: str) -> None:
+    cache = RoomStateStore()
     initial = cache.apply(
         _create_room_message({"room": _room()}),
         100002,
@@ -399,7 +388,7 @@ def test_cache_rejects_outbound_player_notice(name: str) -> None:
 
 
 def test_player_update_drops_ready_state_for_player_who_left() -> None:
-    cache = RoomStateCache()
+    cache = RoomStateStore()
     room = _room()
     room["persons"] = [
         {"account_id": 100001, "nickname": "host"},
@@ -435,8 +424,8 @@ def test_player_update_drops_ready_state_for_player_who_left() -> None:
     assert all(not player.is_ready for player in state.players)
 
 
-def test_cache_ignores_old_room_update_after_terminal_state() -> None:
-    cache = RoomStateCache()
+def test_store_ignores_old_room_update_after_terminal_state() -> None:
+    cache = RoomStateStore()
     cache.apply(
         _create_room_message({"room": _room()}),
         100002,

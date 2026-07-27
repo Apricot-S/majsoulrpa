@@ -100,16 +100,55 @@ RoomScreen の callback と API は同時実行されず、source が未処理 m
 host 交代や kick も操作前 refresh または状態待機で処理できる。Room 専用 thread や Screen
 instance ごとの background task は追加しない。
 
-runtime は callback loop ごとに新しい Screen instance を生成するため、最新の immutable room
-snapshot と room generation だけは具体的な `RoomStateCache` として `ScreenContext` 経由で共有
-する。cache は RoomScreen が source を読んだときだけ更新し、raw message 履歴、operation
-response、waiter を保持しない。汎用 event sourcing store や Screen state registry は作らない。
-`ScreenContext` は protobuf object や ZMQ socket の具体型を `RoomScreen` へ公開しない。
+`RoomScreen` は active な room の間、同じ callback invocation と instance を維持する。callback が
+return すると runtime は新しい Screen instance を生成するが、消費済みの完全 snapshot を共有
+cache で引き継ぐ処理は行わない。room state は `RoomScreen` instance が所有する具体的な store に
+immutable snapshot として保持し、raw message 履歴、operation response、waiter は保持しない。
+汎用 event sourcing store や Screen state registry も作らない。`ScreenContext` は Room state
+store、protobuf object、ZMQ socket の具体型を `RoomScreen` へ公開しない。
 
-初期 snapshot は `createRoom`、`joinRoom`、`fetchRoom` response、更新は room notice から得る。
+初期 snapshot は、Home からの新規入室では `createRoom` / `joinRoom` response、対局終了後に同じ
+友人戦へ戻る場合は `fetchRoom` response から得る。更新は room notice から得る。Room 内での
+browser reload / restart は退出になるため、`fetchRoom` を reload recovery の根拠には使わない。
+active 中の callback 早期 return はサポートせず、terminal 遷移または失敗まで同じ instance が
+source を読み続ける。
 host 権限は owner ID と session account ID から snapshot ごとに導出し、Screen instance へ
 cache しない。詳しい状態遷移、操作との相関、失敗モデルは
 [RoomScreen 設計](screens/room.md) に従う。
+
+### Match state
+
+`MatchScreen` は通常の局遷移では作り直さず、同じ callback invocation と instance を使う。state は
+Room と同様に instance-local な具体的 store が immutable snapshot として保持し、`ScreenContext`
+共有 cache、Match 専用 observer、background reducer は追加しない。restore replay は temporary
+store で完了させ、検証済み snapshot と operation を atomic に current store へ commit する。
+
+live `ActionPrototype` と `syncGame` 内の restore action は Match 固有 adapter で同じ public
+`MatchEvent` へ変換し、同じ reducer へ渡す。新規開始、途中復帰、active 中の再同期は同じ bootstrap /
+replay 処理を使う。`ActionNewRound` は current round snapshot を置き換えるが Screen を stale に
+しない。
+
+対応対象の action と `MatchEvent` は 1 対 1 とし、同じ意味を持つ internal action union は作らない。
+concrete event は final frozen dataclass、`MatchEvent` は全 concrete class を列挙する明示的 union とする。
+reducer が適用した同じ event object を current `RoundState` の局内 event 列に保持する。restore replay
+でも同じ event 列を再構築するが、新着 event としては通知しない。field の runtime invariant は
+dataclass constructor の `__post_init__()` と共通 validator で保証する。
+
+`ActionMJStart` も state を変更しない `StartMatchEvent` として正規化し、最初の `NewRoundEvent` より前に
+保存する。これにより機械学習 AI が match の BOS feature として利用できる。
+
+初期化 milestone の公開 API は `get_state()` だけとする。蓄積済み message を drain した最新の
+immutable snapshot を返し、network request や click は行わない。状態待機と operation 詳細・操作
+API は別の高レベル API として 1 つずつ追加する。
+
+Room / tournament が確定済みの fresh entry marker を消費した場合は、Screen 遷移直前に decoded
+message 自体を一度だけ `put_back()` する。`ScreenContext` に Match entry hint は追加しない。
+
+Match 中も generic `Screen.reload()` を使う。reload 後は current instance を stale にし、callback
+利用者が user data を return して runtime の Screen 検出へ戻す。cookie により直接 Match へ戻る
+場合と `LoginScreen` を経る場合のどちらも、新しい instance が同じ recovery bootstrap で
+`authGame` と `syncGame` から state を再構築する。詳細は [MatchScreen 設計](screens/match.md) に
+従う。
 
 ## 高レベル Screen API のログ
 

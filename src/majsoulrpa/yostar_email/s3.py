@@ -3,9 +3,10 @@ from __future__ import annotations
 import asyncio
 import importlib
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
+from majsoulrpa._clock import Clock, utc_now
 from majsoulrpa.yostar_email.constants import VERIFICATION_EMAIL_EXPIRATION
 from majsoulrpa.yostar_email.email import VerificationEmail
 from majsoulrpa.yostar_email.errors import (
@@ -14,8 +15,6 @@ from majsoulrpa.yostar_email.errors import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
     from types_boto3_s3.client import S3Client
 
 
@@ -41,7 +40,7 @@ class S3VerificationCodeProvider:
         aws_profile: str | None = None,
         poll_interval: float = 5.0,
         client: S3Client | None = None,
-        clock: Callable[[], datetime] | None = None,
+        clock: Clock | None = None,
     ) -> None:
         if poll_interval <= 0.0:
             msg = "poll_interval must be greater than zero."
@@ -52,7 +51,7 @@ class S3VerificationCodeProvider:
         self._aws_profile = aws_profile
         self._poll_interval = poll_interval
         self._client = client
-        self._clock = clock or _utc_now
+        self._clock = clock or utc_now
 
     async def fetch(self, *, delete_read_emails: bool = False) -> str:
         """Poll S3 and optionally delete matching emails read."""
@@ -142,10 +141,6 @@ class S3VerificationCodeProvider:
             return verification_code
         msg = "No current Yostar verification email was found in S3."
         raise VerificationEmailNotFoundError(msg)
-
-
-def _utc_now() -> datetime:
-    return datetime.now(UTC)
 
 
 def _list_email_candidates(

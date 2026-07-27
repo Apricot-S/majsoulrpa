@@ -12,6 +12,8 @@ import majsoulrpa.screens.login as login_module
 from majsoulrpa.assets.templates.login import (
     LOGIN_1_SETTINGS_PATH,
     LOGIN_1_TEMPLATE_PATH,
+    MAINTENANCE_OK_SETTINGS_PATH,
+    MAINTENANCE_OK_TEMPLATE_PATH,
     YOSTAR_LOGO_SETTINGS_PATH,
     YOSTAR_LOGO_TEMPLATE_PATH,
 )
@@ -32,6 +34,7 @@ from majsoulrpa.screens.errors import (
     ScreenInvalidArgumentError,
     ScreenInvalidOperationError,
     ScreenStaleError,
+    ScreenUnexpectedStateError,
 )
 from majsoulrpa.screens.login import EMAIL_ADDRESS_PATTERN, LoginScreen
 from tests.sniffer.fakes import EMPTY_SNIFFER_MESSAGES
@@ -49,9 +52,11 @@ def ScreenContext(  # noqa: N802
 class BrowserControllerSpy:
     def __init__(
         self,
-        screenshot: bytes = b"\x89PNG\r\n\x1a\n",
+        screenshot: bytes | None = None,
         *screenshots: bytes,
     ) -> None:
+        if screenshot is None:
+            screenshot = _synthetic_blank_screenshot()
         self.clicked_points: list[tuple[float, float]] = []
         self.events: list[str] = []
         self.input_texts: list[str] = []
@@ -144,9 +149,9 @@ def _synthetic_blank_screenshot() -> bytes:
 def _synthetic_login_button_screenshot() -> bytes:
     return _synthetic_template_screenshot(
         template_path=LOGIN_1_TEMPLATE_PATH,
-        left=1310,
+        left=1380,
         top=435,
-        width=370,
+        width=300,
         height=65,
     )
 
@@ -158,6 +163,16 @@ def _synthetic_yostar_logo_screenshot() -> bytes:
         top=347,
         width=190,
         height=50,
+    )
+
+
+def _synthetic_maintenance_dialog_screenshot() -> bytes:
+    return _synthetic_template_screenshot(
+        template_path=MAINTENANCE_OK_TEMPLATE_PATH,
+        left=838,
+        top=659,
+        width=263,
+        height=56,
     )
 
 
@@ -185,6 +200,13 @@ def test_yostar_logo_template_assets_exist() -> None:
     assert YOSTAR_LOGO_SETTINGS_PATH.is_file()
 
 
+def test_maintenance_dialog_template_assets_exist() -> None:
+    assert MAINTENANCE_OK_TEMPLATE_PATH.name == "maintenance-ok.png"
+    assert MAINTENANCE_OK_TEMPLATE_PATH.is_file()
+    assert MAINTENANCE_OK_SETTINGS_PATH.name == "maintenance-ok.toml"
+    assert MAINTENANCE_OK_SETTINGS_PATH.is_file()
+
+
 def test_yostar_logo_template_matches_synthetic_screenshot() -> None:
     assert LoginScreen.YOSTAR_LOGO_TEMPLATE.matches(
         _synthetic_yostar_logo_screenshot(),
@@ -206,6 +228,7 @@ def test_login_screen_before_callback_clicks_matched_region(
         sleeps.append(seconds)
 
     browser = BrowserControllerSpy(
+        _synthetic_blank_screenshot(),
         _synthetic_login_button_screenshot(),
         _synthetic_yostar_logo_screenshot(),
     )
@@ -215,15 +238,22 @@ def test_login_screen_before_callback_clicks_matched_region(
     asyncio.run(screen.before_callback())
 
     [(x, y)] = browser.clicked_points
-    assert 1310 < x < 1680
+    assert 1380 < x < 1680
     assert 435 < y < 500
-    assert sleeps == [1.0, 0.5]
+    assert sleeps == [1.5, 1.0, 0.5]
     assert browser.input_texts == []
 
 
-def test_login_screen_before_callback_raises_without_login_button() -> None:
-    browser = BrowserControllerSpy(_synthetic_blank_screenshot())
+def test_login_screen_before_callback_raises_without_login_button(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
+    screenshot = _synthetic_blank_screenshot()
+    browser = BrowserControllerSpy(screenshot, screenshot)
     screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
 
     with pytest.raises(ScreenDetectionError, match="login button") as exc_info:
         asyncio.run(screen.before_callback())
@@ -240,6 +270,7 @@ def test_login_screen_before_callback_raises_when_yostar_logo_is_missing(
 
     yostar_missing_screenshot = _synthetic_blank_screenshot()
     browser = BrowserControllerSpy(
+        _synthetic_blank_screenshot(),
         _synthetic_login_button_screenshot(),
         yostar_missing_screenshot,
     )
@@ -251,6 +282,30 @@ def test_login_screen_before_callback_raises_when_yostar_logo_is_missing(
 
     assert exc_info.value.screenshot == yostar_missing_screenshot
     assert browser.clicked_points
+
+
+def test_login_screen_before_callback_rejects_maintenance_dialog(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    screenshot = _synthetic_maintenance_dialog_screenshot()
+    browser = BrowserControllerSpy(screenshot)
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+
+    with pytest.raises(
+        ScreenUnexpectedStateError,
+        match="Server maintenance",
+    ) as exc_info:
+        asyncio.run(screen.before_callback())
+
+    assert exc_info.value.screenshot == screenshot
+    assert sleeps == [1.5]
+    assert browser.clicked_points == []
 
 
 def test_login_screen_enter_email_address_records_browser_operation(
@@ -444,6 +499,9 @@ def test_login_screen_rejects_pattern_only_valid_address() -> None:
 def test_login_screen_enter_email_address_scales_region_to_viewport(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
     browser = BrowserControllerSpy()
     base_region = LoginScreen.EMAIL_ADDRESS_REGION
     monkeypatch.setattr(
@@ -451,6 +509,7 @@ def test_login_screen_enter_email_address_scales_region_to_viewport(
         "EMAIL_ADDRESS_ADAPTER",
         EmailAddressAdapterStub(),
     )
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
     LoginScreen.EMAIL_ADDRESS_REGION = Region(
         left=300,
         top=150,
@@ -588,6 +647,33 @@ def test_login_screen_enter_verification_code_records_browser_operation(
         asyncio.run(screen.enter_email_address("player@example.invalid"))
 
 
+def test_login_screen_rejects_maintenance_dialog_after_authentication(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    screenshot = _synthetic_maintenance_dialog_screenshot()
+    browser = BrowserControllerSpy(screenshot)
+    sleeps: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
+    screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
+    screen._email_address_entered_at = 100.0
+
+    with pytest.raises(
+        ScreenUnexpectedStateError,
+        match="Server maintenance",
+    ) as exc_info:
+        asyncio.run(screen.enter_verification_code("123456"))
+
+    assert exc_info.value.screenshot == screenshot
+    assert sleeps[-1] == 2.0
+    assert len(browser.clicked_points) == 5
+
+    assert asyncio.run(screen.screenshot()) == screenshot
+
+
 def test_login_screen_uses_720p_agreement_regions(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -658,7 +744,12 @@ def test_login_screen_scales_standard_agreement_regions_at_1440p(
         assert scaled_region.top < y < scaled_region.bottom
 
 
-def test_login_screen_rejects_rejected_yostar_authentication() -> None:
+def test_login_screen_rejects_rejected_yostar_authentication(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
     screenshot = _synthetic_blank_screenshot()
     browser = BrowserControllerSpy(screenshot)
     browser.yostar_auth_response = YostarAuthRejectedResponse(
@@ -666,6 +757,7 @@ def test_login_screen_rejects_rejected_yostar_authentication() -> None:
     )
     screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
     screen._email_address_entered_at = 100.0
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
 
     with pytest.raises(
         ScreenInvalidArgumentError,
@@ -682,11 +774,17 @@ def test_login_screen_rejects_rejected_yostar_authentication() -> None:
         asyncio.run(screen.enter_verification_code("123456"))
 
 
-def test_login_screen_remains_active_when_transition_click_fails() -> None:
+def test_login_screen_remains_active_when_transition_click_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def sleep(_seconds: float) -> None:
+        pass
+
     browser = BrowserControllerSpy()
     browser.fail_click_number = 5
     screen = LoginScreen(context=ScreenContext(browser=browser, rng=Random(0)))
     screen._email_address_entered_at = 100.0
+    monkeypatch.setattr(login_module.asyncio, "sleep", sleep)
 
     with pytest.raises(RuntimeError, match="click failed"):
         asyncio.run(screen.enter_verification_code("123456"))

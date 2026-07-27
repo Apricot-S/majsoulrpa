@@ -1,0 +1,17 @@
+# Operation-selection buttons use a 150 x 38 anchor region. The
+# margins expand it to the full 820 x 290 area where the buttons may
+# appear in different combinations.
+[region]
+left = 630
+top = 600
+width = 150
+height = 38
+
+[margin]
+left = 0
+right = 670 # 820 - 150
+top = 0
+bottom = 252 # 290 - 38
+
+[match]
+threshold = 0.95

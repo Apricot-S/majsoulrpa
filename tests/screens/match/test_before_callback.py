@@ -1,0 +1,215 @@
+import asyncio
+import logging
+from random import Random
+from types import SimpleNamespace
+
+import pytest
+
+from majsoulrpa.presentation import Region
+from majsoulrpa.screens.errors import ScreenInconsistentMessageError
+from majsoulrpa.screens.match import (
+    MatchScreen,
+    NewRoundEvent,
+    StartMatchEvent,
+)
+from majsoulrpa.screens.match import screen as match_screen_module
+from majsoulrpa.sniffer.events import DecodedSnifferMessage
+from tests.screens._support import (
+    BrowserControllerSpy,
+    ScreenContext,
+    _message_queue,
+)
+from tests.screens.match._support import (
+    SELF_ACCOUNT_ID,
+    _auth_game,
+    _live_action,
+    _live_new_round_action,
+)
+
+
+def test_match_screen_before_callback_moves_mouse_away_from_hand() -> None:
+    assert (
+        Region(left=585, top=790, width=1000, height=70)
+        == MatchScreen.MOUSE_SAFE_REGION
+    )
+    browser = BrowserControllerSpy(b"synthetic-screenshot")
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=browser,
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(),
+                _live_action(),
+                _live_new_round_action(step=1),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+
+    [(x, y)] = browser.moved_points
+    assert 585 < x < 1585
+    assert 790 < y < 860
+    assert browser.events == ["move_mouse"]
+    assert screen._start_match_event == StartMatchEvent(action_step=0)
+    assert isinstance(screen._new_round_event, NewRoundEvent)
+    assert screen._new_round_event.action_step == 1
+
+
+def test_match_screen_accepts_action_new_round_at_step_zero() -> None:
+    browser = BrowserControllerSpy(b"synthetic-screenshot")
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=browser,
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(),
+                _live_new_round_action(step=0),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+
+    assert screen._start_match_event is None
+    assert isinstance(screen._new_round_event, NewRoundEvent)
+    assert screen._new_round_event.action_step == 0
+
+
+def test_match_screen_logs_only_special_message_levels(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    browser = BrowserControllerSpy(b"synthetic-screenshot")
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=browser,
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                ".lq.Lobby.fetchServerTime",
+                ".lq.Unknown",
+                ".lq.Lobby.heatbeat",
+                ".lq.Lobby.loginBeat",
+                _auth_game(),
+                _live_action(),
+                _live_new_round_action(step=1),
+            ),
+        ),
+    )
+
+    with caplog.at_level(logging.DEBUG):
+        asyncio.run(screen.before_callback())
+
+    levels = {
+        next(
+            name
+            for name in (
+                ".lq.Lobby.fetchServerTime",
+                ".lq.Unknown",
+                ".lq.Lobby.heatbeat",
+                ".lq.Lobby.loginBeat",
+                ".lq.FastTest.authGame",
+                "ActionMJStart",
+                "ActionNewRound",
+            )
+            if name in record.message
+        ): record.levelno
+        for record in caplog.records
+        if record.name == "majsoulrpa.screens.match.screen"
+    }
+    assert levels[".lq.Lobby.fetchServerTime"] == logging.INFO
+    assert levels[".lq.Unknown"] == logging.INFO
+    assert levels[".lq.Lobby.heatbeat"] == logging.DEBUG
+    assert levels[".lq.Lobby.loginBeat"] == logging.WARNING
+    assert levels[".lq.FastTest.authGame"] == logging.INFO
+    assert levels["ActionMJStart"] == logging.INFO
+    assert levels["ActionNewRound"] == logging.INFO
+    assert all(
+        record.getMessage().startswith("Sniffer message: ")
+        for record in caplog.records
+        if record.name == "majsoulrpa.screens.match.screen"
+    )
+    action_log = next(
+        record.message
+        for record in caplog.records
+        if "ActionMJStart" in record.message
+    )
+    assert (
+        '"message":{"step":0,"name":"ActionMJStart","data":{}}' in action_log
+    )
+
+
+def test_match_screen_requires_action_mj_start_at_step_zero() -> None:
+    browser = BrowserControllerSpy(b"inconsistent-screenshot")
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=browser,
+            rng=Random(0),
+            sniffer_messages=_message_queue(_live_action(step=1)),
+        ),
+    )
+
+    with pytest.raises(ScreenInconsistentMessageError):
+        asyncio.run(screen.before_callback())
+
+
+def test_match_screen_does_not_reorder_initial_actions() -> None:
+    browser = BrowserControllerSpy(b"inconsistent-screenshot")
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=browser,
+            rng=Random(0),
+            sniffer_messages=_message_queue(
+                _live_new_round_action(step=1),
+                _live_action(step=0),
+            ),
+        ),
+    )
+
+    with pytest.raises(ScreenInconsistentMessageError):
+        asyncio.run(screen.before_callback())
+
+
+@pytest.mark.parametrize(
+    "messages",
+    [
+        (_live_new_round_action(step=1),),
+        (_live_action(), _live_new_round_action(step=0)),
+    ],
+)
+def test_match_screen_rejects_inconsistent_initial_action_sequence(
+    messages: tuple[DecodedSnifferMessage, ...],
+) -> None:
+    browser = BrowserControllerSpy(b"inconsistent-screenshot")
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=browser,
+            rng=Random(0),
+            sniffer_messages=_message_queue(*messages),
+        ),
+    )
+
+    with pytest.raises(ScreenInconsistentMessageError):
+        asyncio.run(screen.before_callback())
+
+
+def test_match_screen_initialization_times_out_with_screenshot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        match_screen_module,
+        "MATCH_INITIALIZATION_TIMEOUT_SECONDS",
+        0.0,
+    )
+    browser = BrowserControllerSpy(b"timeout-screenshot")
+    screen = MatchScreen(
+        context=ScreenContext(browser=browser, rng=Random(0)),
+    )
+
+    with pytest.raises(ScreenInconsistentMessageError) as exc_info:
+        asyncio.run(screen.before_callback())
+
+    assert exc_info.value.screenshot == b"timeout-screenshot"
+    assert browser.events == ["move_mouse", "screenshot"]

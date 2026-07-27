@@ -1,6 +1,6 @@
 # ADR-0004: Room状態をmessage sourceと共有cacheで管理する
 
-- Status: Accepted
+- Status: Superseded by ADR-0007
 - Date: 2026-07-18
 
 ## Context

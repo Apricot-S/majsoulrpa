@@ -7,15 +7,12 @@ from dataclasses import dataclass, field
 from functools import wraps
 from logging import getLogger
 from random import Random
-from typing import TYPE_CHECKING, Concatenate, Protocol
+from typing import Concatenate, Protocol
 
 from majsoulrpa.constants import BASE_VIEWPORT_WIDTH, DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.presentation import Region
 from majsoulrpa.screens.errors import ScreenDetectionError, ScreenStaleError
 from majsoulrpa.sniffer.events import DecodedNotice, DecodedSnifferMessage
-
-if TYPE_CHECKING:
-    from majsoulrpa.screens.room.cache import RoomStateCache
 
 SCREEN_ACTION_INTERVAL_SECONDS = 0.5
 TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
@@ -126,7 +123,7 @@ async def _ignore_stop_request() -> None:
     pass
 
 
-def _format_sniffer_message(message: DecodedSnifferMessage) -> str:
+def _format_sniffer_message_for_log(message: DecodedSnifferMessage) -> str:
     if isinstance(message, DecodedNotice):
         value = {
             "raw": {
@@ -151,7 +148,8 @@ def _format_sniffer_message(message: DecodedSnifferMessage) -> str:
             "request": message.request,
             "response": message.response,
         }
-    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    serialized = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    return f"Sniffer message: {serialized}"
 
 
 class ScreenContext:
@@ -159,23 +157,14 @@ class ScreenContext:
         self,
         browser: BrowserController,
         sniffer_messages: SnifferMessageSource,
-        room_state_cache: "RoomStateCache | None" = None,
         request_stop: StopRequester | None = None,
         viewport_width: int = BASE_VIEWPORT_WIDTH,
         viewport_height: int = DEFAULT_VIEWPORT_HEIGHT,
         rng: Random | None = None,
         account_state: AccountState = _EMPTY_ACCOUNT_STATE,
     ) -> None:
-        if room_state_cache is None:
-            from majsoulrpa.screens.room.cache import (  # noqa: PLC0415
-                RoomStateCache,
-            )
-
-            room_state_cache = RoomStateCache()
-
         self._browser = browser
         self._sniffer_messages = sniffer_messages
-        self._room_state_cache = room_state_cache
         self._request_stop = request_stop or _ignore_stop_request
         self._viewport_width = viewport_width
         self._viewport_height = viewport_height
@@ -198,10 +187,6 @@ class ScreenContext:
     @property
     def sniffer_messages(self) -> SnifferMessageSource:
         return self._sniffer_messages
-
-    @property
-    def room_state_cache(self) -> "RoomStateCache":
-        return self._room_state_cache
 
     @property
     def rng(self) -> Random | None:
@@ -355,33 +340,38 @@ class Screen(ABC):
         template: TemplateMatcher,
         *,
         message: str,
+        warp: bool = False,
     ) -> TemplateMatchResult:
         result = await self.require_template(template, message=message)
-        await self._click_region(result.region)
+        await self._click_region(result.region, warp=warp)
         return result
 
     @_requires_active
     async def click_template_if_present(
         self,
         template: TemplateMatcher,
+        *,
+        warp: bool = False,
     ) -> bool:
         result = await self.find_template(template)
         if result is None:
             return False
 
-        await self._click_region(result.region)
+        await self._click_region(result.region, warp=warp)
         return True
 
     @_requires_active
     async def wait_and_click_template(
         self,
         template: TemplateMatcher,
+        *,
+        warp: bool = False,
     ) -> TemplateMatchResult:
         while True:
             screenshot = await self.context.browser.screenshot()
             result = template.find(screenshot)
             if result is not None:
-                await self._click_region(result.region)
+                await self._click_region(result.region, warp=warp)
                 return result
             await asyncio.sleep(TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS)
 

@@ -8,6 +8,8 @@ from pydantic import EmailStr, TypeAdapter, ValidationError
 from majsoulrpa.assets.templates.login import (
     LOGIN_1_SETTINGS_PATH,
     LOGIN_1_TEMPLATE_PATH,
+    MAINTENANCE_OK_SETTINGS_PATH,
+    MAINTENANCE_OK_TEMPLATE_PATH,
     YOSTAR_LOGO_SETTINGS_PATH,
     YOSTAR_LOGO_TEMPLATE_PATH,
 )
@@ -24,6 +26,7 @@ from majsoulrpa.screens.base import (
 from majsoulrpa.screens.errors import (
     ScreenInvalidArgumentError,
     ScreenInvalidOperationError,
+    ScreenUnexpectedStateError,
 )
 
 EMAIL_ADDRESS_PATTERN = re.compile(
@@ -92,6 +95,10 @@ class LoginScreen(Screen):
         template_path=YOSTAR_LOGO_TEMPLATE_PATH,
         settings_path=YOSTAR_LOGO_SETTINGS_PATH,
     )
+    MAINTENANCE_OK_TEMPLATE = load_png_template_matcher(
+        template_path=MAINTENANCE_OK_TEMPLATE_PATH,
+        settings_path=MAINTENANCE_OK_SETTINGS_PATH,
+    )
 
     def __init__(self, context: ScreenContext | None = None) -> None:
         super().__init__(context=context)
@@ -104,6 +111,9 @@ class LoginScreen(Screen):
 
     @override
     async def before_callback(self) -> None:
+        await asyncio.sleep(1.5)
+        await self._raise_if_maintenance_dialog()
+
         await self.click_template(
             self.LOGIN_1_TEMPLATE,
             message="Failed to find login button.",
@@ -202,7 +212,19 @@ class LoginScreen(Screen):
         # Its pre-hook then fails because the Yostar dialog no longer
         # opens.
         await asyncio.sleep(2.0)
+        await self._raise_if_maintenance_dialog()
         self._mark_stale()
+
+    async def _raise_if_maintenance_dialog(self) -> None:
+        screenshot = await self.screenshot()
+        if self.MAINTENANCE_OK_TEMPLATE.find(screenshot) is not None:
+            msg = "Server maintenance dialog was detected."
+            raise ScreenUnexpectedStateError(msg, screenshot)
+
+    async def _click_login_2_and_wait_for_yostar_auth(self) -> object:
+        region = self.context.scale_region(self.LOGIN_2_REGION)
+        x, y = region.random_point(rng=self.context.rng)
+        return await self.context.browser.click_and_wait_for_yostar_auth(x, y)
 
     async def _click_agreement_region(
         self,
@@ -213,8 +235,3 @@ class LoginScreen(Screen):
             await self._click_region(region_720p)
             return
         await self.click_region(region)
-
-    async def _click_login_2_and_wait_for_yostar_auth(self) -> object:
-        region = self.context.scale_region(self.LOGIN_2_REGION)
-        x, y = region.random_point(rng=self.context.rng)
-        return await self.context.browser.click_and_wait_for_yostar_auth(x, y)

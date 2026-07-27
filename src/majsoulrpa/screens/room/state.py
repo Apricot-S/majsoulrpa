@@ -39,8 +39,10 @@ class RoomState:
         if self.room_id <= 0:
             msg = "Room ID must be positive."
             raise ValueError(msg)
-        if self.max_player_count not in {3, 4}:
-            msg = "Room maximum player count must be 3 or 4."
+        if type(
+            self.max_player_count
+        ) is not int or self.max_player_count not in {1, 3, 4}:
+            msg = "Room maximum player count must be 1, 3, or 4."
             raise ValueError(msg)
         if self.ai_count < 0:
             msg = "Room AI count must not be negative."

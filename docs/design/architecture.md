@@ -81,7 +81,7 @@ screens
   -> screen context
   -> browser operations
   -> sniffer queue when raw message consumption is needed
-  -> room state view through screen context when current room state is needed
+  -> instance-local room state store when current room state is needed
 ```
 
 `screens` は `RPAApp` に依存しません。`sniffer` は `screens` の具体 class に
@@ -142,7 +142,6 @@ Screen base は、custom screen を書くための最小 surface にします。
 - template match API
 - sniffer queue 参照
 - Sniffer message source
-- room state cache
 - runtime stop 要求 API
 
 `ScreenContext` に含めないもの:
@@ -151,6 +150,16 @@ Screen base は、custom screen を書くための最小 surface にします。
 - callback registry
 - AWS / email 設定
 - raw credential
+
+状態を持つ Screen の callback は、新しい instance を現在の authoritative な情報だけから初期化
+できない間は return しない。`RoomScreen` は active な room の間、同じ callback invocation と
+instance を維持し、room state を instance-local な store に保持する。`ScreenContext` に Room
+state cache は追加しない。
+`MatchScreen` は通常の局遷移では同じ instance を維持する。reload / 再ログイン後は新しい instance
+が decoded `authGame` / `syncGame` message から state を再構築するため、`ScreenContext` に Match
+state cache や entry hint は追加しない。Room / tournament が確定済みの fresh entry marker を先に
+消費した場合は、既存 message source の `put_back()` で decoded message 自体を一度だけ次の Screen
+へ引き渡す。
 
 ## `browser/runner.py` / `browser/server.py`
 

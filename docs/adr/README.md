@@ -19,6 +19,8 @@
 - [ADR-0003: Sniffer decodeをbrowser hostとclientに分割する](0003-split-sniffer-decoding.md)
 - [ADR-0004: Room状態をmessage sourceと共有cacheで管理する](0004-room-state-message-source-and-cache.md)
 - [ADR-0005: Yostar認証応答をrequest-scoped browser commandで待つ](0005-request-scoped-yostar-auth-wait.md)
+- [ADR-0006: MatchScreenを局遷移では維持しaction reducerを共有する](0006-match-screen-lifecycle-and-reducer.md)
+- [ADR-0007: Room状態をcallback invocation内で管理する](0007-room-state-lifecycle.md)
 
 ## テンプレート
 

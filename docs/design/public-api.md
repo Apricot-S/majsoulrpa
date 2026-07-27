@@ -161,6 +161,17 @@ class Screen:
 
 操作 API は、その画面で意味があるものだけに限定します。
 
+callback が return すると、runtime は現在の Screen instance を破棄し、画面検出からやり直す。
+同じ種類の画面が続いていても、新しい instance が現在の authoritative な画像または message だけで
+完全に初期化できる場合に限って callback を return できる。認証途中の `LoginScreen`、active な
+`RoomScreen`、active な `MatchScreen` のように instance-local state が必要な Screen では、terminal
+遷移または明示された recovery 境界まで同じ callback invocation を継続する。framework は早期
+return で失われた state を共有 cache や推測で補完しない。
+
+`HomeScreen` のように操作完了後が別画面または画像から再初期化できる安定状態になる Screen は、
+同じ種類の画面に留まっていても callback を return できる。Screen ごとの recovery 境界は各設計
+資料に明記する。
+
 `LoginScreen` 候補:
 
 ```python
@@ -207,6 +218,31 @@ async with asyncio.timeout(10.0):
 プレイヤーには account ID、名前、host、ready を含める。server rejection は Enum 戻り値
 ではなく、機械判定用 Enum を属性に持つ型付き例外にする。観測方式と状態遷移の詳細は
 [RoomScreen 設計](screens/room.md) を参照する。
+
+Room callback は room が active な間、同じ `RoomScreen` instance で状態待機と操作を継続する。
+`LEFT`、`KICKED`、`MATCH_STARTED` などの terminal 遷移前に callback を return して、新しい
+instance へ room state を引き継ぐ利用方法はサポートしない。
+対局終了後に同じ友人戦へ戻る場合は例外ではなく、`fetchRoom` の authoritative な完全 snapshot
+から新しい `RoomScreen` instance を初期化できる、明示的な画面遷移境界である。
+
+`MatchScreen` の初期化 milestone:
+
+```python
+async def get_state(self) -> MatchState: ...
+```
+
+`before_callback()` は `authGame` と fresh action または restore `syncGame` から immutable な
+`MatchState` を構築してから callback を開始する。`get_state()` は request や click を行わず、
+蓄積済み message を reduce して最新 snapshot を返す。player state は四麻・三麻の段位を保持し、
+current `RoundState` は final frozen dataclass の明示的 union で表す局内 `MatchEvent` 列を含む。
+状態待機と operation
+詳細・操作 API は、初期化の実ゲーム確認後に 1 つずつ追加する。state と lifecycle の詳細は
+[MatchScreen 設計](screens/match.md) に従う。
+
+`MatchEvent` に `type` discriminator は設けない。利用者は `DapaiEvent`、`ZimoEvent` などの具体 class
+に対する `match` で型を絞り込み、各 case を terminal にした後の `assert_never(event)` で未対応
+variant を型検査エラーにできる。
+最初の event 列には `StartMatchEvent` も保持し、機械学習 AI は match の BOS として利用できる。
 
 `TournamentLobbyScreen` 候補:
 

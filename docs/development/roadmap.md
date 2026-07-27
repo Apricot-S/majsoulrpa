@@ -210,7 +210,8 @@ Sniffer、browser controller の境界に合わせ、テストリストを先に
 - API ごとにテストリストを作る
 - 実装する高レベル API は常に 1 つに絞る
 - 各 API ごとにユーザーへ実ゲーム確認を依頼する
-- RoomScreen は [RoomScreen 設計](../design/screens/room.md) の state cache と message source 処理を
+- RoomScreen は [RoomScreen 設計](../design/screens/room.md) の instance-local state store と
+  message source 処理を
   先に実装し、
   `get_state()`、状態待機、退出、AI 追加、ready、対局開始の順に 1 API ずつ進める
 

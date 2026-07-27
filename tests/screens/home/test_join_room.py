@@ -31,15 +31,15 @@ from majsoulrpa.screens.home import (
     HomeScreen,
     JoinRoomFailureReason,
 )
-from tests.screens.home._support import (
+from tests.screens._support import (
     BrowserControllerSpy,
     ScreenContext,
     _message_queue,
     _request_response,
     _synthetic_blank_screenshot,
-    _synthetic_home_ready_screenshot,
     _synthetic_template_screenshot,
 )
+from tests.screens.home._support import _synthetic_home_ready_screenshot
 
 
 def test_join_room_failure_reason_has_expected_members() -> None:

@@ -31,14 +31,14 @@ from majsoulrpa.screens.errors import (
 from majsoulrpa.screens.home import (
     HomeScreen,
 )
-from tests.screens.home._support import (
+from tests.screens._support import (
     BrowserControllerSpy,
     ScreenContext,
     _message_queue,
     _synthetic_blank_screenshot,
-    _synthetic_home_ready_screenshot,
     _synthetic_template_screenshot,
 )
+from tests.screens.home._support import _synthetic_home_ready_screenshot
 
 
 def test_home_before_callback_skips_jade_without_month_ticket_message(

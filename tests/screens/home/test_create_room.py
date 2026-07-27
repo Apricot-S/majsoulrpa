@@ -27,7 +27,7 @@ from majsoulrpa.screens.home import (
     Mode,
     ThinkingTime,
 )
-from tests.screens.home._support import (
+from tests.screens._support import (
     BrowserControllerSpy,
     ScreenContext,
     _message_queue,

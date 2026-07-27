@@ -33,7 +33,7 @@ from majsoulrpa.sniffer.events import (
     DecodedSnifferMessage,
     Direction,
 )
-from tests.screens.home._support import (
+from tests.screens._support import (
     BrowserControllerSpy,
     _request_response,
     _synthetic_blank_screenshot,
@@ -47,6 +47,17 @@ def _startable_room() -> dict[str, JsonValue]:
     room = _room()
     room["ready_list"] = [100002]
     room["robots"] = [{}, {}]
+    return room
+
+
+def _vs_ai_room() -> dict[str, JsonValue]:
+    room = _room()
+    room["max_player_count"] = 1
+    room["persons"] = [
+        {"account_id": 100001, "nickname": "host"},
+    ]
+    room["ready_list"] = []
+    room["robots"] = []
     return room
 
 
@@ -122,11 +133,48 @@ def test_start_match_clicks_start_and_stales_after_response_and_notice(
     assert result is None
     assert len(browser.clicked_points) == 1
     assert messages.get_count == 2
-    assert context.room_state_cache.state is not None
-    assert context.room_state_cache.state.status is RoomStatus.MATCH_STARTED
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is RoomStatus.MATCH_STARTED
     assert sleeps == [room_module.TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS]
     with pytest.raises(ScreenStaleError):
         asyncio.run(screen.get_state())
+
+
+def test_start_match_allows_vs_ai_room_with_host_as_only_participant() -> None:
+    messages = _OperationMessageSource(
+        queued=(
+            _request_response(
+                ".lq.Lobby.createRoom",
+                {"room": _vs_ai_room()},
+            ),
+        ),
+        waiting=(
+            _request_response(".lq.Lobby.startRoom", {}),
+            _notice(".lq.NotifyRoomGameStart"),
+        ),
+    )
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=START_TEMPLATE_PATH,
+            settings_path=START_SETTINGS_PATH,
+        ),
+        _synthetic_blank_screenshot(),
+    )
+    screen = RoomScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=messages,
+            account_state=_AccountState(100001),
+        ),
+    )
+    asyncio.run(screen.before_callback())
+
+    asyncio.run(screen.start_match())
+
+    assert len(browser.clicked_points) == 1
+    assert messages.get_count == 2
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is RoomStatus.MATCH_STARTED
 
 
 def test_start_match_waits_while_room_screen_remains_visible() -> None:
@@ -167,8 +215,8 @@ def test_start_match_waits_while_room_screen_remains_visible() -> None:
     with pytest.raises(TimeoutError):
         asyncio.run(start_match_with_timeout())
 
-    assert context.room_state_cache.state is not None
-    assert context.room_state_cache.state.status is RoomStatus.MATCH_STARTED
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is RoomStatus.MATCH_STARTED
     with pytest.raises(ScreenStaleError):
         asyncio.run(screen.get_state())
 
@@ -243,8 +291,8 @@ def test_start_match_accepts_game_start_notice_before_response() -> None:
     asyncio.run(screen.start_match())
 
     assert messages.get_count == 2
-    assert context.room_state_cache.state is not None
-    assert context.room_state_cache.state.status is RoomStatus.MATCH_STARTED
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is RoomStatus.MATCH_STARTED
 
 
 @pytest.mark.parametrize(
@@ -297,8 +345,8 @@ def test_start_match_waits_for_response_and_game_start_notice(
     with pytest.raises(TimeoutError):
         asyncio.run(start_match_with_timeout())
 
-    assert context.room_state_cache.state is not None
-    assert context.room_state_cache.state.status is expected_status
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is expected_status
     if expected_stale:
         with pytest.raises(ScreenStaleError):
             asyncio.run(screen.get_state())
@@ -587,8 +635,8 @@ def test_kick_interrupts_start_match_wait() -> None:
         asyncio.run(screen.start_match())
 
     assert len(browser.clicked_points) == 1
-    assert context.room_state_cache.state is not None
-    assert context.room_state_cache.state.status is RoomStatus.KICKED
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is RoomStatus.KICKED
 
 
 def test_start_match_has_no_arguments_and_safe_api_log(

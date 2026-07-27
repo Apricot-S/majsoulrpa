@@ -26,7 +26,6 @@ from majsoulrpa.screens.errors import (
     ScreenDetectionTimeoutError,
     ScreenStaleError,
 )
-from majsoulrpa.screens.room.cache import RoomStateCache
 from majsoulrpa.sniffer.events import (
     DecodedNotice,
     DecodedRequestResponse,
@@ -235,10 +234,11 @@ def test_screen_formats_decoded_notice_without_raw_payload_bytes() -> None:
         message={"nested": {"value": 1}},
     )
 
-    formatted = screens_base._format_sniffer_message(message)
+    formatted = screens_base._format_sniffer_message_for_log(message)
 
     assert formatted == (
-        '{"raw":{"direction":"inbound","name":".lq.Test.notice",'
+        'Sniffer message: {"raw":{"direction":"inbound",'
+        '"name":".lq.Test.notice",'
         '"observed_at":"2026-01-02T00:00:00+00:00"},'
         '"message":{"nested":{"value":1}}}'
     )
@@ -275,10 +275,10 @@ def test_screen_formats_decoded_exchange_without_raw_payload_bytes() -> None:
         response={"responseValue": 2},
     )
 
-    formatted = screens_base._format_sniffer_message(message)
+    formatted = screens_base._format_sniffer_message_for_log(message)
 
     assert formatted == (
-        '{"raw":{"request_direction":"outbound",'
+        'Sniffer message: {"raw":{"request_direction":"outbound",'
         '"name":".lq.Test.exchange",'
         '"request_observed_at":"2026-01-02T03:04:05+00:00",'
         '"response_observed_at":"2026-01-02T03:04:06+00:00"},'
@@ -384,18 +384,10 @@ def test_screen_context_exposes_current_account_id() -> None:
     assert context.account_id == 123456
 
 
-def test_screen_context_shares_room_state_cache_between_screens() -> None:
-    room_state_cache = RoomStateCache()
-    context = ScreenContext(
-        browser=BrowserControllerSpy(),
-        room_state_cache=room_state_cache,
-    )
+def test_screen_context_does_not_own_room_state() -> None:
+    context = ScreenContext(browser=BrowserControllerSpy())
 
-    first = LoginScreen(context=context)
-    second = LoginScreen(context=context)
-
-    assert first.context.room_state_cache is room_state_cache
-    assert second.context.room_state_cache is room_state_cache
+    assert not hasattr(context, "room_state_cache")
 
 
 def test_screen_gets_and_puts_back_messages_through_context() -> None:
@@ -883,6 +875,27 @@ def test_screen_clicks_required_template_without_scaling() -> None:
     [(x, y)] = browser.clicked_points
     assert 300 < x < 306
     assert 150 < y < 153
+
+
+def test_screen_forwards_warp_for_all_template_click_apis() -> None:
+    browser = BrowserControllerSpy()
+    browser.screenshot_bytes = b"match"
+    template = TemplateSpy(matches=True)
+    screen = LoginScreen(
+        context=ScreenContext(browser=browser, rng=Random(0)),
+    )
+
+    asyncio.run(
+        screen.click_template(
+            template,
+            message="missing template",
+            warp=True,
+        )
+    )
+    asyncio.run(screen.click_template_if_present(template, warp=True))
+    asyncio.run(screen.wait_and_click_template(template, warp=True))
+
+    assert browser.click_warps == [True, True, True]
 
 
 def test_screen_raises_when_required_template_does_not_match() -> None:

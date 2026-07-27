@@ -31,7 +31,7 @@ from majsoulrpa.sniffer.events import (
     DecodedSnifferMessage,
     Direction,
 )
-from tests.screens.home._support import (
+from tests.screens._support import (
     BrowserControllerSpy,
     _request_response,
     _synthetic_blank_screenshot,
@@ -163,6 +163,37 @@ def test_add_ai_rejects_failed_precondition_without_clicking(
 
     assert exc_info.value.operation is RoomOperation.ADD_AI
     assert exc_info.value.reason is expected_reason
+    assert browser.clicked_points == []
+    assert messages.get_count == 0
+
+
+def test_add_ai_rejects_vs_ai_room_without_looking_for_button() -> None:
+    room = _room()
+    room["max_player_count"] = 1
+    room["persons"] = [
+        {"account_id": 100001, "nickname": "host"},
+    ]
+    room["ready_list"] = []
+    room["robots"] = []
+    messages = _OperationMessageSource(
+        queued=(_request_response(".lq.Lobby.createRoom", {"room": room}),),
+        waiting=(),
+    )
+    browser = BrowserControllerSpy(b"synthetic-screenshot")
+    screen = RoomScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=messages,
+            account_state=_AccountState(100001),
+        ),
+    )
+    asyncio.run(screen.before_callback())
+
+    with pytest.raises(RoomOperationNotAllowedError) as exc_info:
+        asyncio.run(screen.add_ai())
+
+    assert exc_info.value.operation is RoomOperation.ADD_AI
+    assert exc_info.value.reason is RoomOperationNotAllowedReason.ROOM_FULL
     assert browser.clicked_points == []
     assert messages.get_count == 0
 
@@ -402,8 +433,8 @@ def test_kick_interrupts_add_ai_wait() -> None:
     with pytest.raises(ScreenStaleError):
         asyncio.run(screen.add_ai())
 
-    assert context.room_state_cache.state is not None
-    assert context.room_state_cache.state.status is RoomStatus.KICKED
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is RoomStatus.KICKED
 
 
 def test_add_ai_has_no_timeout_argument_and_safe_api_log(

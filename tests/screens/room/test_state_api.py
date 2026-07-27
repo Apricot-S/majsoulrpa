@@ -26,7 +26,7 @@ from majsoulrpa.sniffer.events import (
     Direction,
     RawNotice,
 )
-from tests.screens.home._support import (
+from tests.screens._support import (
     BrowserControllerSpy,
     _message_queue,
     _request_response,
@@ -204,7 +204,7 @@ def test_before_callback_drains_accumulated_room_messages_in_order() -> None:
 
     asyncio.run(screen.before_callback())
 
-    state = context.room_state_cache.state
+    state = screen._room_state_store.state
     assert state is not None
     assert state.version == 2
     assert state.players[1].is_ready is True
@@ -224,7 +224,7 @@ def test_before_callback_waits_for_initial_room_snapshot() -> None:
 
     asyncio.run(screen.before_callback())
 
-    assert context.room_state_cache.state is not None
+    assert screen._room_state_store.state is not None
     assert messages.get_count == 1
 
 
@@ -290,7 +290,7 @@ def test_room_state_update_error_logs_message_before_inconsistent_error(
     assert '"ready":"invalid"' in messages_logged[0]
 
 
-def test_room_screen_instances_share_latest_context_state() -> None:
+def test_fetch_room_initializes_independent_state_after_match() -> None:
     messages = _message_queue(
         _request_response(".lq.Lobby.createRoom", {"room": _room()}),
     )
@@ -301,40 +301,20 @@ def test_room_screen_instances_share_latest_context_state() -> None:
     )
     first = RoomScreen(context=context)
     asyncio.run(first.before_callback())
+    messages.enqueue(_notice(".lq.NotifyRoomGameStart"))
+    first_state = asyncio.run(first.get_state())
+    messages.enqueue(
+        _request_response(".lq.Lobby.fetchRoom", {"room": _room()}),
+    )
     second = RoomScreen(context=context)
 
     asyncio.run(second.before_callback())
 
-    assert asyncio.run(second.get_state()) is asyncio.run(first.get_state())
-
-
-def test_old_room_screen_generation_becomes_stale_for_new_room() -> None:
-    messages = _message_queue(
-        _request_response(".lq.Lobby.createRoom", {"room": _room()}),
-    )
-    screenshot = b"synthetic-screenshot"
-    context = ScreenContext(
-        browser=BrowserControllerSpy(screenshot),
-        sniffer_messages=messages,
-        account_state=_AccountState(100001),
-    )
-    old_screen = RoomScreen(context=context)
-    asyncio.run(old_screen.before_callback())
-    messages.enqueue(_notice(".lq.NotifyRoomKickOut"))
-    messages.enqueue(
-        _request_response(
-            ".lq.Lobby.createRoom",
-            {"room": _room(room_id=54321)},
-        ),
-    )
-
-    with pytest.raises(ScreenStaleError) as exc_info:
-        asyncio.run(old_screen.get_state())
-
-    assert exc_info.value.screenshot == screenshot
-    new_screen = RoomScreen(context=context)
-    asyncio.run(new_screen.before_callback())
-    assert asyncio.run(new_screen.get_state()).room_id == 54321
+    second_state = asyncio.run(second.get_state())
+    assert first_state.status is RoomStatus.MATCH_STARTED
+    assert second_state.status is RoomStatus.WAITING
+    assert second_state.room_id == first_state.room_id
+    assert second._room_state_store is not first._room_state_store
 
 
 def test_before_callback_fails_when_initial_snapshot_does_not_arrive(
@@ -487,7 +467,7 @@ def test_before_callback_propagates_cancellation() -> None:
     asyncio.run(cancel_before_callback())
 
 
-def test_wait_for_state_change_returns_newer_cached_state_immediately() -> (
+def test_wait_for_state_change_returns_newer_stored_state_immediately() -> (
     None
 ):
     messages = _message_queue(
@@ -500,9 +480,9 @@ def test_wait_for_state_change_returns_newer_cached_state_immediately() -> (
     )
     screen = RoomScreen(context=context)
     asyncio.run(screen.before_callback())
-    previous = context.room_state_cache.state
+    previous = screen._room_state_store.state
     assert previous is not None
-    expected = context.room_state_cache.apply(_ready_notice(), 100001)
+    expected = screen._room_state_store.apply(_ready_notice(), 100001)
 
     state = asyncio.run(screen.wait_for_state_change(previous))
 
@@ -523,7 +503,7 @@ def test_wait_for_state_change_awaits_message_source_without_polling() -> None:
     )
     screen = RoomScreen(context=context)
     asyncio.run(screen.before_callback())
-    previous = context.room_state_cache.state
+    previous = screen._room_state_store.state
     assert previous is not None
 
     state = asyncio.run(screen.wait_for_state_change(previous))
@@ -633,8 +613,8 @@ def test_wait_for_state_change_waits_while_room_screen_remains_visible() -> (
     with pytest.raises(TimeoutError):
         asyncio.run(wait_with_timeout())
 
-    assert context.room_state_cache.state is not None
-    assert context.room_state_cache.state.status is RoomStatus.MATCH_STARTED
+    assert screen._room_state_store.state is not None
+    assert screen._room_state_store.state.status is RoomStatus.MATCH_STARTED
     with pytest.raises(ScreenStaleError):
         asyncio.run(screen.get_state())
 
@@ -741,7 +721,7 @@ def test_wait_for_state_change_accepts_keyword_state_and_has_safe_api_log(
     screen = RoomScreen(context=context)
     asyncio.run(screen.before_callback())
     previous = asyncio.run(screen.get_state())
-    context.room_state_cache.apply(_ready_notice(), 100001)
+    screen._room_state_store.apply(_ready_notice(), 100001)
 
     with caplog.at_level(logging.INFO, logger="majsoulrpa.screens.api"):
         state = asyncio.run(
