@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from random import Random
 from types import SimpleNamespace
 
@@ -19,6 +20,7 @@ from majsoulrpa.assets.templates.match import (
 )
 from majsoulrpa.screens.errors import ScreenInconsistentMessageError
 from majsoulrpa.screens.match import LiujuEvent, MatchScreen, NewRoundEvent
+from majsoulrpa.sniffer.events import DecodedSnifferMessage
 from majsoulrpa.sniffer.message_queue import SnifferMessageQueue
 from tests.screens._support import (
     BrowserControllerSpy,
@@ -248,6 +250,52 @@ def test_wait_for_state_change_accepts_confirmation_auto_transition(
     assert messages.get_nowait() is None
 
 
+@pytest.mark.parametrize(
+    "input_name",
+    [".lq.FastTest.inputOperation", ".lq.FastTest.inputChiPengGang"],
+)
+@pytest.mark.parametrize("terminal_kind", ["hule", "no_tile", "liuju"])
+def test_delayed_input_response_is_logged_without_state_change(
+    caplog: pytest.LogCaptureFixture,
+    terminal_kind: str,
+    input_name: str,
+) -> None:
+    terminal_messages, confirmation, scores = _terminal_case(terminal_kind)
+    delayed_response = _request_response(input_name, response={})
+    messages = _message_queue(
+        _auth_game(),
+        *terminal_messages,
+        delayed_response,
+        _live_new_round_action(step=0, ju=1, scores=scores),
+    )
+    browser = BrowserControllerSpy(
+        confirmation,
+        _round_result_confirmation(),
+        _next_round_screen(),
+    )
+    screen = _screen(browser, messages)
+
+    asyncio.run(screen.before_callback())
+    terminal = asyncio.run(screen.get_state())
+    caplog.clear()
+
+    with caplog.at_level(
+        logging.INFO,
+        logger="majsoulrpa.screens.match.screen",
+    ):
+        state = asyncio.run(screen.wait_for_state_change(terminal))
+
+    assert state is not None
+    assert state.version == terminal.version + 1
+    assert (
+        sum(
+            f'"name":"{input_name}"' in record.getMessage()
+            for record in caplog.records
+        )
+        == 1
+    )
+
+
 def test_wait_for_state_change_rejects_next_round_score_mismatch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -440,6 +488,98 @@ def _rong_hule(*, seat: int) -> liqi_pb2.HuleInfo:
         seat=seat,
         fu=30,
     )
+
+
+def _terminal_case(
+    terminal_kind: str,
+) -> tuple[tuple[DecodedSnifferMessage, ...], bytes, list[int]]:
+    match terminal_kind:
+        case "hule":
+            scores = [17000, 33000, 25000, 25000]
+            return (
+                (
+                    _live_new_round_action(
+                        step=0,
+                        ju=0,
+                        tiles=["1m"] * 13 + ["9s"],
+                    ),
+                    _live_discard_action(
+                        step=1,
+                        seat=0,
+                        tile="9s",
+                        moqie=False,
+                    ),
+                    _live_hule_action(
+                        step=2,
+                        hules=[_rong_hule(seat=1)],
+                        old_scores=[25000] * 4,
+                        delta_scores=[-8000, 8000, 0, 0],
+                        scores=scores,
+                        doras=[],
+                    ),
+                ),
+                _synthetic_template_screenshot(
+                    template_path=HULE_CONFIRM_TEMPLATE_PATH,
+                    settings_path=HULE_CONFIRM_SETTINGS_PATH,
+                ),
+                scores,
+            )
+        case "no_tile":
+            scores = [25000] * 4
+            return (
+                (
+                    _live_new_round_action(step=0),
+                    _live_discard_action(
+                        step=1,
+                        seat=3,
+                        tile="9s",
+                        moqie=False,
+                    ),
+                    _live_deal_action(
+                        step=2,
+                        seat=1,
+                        tile="",
+                        left_tile_count=0,
+                    ),
+                    _live_discard_action(
+                        step=3,
+                        seat=1,
+                        tile="8s",
+                        moqie=True,
+                    ),
+                    _live_no_tile_action(
+                        step=4,
+                        players=[
+                            liqi_pb2.NoTilePlayerInfo() for _ in range(4)
+                        ],
+                        scores=[
+                            liqi_pb2.NoTileScoreInfo(
+                                old_scores=scores,
+                                delta_scores=[],
+                            )
+                        ],
+                    ),
+                ),
+                _synthetic_template_screenshot(
+                    template_path=LIUJU_CONFIRM_TEMPLATE_PATH,
+                    settings_path=LIUJU_CONFIRM_SETTINGS_PATH,
+                ),
+                scores,
+            )
+        case "liuju":
+            return (
+                (
+                    _live_new_round_action(step=0),
+                    _live_liuju_action(step=1, type_=1, seat=0),
+                ),
+                _synthetic_template_screenshot(
+                    template_path=LIUJU_CONFIRM_TEMPLATE_PATH,
+                    settings_path=LIUJU_CONFIRM_SETTINGS_PATH,
+                ),
+                [25000] * 4,
+            )
+        case _:
+            raise AssertionError(terminal_kind)
 
 
 def _round_result_confirmation() -> bytes:

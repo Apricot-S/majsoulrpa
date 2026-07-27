@@ -955,7 +955,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 終局結果画面の待機中に `fetchRoom` を先読みした場合はqueueへ戻してMatch側の
   message drainだけを終了し、必須の `match-result-confirm` は検出してclickする
 - [ ] 結果画面待機中もSniffer messageを処理し、全messageを共通formatterでlogへ出す
-- [ ] 局終了後に遅れて届く `inputOperation` / `inputChiPengGang` responseを許容し、stateへ重複適用しない
+- [x] 局終了後に遅れて届く `inputOperation` / `inputChiPengGang` responseを許容し、stateへ重複適用しない
 - [ ] `.lq.FastTest.confirmNewRound` と `ActionNewRound` のどちらが先着しても同じ次局stateへ遷移する
 - [x] confirm responseがなくても `ActionNewRound` と新しいseat indicatorを確認できれば次局遷移を完了する
 - [ ] confirm interaction省略時にstep 1以降がstep 0より先着した場合はbounded local bufferでstep順へ戻す
@@ -986,9 +986,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] 対局中のreloadでは旧 `MatchScreen` をstaleにしてcallbackからreturnし、新しい
   `MatchScreen` が `syncGame` / `finishSyncGame` をrecovery bootstrapとして処理する
 - [ ] reload復帰で試合開始から現在局までのrestore actionを再生し、途中までのsnapshotを公開しない
-- [ ] `HuleEvent` / `NoTileEvent` / `LiujuEvent` 後に遅れて届く `inputOperation` responseを
+- [x] `HuleEvent` / `NoTileEvent` / `LiujuEvent` 後に遅れて届く `inputOperation` responseを
   通常formatterで1回logし、state versionを増やさない
-- [ ] `HuleEvent` / `NoTileEvent` / `LiujuEvent` 後に遅れて届く `inputChiPengGang` responseを
+- [x] `HuleEvent` / `NoTileEvent` / `LiujuEvent` 後に遅れて届く `inputChiPengGang` responseを
   通常formatterで1回logし、state versionを増やさない
 - [ ] `confirmNewRound` が先着してから `ActionNewRound` が届く順序で次局へ遷移する
 - [ ] `ActionNewRound` が先着してから `confirmNewRound` が届く順序でも同じ次局へ遷移する
