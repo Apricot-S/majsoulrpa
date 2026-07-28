@@ -50,7 +50,7 @@ async def room(screen: RoomScreen, data: int) -> int:
 
 
 @rpa.on(MatchScreen)
-async def match(screen: MatchScreen, data: int) -> int:
+async def match(screen: MatchScreen, data: Any) -> Any:
     rng = Random()
     state = await screen.get_state()
 
