@@ -10,6 +10,38 @@ Do not commit local configuration or generated data. The examples' `.gitignore` 
 
 For every example, start the RPA client before the browser host. This reduces the chance of missing initial WebSocket messages when saved cookies allow Mahjong Soul to skip `LoginScreen`.
 
+## random_action.py
+
+### Purpose
+
+Creates a one-game friendly room, fills every available seat with an AI player, and, after confirmation, plays the match by randomly selecting from the legal operation candidates reported by `MatchScreen`. After the match, the example stops the browser host and RPA client.
+
+### Preparation
+
+No additional configuration is required.
+
+### Run
+
+1. Start the RPA client:
+
+   ```console
+   python examples/random_action.py
+   ```
+
+2. After the client begins waiting, start the browser host in another terminal:
+
+   ```console
+   majsoulrpa-browser
+   ```
+
+### Runtime input and output
+
+If `LoginScreen` appears, enter the email address and verification code when prompted.
+
+After the room is filled with AI players, enter `y` at `Start match? [y/N]:` to start the match. Any other input leaves the room without starting a match.
+
+The example does not create an output file.
+
 ## yostar_email_s3.py
 
 ### Purpose
