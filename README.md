@@ -111,15 +111,18 @@ from majsoulrpa.screens.login import LoginScreen
 
 rpa = RPAApp()
 
+
 @rpa.on(LoginScreen)
 async def on_login(screen: LoginScreen, data: Any) -> Any:
     ...
     return data
 
+
 @rpa.on(HomeScreen)
 async def on_home(screen: HomeScreen, data: Any) -> Any:
     ...
     return data
+
 
 data = ...  # You can set any value here; it will be carried through the client
 asyncio.run(rpa.run(AppConfig(), data))

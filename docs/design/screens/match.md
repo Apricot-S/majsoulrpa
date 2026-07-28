@@ -713,7 +713,6 @@ log・処理するが、その受信を理由に直ちに再clickしない。各
 >>> left = 224
 >>> for i in range(13):
 ...     print(left + i * 94.91)
-...
 224.0
 318.90999999999997
 413.82
@@ -911,7 +910,9 @@ class ZimoEvent(_MatchEventBase):
     def __post_init__(self) -> None:
         _MatchEventBase.__post_init__(self)
         validate_left_tile_count(self.left_tile_count)
-        validate_optional_instance("liqi_success", self.liqi_success, LiqiSuccess)
+        validate_optional_instance(
+            "liqi_success", self.liqi_success, LiqiSuccess
+        )
 
 
 @final
