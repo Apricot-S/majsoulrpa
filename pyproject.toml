@@ -116,6 +116,7 @@ convention = "google"
     "INP001", # implicit-namespace-package
     "T201",   # print
     "TRY004", # type-check-without-type-error
+    "S311",   # suspicious-non-cryptographic-random-usage
 ]
 "./tests/*" = [
     "D",       # pydocstyle
