@@ -145,7 +145,7 @@ v1-developに残されたworkaroundを次に列挙する。これらは推測に
 | recoveryの `authGame` / `syncGame` 後にlive actionまたは入力responseが続く | `ActionPrototype` / `inputOperation` / `inputChiPengGang` を1回put backしてrestore drainを終了 | recovery bootstrapとlive pipelineの所有権境界として維持する |
 | 対局中のreload後に `syncGame` / `finishSyncGame` が届く | active instanceへ同期内容を反映して処理を返す | reload前のinstanceは再利用せず、callbackからreturnした後の新しい `MatchScreen` がrecovery bootstrapで復元する |
 | `inputOperation` / `inputChiPengGang` responseが局終了eventより遅れて届く | 遅延responseとしてlogへ出し、局状態へ再適用せず続行 | 同じmessageを通常formatterで1回だけlogし、state versionを増やさない |
-| live `ActionPrototype.step` が観測順と異なる | 欠けたstepまで先読みし、step順にqueueへ戻す | 汎用並べ替えにはせず、実例が残る次局遷移直後だけに限定する |
+| live `ActionPrototype.step` が観測順と異なる | 欠けたstepまで先読みし、step順にqueueへ戻す | active matchの共通message適用経路でbounded bufferを使って並べ替える |
 | `confirmNewRound` と `ActionNewRound` の観測順が逆転する | 先着側を保持して後着側を待つ | `ActionNewRound` をauthoritativeな次局開始markerとし、confirm responseとの順序を要求しない |
 | `confirmNewRound` が省略され、次局step 1以降がstep 0より先着する | step 0まで先読みしてAction列を並べ直す | bounded local bufferでstep 0を待ち、重複・上限超過・不正なstep 0を拒否する |
 | 次局の親が自家の場合に `confirmNewRound` responseが来ないことがある | warningを出してresponse待ちを打ち切る | 親かどうかに依存せず、`ActionNewRound` と次局画面を確認できれば遷移を完了する |
@@ -178,8 +178,9 @@ match result確認buttonと重ならないsafe regionをclickして演出を進�
 staleにせず、次Screenのmessageを消費しない。
 
 初回の `ActionMJStart` / `ActionNewRound` は受信順を入れ替えないという既存方針を維持する。
-上記の並べ替えは、v1-developで現象が記録されている局終了直後の次局遷移に限定した
-workaroundとし、汎用action並べ替え機構にはしない。
+初期化完了後のlive actionは、局遷移、state取得、操作完了待ち、UI待機のいずれでも共通の
+message適用経路を通し、期待stepより先のActionを受信した場合はbounded bufferで欠けたstepを
+待ってからstep順にqueueへ戻す。
 
 和了確認を待っている段階で `.lq.FastTest.confirmNewRound` だけが到着し、次局画面も検出できない
 場合は画面描画不整合とする。v1-developのようにframeworkが自動reloadを要求・実行するのではなく、
@@ -712,7 +713,6 @@ log・処理するが、その受信を理由に直ちに再clickしない。各
 >>> left = 224
 >>> for i in range(13):
 ...     print(left + i * 94.91)
-...
 224.0
 318.90999999999997
 413.82
@@ -910,7 +910,9 @@ class ZimoEvent(_MatchEventBase):
     def __post_init__(self) -> None:
         _MatchEventBase.__post_init__(self)
         validate_left_tile_count(self.left_tile_count)
-        validate_optional_instance("liqi_success", self.liqi_success, LiqiSuccess)
+        validate_optional_instance(
+            "liqi_success", self.liqi_success, LiqiSuccess
+        )
 
 
 @final

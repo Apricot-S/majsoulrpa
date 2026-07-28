@@ -15,11 +15,11 @@ While some API names and design ideas were borrowed, the architecture and codeba
 
 > 🚧 **Work in Progress**
 >
-> MajsoulRPA is currently in active development. Login, Home screen operations, friendly-room management, and tournament-lobby entry are available.
+> MajsoulRPA is currently in active development. Login, Home screen operations, friendly-room management, tournament-lobby entry, and in-match gameplay are available.
 >
-> In-match gameplay and tournament-room operations are not yet implemented, so MajsoulRPA cannot yet automate a complete game from start to finish.
+> Workarounds for some in-match situations are still being developed, using the [v1-develop branch](https://github.com/Apricot-S/majsoulrpa/tree/v1-develop) as a reference for established behavior and match-flow knowledge.
 >
-> `MatchScreen` will be redesigned from the [v1-develop branch](https://github.com/Apricot-S/majsoulrpa/tree/v1-develop). Its user-facing behavior and match-flow knowledge will be used as the starting point, while its internal implementation will not be carried over as-is.
+> Tournament-room operations remain unimplemented, so tournament matches cannot yet be automated end to end.
 
 ## Key differences from the original project
 
@@ -111,15 +111,18 @@ from majsoulrpa.screens.login import LoginScreen
 
 rpa = RPAApp()
 
+
 @rpa.on(LoginScreen)
 async def on_login(screen: LoginScreen, data: Any) -> Any:
     ...
     return data
 
+
 @rpa.on(HomeScreen)
 async def on_home(screen: HomeScreen, data: Any) -> Any:
     ...
     return data
+
 
 data = ...  # You can set any value here; it will be carried through the client
 asyncio.run(rpa.run(AppConfig(), data))

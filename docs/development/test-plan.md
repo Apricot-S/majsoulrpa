@@ -955,12 +955,12 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 終局結果画面の待機中に `fetchRoom` を先読みした場合はqueueへ戻してMatch側の
   message drainだけを終了し、必須の `match-result-confirm` は検出してclickする
 - [ ] 結果画面待機中もSniffer messageを処理し、全messageを共通formatterでlogへ出す
-- [ ] 局終了後に遅れて届く `inputOperation` / `inputChiPengGang` responseを許容し、stateへ重複適用しない
-- [ ] `.lq.FastTest.confirmNewRound` と `ActionNewRound` のどちらが先着しても同じ次局stateへ遷移する
+- [x] 局終了後に遅れて届く `inputOperation` / `inputChiPengGang` responseを許容し、stateへ重複適用しない
+- [x] `.lq.FastTest.confirmNewRound` と `ActionNewRound` のどちらが先着しても同じ次局stateへ遷移する
 - [x] confirm responseがなくても `ActionNewRound` と新しいseat indicatorを確認できれば次局遷移を完了する
-- [ ] confirm interaction省略時にstep 1以降がstep 0より先着した場合はbounded local bufferでstep順へ戻す
+- [x] confirm interaction省略時にstep 1以降がstep 0より先着した場合はbounded local bufferでstep順へ戻す
 - [ ] 並べ替えbufferは異なる同一step、上限超過、step 0が `ActionNewRound` 以外なら不整合にする
-- [ ] 次局遷移の並べ替えworkaroundを初回 `ActionMJStart` / `ActionNewRound` へ適用しない
+- [x] active matchの並べ替えworkaroundを初回 `ActionMJStart` / `ActionNewRound` へ適用しない
 - [x] `NotifyGameEndResult` の先着を次局開始と誤認せず、終局処理へ引き渡す
 - [ ] 和了確認中にconfirm responseだけが先着して画面も進まない場合はscreenshot付き不整合errorにする
 - [x] 次局のseat indicatorを検出するまで `wait_for_state_change()` を返さない
@@ -986,20 +986,20 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] 対局中のreloadでは旧 `MatchScreen` をstaleにしてcallbackからreturnし、新しい
   `MatchScreen` が `syncGame` / `finishSyncGame` をrecovery bootstrapとして処理する
 - [ ] reload復帰で試合開始から現在局までのrestore actionを再生し、途中までのsnapshotを公開しない
-- [ ] `HuleEvent` / `NoTileEvent` / `LiujuEvent` 後に遅れて届く `inputOperation` responseを
+- [x] `HuleEvent` / `NoTileEvent` / `LiujuEvent` 後に遅れて届く `inputOperation` responseを
   通常formatterで1回logし、state versionを増やさない
-- [ ] `HuleEvent` / `NoTileEvent` / `LiujuEvent` 後に遅れて届く `inputChiPengGang` responseを
+- [x] `HuleEvent` / `NoTileEvent` / `LiujuEvent` 後に遅れて届く `inputChiPengGang` responseを
   通常formatterで1回logし、state versionを増やさない
-- [ ] `confirmNewRound` が先着してから `ActionNewRound` が届く順序で次局へ遷移する
-- [ ] `ActionNewRound` が先着してから `confirmNewRound` が届く順序でも同じ次局へ遷移する
+- [x] `confirmNewRound` が先着してから `ActionNewRound` が届く順序で次局へ遷移する
+- [x] `ActionNewRound` が先着してから `confirmNewRound` が届く順序でも同じ次局へ遷移する
 - [x] `confirmNewRound` responseがなくても `ActionNewRound` と次局seat indicatorを確認できれば、
   次局の親が自家かどうかにかかわらず遷移を完了する
-- [ ] `confirmNewRound` が省略されてstep 1以降がstep 0より先着した場合は、bounded local bufferで
+- [x] `confirmNewRound` が省略されてstep 1以降がstep 0より先着した場合は、bounded local bufferで
   step 0の `ActionNewRound` まで待ってstep順へ戻す
 - [ ] 次局並べ替えbufferは同じstepの異なるAction、上限超過、step 0が `ActionNewRound` 以外の
   場合をscreenshot付き不整合errorにする
-- [ ] 次局遷移以外のlive actionと初回 `ActionMJStart` / `ActionNewRound` には、v1の汎用的な
-  step並べ替えを適用しない
+- [x] 次局遷移以外のactive live actionも、共通message適用経路のbounded bufferでstep順へ戻す
+- [x] 初回 `ActionMJStart` / `ActionNewRound` にはlive actionのstep並べ替えを適用しない
 - [x] 和了確認画面が省略されて `ActionNewRound` が先着した場合は、Actionを1回put backして
   存在しない和了確認buttonを待たない
 - [ ] 和了確認buttonより `NotifyGameEndResult` が先着した場合はnotificationを1回put backし、
@@ -1135,7 +1135,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] restore replay も live と同じ reducer で RoundState.events を再構築する
 - [ ] active resync の replay が途中で失敗した場合、以前の state と operation を変更しない
 - [ ] action step の欠落、巻き戻り、内容が異なる duplicate を成功扱いにしない
-- [ ] 観測順が前後した live action は bounded buffer から step 順に apply する
+- [x] 観測順が前後した live action は bounded buffer から step 順に apply する
 - [x] 初期化時の ActionMJStart / ActionNewRound は並べ替えず、step 1 の ActionNewRound が先行したら失敗する
 
 ### state API

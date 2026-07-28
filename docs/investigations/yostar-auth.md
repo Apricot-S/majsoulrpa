@@ -198,8 +198,7 @@ async def submit_authentication_code(
 ) -> dict[str, Any]:
     async with page.expect_response(
         lambda response: (
-            response.url == AUTH_URL
-            and response.request.method == "POST"
+            response.url == AUTH_URL and response.request.method == "POST"
         ),
         timeout=15_000,
     ) as response_info:
@@ -399,7 +398,7 @@ API との通信と JSON 解析には成功したが、API が認証を拒否し
 認証コード入力後のレスポンス待機には、明示的なタイムアウトを設定する。
 
 ```python
-timeout=15_000
+timeout = 15_000
 ```
 
 タイムアウトは `AuthenticationProtocolError` とは別に、Playwright の `TimeoutError` をそのまま上位へ伝播させるか、認証用例外へ変換する。

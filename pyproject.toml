@@ -1,6 +1,6 @@
 [project]
 name = "majsoulrpa"
-version = "0.1.0.dev2"
+version = "0.1.0.dev3"
 description = "A Robotic Process Automation (RPA) framework for Mahjong Soul (雀魂)"
 authors = [
     { name = "Apricot S." },
@@ -58,13 +58,13 @@ dev = [
     { include-group = "docs" },
 ]
 lint = [
-    "ruff>=0.15.20,<0.16",
+    "ruff>=0.16.0,<0.17",
 ]
 test = [
     "pytest>=9.1.1,<10",
 ]
 typing = [
-    "ty>=0.0.56",
+    "ty>=0.0.64",
     "types-boto3[s3]>=1.43.46,<2",
 ]
 docs = [
@@ -96,6 +96,8 @@ ignore = [
     "PLR0912", # too-many-branches
     "PLR0913", # too-many-arguments
     "PLR0915", # too-many-statements
+    "PLR0917", # too-many-positional-arguments
+    "CPY001",  # missing-copyright-notice
 ]
 
 [tool.ruff.lint.pycodestyle]
@@ -116,6 +118,7 @@ convention = "google"
     "INP001", # implicit-namespace-package
     "T201",   # print
     "TRY004", # type-check-without-type-error
+    "S311",   # suspicious-non-cryptographic-random-usage
 ]
 "./tests/*" = [
     "D",       # pydocstyle
