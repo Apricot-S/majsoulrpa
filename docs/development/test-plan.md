@@ -1002,7 +1002,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 初回 `ActionMJStart` / `ActionNewRound` にはlive actionのstep並べ替えを適用しない
 - [x] 和了確認画面が省略されて `ActionNewRound` が先着した場合は、Actionを1回put backして
   存在しない和了確認buttonを待たない
-- [ ] 和了確認buttonより `NotifyGameEndResult` が先着した場合はnotificationを1回put backし、
+- [x] 和了確認buttonより `NotifyGameEndResult` が先着した場合はnotificationを1回put backし、
   和了確認buttonのclickを継続する
 - [ ] 和了確認中に `confirmNewRound` だけが先着してActionも次局画面も確認できない場合は、
   自動reloadせずscreenshot付き `ScreenInconsistentMessageError` にする

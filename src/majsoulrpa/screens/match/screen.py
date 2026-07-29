@@ -333,10 +333,23 @@ class MatchScreen(Screen):
             if not isinstance(event, HuleEvent | NoTileEvent | LiujuEvent):
                 msg = "A terminal match state must end with a terminal event."
                 raise RuntimeError(msg)
-            if await self._advance_terminal_event_screen(event):
-                await self._click_result_confirmation_or_wait(
-                    self.ROUND_RESULT_CONFIRM_TEMPLATE
-                )
+            deferred_game_end_notifications: list[DecodedSnifferMessage] = []
+            try:
+                if await self._advance_terminal_event_screen(
+                    event,
+                    deferred_game_end_notifications=(
+                        deferred_game_end_notifications
+                    ),
+                ):
+                    await self._click_result_confirmation_or_wait(
+                        self.ROUND_RESULT_CONFIRM_TEMPLATE,
+                        deferred_game_end_notifications=(
+                            deferred_game_end_notifications
+                        ),
+                    )
+            finally:
+                for notification in deferred_game_end_notifications:
+                    self._put_back_sniffer_message(notification)
             return await self._wait_for_round_transition()
 
         while True:
@@ -1144,12 +1157,28 @@ class MatchScreen(Screen):
         self,
         *,
         additional_progress_message_names: frozenset[str] = frozenset(),
+        deferred_game_end_notifications: (
+            list[DecodedSnifferMessage] | None
+        ) = None,
     ) -> bool:
         while (message := self._get_sniffer_message_nowait()) is not None:
+            if (
+                deferred_game_end_notifications is not None
+                and message.raw.name == _GAME_END_NOTIFICATION_NAME
+            ):
+                # The game-end notification can precede the result
+                # confirmation UI. Defer state handling until the
+                # required confirmation interaction has finished.
+                deferred_game_end_notifications.append(message)
+                continue
             if (
                 message.raw.name == ACTION_PROTOTYPE_NAME
                 or message.raw.name in additional_progress_message_names
             ):
+                if deferred_game_end_notifications is not None:
+                    for notification in deferred_game_end_notifications:
+                        self._put_back_sniffer_message(notification)
+                    deferred_game_end_notifications.clear()
                 self._put_back_sniffer_message(message)
                 return True
             await self._apply_match_message_with_screen_errors(
@@ -1176,6 +1205,8 @@ class MatchScreen(Screen):
     async def _advance_terminal_event_screen(
         self,
         event: HuleEvent | NoTileEvent | LiujuEvent,
+        *,
+        deferred_game_end_notifications: list[DecodedSnifferMessage],
     ) -> bool:
         match event:
             case HuleEvent():
@@ -1192,18 +1223,29 @@ class MatchScreen(Screen):
                 templates = (self.LIUJU_CONFIRM_TEMPLATE,)
 
         for template in templates:
-            if not await self._click_result_confirmation_or_wait(template):
+            if not await self._click_result_confirmation_or_wait(
+                template,
+                deferred_game_end_notifications=(
+                    deferred_game_end_notifications
+                ),
+            ):
                 return False
         return True
 
     async def _click_result_confirmation_or_wait(
         self,
         template: TemplateMatcher,
+        *,
+        deferred_game_end_notifications: list[DecodedSnifferMessage],
     ) -> bool:
         while True:
             if await self.click_template_if_present(template):
                 return True
-            if await self._put_back_pending_action_while_waiting_for_ui():
+            if await self._put_back_pending_action_while_waiting_for_ui(
+                deferred_game_end_notifications=(
+                    deferred_game_end_notifications
+                )
+            ):
                 # The confirmation screen can advance automatically
                 # after its on-screen countdown. A subsequent action or
                 # Screen transition proves that the button no longer

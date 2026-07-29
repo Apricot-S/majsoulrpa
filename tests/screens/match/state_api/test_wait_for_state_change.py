@@ -202,6 +202,69 @@ def test_wait_for_state_change_clicks_each_hule_confirmation(
     assert len(browser.clicked_points) == 4
 
 
+def test_hule_confirmation_puts_back_early_game_end_notification(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    game_end_notification = ".lq.NotifyGameEndResult"
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(
+            step=0,
+            ju=0,
+            tiles=["1m"] * 13 + ["9s"],
+        ),
+        _live_discard_action(
+            step=1,
+            seat=0,
+            tile="9s",
+            moqie=False,
+        ),
+        _live_hule_action(
+            step=2,
+            hules=[_rong_hule(seat=1)],
+            old_scores=[25000] * 4,
+            delta_scores=[-8000, 8000, 0, 0],
+            scores=[17000, 33000, 25000, 25000],
+            doras=[],
+        ),
+        game_end_notification,
+    )
+    browser = BrowserControllerSpy(
+        _synthetic_blank_screenshot(),
+        _synthetic_template_screenshot(
+            template_path=HULE_CONFIRM_TEMPLATE_PATH,
+            settings_path=HULE_CONFIRM_SETTINGS_PATH,
+        ),
+        _round_result_confirmation(),
+        _match_result_confirmation(),
+    )
+    screen = _screen(browser, messages)
+    put_back_names: list[str] = []
+    original_put_back = screen._put_back_sniffer_message
+
+    def record_put_back(message: DecodedSnifferMessage) -> None:
+        put_back_names.append(message.raw.name)
+        original_put_back(message)
+
+    async def skip_sleep(delay: float) -> None:
+        _ = delay
+
+    monkeypatch.setattr(
+        screen,
+        "_put_back_sniffer_message",
+        record_put_back,
+    )
+    monkeypatch.setattr(asyncio, "sleep", skip_sleep)
+    asyncio.run(screen.before_callback())
+    terminal = asyncio.run(screen.get_state())
+
+    state = asyncio.run(screen.wait_for_state_change(terminal))
+
+    assert state is None
+    assert put_back_names == [game_end_notification]
+    assert len(browser.clicked_points) == 3
+
+
 def test_wait_for_state_change_accepts_confirmation_auto_transition(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
