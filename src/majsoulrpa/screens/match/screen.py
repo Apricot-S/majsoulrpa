@@ -139,6 +139,7 @@ _DEBUG_MESSAGE_NAMES = frozenset(
 _WARNING_MESSAGE_NAMES = frozenset(
     {".lq.Lobby.loginBeat", ".lq.Lobby.oauth2Login"}
 )
+_CONFIRM_NEW_ROUND_NAME = ".lq.FastTest.confirmNewRound"
 _GAME_END_NOTIFICATION_NAME = ".lq.NotifyGameEndResult"
 _MATCH_EXIT_MESSAGE_NAMES = frozenset(
     {
@@ -1160,8 +1161,22 @@ class MatchScreen(Screen):
         deferred_game_end_notifications: (
             list[DecodedSnifferMessage] | None
         ) = None,
+        reject_confirm_new_round: bool = False,
     ) -> bool:
         while (message := self._get_sniffer_message_nowait()) is not None:
+            if (
+                reject_confirm_new_round
+                and message.raw.name == _CONFIRM_NEW_ROUND_NAME
+            ):
+                self._log_sniffer_message(message)
+                error = ValueError(
+                    "confirmNewRound arrived before the winning "
+                    "confirmation UI was handled."
+                )
+                await self._raise_inconsistent_message(
+                    "The winning confirmation screen did not advance.",
+                    cause=error,
+                )
             if (
                 deferred_game_end_notifications is not None
                 and message.raw.name == _GAME_END_NOTIFICATION_NAME
@@ -1210,24 +1225,30 @@ class MatchScreen(Screen):
     ) -> bool:
         match event:
             case HuleEvent():
-                templates = (self.HULE_CONFIRM_TEMPLATE,) * len(event.hules)
+                confirmations = ((self.HULE_CONFIRM_TEMPLATE, True),) * len(
+                    event.hules
+                )
             case NoTileEvent():
                 hule_confirmation_count = sum(
                     score.seat is not None for score in event.scores
                 )
-                templates = (
-                    self.LIUJU_CONFIRM_TEMPLATE,
-                    *((self.HULE_CONFIRM_TEMPLATE,) * hule_confirmation_count),
+                confirmations = (
+                    (self.LIUJU_CONFIRM_TEMPLATE, False),
+                    *(
+                        ((self.HULE_CONFIRM_TEMPLATE, True),)
+                        * hule_confirmation_count
+                    ),
                 )
             case LiujuEvent():
-                templates = (self.LIUJU_CONFIRM_TEMPLATE,)
+                confirmations = ((self.LIUJU_CONFIRM_TEMPLATE, False),)
 
-        for template in templates:
+        for template, reject_confirm_new_round in confirmations:
             if not await self._click_result_confirmation_or_wait(
                 template,
                 deferred_game_end_notifications=(
                     deferred_game_end_notifications
                 ),
+                reject_confirm_new_round=reject_confirm_new_round,
             ):
                 return False
         return True
@@ -1237,6 +1258,7 @@ class MatchScreen(Screen):
         template: TemplateMatcher,
         *,
         deferred_game_end_notifications: list[DecodedSnifferMessage],
+        reject_confirm_new_round: bool = False,
     ) -> bool:
         while True:
             if await self.click_template_if_present(template):
@@ -1244,7 +1266,8 @@ class MatchScreen(Screen):
             if await self._put_back_pending_action_while_waiting_for_ui(
                 deferred_game_end_notifications=(
                     deferred_game_end_notifications
-                )
+                ),
+                reject_confirm_new_round=reject_confirm_new_round,
             ):
                 # The confirmation screen can advance automatically
                 # after its on-screen countdown. A subsequent action or

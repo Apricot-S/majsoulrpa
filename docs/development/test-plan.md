@@ -962,7 +962,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] 並べ替えbufferは異なる同一step、上限超過、step 0が `ActionNewRound` 以外なら不整合にする
 - [x] active matchの並べ替えworkaroundを初回 `ActionMJStart` / `ActionNewRound` へ適用しない
 - [x] `NotifyGameEndResult` の先着を次局開始と誤認せず、終局処理へ引き渡す
-- [ ] 和了確認中にconfirm responseだけが先着して画面も進まない場合はscreenshot付き不整合errorにする
+- [x] 和了確認中にconfirm responseだけが先着して画面も進まない場合はscreenshot付き不整合errorにする
 - [x] 次局のseat indicatorを検出するまで `wait_for_state_change()` を返さない
 - [x] 次局遷移時も同じ `MatchScreen` instanceとcallback invocationを維持し、staleにしない
 - [x] 次局の `ActionNewRound` はstep 0だけを受理し、round generationとmatch versionを1増やす
@@ -1004,7 +1004,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
   存在しない和了確認buttonを待たない
 - [x] 和了確認buttonより `NotifyGameEndResult` が先着した場合はnotificationを1回put backし、
   和了確認buttonのclickを継続する
-- [ ] 和了確認中に `confirmNewRound` だけが先着してActionも次局画面も確認できない場合は、
+- [x] 和了確認中に `confirmNewRound` だけが先着してActionも次局画面も確認できない場合は、
   自動reloadせずscreenshot付き `ScreenInconsistentMessageError` にする
 - [x] match result確認前に `fetchRoom` が先着してもmessageを1回put backし、Match drainだけを
   止めて必須のmatch result確認buttonをclickする

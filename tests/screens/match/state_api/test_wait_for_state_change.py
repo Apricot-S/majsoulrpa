@@ -265,6 +265,57 @@ def test_hule_confirmation_puts_back_early_game_end_notification(
     assert len(browser.clicked_points) == 3
 
 
+def test_hule_confirmation_rejects_early_confirm_new_round(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(
+            step=0,
+            ju=0,
+            tiles=["1m"] * 13 + ["9s"],
+        ),
+        _live_discard_action(
+            step=1,
+            seat=0,
+            tile="9s",
+            moqie=False,
+        ),
+        _live_hule_action(
+            step=2,
+            hules=[_rong_hule(seat=1)],
+            old_scores=[25000] * 4,
+            delta_scores=[-8000, 8000, 0, 0],
+            scores=[17000, 33000, 25000, 25000],
+            doras=[],
+        ),
+        _request_response(
+            ".lq.FastTest.confirmNewRound",
+            response={},
+        ),
+    )
+    screen = _screen(
+        BrowserControllerSpy(
+            _synthetic_blank_screenshot(),
+            b"inconsistent-screen",
+        ),
+        messages,
+    )
+
+    async def reject_sleep(delay: float) -> None:
+        _ = delay
+        raise AssertionError
+
+    monkeypatch.setattr(asyncio, "sleep", reject_sleep)
+    asyncio.run(screen.before_callback())
+    terminal = asyncio.run(screen.get_state())
+
+    with pytest.raises(ScreenInconsistentMessageError) as exc_info:
+        asyncio.run(screen.wait_for_state_change(terminal))
+
+    assert exc_info.value.screenshot == b"inconsistent-screen"
+
+
 def test_wait_for_state_change_accepts_confirmation_auto_transition(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
