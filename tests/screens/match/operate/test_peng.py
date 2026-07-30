@@ -20,6 +20,7 @@ from tests.screens._support import (
     BrowserControllerSpy,
     ScreenContext,
     _message_queue,
+    _request_response,
     _synthetic_blank_screenshot,
     _synthetic_template_at_screenshot,
 )
@@ -87,6 +88,26 @@ class _PutBackTrackingQueue(SnifferMessageQueue):
     def put_back(self, message: DecodedSnifferMessage) -> None:
         self.put_back_count += 1
         super().put_back(message)
+
+
+class _MessageOnScreenshotBrowser(BrowserControllerSpy):
+    def __init__(
+        self,
+        screenshot: bytes,
+        messages: SnifferMessageQueue,
+        message_on_screenshot: DecodedSnifferMessage,
+    ) -> None:
+        super().__init__(screenshot)
+        self._messages = messages
+        self._message_on_screenshot: DecodedSnifferMessage | None = (
+            message_on_screenshot
+        )
+
+    async def screenshot(self) -> bytes:
+        if self._message_on_screenshot is not None:
+            self._messages.enqueue(self._message_on_screenshot)
+            self._message_on_screenshot = None
+        return await super().screenshot()
 
 
 def test_operate_selects_only_peng_candidate(
@@ -517,5 +538,74 @@ def test_operate_does_not_succeed_without_button_or_preemption(
 
     with pytest.raises(TimeoutError):
         asyncio.run(operate_with_deadline())
+
+    assert browser.clicked_points == []
+
+
+def test_operate_rejects_input_response_without_button_or_progress(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(
+            step=0,
+            ju=2,
+            tiles=["0m", "5m", *(["1p"] * 11)],
+        ),
+        _live_discard_action(
+            step=1,
+            seat=2,
+            tile="5m",
+            moqie=False,
+            operation=liqi_pb2.OptionalOperationList(
+                operation_list=[
+                    liqi_pb2.OptionalOperation(
+                        type=3,
+                        combination=["0m|5m"],
+                    )
+                ]
+            ),
+        ),
+    )
+    screenshot = _synthetic_blank_screenshot()
+    input_response = _request_response(
+        ".lq.FastTest.inputChiPengGang",
+        response={},
+    )
+    browser = _MessageOnScreenshotBrowser(
+        screenshot,
+        messages,
+        input_response,
+    )
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=browser,
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=messages,
+        ),
+    )
+    sleep_count = 0
+
+    async def reject_sleep(_delay: float) -> None:
+        nonlocal sleep_count
+        sleep_count += 1
+        if sleep_count > 1:
+            raise AssertionError
+
+    monkeypatch.setattr(asyncio, "sleep", reject_sleep)
+    asyncio.run(screen.before_callback())
+    state = asyncio.run(screen.get_state())
+    assert state.round.operation_candidates is not None
+    operation = next(
+        item
+        for item in state.round.operation_candidates.operations
+        if isinstance(item, PengOperation)
+    )
+
+    with pytest.raises(ScreenInconsistentMessageError) as exc_info:
+        asyncio.run(screen.operate(operation))
+
+    assert exc_info.value.screenshot == screenshot
 
     assert browser.clicked_points == []

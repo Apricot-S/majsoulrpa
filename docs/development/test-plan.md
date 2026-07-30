@@ -1018,7 +1018,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
   `ActionHule` を1回put backして更新後stateを返す
 - [x] 「鳴きなし」中の `inputChiPengGang` responseまたは上位Actionを進行markerとしてput backし、
   toggleをoffへ戻してから通常pipelineで処理する
-- [ ] operationの入力responseだけが届き、進行Actionもbuttonも確認できない場合は成功扱いせず、
+- [x] operationの入力responseだけが届き、進行Actionもbuttonも確認できない場合は成功扱いせず、
   screenshot付きerrorにする
 - [x] 暗槓・加槓が3候補の場合は候補UIのscreenshotを持つ
   `ScreenNotImplementedOperationError` と情報提供依頼で停止する

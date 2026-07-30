@@ -118,11 +118,14 @@ _MAX_PENG_CANDIDATE_COUNT = 2
 _MAX_ANGANG_JIAGANG_CANDIDATE_COUNT = 3
 _LIVE_ACTION_REORDER_BUFFER_CAPACITY = 8
 
+_INPUT_OPERATION_NAME = ".lq.FastTest.inputOperation"
 _INPUT_CHI_PENG_GANG_NAME = ".lq.FastTest.inputChiPengGang"
+_OPERATION_INPUT_RESPONSE_NAMES = frozenset(
+    {_INPUT_OPERATION_NAME, _INPUT_CHI_PENG_GANG_NAME}
+)
 _DAPAI_CLICK_PROGRESS_MESSAGE_NAMES = frozenset(
     {
-        ".lq.FastTest.inputOperation",
-        _INPUT_CHI_PENG_GANG_NAME,
+        *_OPERATION_INPUT_RESPONSE_NAMES,
         ACTION_PROTOTYPE_NAME,
     }
 )
@@ -1127,13 +1130,19 @@ class MatchScreen(Screen):
 
     async def _click_skip_button_or_detect_progress(self) -> None:
         while True:
-            if await self._put_back_pending_action_while_waiting_for_ui():
+            observed_message_names: set[str] = set()
+            if await self._put_back_pending_action_while_waiting_for_ui(
+                observed_message_names=observed_message_names
+            ):
                 return
             if await self.click_template_if_present(
                 self.SKIP_BUTTON_TEMPLATE,
                 warp=True,
             ):
                 return
+            await self._raise_if_input_response_without_button(
+                observed_message_names
+            )
             await asyncio.sleep(
                 OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
             )
@@ -1146,10 +1155,16 @@ class MatchScreen(Screen):
         # opportunity disappears before the click. The authoritative
         # event is verified later by the normal operation pipeline.
         while True:
-            if await self._put_back_pending_action_while_waiting_for_ui():
+            observed_message_names: set[str] = set()
+            if await self._put_back_pending_action_while_waiting_for_ui(
+                observed_message_names=observed_message_names
+            ):
                 return False
             if await self.click_template_if_present(button_template):
                 return True
+            await self._raise_if_input_response_without_button(
+                observed_message_names
+            )
             await asyncio.sleep(
                 OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
             )
@@ -1162,8 +1177,11 @@ class MatchScreen(Screen):
             list[DecodedSnifferMessage] | None
         ) = None,
         reject_confirm_new_round: bool = False,
+        observed_message_names: set[str] | None = None,
     ) -> bool:
         while (message := self._get_sniffer_message_nowait()) is not None:
+            if observed_message_names is not None:
+                observed_message_names.add(message.raw.name)
             if (
                 reject_confirm_new_round
                 and message.raw.name == _CONFIRM_NEW_ROUND_NAME
@@ -1203,6 +1221,21 @@ class MatchScreen(Screen):
                 ),
             )
         return False
+
+    async def _raise_if_input_response_without_button(
+        self,
+        observed_message_names: set[str],
+    ) -> None:
+        if observed_message_names.isdisjoint(_OPERATION_INPUT_RESPONSE_NAMES):
+            return
+        error = ValueError(
+            "An operation input response arrived without a progress "
+            "action or a visible operation button."
+        )
+        await self._raise_inconsistent_message(
+            "The operation selection screen did not advance.",
+            cause=error,
+        )
 
     async def _move_mouse_away_from_hand(self) -> None:
         # Hovering over a tile in the hand can display winning-tile
