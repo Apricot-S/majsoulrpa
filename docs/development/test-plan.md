@@ -1022,8 +1022,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
   screenshot付きerrorにする
 - [x] 暗槓・加槓が3候補の場合は候補UIのscreenshotを持つ
   `ScreenNotImplementedOperationError` と情報提供依頼で停止する
-- [ ] イベント開催期間中は友人戦・大会戦の終局後にも `fetchAccountInfo` /
-  `NotifyActivityPointV2` が届くことを許容し、Room / tournament復帰までdrainを継続する
+- [x] イベント開催期間中は友人戦・大会戦の終局後にも `fetchAccountInfo` /
+  `NotifyActivityPointV2` が届くことを許容する。Match固有の待機は追加せず、
+  結果確認前に取得した場合は通常のstate非関連messageとして無視し、
+  結果確認後に届いた場合は共有queueを通じて次のScreenへ引き渡す
 - [ ] `NotifyAccountUpdate` / `NotifyGameFinishReward` / `NotifyActivityReward` /
   `NotifyActivityPoint` / `NotifyLeaderboardPoint` を通常formatterでlogへ出し、終局遷移を継続する
 - [ ] `NotifyActivityRewardV2` を受信したらmatch result確認buttonと重ならないsafe regionを
