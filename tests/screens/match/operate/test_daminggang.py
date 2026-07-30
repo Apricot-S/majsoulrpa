@@ -11,6 +11,7 @@ from majsoulrpa.screens.errors import ScreenInconsistentMessageError
 from majsoulrpa.screens.match import (
     DaminggangEvent,
     DaminggangOperation,
+    HuleEvent,
     MatchScreen,
 )
 from majsoulrpa.sniffer.events import DecodedSnifferMessage
@@ -27,6 +28,7 @@ from tests.screens.match._support import (
     _auth_game,
     _live_daminggang_action,
     _live_discard_action,
+    _live_hule_action,
     _live_new_round_action,
 )
 
@@ -284,8 +286,42 @@ def test_operate_rejects_multiple_daminggang_candidates() -> None:
     assert browser.clicked_points == []
 
 
+@pytest.mark.parametrize(
+    ("progress_action", "expected_event_type"),
+    [
+        (
+            _live_daminggang_action(
+                step=2,
+                seat=0,
+                tiles=["0m", "5m", "5m", "5m"],
+                froms=[0, 0, 0, 2],
+            ),
+            DaminggangEvent,
+        ),
+        (
+            _live_hule_action(
+                step=2,
+                hules=[
+                    liqi_pb2.HuleInfo(
+                        hand=["1m"] * 13,
+                        hu_tile="5m",
+                        seat=1,
+                        fu=30,
+                    )
+                ],
+                old_scores=[25000] * 4,
+                delta_scores=[0, 8000, -8000, 0],
+                scores=[25000, 33000, 17000, 25000],
+                doras=[],
+            ),
+            HuleEvent,
+        ),
+    ],
+)
 def test_operate_puts_back_progress_while_waiting_for_gang_button(
     monkeypatch: pytest.MonkeyPatch,
+    progress_action: DecodedSnifferMessage,
+    expected_event_type: type[DaminggangEvent | HuleEvent],
 ) -> None:
     messages = _PutBackTrackingQueue()
     for message in (
@@ -314,12 +350,7 @@ def test_operate_puts_back_progress_while_waiting_for_gang_button(
     browser = _MessageOnScreenshotBrowser(
         _synthetic_blank_screenshot(),
         messages,
-        _live_daminggang_action(
-            step=2,
-            seat=0,
-            tiles=["0m", "5m", "5m", "5m"],
-            froms=[0, 0, 0, 2],
-        ),
+        progress_action,
     )
     screen = _screen(browser, messages)
 
@@ -339,7 +370,7 @@ def test_operate_puts_back_progress_while_waiting_for_gang_button(
 
     result = asyncio.run(screen.operate(operation))
 
-    assert isinstance(result.round.events[-1], DaminggangEvent)
+    assert isinstance(result.round.events[-1], expected_event_type)
     assert messages.put_back_count == 1
     assert browser.clicked_points == []
 

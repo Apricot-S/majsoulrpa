@@ -1014,7 +1014,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
   1回put backして通常pipelineへ戻す
 - [x] チーのbutton待機・候補選択・スキップはポン・大明槓・ロンによるpreemptを許容し、
   上位Actionを1回put backして更新後stateを返す
-- [ ] ポン・大明槓のbutton待機・候補選択・スキップはロンによるpreemptを許容し、
+- [x] ポン・大明槓のbutton待機・候補選択・スキップはロンによるpreemptを許容し、
   `ActionHule` を1回put backして更新後stateを返す
 - [x] 「鳴きなし」中の `inputChiPengGang` responseまたは上位Actionを進行markerとしてput backし、
   toggleをoffへ戻してから通常pipelineで処理する
