@@ -1008,7 +1008,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
   自動reloadせずscreenshot付き `ScreenInconsistentMessageError` にする
 - [x] match result確認前に `fetchRoom` が先着してもmessageを1回put backし、Match drainだけを
   止めて必須のmatch result確認buttonをclickする
-- [ ] match result確認前にtournament復帰messageが先着した場合もmessageを1回put backし、
+- [x] match result確認前にtournament復帰messageが先着した場合もmessageを1回put backし、
   必須のmatch result確認buttonをclickする
 - [x] 打牌・立直打牌は入力messageがUIより先着しても同じ牌領域を再clickし、入力進行messageを
   1回put backして通常pipelineへ戻す
