@@ -1012,7 +1012,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
   必須のmatch result確認buttonをclickする
 - [x] 打牌・立直打牌は入力messageがUIより先着しても同じ牌領域を再clickし、入力進行messageを
   1回put backして通常pipelineへ戻す
-- [ ] チーのbutton待機・候補選択・スキップはポン・大明槓・ロンによるpreemptを許容し、
+- [x] チーのbutton待機・候補選択・スキップはポン・大明槓・ロンによるpreemptを許容し、
   上位Actionを1回put backして更新後stateを返す
 - [ ] ポン・大明槓のbutton待機・候補選択・スキップはロンによるpreemptを許容し、
   `ActionHule` を1回put backして更新後stateを返す

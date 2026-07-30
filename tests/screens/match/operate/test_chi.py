@@ -12,6 +12,7 @@ from majsoulrpa.screens.match import (
     ChiEvent,
     ChiOperation,
     DaminggangEvent,
+    HuleEvent,
     MatchScreen,
     MatchState,
     PengEvent,
@@ -31,6 +32,7 @@ from tests.screens.match._support import (
     _live_chi_action,
     _live_daminggang_action,
     _live_discard_action,
+    _live_hule_action,
     _live_new_round_action,
     _live_peng_action,
 )
@@ -523,8 +525,51 @@ def test_operate_does_not_click_combination_after_peng_preemption(
     assert len(browser.clicked_points) == 1
 
 
+@pytest.mark.parametrize(
+    ("preempting_action", "expected_event_type"),
+    [
+        (
+            _live_peng_action(
+                step=2,
+                seat=1,
+                tiles=["5m", "5m", "5m"],
+                froms=[1, 1, 3],
+            ),
+            PengEvent,
+        ),
+        (
+            _live_daminggang_action(
+                step=2,
+                seat=1,
+                tiles=["5m", "5m", "5m", "5m"],
+                froms=[1, 1, 1, 3],
+            ),
+            DaminggangEvent,
+        ),
+        (
+            _live_hule_action(
+                step=2,
+                hules=[
+                    liqi_pb2.HuleInfo(
+                        hand=["1m"] * 13,
+                        hu_tile="5m",
+                        seat=1,
+                        fu=30,
+                    )
+                ],
+                old_scores=[25000] * 4,
+                delta_scores=[0, 8000, 0, -8000],
+                scores=[25000, 33000, 25000, 17000],
+                doras=[],
+            ),
+            HuleEvent,
+        ),
+    ],
+)
 def test_operate_puts_back_preemption_while_waiting_for_chi_button(
     monkeypatch: pytest.MonkeyPatch,
+    preempting_action: DecodedSnifferMessage,
+    expected_event_type: type[PengEvent | DaminggangEvent | HuleEvent],
 ) -> None:
     messages = _PutBackTrackingQueue()
     for message in (
@@ -553,12 +598,7 @@ def test_operate_puts_back_preemption_while_waiting_for_chi_button(
     browser = _MessageOnScreenshotBrowser(
         _synthetic_blank_screenshot(),
         messages,
-        _live_peng_action(
-            step=2,
-            seat=1,
-            tiles=["5m", "5m", "5m"],
-            froms=[1, 1, 3],
-        ),
+        preempting_action,
     )
     screen = MatchScreen(
         context=ScreenContext(
@@ -591,7 +631,7 @@ def test_operate_puts_back_preemption_while_waiting_for_chi_button(
 
     state = asyncio.run(operate_with_deadline())
 
-    assert isinstance(state.round.events[-1], PengEvent)
+    assert isinstance(state.round.events[-1], expected_event_type)
     assert messages.put_back_count == 1
     assert browser.clicked_points == []
 
