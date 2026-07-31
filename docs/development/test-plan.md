@@ -954,12 +954,12 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `NotifyGameEndResult` を受信した試合終了時は `match-result-confirm` をclickして `MatchScreen` をstaleにする
 - [x] 終局結果画面の待機中に `fetchRoom` を先読みした場合はqueueへ戻してMatch側の
   message drainだけを終了し、必須の `match-result-confirm` は検出してclickする
-- [ ] 結果画面待機中もSniffer messageを処理し、全messageを共通formatterでlogへ出す
+- [x] 結果画面待機中もSniffer messageを処理し、全messageを共通formatterでlogへ出す
 - [x] 局終了後に遅れて届く `inputOperation` / `inputChiPengGang` responseを許容し、stateへ重複適用しない
 - [x] `.lq.FastTest.confirmNewRound` と `ActionNewRound` のどちらが先着しても同じ次局stateへ遷移する
 - [x] confirm responseがなくても `ActionNewRound` と新しいseat indicatorを確認できれば次局遷移を完了する
 - [x] confirm interaction省略時にstep 1以降がstep 0より先着した場合はbounded local bufferでstep順へ戻す
-- [ ] 並べ替えbufferは異なる同一step、上限超過、step 0が `ActionNewRound` 以外なら不整合にする
+- [x] 並べ替えbufferは異なる同一step、上限超過、step 0が `ActionNewRound` 以外なら不整合にする
 - [x] active matchの並べ替えworkaroundを初回 `ActionMJStart` / `ActionNewRound` へ適用しない
 - [x] `NotifyGameEndResult` の先着を次局開始と誤認せず、終局処理へ引き渡す
 - [x] 和了確認中にconfirm responseだけが先着して画面も進まない場合はscreenshot付き不整合errorにする

@@ -201,18 +201,22 @@ def test_match_result_wait_puts_back_tournament_return_message(
 
 
 @pytest.mark.parametrize(
-    "notification_name",
+    ("notification_name", "expected_level"),
     [
-        ".lq.NotifyAccountUpdate",
-        ".lq.NotifyGameFinishReward",
-        ".lq.NotifyActivityReward",
-        ".lq.NotifyActivityPoint",
-        ".lq.NotifyLeaderboardPoint",
+        (".lq.NotifyAccountUpdate", logging.INFO),
+        (".lq.NotifyGameFinishReward", logging.INFO),
+        (".lq.NotifyActivityReward", logging.INFO),
+        (".lq.NotifyActivityPoint", logging.INFO),
+        (".lq.NotifyLeaderboardPoint", logging.INFO),
+        (".lq.NotifySyntheticMatchResult", logging.INFO),
+        (".lq.Lobby.heatbeat", logging.DEBUG),
+        (".lq.Lobby.loginBeat", logging.WARNING),
     ],
 )
 def test_match_result_ignores_state_unrelated_notification(
     caplog: pytest.LogCaptureFixture,
     notification_name: str,
+    expected_level: int,
 ) -> None:
     messages = _message_queue(
         _auth_game(),
@@ -236,7 +240,7 @@ def test_match_result_ignores_state_unrelated_notification(
     caplog.clear()
 
     with caplog.at_level(
-        logging.INFO,
+        logging.DEBUG,
         logger="majsoulrpa.screens.match.screen",
     ):
         state = asyncio.run(screen.wait_for_state_change(terminal))
@@ -244,13 +248,13 @@ def test_match_result_ignores_state_unrelated_notification(
     assert state is None
     assert screen._stale
     assert len(browser.clicked_points) == 3
-    assert (
-        sum(
-            f'"name":"{notification_name}"' in record.getMessage()
-            for record in caplog.records
-        )
-        == 1
-    )
+    records = [
+        record
+        for record in caplog.records
+        if f'"name":"{notification_name}"' in record.getMessage()
+    ]
+    assert len(records) == 1
+    assert records[0].levelno == expected_level
 
 
 @pytest.mark.parametrize("confirmation_count", [1, 2])
