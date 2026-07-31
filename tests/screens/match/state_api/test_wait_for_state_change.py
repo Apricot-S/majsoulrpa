@@ -18,6 +18,7 @@ from majsoulrpa.assets.templates.match import (
     SEAT_INDICATOR_SETTINGS_PATH,
     SEAT_INDICATOR_TEMPLATE_PATHS,
 )
+from majsoulrpa.presentation import Region
 from majsoulrpa.screens.errors import ScreenInconsistentMessageError
 from majsoulrpa.screens.match import LiujuEvent, MatchScreen, NewRoundEvent
 from majsoulrpa.sniffer.events import DecodedSnifferMessage
@@ -250,6 +251,59 @@ def test_match_result_ignores_state_unrelated_notification(
         )
         == 1
     )
+
+
+def test_match_result_advances_activity_reward_presentation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    assert (
+        Region(
+            left=0,
+            top=0,
+            width=1600,
+            height=950,
+        )
+        == MatchScreen.EVENT_REWARD_ADVANCE_REGION
+    )
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(step=0, ju=0),
+        _live_liuju_action(step=1, type_=1, seat=0),
+        ".lq.NotifyGameEndResult",
+        ".lq.NotifyActivityRewardV2",
+    )
+    match_result_confirmation = _match_result_confirmation()
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=LIUJU_CONFIRM_TEMPLATE_PATH,
+            settings_path=LIUJU_CONFIRM_SETTINGS_PATH,
+        ),
+        _round_result_confirmation(),
+        match_result_confirmation,
+        _synthetic_blank_screenshot(),
+        match_result_confirmation,
+        match_result_confirmation,
+    )
+    screen = _screen(browser, messages)
+    sleeps: list[float] = []
+
+    async def skip_sleep(delay: float) -> None:
+        sleeps.append(delay)
+
+    monkeypatch.setattr(asyncio, "sleep", skip_sleep)
+    asyncio.run(screen.before_callback())
+    terminal = asyncio.run(screen.get_state())
+
+    state = asyncio.run(screen.wait_for_state_change(terminal))
+
+    assert state is None
+    assert screen._stale
+    assert len(browser.clicked_points) == 5
+    reward_click_x, reward_click_y = browser.clicked_points[3]
+    reward_region = MatchScreen.EVENT_REWARD_ADVANCE_REGION
+    assert reward_region.left <= reward_click_x < reward_region.right
+    assert reward_region.top <= reward_click_y < reward_region.bottom
+    assert sleeps == [0.5]
 
 
 def test_wait_for_state_change_clicks_each_hule_confirmation(

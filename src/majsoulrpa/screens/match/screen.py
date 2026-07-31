@@ -144,6 +144,7 @@ _WARNING_MESSAGE_NAMES = frozenset(
 )
 _CONFIRM_NEW_ROUND_NAME = ".lq.FastTest.confirmNewRound"
 _GAME_END_NOTIFICATION_NAME = ".lq.NotifyGameEndResult"
+_ACTIVITY_REWARD_NOTIFICATION_NAME = ".lq.NotifyActivityRewardV2"
 _MATCH_EXIT_MESSAGE_NAMES = frozenset(
     {
         ".lq.Lobby.enterCustomizedContest",
@@ -202,6 +203,12 @@ class MatchScreen(Screen):
         top=623,
         width=42,
         height=42,
+    )
+    EVENT_REWARD_ADVANCE_REGION = Region(
+        left=0,
+        top=0,
+        width=1600,
+        height=950,
     )
 
     SEAT_INDICATOR_TEMPLATES = tuple(
@@ -1315,24 +1322,81 @@ class MatchScreen(Screen):
 
     async def _click_match_result_confirmation(self) -> None:
         message_drain_stopped = False
+        observed_message_names: set[str] = set()
         while True:
             if await self.click_template_if_present(
                 self.MATCH_RESULT_CONFIRM_TEMPLATE
             ):
-                return
+                if not await self._consume_pending_activity_reward():
+                    return
+                await self._advance_event_reward_presentation()
+                continue
             if not message_drain_stopped:
                 message_drain_stopped = (
-                    await self._put_back_pending_action_while_waiting_for_ui(
-                        additional_progress_message_names=(
-                            _MATCH_EXIT_MESSAGE_NAMES
-                        )
+                    await self._drain_pending_match_result_messages(
+                        observed_message_names
                     )
+                )
+                await self._advance_event_reward_if_observed(
+                    observed_message_names
                 )
             # Unlike the other result confirmations, the match result
             # screen does not advance automatically. A transition
             # message stops MatchScreen from draining the next Screen's
             # messages, but the confirmation button must still be
             # clicked.
+            await asyncio.sleep(
+                CONFIRMATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
+            )
+
+    async def _drain_pending_match_result_messages(
+        self,
+        observed_message_names: set[str],
+    ) -> bool:
+        return await self._put_back_pending_action_while_waiting_for_ui(
+            additional_progress_message_names=_MATCH_EXIT_MESSAGE_NAMES,
+            observed_message_names=observed_message_names,
+        )
+
+    async def _advance_event_reward_if_observed(
+        self,
+        observed_message_names: set[str],
+    ) -> bool:
+        if _ACTIVITY_REWARD_NOTIFICATION_NAME not in observed_message_names:
+            return False
+        observed_message_names.discard(_ACTIVITY_REWARD_NOTIFICATION_NAME)
+        await self._advance_event_reward_presentation()
+        return True
+
+    async def _consume_pending_activity_reward(self) -> bool:
+        messages_to_put_back: list[DecodedSnifferMessage] = []
+        activity_reward_observed = False
+        try:
+            while (message := self._get_sniffer_message_nowait()) is not None:
+                if message.raw.name != _ACTIVITY_REWARD_NOTIFICATION_NAME:
+                    messages_to_put_back.append(message)
+                    continue
+                await self._apply_match_message_with_screen_errors(
+                    message,
+                    inconsistent_message=(
+                        "Match state update failed after the match result."
+                    ),
+                )
+                activity_reward_observed = True
+        finally:
+            for message in messages_to_put_back:
+                self._put_back_sniffer_message(message)
+        return activity_reward_observed
+
+    async def _advance_event_reward_presentation(self) -> None:
+        while (
+            await self.find_template(self.MATCH_RESULT_CONFIRM_TEMPLATE)
+            is None
+        ):
+            # Event rewards can leave an input-blocking presentation
+            # after the match result. Advance it outside the area where
+            # the following confirmation button appears.
+            await self.click_region(self.EVENT_REWARD_ADVANCE_REGION)
             await asyncio.sleep(
                 CONFIRMATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
             )
