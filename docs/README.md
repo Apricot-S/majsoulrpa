@@ -35,6 +35,7 @@ ADR は採用済みの判断とその理由を固定します。現在の仕様�
 - [開発ロードマップ](development/roadmap.md)
 - [テスト計画](development/test-plan.md)
 - [テストと品質基準](development/testing.md)
+- [`src/majsoulrpa` リファクタリングチェックリスト](development/refactoring-checklist.md)
 
 ## Investigations
 

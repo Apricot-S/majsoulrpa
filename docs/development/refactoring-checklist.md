@@ -1,0 +1,192 @@
+# `src/majsoulrpa` リファクタリングチェックリスト
+
+## 目的
+
+次の機能改修へ進む前に、`src/majsoulrpa/` 配下の責務、依存方向、公開 API、
+失敗モデル、テスト容易性をファイルツリーごとに確認する。
+
+このリストは変更内容を先に決めるものではない。各項目を確認し、変更が必要なら先に
+`docs/development/test-plan.md` へ具体的なテスト項目を追加してから、t_wada の TDD 手順で
+ひとつずつ実施する。ファイルが大きいことや `Protocol` が多いことだけを理由に分割・統合しない。
+
+## 完了の記録方法
+
+- [ ] 各ファイルまたは資産グループについて、現状維持、変更、後続タスク化のいずれかを判断する。
+- [ ] 変更する場合は、守る振る舞いと失敗経路をテストリストへ先に追加する。
+- [ ] 公開 API、wire schema、生成物、画像資産に影響する変更は、影響範囲を明記する。
+- [ ] 1 項目の変更ごとに関連テストを通し、まとまりごとに品質ゲートを通す。
+
+## 全ファイル共通の確認観点
+
+- [ ] 責務が現在のアーキテクチャと一致し、別 component の都合を抱え込んでいない。
+- [ ] 依存方向が `RPAApp -> client runtime -> Screen / browser client / Sniffer` を逆流しない。
+- [ ] 抽象化は fake への置換、実装差し替え、lifecycle 管理、公開拡張点のいずれかに寄与する。
+- [ ] 単なる横流し wrapper、重複 DTO、将来予測だけの interface が増えていない。
+- [ ] public と private の境界、export、命名、型注釈が実際の契約と一致する。
+- [ ] timeout と cancellation を握りつぶさず、cleanup の失敗も見えなくしていない。
+- [ ] decode・validation・remote 操作の失敗を空値や成功へ変換していない。
+- [ ] mutable state の所有者、初期化条件、不変条件、terminal / stale 遷移が明確である。
+- [ ] ログ、`repr`、例外、serialization に secret、user data、個人情報が漏れない。
+- [ ] 実通信 payload、実メール、実画像を test、fixture、example、docs に持ち込んでいない。
+- [ ] optional dependency は必要な module まで遅延 import され、core import を重くしていない。
+- [ ] 重複を除去する場合も、異なる失敗モデルや lifecycle を無理に共通化していない。
+- [ ] 対応する unit / lifecycle / cancellation / failure test があり、振る舞いを説明できる。
+
+## ルート
+
+- [ ] `__init__.py`: `RPAApp` と version だけの小さい公開 surface、および core import の軽さを確認する。
+- [ ] `_clock.py`: UTC aware clock とテスト用注入点の必要性・配置を確認する。
+- [ ] `app.py`: callback 登録、重複検出、runtime composition への委譲、data 非介入を確認する。
+- [ ] `cli.py`: CLI 引数から config への変換、終了コード、secret 非表示、browser runner との境界を確認する。
+- [ ] `config.py`: default、strict validation、immutable 性、secret の `repr` / validation error 非表示を確認する。
+- [ ] `constants.py`: component 固有値がルートへ流出していないか、定数の単位と根拠を確認する。
+- [ ] `endpoint.py`: browser/client の接続先 semantics、IPv4・hostname・IPv6 literal の整形重複を確認する。
+- [ ] `timing.py`: delay の範囲・単位・乱数注入、固定 sleep の代用になっていないことを確認する。
+- [ ] `types.py`: callback generic が公開 API を正しく表し、不要な共通型置き場になっていないことを確認する。
+- [ ] `viewport.py`: 対応 viewport の制約と config / template scale との責務分担を確認する。
+
+## `browser/`
+
+- [ ] `browser/__init__.py`: lazy export が optional Playwright import を隔離し、不足 extra を明示することを確認する。
+- [ ] `browser/messages.py`: command / response の判別共用体、strict schema、secret を含まない wire 契約を確認する。
+- [ ] `browser/transport.py`: client と server の最小 `Protocol` が fake と remote I/O の分離に実際に使われることを確認する。
+- [ ] `browser/controller.py`: Screen 向け操作 semantics、型付き request 共通処理、unexpected response の失敗を確認する。
+- [ ] `browser/history.py`: command / response summary の網羅性、座標以外の text・認証情報の redaction を確認する。
+- [ ] `browser/server.py`: 1 request / 1 response、stop response 後の停止、executor 例外の伝播を確認する。
+- [ ] `browser/zmq.py`: REQ/REP 順序、bind/connect、socket lifecycle、transport error の情報量を確認する。
+- [ ] `browser/playwright.py`: 操作の原子性、mouse down 後 cleanup、HTTP response 待機、raw auth response の隔離を確認する。
+- [ ] `browser/runner.py`: backend・server・Sniffer の開始順、逆順 cleanup、主例外と副次例外の扱いを確認する。
+
+## `client/`
+
+- [ ] `client/__init__.py`: 空の package root を維持する必要性と、意図しない public export がないことを確認する。
+- [ ] `client/runtime.py`: 登録 Screen の検出順、callback/data loop、兄弟 task、timeout・stop・cleanup を確認する。
+- [ ] `client/controller_runtime.py`: composition root として ZMQ、controller、Sniffer、session、`ScreenContext` だけを組み立てることを確認する。
+- [ ] `client/session.py`: decode 後 enqueue 前の account ID 観測、正値・再観測・不一致の不変条件を確認する。
+
+## `presentation/`
+
+- [ ] `presentation/__init__.py`: OpenCV を core import から隔離する lazy export と公開名の一貫性を確認する。
+- [ ] `presentation/region.py`: immutable value object、scale、座標境界、random point の決定可能なテストを確認する。
+- [ ] `presentation/template.py`: TOML validation、PNG adapter と ndarray matcher の分離、scale・margin・threshold の不変条件を確認する。
+
+## `screens/` 共通
+
+- [ ] `screens/__init__.py`: 標準 Screen と共通例外の public export が設計資料と一致することを確認する。
+- [ ] `screens/errors.py`: 例外階層、`TimeoutError` / `ValueError` との多重継承、screenshot 保持・保存時の情報漏洩を確認する。
+- [ ] `screens/base.py`: `ScreenContext` の依存、検出 contract、stale guard、API log、Sniffer helper の責務集中を確認する。
+- [ ] `screens/login.py`: 認証 sequence、request-scoped HTTP wait、stale 化の時点、email/code/token 非漏洩を確認する。
+- [ ] `screens/home.py`: 前処理 loop と各高レベル遷移を区別し、巨大な条件分岐・重複 template 操作・message 先読みを確認する。
+
+### `screens/room/`
+
+- [ ] `screens/room/__init__.py`: state・error・Screen の export と lazy import の必要性を確認する。
+- [ ] `screens/room/state.py`: frozen snapshot、derived host state、active / terminal status の表現を確認する。
+- [ ] `screens/room/_decode.py`: synthetic mapping の strict decode、field error、正値・重複・人数制約の分担を確認する。
+- [ ] `screens/room/store.py`: instance-local state、snapshot/update/terminal 遷移、message 履歴を保持しないことを確認する。
+- [ ] `screens/room/errors.py`: operation と reason Enum、未知 server code、例外 message の個人情報非表示を確認する。
+- [ ] `screens/room/screen.py`: source drain、操作 lock、Req/Res と notice の相関、terminal 後 stale、画面消失待機を確認する。
+
+### `screens/match/` の基盤
+
+- [ ] `screens/match/__init__.py`: public state/event/operation 型の export、lazy export の要否、union の網羅性を確認する。
+- [ ] `screens/match/types.py`: `Seat` / `Tile` の型と runtime validator が全入口で一貫して使われることを確認する。
+- [ ] `screens/match/_common.py`: tile 正規化・並び順・鳴き条件の共通化が domain invariant に限られることを確認する。
+- [ ] `screens/match/_decode.py`: JSON field helper が strict で、欠落や型不正を default 値へ変換しないことを確認する。
+- [ ] `screens/match/_metadata.py`: human / robot / seat / rank decode と match metadata の不変条件を確認する。
+- [ ] `screens/match/_action.py`: live / restore adapter、deobfuscation、API 名と action 名の対応、未知 action の失敗を確認する。
+- [ ] `screens/match/state.py`: immutable snapshot、四麻・三麻、round state、event 列、version の不変条件を確認する。
+- [ ] `screens/match/store.py`: live と restore の同一 reducer、atomic restore、step reorder、rollback 禁止、状態更新の責務境界を確認する。
+- [ ] `screens/match/screen.py`: bootstrap、fresh/recovery 判定、message buffering、callback lifecycle、画面操作が一つの責務へ混在していないか確認する。
+
+`screen.py` と `store.py` は大きいが、行数だけでは分割しない。分割する場合は、独立した不変条件、
+異なる lifecycle、または単独でテストする価値のある境界を先に示す。
+
+### `screens/match/event/`
+
+- [ ] `event/__init__.py`: `MatchEvent` が全 concrete event を明示列挙し、`assert_never()` による網羅性を保つことを確認する。
+- [ ] `event/_base.py`: 共通 base が event の識別や DTO 層を重複させず、必要最小限であることを確認する。
+- [ ] `event/_constants.py`: event 固有定数の根拠と共有範囲を確認する。
+- [ ] `event/start_match.py`: BOS event の field と reducer 上の意味を確認する。
+- [ ] `event/new_round.py`: initial hand、score、dora、round metadata の不変条件を確認する。
+- [ ] `event/zimo.py`: draw source、lingshang、tile/seat/step の整合性を確認する。
+- [ ] `event/dapai.py`: discarded tile、moqie、liqi/wliqi、nested success との整合性を確認する。
+- [ ] `event/liqi_success.py`: nested value object としての点数・供託・seat 更新を確認する。
+- [ ] `event/chi.py`: 上家制約、取得牌と consumed、赤牌正規化、直前打牌の解決を確認する。
+- [ ] `event/peng.py`: 取得元、同種牌、手牌消費、直前打牌の解決を確認する。
+- [ ] `event/daminggang.py`: 取得元、3 枚消費、lingshang 遷移、直前打牌の解決を確認する。
+- [ ] `event/angang.py`: 4 枚 canonicalization、手牌消費、lingshang 遷移を確認する。
+- [ ] `event/jiagang.py`: 既存 peng の更新、追加牌、qianggang 関連状態を確認する。
+- [ ] `event/babei.py`: 三麻限定条件、北抜き回数、lingshang 相当の遷移を確認する。
+- [ ] `event/hule.py`: 和了者ごとの score/fan/責任払い情報、複数和了、終局状態を確認する。
+- [ ] `event/no_tile.py`: 聴牌/不聴、流局 score、手牌公開、終局状態を確認する。
+- [ ] `event/liuju.py`: 特殊流局の closed set と未知値の扱いを確認する。
+
+各 concrete event は `@final`、`frozen=True`、`slots=True`、`kw_only=True` の方針、constructor の
+runtime invariant、live / restore 双方から同じ object が作られることをまとめて確認する。
+
+### `screens/match/operation/`
+
+- [ ] `operation/__init__.py`: 利用者向け operation 型だけを通常 export し、内部 specification を漏らさないことを確認する。
+- [ ] `operation/models.py`: immutable operation と `MatchOperation` union、候補の排他性・順序を確認する。
+- [ ] `operation/_specification.py`: protobuf decode 直後の内部表現が public model と重複するだけの層になっていないか確認する。
+- [ ] `operation/_decode.py`: operation list の strict decode、組合せ順、未知 type・不正 field の失敗を確認する。
+- [ ] `operation/_materialize.py`: current state/event との相関、手牌・fulu・seat 不変条件、候補重複除去を確認する。
+
+`_materialize.py` を分割する場合は、牌操作種別ごとの見た目ではなく、共有 validation と各 operation の
+独立した invariant が明確に分かれるかを基準にする。
+
+## `sniffer/`
+
+- [ ] `sniffer/__init__.py`: raw / decoded 利用者向け event だけを export し、wire model や backend を漏らさないことを確認する。
+- [ ] `sniffer/events.py`: raw bytes と decoded JSON-compatible body、timestamp、direction の immutable 契約を確認する。
+- [ ] `sniffer/playwright.py`: listener 登録解除、binary frame 限定、bounded queue、connection/capture sequence を確認する。
+- [ ] `sniffer/envelope.py`: message kind、request number、Wrapper、API 名の byte-level strict decode を確認する。
+- [ ] `sniffer/correlator.py`: connection/direction/number key、duplicate/unmatched/incomplete exchange の失敗を確認する。
+- [ ] `sniffer/publication.py`: schema version、base64 validation、sequence metadata、unknown field rejection を確認する。
+- [ ] `sniffer/event_adapter.py`: wire publication から raw event への変換境界が decoder と重複せず、bytes 復元を一元化することを確認する。
+- [ ] `sniffer/decoder.py`: descriptor map、Notice/Req/Res body decode、publication/envelope API 一致、未知 API の失敗を確認する。
+- [ ] `sniffer/stream.py`: restart、gap、rollback、途中参加を区別し、欠落を補完したふりをしないことを確認する。
+- [ ] `sniffer/message_queue.py`: message 件数と payload byte の両上限、put-back 順序、overflow の明示失敗を確認する。
+- [ ] `sniffer/worker.py`: capture -> envelope -> correlation -> publication の順序と、stop 時 pending request の失敗を確認する。
+- [ ] `sniffer/runtime.py`: context・publisher・capture・worker の開始順、逆順 cleanup、失敗伝播を確認する。
+- [ ] `sniffer/zmq.py`: PUB/SUB topic、bind/connect、IPv6、socket/context cleanup、multipart validation を確認する。
+- [ ] `sniffer/client_runtime.py`: receive -> stream validation -> raw adapter -> protobuf decode -> observer -> queue の順序を確認する。
+
+Sniffer の各段は異なるデータ完全性を守るため、ファイル数だけを理由に大きな service へ統合しない。
+統合候補は、失敗分類と synthetic unit test の境界を維持できる場合だけ検討する。
+
+## `yostar_email/`
+
+- [ ] `yostar_email/__init__.py`: optional integration の公開 surface と boto3 非依存 import を確認する。
+- [ ] `yostar_email/constants.py`: sender、subject、期限などの値と調査根拠を確認する。
+- [ ] `yostar_email/errors.py`: 利用者が再試行可否を判断でき、secret を message に含めない例外階層を確認する。
+- [ ] `yostar_email/provider.py`: `VerificationCodeProvider` が実際の公開差し替え点として最小であることを確認する。
+- [ ] `yostar_email/email.py`: MIME sender/recipient/subject/date の strict validation と code/email/body 非漏洩を確認する。
+- [ ] `yostar_email/s3.py`: boto3 遅延 import、候補順、polling 条件、任意削除の対象制約、client lifecycle を確認する。
+
+## `assets/`
+
+- [ ] `assets/__init__.py`、`assets/templates/__init__.py`: package data のためだけの初期化ファイルとして不要な API を持たないことを確認する。
+- [ ] `assets/templates/login/`: `__init__.py` の loader、PNG/TOML の対、命名、viewport 設定、個人情報非包含を確認する。
+- [ ] `assets/templates/home/`: root、`create_room/`、`join_room/`、`tournament_lobby/` の loader と PNG/TOML 対応を確認する。
+- [ ] `assets/templates/room/`: detection / leave / add-ai / ready / start / cancel の loader、共有 PNG、variant TOML の対応を確認する。
+- [ ] `assets/templates/match/`: action、seat indicator、round/match result、skip、liuju の loader と PNG/TOML 対応を確認する。
+- [ ] `assets/templates/tournament/`: leave template の loader と PNG/TOML 対応を確認する。
+- [ ] `assets/protocol/__init__.py`: 生成 protocol package の境界と import 経路を確認する。
+- [ ] `assets/protocol/liqi.proto`: 手編集せず、更新理由、入手元、安全性、生成手順が明示されていることだけを確認する。
+- [ ] `assets/protocol/liqi_pb2.py`、`liqi_pb2.pyi`: 生成物として手編集せず、`.proto` との再生成可能性と package inclusion を確認する。
+
+画像、`.proto`、protocol 生成物の追加・更新が必要な場合はエージェントだけで行わず、目的と
+安全性を明示してユーザーにコミットを依頼する。
+
+## サブツリー完了時の品質ゲート
+
+- [ ] 対象サブツリーの関連 pytest が成功する。
+- [ ] `uv --cache-dir .uv_cache run python -m ruff check .` が成功する。
+- [ ] `uv --cache-dir .uv_cache run python -m ruff format --check .` が成功する。
+- [ ] `uv --cache-dir .uv_cache run python -m ty check` が成功する。
+- [ ] 共有基盤、config、runtime、Screen、Sniffer を変更した場合は全 pytest が成功する。
+- [ ] 公開 API と設計判断を変えた場合は Design と、必要なら新しい ADR を更新する。
+- [ ] 高レベル Screen API の振る舞いを変えた場合は、次の API へ進む前に実雀魂での手動確認をユーザーへ依頼する。
+- [ ] secret、実メール、Cookie、token、実 payload、個人情報入り画像が差分にないことを確認する。
