@@ -180,6 +180,8 @@ MatchScreenの所有期間を延長せず、結果確認後に届いたmessage�
 match result確認buttonと重ならないsafe regionをclickして演出を進める。追加の
 `match-result-confirm` templateが表示されたら、その検出位置をclickする。追加確認が連続する場合は、
 表示された確認buttonをすべて順に処理してから `wait_for_state_change()` を終了する。
+報酬処理中にRoomまたはtournamentへの復帰messageを先読みしても適用せず、元の順序でqueueへ
+戻す。報酬UIをすべて閉じた後、次に検出されるScreenが同じmessageを消費する。
 
 初回の `ActionMJStart` / `ActionNewRound` は受信順を入れ替えないという既存方針を維持する。
 初期化完了後のlive actionは、局遷移、state取得、操作完了待ち、UI待機のいずれでも共通の

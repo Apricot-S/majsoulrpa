@@ -309,6 +309,56 @@ def test_match_result_advances_activity_reward_presentation(
     assert sleeps == [0.5] * (1 + confirmation_count)
 
 
+@pytest.mark.parametrize(
+    "return_message_name",
+    [
+        ".lq.Lobby.fetchRoom",
+        ".lq.Lobby.enterCustomizedContest",
+    ],
+)
+def test_activity_reward_puts_back_early_return_message(
+    monkeypatch: pytest.MonkeyPatch,
+    return_message_name: str,
+) -> None:
+    return_message = _request_response(return_message_name, response={})
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(step=0, ju=0),
+        _live_liuju_action(step=1, type_=1, seat=0),
+        ".lq.NotifyGameEndResult",
+        return_message,
+        ".lq.NotifyActivityRewardV2",
+    )
+    match_result_confirmation = _match_result_confirmation()
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=LIUJU_CONFIRM_TEMPLATE_PATH,
+            settings_path=LIUJU_CONFIRM_SETTINGS_PATH,
+        ),
+        _round_result_confirmation(),
+        match_result_confirmation,
+        _synthetic_blank_screenshot(),
+        match_result_confirmation,
+        match_result_confirmation,
+        _synthetic_blank_screenshot(),
+    )
+    screen = _screen(browser, messages)
+
+    async def skip_sleep(delay: float) -> None:
+        _ = delay
+
+    monkeypatch.setattr(asyncio, "sleep", skip_sleep)
+    asyncio.run(screen.before_callback())
+    terminal = asyncio.run(screen.get_state())
+
+    state = asyncio.run(screen.wait_for_state_change(terminal))
+
+    assert state is None
+    assert screen._stale
+    assert len(browser.clicked_points) == 5
+    assert messages.get_nowait() is return_message
+
+
 def test_wait_for_state_change_clicks_each_hule_confirmation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
