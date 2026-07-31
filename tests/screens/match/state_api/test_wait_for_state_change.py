@@ -199,6 +199,59 @@ def test_match_result_wait_puts_back_tournament_return_message(
     assert messages.get_nowait() is tournament_return
 
 
+@pytest.mark.parametrize(
+    "notification_name",
+    [
+        ".lq.NotifyAccountUpdate",
+        ".lq.NotifyGameFinishReward",
+        ".lq.NotifyActivityReward",
+        ".lq.NotifyActivityPoint",
+        ".lq.NotifyLeaderboardPoint",
+    ],
+)
+def test_match_result_ignores_state_unrelated_notification(
+    caplog: pytest.LogCaptureFixture,
+    notification_name: str,
+) -> None:
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(step=0, ju=0),
+        _live_liuju_action(step=1, type_=1, seat=0),
+        ".lq.NotifyGameEndResult",
+        notification_name,
+    )
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=LIUJU_CONFIRM_TEMPLATE_PATH,
+            settings_path=LIUJU_CONFIRM_SETTINGS_PATH,
+        ),
+        _round_result_confirmation(),
+        _synthetic_blank_screenshot(),
+        _match_result_confirmation(),
+    )
+    screen = _screen(browser, messages)
+    asyncio.run(screen.before_callback())
+    terminal = asyncio.run(screen.get_state())
+    caplog.clear()
+
+    with caplog.at_level(
+        logging.INFO,
+        logger="majsoulrpa.screens.match.screen",
+    ):
+        state = asyncio.run(screen.wait_for_state_change(terminal))
+
+    assert state is None
+    assert screen._stale
+    assert len(browser.clicked_points) == 3
+    assert (
+        sum(
+            f'"name":"{notification_name}"' in record.getMessage()
+            for record in caplog.records
+        )
+        == 1
+    )
+
+
 def test_wait_for_state_change_clicks_each_hule_confirmation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

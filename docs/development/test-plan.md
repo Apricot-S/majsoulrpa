@@ -1026,7 +1026,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
   `NotifyActivityPointV2` が届くことを許容する。Match固有の待機は追加せず、
   結果確認前に取得した場合は通常のstate非関連messageとして無視し、
   結果確認後に届いた場合は共有queueを通じて次のScreenへ引き渡す
-- [ ] `NotifyAccountUpdate` / `NotifyGameFinishReward` / `NotifyActivityReward` /
+- [x] `NotifyAccountUpdate` / `NotifyGameFinishReward` / `NotifyActivityReward` /
   `NotifyActivityPoint` / `NotifyLeaderboardPoint` を通常formatterでlogへ出し、終局遷移を継続する
 - [ ] `NotifyActivityRewardV2` を受信したらmatch result確認buttonと重ならないsafe regionを
   clickし、イベント報酬演出を進める
