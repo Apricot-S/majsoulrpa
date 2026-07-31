@@ -701,6 +701,9 @@ class MatchScreen(Screen):
         )
 
     async def _click_dapai_until_progress(self, region: Region) -> None:
+        # An input message can arrive while the preceding hand animation
+        # still blocks the UI. Retry clicks that may have been ignored,
+        # stopping only when an authoritative progress message arrives.
         loop = asyncio.get_running_loop()
         while True:
             await self.click_region(region)
@@ -796,6 +799,9 @@ class MatchScreen(Screen):
                 index,
             )
             await asyncio.sleep(OPERATION_OPTION_DISPLAY_DELAY_SECONDS)
+            # A higher-priority action can remove the candidate UI
+            # while it is opening. Recheck the queue before clicking a
+            # position that may already belong to a different screen.
             if await self._put_back_pending_action_while_waiting_for_ui():
                 return
             await self.click_region(selection_region)
@@ -928,10 +934,15 @@ class MatchScreen(Screen):
             return
 
         await asyncio.sleep(OPERATION_OPTION_DISPLAY_DELAY_SECONDS)
+        # Another player's winning action can remove the candidate UI
+        # during its opening animation, so do not click a stale
+        # position.
         if await self._put_back_pending_action_while_waiting_for_ui():
             return
 
         if len(operations) == _MAX_ANGANG_JIAGANG_CANDIDATE_COUNT:
+            # The three-candidate layout has not been observed, so its
+            # coordinates cannot be selected safely.
             screenshot = await self.context.browser.screenshot()
             msg = (
                 f"Selecting from three {operation_name} candidates is not "
@@ -965,6 +976,8 @@ class MatchScreen(Screen):
             )
 
         await asyncio.sleep(OPERATION_OPTION_DISPLAY_DELAY_SECONDS)
+        # The opportunity can disappear while discard candidates are
+        # opening. Check authoritative messages before clicking a tile.
         if await self._put_back_pending_action_while_waiting_for_ui():
             return
 
@@ -1133,6 +1146,8 @@ class MatchScreen(Screen):
                     ),
                 )
         finally:
+            # Preemption can finish the skip before this cleanup runs,
+            # but leaving the toggle enabled would affect later turns.
             await self.click_region(region, warp=True)
 
     async def _click_skip_button_or_detect_progress(self) -> None:
@@ -1235,6 +1250,10 @@ class MatchScreen(Screen):
     ) -> None:
         if observed_message_names.isdisjoint(_OPERATION_INPUT_RESPONSE_NAMES):
             return
+        # An input response alone does not prove that the UI accepted
+        # the operation. Without a visible button or a subsequent
+        # action, treating it as success would hide a stalled
+        # presentation.
         error = ValueError(
             "An operation input response arrived without a progress "
             "action or a visible operation button."
@@ -1385,6 +1404,9 @@ class MatchScreen(Screen):
                 )
                 activity_reward_observed = True
         finally:
+            # Only the reward notification requires Match-owned UI work.
+            # Preserve every other message for the next Screen in its
+            # original order.
             for message in messages_to_put_back:
                 self._put_back_sniffer_message(message)
         return activity_reward_observed
@@ -1640,6 +1662,10 @@ class MatchScreen(Screen):
         event: MatchEvent,
         operation: MatchOperation,
     ) -> bool:
+        # Mahjong action priority can resolve another player's call or
+        # win before the requested call reaches the server. That
+        # outcome is an expected preemption rather than a failed UI
+        # operation.
         is_opponents_hule = isinstance(event, HuleEvent) and all(
             hule.seat != state.self_seat for hule in event.hules
         )

@@ -922,11 +922,11 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 操作buttonは共通して0.2秒間隔でスクリーンショットから再検出する
 - [x] 終局時の確認buttonは共通して0.5秒間隔でスクリーンショットから再検出する
 - [x] スキップbuttonは検出後に1回だけclickし、推定座標を連打しない
-- [ ] チーの選択・スキップ中に別playerのポン・大明槓・ロンが成立してもoperation失敗にしない
-- [ ] ポン・大明槓の選択・スキップ中に別playerのロンが成立してもoperation失敗にしない
-- [ ] 上位actionの ActionChiPengGang / ActionHule を先読みした場合は1回だけput_backして通常pipelineで処理する
-- [ ] 上位actionを確認できないbutton検出失敗を黙ってスキップ成功にしない
-- [ ] ロンのスキップはダブロン・トリロンでも自家の選択まで待たれ、別playerのActionHuleによるpreempt成功扱いをしない
+- [x] チーの選択・スキップ中に別playerのポン・大明槓・ロンが成立してもoperation失敗にしない
+- [x] ポン・大明槓の選択・スキップ中に別playerのロンが成立してもoperation失敗にしない
+- [x] 上位actionの ActionChiPengGang / ActionHule を先読みした場合は1回だけput_backして通常pipelineで処理する
+- [x] 上位actionを確認できないbutton検出失敗を黙ってスキップ成功にしない
+- [x] ロンのスキップはダブロン・トリロンでも自家の選択まで待たれ、別playerのActionHuleによるpreempt成功扱いをしない
 - [x] publicなスキップ表現は field のない `SkipOperation` とし、他の候補と同じ `operate()` APIへ渡す
 
 ### MatchScreen state 待機と次局自動遷移
@@ -975,7 +975,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 次局がある場合は更新後の `MatchState`、試合終了時は画面遷移とstale化の完了後に `None` を返す
 - [x] 結果画面専用のpublic operationや `advance_round()` を設けない
 - [x] `wait_for_state_change()` のtimeoutは呼び出し側の `asyncio.timeout()` に委ねる
-- [ ] 順序差・遅延・画面省略に対応するworkaround分岐には理由を説明するcode commentを残す
+- [x] 順序差・遅延・画面省略に対応するworkaround分岐には理由を説明するcode commentを残す
 
 ### MatchScreen v1-develop workaround 回帰
 
