@@ -996,7 +996,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
   次局の親が自家かどうかにかかわらず遷移を完了する
 - [x] `confirmNewRound` が省略されてstep 1以降がstep 0より先着した場合は、bounded local bufferで
   step 0の `ActionNewRound` まで待ってstep順へ戻す
-- [ ] 次局並べ替えbufferは同じstepの異なるAction、上限超過、step 0が `ActionNewRound` 以外の
+- [x] 次局並べ替えbufferは同じstepの異なるAction、上限超過、step 0が `ActionNewRound` 以外の
   場合をscreenshot付き不整合errorにする
 - [x] 次局遷移以外のactive live actionも、共通message適用経路のbounded bufferでstep順へ戻す
 - [x] 初回 `ActionMJStart` / `ActionNewRound` にはlive actionのstep並べ替えを適用しない

@@ -716,6 +716,45 @@ def test_next_round_actions_are_reordered_from_step_one() -> None:
     assert messages.get_nowait() is step_one
 
 
+def test_next_round_reordering_rejects_non_new_round_at_step_zero() -> None:
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(step=0, ju=0),
+        _live_liuju_action(step=1, type_=1, seat=0),
+        _live_discard_action(
+            step=1,
+            seat=1,
+            tile="9s",
+            moqie=False,
+        ),
+        _live_discard_action(
+            step=0,
+            seat=1,
+            tile="8s",
+            moqie=False,
+        ),
+    )
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=LIUJU_CONFIRM_TEMPLATE_PATH,
+            settings_path=LIUJU_CONFIRM_SETTINGS_PATH,
+        ),
+        _round_result_confirmation(),
+        b"inconsistent-screenshot",
+    )
+    screen = _screen(browser, messages)
+
+    asyncio.run(screen.before_callback())
+    terminal = asyncio.run(screen.get_state())
+
+    with pytest.raises(
+        ScreenInconsistentMessageError,
+        match="Live actions could not be reordered",
+    ) as exc_info:
+        asyncio.run(screen.wait_for_state_change(terminal))
+    assert exc_info.value.screenshot == b"inconsistent-screenshot"
+
+
 def test_wait_for_state_change_rejects_next_round_score_mismatch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

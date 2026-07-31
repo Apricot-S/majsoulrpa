@@ -104,6 +104,76 @@ def test_get_state_reorders_out_of_step_live_actions() -> None:
     assert isinstance(state.round.events[-1], ZimoEvent)
 
 
+def test_get_state_rejects_different_actions_at_same_buffered_step() -> None:
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"inconsistent-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=_message_queue(
+                _auth_game(),
+                _live_new_round_action(step=0, ju=1),
+                _live_discard_action(
+                    step=3,
+                    seat=1,
+                    tile="9s",
+                    moqie=False,
+                ),
+                _live_deal_action(
+                    step=3,
+                    seat=2,
+                    tile="",
+                    left_tile_count=68,
+                ),
+            ),
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+
+    with pytest.raises(
+        ScreenInconsistentMessageError,
+        match="Live actions could not be reordered",
+    ) as exc_info:
+        asyncio.run(screen.get_state())
+    assert exc_info.value.screenshot == b"inconsistent-screenshot"
+
+
+def test_get_state_rejects_reorder_buffer_capacity_overflow() -> None:
+    out_of_order_actions = [
+        _live_deal_action(
+            step=step,
+            seat=1,
+            tile="",
+            left_tile_count=68,
+        )
+        for step in range(10, 19)
+    ]
+    messages = _message_queue(
+        _auth_game(),
+        _live_new_round_action(step=0, ju=1),
+    )
+    screen = MatchScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(b"inconsistent-screenshot"),
+            rng=Random(0),
+            account_state=SimpleNamespace(account_id=SELF_ACCOUNT_ID),
+            sniffer_messages=messages,
+        ),
+    )
+
+    asyncio.run(screen.before_callback())
+    for action in out_of_order_actions:
+        messages.enqueue(action)
+
+    with pytest.raises(
+        ScreenInconsistentMessageError,
+        match="Live actions could not be reordered",
+    ) as exc_info:
+        asyncio.run(screen.get_state())
+    assert exc_info.value.screenshot == b"inconsistent-screenshot"
+
+
 def test_get_state_continues_after_opponents_concealed_draw() -> None:
     screen = MatchScreen(
         context=ScreenContext(
