@@ -1330,7 +1330,8 @@ class MatchScreen(Screen):
                 if not await self._consume_pending_activity_reward():
                     return
                 await self._advance_event_reward_presentation()
-                continue
+                await self._click_additional_match_result_confirmations()
+                return
             if not message_drain_stopped:
                 message_drain_stopped = (
                     await self._drain_pending_match_result_messages(
@@ -1397,6 +1398,16 @@ class MatchScreen(Screen):
             # after the match result. Advance it outside the area where
             # the following confirmation button appears.
             await self.click_region(self.EVENT_REWARD_ADVANCE_REGION)
+            await asyncio.sleep(
+                CONFIRMATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
+            )
+
+    async def _click_additional_match_result_confirmations(self) -> None:
+        while True:
+            if not await self.click_template_if_present(
+                self.MATCH_RESULT_CONFIRM_TEMPLATE
+            ):
+                return
             await asyncio.sleep(
                 CONFIRMATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
             )

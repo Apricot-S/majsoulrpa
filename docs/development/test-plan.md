@@ -1031,7 +1031,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `NotifyActivityRewardV2` を受信したらmatch result確認buttonと重ならないsafe regionを
   clickし、イベント報酬演出を進める
 - [x] イベント報酬演出後に表示される追加の `match-result-confirm` templateを検出してclickする
-- [ ] イベント報酬の追加確認buttonが連続する場合は、表示されたbuttonをすべて順にclickする
+- [x] イベント報酬の追加確認buttonが連続する場合は、表示されたbuttonをすべて順にclickする
 - [ ] イベント報酬演出または追加確認buttonが残っている間は `MatchScreen` をstaleにしない
 - [ ] イベント報酬処理中にRoom / tournament復帰messageを先読みした場合は1回put backし、
   報酬UIを閉じてから次Screenへ引き渡す

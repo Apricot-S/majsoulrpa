@@ -253,8 +253,10 @@ def test_match_result_ignores_state_unrelated_notification(
     )
 
 
+@pytest.mark.parametrize("confirmation_count", [1, 2])
 def test_match_result_advances_activity_reward_presentation(
     monkeypatch: pytest.MonkeyPatch,
+    confirmation_count: int,
 ) -> None:
     assert (
         Region(
@@ -282,7 +284,8 @@ def test_match_result_advances_activity_reward_presentation(
         match_result_confirmation,
         _synthetic_blank_screenshot(),
         match_result_confirmation,
-        match_result_confirmation,
+        *([match_result_confirmation] * confirmation_count),
+        _synthetic_blank_screenshot(),
     )
     screen = _screen(browser, messages)
     sleeps: list[float] = []
@@ -298,12 +301,12 @@ def test_match_result_advances_activity_reward_presentation(
 
     assert state is None
     assert screen._stale
-    assert len(browser.clicked_points) == 5
+    assert len(browser.clicked_points) == 4 + confirmation_count
     reward_click_x, reward_click_y = browser.clicked_points[3]
     reward_region = MatchScreen.EVENT_REWARD_ADVANCE_REGION
     assert reward_region.left <= reward_click_x < reward_region.right
     assert reward_region.top <= reward_click_y < reward_region.bottom
-    assert sleeps == [0.5]
+    assert sleeps == [0.5] * (1 + confirmation_count)
 
 
 def test_wait_for_state_change_clicks_each_hule_confirmation(
