@@ -79,9 +79,11 @@ class ZmqSocketSpy:
         self._last_response = responses[-1] if responses else None
         self.closed = False
         self.options: list[tuple[int, bytes | int]] = []
+        self.operations: list[tuple[str, object]] = []
 
     def connect(self, endpoint: str) -> None:
         self.connected_endpoints.append(endpoint)
+        self.operations.append(("connect", endpoint))
 
     def close(self, *, linger: int) -> None:
         _ = linger
@@ -102,6 +104,7 @@ class ZmqSocketSpy:
 
     def setsockopt(self, option: int, value: bytes | int) -> None:
         self.options.append((option, value))
+        self.operations.append(("setsockopt", (option, value)))
 
     async def recv_multipart(self) -> list[bytes]:
         future: asyncio.Future[list[bytes]] = (
@@ -132,6 +135,21 @@ class ZmqContextSpy:
 
     def term(self) -> None:
         self.terminated = True
+
+
+def test_controller_runtime_enables_ipv6_before_connect() -> None:
+    context = ZmqContextSpy()
+    factory = ControllerRuntimeFactory(context_factory=lambda: context)
+    config = AppConfig(
+        endpoint=EndpointConfig(browser_host="::1"),
+    )
+
+    factory({}, config)
+
+    assert context.socket_spy.operations == [
+        ("setsockopt", (zmq.IPV6, 1)),
+        ("connect", f"tcp://[::1]:{config.endpoint.remote_port}"),
+    ]
 
 
 def test_controller_runtime_connects_screenshot_and_cleans_up() -> None:

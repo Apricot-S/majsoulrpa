@@ -1,4 +1,3 @@
-import ipaddress
 import uuid
 from typing import Protocol
 
@@ -6,6 +5,7 @@ import zmq
 
 from majsoulrpa.config import AppConfig
 from majsoulrpa.endpoint import (
+    is_ipv6_literal,
     make_sniffer_publisher_tcp_endpoint,
     make_sniffer_subscriber_tcp_endpoint,
 )
@@ -47,7 +47,7 @@ class ZmqSnifferPublisher:
     ) -> None:
         self._context = context
         self._endpoint = make_sniffer_publisher_tcp_endpoint(config)
-        self._is_ipv6 = _is_ipv6_literal(config.endpoint.client_host)
+        self._is_ipv6 = is_ipv6_literal(config.endpoint.client_host)
         self._stream_id = stream_id or uuid.uuid4()
         self._next_sequence = 1
         self._socket: AsyncZmqSocketLike | None = None
@@ -103,7 +103,7 @@ class ZmqSnifferSubscriber:
     ) -> None:
         self._context = context
         self._endpoint = make_sniffer_subscriber_tcp_endpoint(config)
-        self._is_ipv6 = _is_ipv6_literal(config.endpoint.browser_host)
+        self._is_ipv6 = is_ipv6_literal(config.endpoint.browser_host)
         self._stream_tracker = PublicationStreamTracker()
         self._socket: AsyncZmqSocketLike | None = None
 
@@ -150,11 +150,3 @@ class ZmqSnifferSubscriber:
         socket = self._socket
         self._socket = None
         socket.close(linger=0)
-
-
-def _is_ipv6_literal(host: str) -> bool:
-    try:
-        address = ipaddress.ip_address(host)
-    except ValueError:
-        return False
-    return isinstance(address, ipaddress.IPv6Address)

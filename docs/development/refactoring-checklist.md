@@ -45,7 +45,10 @@
   - [x] `remote_port` と `sniffer_port` が同じ場合を bind 前に拒否することをテストする。
   - [x] TOML の型誤りを拒否し、port・boolean・整数設定の契約をテストする。
 - [x] `constants.py`: component 固有値がルートへ流出していないか、定数の単位と根拠を確認する。
-- [ ] `endpoint.py`: browser/client の接続先 semantics、IPv4・hostname・IPv6 literal の整形重複を確認する。
+- [x] `endpoint.py`: browser/client の接続先 semantics、IPv4・hostname・IPv6 literal の整形重複を確認する。
+  - [x] browser command と Sniffer の4経路が、接続側の `browser_host`、bind側の `client_host`、対応するportを選ぶことをテストする。
+  - [x] IPv4・hostnameを維持し、IPv6 literalをZeroMQのauthority用に角括弧で囲むことをテストする。
+  - [x] IPv6判定を共通化し、browser REQ/REPでもsocketの `ZMQ_IPV6` をbind/connect前に有効化することをテストする。
 - [x] `timing.py`: delay の範囲・単位・乱数注入、固定 sleep の代用になっていないことを確認する。
   - [x] `base_delay` と `sigma` の `NaN`・無限大を拒否し、再標本化 loop が終了不能にならないことをテストする。
   - [x] 最初の標本が 0 以下なら再標本化し、正の delay を返す分岐をテストする。

@@ -13,7 +13,7 @@ from majsoulrpa.browser.server import (
 )
 from majsoulrpa.browser.zmq import BrowserZmqRequestServer
 from majsoulrpa.config import AppConfig
-from majsoulrpa.endpoint import make_client_tcp_endpoint
+from majsoulrpa.endpoint import is_ipv6_literal, make_client_tcp_endpoint
 
 CommandExecutorFactory = Callable[[object], BrowserCommandExecutor]
 RequestServerFactory = Callable[[BrowserCommandExecutor], BrowserRequestServer]
@@ -150,6 +150,7 @@ def _make_zmq_request_server_factory(
             context=context,
             endpoint=endpoint,
             executor=executor,
+            ipv6=is_ipv6_literal(config.endpoint.client_host),
         )
 
     return request_server_factory

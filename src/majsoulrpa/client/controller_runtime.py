@@ -12,7 +12,10 @@ from majsoulrpa.browser.zmq import BrowserZmqClientTransport
 from majsoulrpa.client.runtime import RPARuntime, ScreenshotScreenDetector
 from majsoulrpa.client.session import SessionState
 from majsoulrpa.config import AppConfig
-from majsoulrpa.endpoint import make_browser_host_tcp_endpoint
+from majsoulrpa.endpoint import (
+    is_ipv6_literal,
+    make_browser_host_tcp_endpoint,
+)
 from majsoulrpa.screens import Screen, ScreenContext
 from majsoulrpa.sniffer.client_runtime import SnifferClientRuntime
 from majsoulrpa.sniffer.decoder import SnifferMessageDecoder
@@ -26,6 +29,7 @@ from majsoulrpa.viewport import viewport_width_for_height
 
 
 class ZmqSocketLike(Protocol):
+    def setsockopt(self, option: int, value: int) -> None: ...
     def connect(self, endpoint: str) -> None: ...
     def close(self, *, linger: int) -> None: ...
     async def send(self, payload: bytes) -> None: ...
@@ -86,6 +90,8 @@ class ControllerRuntimeFactory:
         context = self._context_factory()
         socket = context.socket(zmq.REQ)
         endpoint = make_browser_host_tcp_endpoint(config)
+        if is_ipv6_literal(config.endpoint.browser_host):
+            socket.setsockopt(zmq.IPV6, 1)
         socket.connect(endpoint)
 
         transport = LoggingBrowserClientTransport(

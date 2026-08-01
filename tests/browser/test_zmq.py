@@ -1,5 +1,6 @@
 import asyncio
 from contextlib import suppress
+from typing import cast
 from uuid import uuid4
 
 import zmq
@@ -111,6 +112,48 @@ class RecordingExecutor:
             case _:
                 msg = "unexpected command"
                 raise AssertionError(msg)
+
+
+class RequestSocketSpy:
+    def __init__(self) -> None:
+        self.operations: list[tuple[str, object]] = []
+
+    def setsockopt(self, option: int, value: int) -> None:
+        self.operations.append(("setsockopt", (option, value)))
+
+    def bind(self, endpoint: str) -> None:
+        self.operations.append(("bind", endpoint))
+
+    def close(self, *, linger: int) -> None:
+        _ = linger
+
+
+class RequestContextSpy:
+    def __init__(self) -> None:
+        self.socket_spy = RequestSocketSpy()
+
+    def socket(self, socket_type: int) -> RequestSocketSpy:
+        assert socket_type == zmq.REP
+        return self.socket_spy
+
+
+def test_browser_zmq_request_server_enables_ipv6_before_bind() -> None:
+    context = RequestContextSpy()
+    endpoint = "tcp://[::1]:12000"
+    server = BrowserZmqRequestServer(
+        context=cast("zmq.asyncio.Context", context),
+        endpoint=endpoint,
+        executor=RecordingExecutor(),
+        ipv6=True,
+    )
+
+    asyncio.run(server.bind())
+
+    assert context.socket_spy.operations == [
+        ("setsockopt", (zmq.IPV6, 1)),
+        ("bind", endpoint),
+    ]
+    asyncio.run(server.stop())
 
 
 async def _zmq_request_server_handles_client_requests() -> None:
