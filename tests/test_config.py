@@ -32,10 +32,28 @@ def test_endpoint_host_must_not_be_empty(host_key: str) -> None:
         EndpointConfig.model_validate({host_key: ""})
 
 
+@pytest.mark.parametrize("host_key", ["browser_host", "client_host"])
+@pytest.mark.parametrize(
+    "host",
+    [" ", "\t", " example.invalid", "example.invalid "],
+)
+def test_endpoint_host_must_not_contain_whitespace(
+    host_key: str,
+    host: str,
+) -> None:
+    with pytest.raises(ValidationError, match=host_key):
+        EndpointConfig.model_validate({host_key: host})
+
+
 @pytest.mark.parametrize("port", [1023, 49152])
 def test_endpoint_port_must_be_user_port(port: int) -> None:
     with pytest.raises(ValidationError, match="remote_port"):
         EndpointConfig(remote_port=port)
+
+
+def test_endpoint_ports_must_be_distinct() -> None:
+    with pytest.raises(ValidationError, match="must be different"):
+        EndpointConfig(remote_port=12000, sniffer_port=12000)
 
 
 def test_browser_viewport_height_must_be_supported() -> None:
@@ -132,6 +150,19 @@ def test_yostar_email_s3_config_can_be_loaded_from_toml() -> None:
     assert config.yostar_email.s3.key_prefix == "example-prefix/"
     assert config.yostar_email.s3.aws_profile == "example-profile"
     assert "user@example.com" not in repr(config)
+
+
+def test_yostar_email_is_hidden_from_validation_error() -> None:
+    email_address = "private-address@example.invalid"
+
+    with pytest.raises(ValidationError) as exc_info:
+        AppConfig.from_toml_text(
+            f'[yostar_email]\nemail_address = ["{email_address}"]\n',
+        )
+
+    error = exc_info.value
+    assert email_address not in str(error)
+    assert email_address not in repr(error)
 
 
 def test_yostar_email_config_does_not_require_s3_config() -> None:

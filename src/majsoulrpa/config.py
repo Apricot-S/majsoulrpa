@@ -2,7 +2,13 @@ import tomllib
 from pathlib import Path
 from typing import Annotated, Self
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    model_validator,
+)
 
 from majsoulrpa.constants import (
     DEFAULT_BROWSER_HOST,
@@ -17,7 +23,19 @@ from majsoulrpa.constants import (
     USER_PORT_MIN,
 )
 
-Host = Annotated[str, Field(min_length=1)]
+
+def _validate_host(value: str) -> str:
+    if any(character.isspace() for character in value):
+        msg = "host must not contain whitespace."
+        raise ValueError(msg)
+    return value
+
+
+Host = Annotated[
+    str,
+    Field(min_length=1),
+    AfterValidator(_validate_host),
+]
 UserPort = Annotated[int, Field(ge=USER_PORT_MIN, le=USER_PORT_MAX)]
 
 
@@ -32,16 +50,33 @@ ViewportHeight = Annotated[int, AfterValidator(_validate_viewport_height)]
 
 
 class EndpointConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        strict=True,
+        hide_input_in_errors=True,
+    )
 
     browser_host: Host = DEFAULT_BROWSER_HOST
     client_host: Host = DEFAULT_CLIENT_HOST
     remote_port: UserPort = DEFAULT_REMOTE_PORT
     sniffer_port: UserPort = DEFAULT_SNIFFER_PORT
 
+    @model_validator(mode="after")
+    def _validate_distinct_ports(self) -> Self:
+        if self.remote_port == self.sniffer_port:
+            msg = "remote_port and sniffer_port must be different."
+            raise ValueError(msg)
+        return self
+
 
 class BrowserConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        strict=True,
+        hide_input_in_errors=True,
+    )
 
     window_left: int = DEFAULT_WINDOW_LEFT
     window_top: int = DEFAULT_WINDOW_TOP
@@ -51,7 +86,12 @@ class BrowserConfig(BaseModel):
 
 
 class YostarEmailS3Config(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        strict=True,
+        hide_input_in_errors=True,
+    )
 
     bucket_name: Annotated[str, Field(min_length=1)]
     key_prefix: str = ""
@@ -59,14 +99,24 @@ class YostarEmailS3Config(BaseModel):
 
 
 class YostarEmailConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        strict=True,
+        hide_input_in_errors=True,
+    )
 
     email_address: Annotated[str, Field(min_length=1, repr=False)]
     s3: YostarEmailS3Config | None = None
 
 
 class AppConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        strict=True,
+        hide_input_in_errors=True,
+    )
 
     endpoint: EndpointConfig = Field(default_factory=EndpointConfig)
     browser: BrowserConfig = Field(default_factory=BrowserConfig)

@@ -28,7 +28,7 @@
 - [x] `config.example.toml` が全設定の意味とdefaultをコメントで説明する
 - [x] `config.example.toml` を読むと`AppConfig()`と同じ値になる
 - [x] secret に相当する値を config repr に出さない
-- [ ] secret に相当する値を validation error に出さない
+- [x] secret に相当する値を validation error に出さない
 
 ## Phase 3: browser host lifecycle
 
