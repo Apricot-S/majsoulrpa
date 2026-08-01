@@ -1,3 +1,4 @@
+from math import isfinite
 from random import Random
 
 DEFAULT_DELAY_SIGMA = 0.25
@@ -10,8 +11,14 @@ def get_random_delay(
     sigma: float = DEFAULT_DELAY_SIGMA,
     rng: Random | None = None,
 ) -> float:
+    if not isfinite(base_delay):
+        msg = "base_delay must be finite."
+        raise ValueError(msg)
     if base_delay <= 0:
         msg = "base_delay must be positive."
+        raise ValueError(msg)
+    if not isfinite(sigma):
+        msg = "sigma must be finite."
         raise ValueError(msg)
     if sigma < 0:
         msg = "sigma must be non-negative."

@@ -41,7 +41,9 @@
 - [ ] `config.py`: default、strict validation、immutable 性、secret の `repr` / validation error 非表示を確認する。
 - [x] `constants.py`: component 固有値がルートへ流出していないか、定数の単位と根拠を確認する。
 - [ ] `endpoint.py`: browser/client の接続先 semantics、IPv4・hostname・IPv6 literal の整形重複を確認する。
-- [ ] `timing.py`: delay の範囲・単位・乱数注入、固定 sleep の代用になっていないことを確認する。
+- [x] `timing.py`: delay の範囲・単位・乱数注入、固定 sleep の代用になっていないことを確認する。
+  - [x] `base_delay` と `sigma` の `NaN`・無限大を拒否し、再標本化 loop が終了不能にならないことをテストする。
+  - [x] 最初の標本が 0 以下なら再標本化し、正の delay を返す分岐をテストする。
 - [x] `types.py`: callback generic が公開 API を正しく表し、不要な共通型置き場になっていないことを確認する。
 - [x] `viewport.py`: 対応 viewport の制約と config / template scale との責務分担を確認する。
 
