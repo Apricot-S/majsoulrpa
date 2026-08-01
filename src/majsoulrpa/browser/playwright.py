@@ -45,7 +45,6 @@ MAJSOUL_URL = "https://game.mahjongsoul.com/"  # JP version
 CANVAS_SELECTOR = "#unity-canvas"
 
 _CANVAS_WAIT_TIMEOUT_SECONDS = 60
-_USER_AGENT_PROBE_URL = "https://www.google.com/"
 
 YOSTAR_AUTH_URL = "https://jp-sdk-api.yostarplat.com/yostar/get-auth"
 HTTP_OK_STATUS = 200
@@ -424,7 +423,6 @@ async def _get_spoofed_user_agent(playwright: Playwright) -> str:
         await browser.new_context() as context,
         await context.new_page() as page,
     ):
-        await page.goto(_USER_AGENT_PROBE_URL)
         user_agent = await page.evaluate("navigator.userAgent")
 
     return str(user_agent).replace("HeadlessChrome", "Chrome")

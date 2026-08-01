@@ -100,7 +100,7 @@
 - [ ] `browser/zmq.py`: REQ/REP 順序、bind/connect、socket lifecycle、transport error の情報量を確認する。
   - [ ] Windows向けRuntimeWarning抑制をprocess-globalなfilterとして残さず、request serverのbind処理中だけに限定する。
 - [ ] `browser/playwright.py`: 操作の原子性、mouse down 後 cleanup、HTTP response 待機、raw auth response の隔離を確認する。
-  - [ ] headless user-agent取得を外部Googleへのnavigationに依存させず、blank pageで取得できることをテストする。
+  - [x] headless user-agent取得を外部Googleへのnavigationに依存させず、blank pageで取得できることをテストする。
   - [ ] user-agent取得中の失敗も起動failure cleanupの対象に含め、開始済みPlaywrightを停止することをテストする。
   - [ ] Yostar応答の`Code`にJSON booleanを整数として受理せず、明示的なerror responseにすることをテストする。
 - [ ] `browser/runner.py`: backend・server・Sniffer の開始順、逆順 cleanup、主例外と副次例外の扱いを確認する。

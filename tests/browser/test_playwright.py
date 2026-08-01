@@ -719,9 +719,7 @@ def test_playwright_browser_backend_starts_persistent_context(
         "user_agent": "Mozilla/5.0 Chrome/120.0.0.0 Safari/537.36",
     }
     [user_agent_browser] = playwright.chromium.launched_browsers
-    assert user_agent_browser.context.pages[0].visited_urls == [
-        "https://www.google.com/",
-    ]
+    assert user_agent_browser.context.pages[0].visited_urls == []
     assert user_agent_browser.context.pages[0].evaluated_expressions == [
         "navigator.userAgent",
     ]
