@@ -39,6 +39,11 @@
 - [ ] `app.py`: callback 登録、重複検出、runtime composition への委譲、data 非介入を確認する。
 - [ ] `cli.py`: CLI 引数から config への変換、終了コード、secret 非表示、browser runner との境界を確認する。
 - [ ] `config.py`: default、strict validation、immutable 性、secret の `repr` / validation error 非表示を確認する。
+  - [x] `email_address` を `YostarEmailConfig` と `AppConfig` の `repr` に表示しないことをテストする。
+  - [ ] 型不正な `email_address` を含む validation error にメールアドレスを表示しないことをテストする。
+  - [ ] endpoint host が空白だけの場合を拒否し、後段へ不正な ZeroMQ endpoint を渡さないことをテストする。
+  - [ ] `remote_port` と `sniffer_port` が同じ場合を bind 前に拒否することをテストする。
+  - [x] TOML の型誤りを拒否し、port・boolean・整数設定の契約をテストする。
 - [x] `constants.py`: component 固有値がルートへ流出していないか、定数の単位と根拠を確認する。
 - [ ] `endpoint.py`: browser/client の接続先 semantics、IPv4・hostname・IPv6 literal の整形重複を確認する。
 - [x] `timing.py`: delay の範囲・単位・乱数注入、固定 sleep の代用になっていないことを確認する。

@@ -32,7 +32,7 @@ ViewportHeight = Annotated[int, AfterValidator(_validate_viewport_height)]
 
 
 class EndpointConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     browser_host: Host = DEFAULT_BROWSER_HOST
     client_host: Host = DEFAULT_CLIENT_HOST
@@ -41,17 +41,17 @@ class EndpointConfig(BaseModel):
 
 
 class BrowserConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     window_left: int = DEFAULT_WINDOW_LEFT
     window_top: int = DEFAULT_WINDOW_TOP
     viewport_height: ViewportHeight = DEFAULT_VIEWPORT_HEIGHT
     headless: bool = False
-    user_data_dir: Path | None = None
+    user_data_dir: Annotated[Path, Field(strict=False)] | None = None
 
 
 class YostarEmailS3Config(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     bucket_name: Annotated[str, Field(min_length=1)]
     key_prefix: str = ""
@@ -59,14 +59,14 @@ class YostarEmailS3Config(BaseModel):
 
 
 class YostarEmailConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     email_address: Annotated[str, Field(min_length=1, repr=False)]
     s3: YostarEmailS3Config | None = None
 
 
 class AppConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     endpoint: EndpointConfig = Field(default_factory=EndpointConfig)
     browser: BrowserConfig = Field(default_factory=BrowserConfig)

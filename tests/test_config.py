@@ -171,3 +171,21 @@ def test_yostar_email_config_rejects_empty_required_values(
 def test_app_config_rejects_unknown_toml_key() -> None:
     with pytest.raises(ValidationError, match="unexpected"):
         AppConfig.from_toml_text("unexpected = true\n")
+
+
+@pytest.mark.parametrize(
+    "config_text",
+    [
+        '[endpoint]\nremote_port = "12000"\n',
+        '[endpoint]\nsniffer_port = "12001"\n',
+        '[browser]\nwindow_left = "100"\n',
+        '[browser]\nwindow_top = "200"\n',
+        '[browser]\nviewport_height = "720"\n',
+        "[browser]\nheadless = 1\n",
+    ],
+)
+def test_app_config_rejects_toml_scalar_type_coercion(
+    config_text: str,
+) -> None:
+    with pytest.raises(ValidationError):
+        AppConfig.from_toml_text(config_text)
