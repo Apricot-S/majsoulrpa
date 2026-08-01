@@ -103,9 +103,9 @@
   - [x] headless user-agent取得を外部Googleへのnavigationに依存させず、blank pageで取得できることをテストする。
   - [x] user-agent取得中の失敗も起動failure cleanupの対象に含め、開始済みPlaywrightを停止することをテストする。
   - [x] Yostar応答の`Code`にJSON booleanを整数として受理せず、明示的なerror responseにすることをテストする。
-- [ ] `browser/runner.py`: backend・server・Sniffer の開始順、逆順 cleanup、主例外と副次例外の扱いを確認する。
-  - [ ] 既定ZMQ contextを作成直後からcleanup対象にし、backend start・Sniffer start・navigationの失敗でも`term()`することをテストする。
-  - [ ] serverまたはSnifferの主失敗後、兄弟taskがcancellation cleanupで別の例外を出しても主失敗を失わず、副次例外も確認できることをテストする。
+- [x] `browser/runner.py`: backend・server・Sniffer の開始順、逆順 cleanup、主例外と副次例外の扱いを確認する。
+  - [x] 既定ZMQ contextを作成直後からcleanup対象にし、backend start・Sniffer start・navigationの失敗でも`term()`することをテストする。
+  - [x] serverまたはSnifferの主失敗後、兄弟taskがcancellation cleanupで別の例外を出しても主失敗を失わず、副次例外も確認できることをテストする。
 
 ### `browser/`のキーワード専用引数確認
 

@@ -1,7 +1,7 @@
 import asyncio
 import importlib
 from collections.abc import Awaitable, Callable
-from contextlib import AsyncExitStack, suppress
+from contextlib import AsyncExitStack
 from typing import Any, Protocol, cast
 
 import zmq.asyncio
@@ -56,15 +56,18 @@ async def run_browser_host(
         if command_executor_factory is None
         else command_executor_factory
     )
-    zmq_context: zmq.asyncio.Context | None = None
-    if request_server_factory is None:
-        zmq_context = zmq.asyncio.Context()
-        server_factory = _make_zmq_request_server_factory(config, zmq_context)
-    else:
-        server_factory = request_server_factory
+    server_factory = request_server_factory
 
     async with AsyncExitStack() as stack:
         stack.push_async_callback(backend.stop)
+
+        if server_factory is None:
+            zmq_context = zmq.asyncio.Context()
+            stack.callback(zmq_context.term)
+            server_factory = _make_zmq_request_server_factory(
+                config,
+                zmq_context,
+            )
 
         async def page_ready(page: object) -> None:
             if sniffer_backend is None:
@@ -76,9 +79,6 @@ async def run_browser_host(
             config,
             page_ready=page_ready if sniffer_backend is not None else None,
         )
-
-        if zmq_context is not None:
-            stack.callback(zmq_context.term)
 
         page = getattr(backend, "page", None)
         if page is None:
@@ -104,27 +104,63 @@ async def _serve_with_sniffer(
     server_task = asyncio.create_task(request_server.serve_forever())
     sniffer_task = asyncio.create_task(sniffer_backend.run())
     tasks = (server_task, sniffer_task)
-    done: set[asyncio.Task[None]] = set()
     try:
-        done, _pending = await asyncio.wait(
+        done, pending = await asyncio.wait(
             tasks,
             return_when=asyncio.FIRST_COMPLETED,
         )
-    finally:
-        unfinished = [task for task in tasks if not task.done()]
-        for task in unfinished:
-            task.cancel()
-        for task in unfinished:
-            with suppress(asyncio.CancelledError):
-                await task
+    except BaseException as error:
+        cleanup_errors = await _cancel_tasks(tasks)
+        if cleanup_errors:
+            msg = "Browser host task cancellation failed."
+            raise BaseExceptionGroup(
+                msg,
+                [error, *cleanup_errors],
+            ) from None
+        raise
 
+    cleanup_errors = await _cancel_tasks(tuple(pending))
+    task_errors: list[BaseException] = []
+    sniffer_stopped_normally = False
     for task in tasks:
-        if task in done:
+        if task not in done:
+            continue
+        try:
             task.result()
+        except BaseException as error:  # noqa: BLE001
+            task_errors.append(error)
+        else:
+            if task is sniffer_task and server_task not in done:
+                sniffer_stopped_normally = True
 
-    if sniffer_task in done and server_task not in done:
+    if sniffer_stopped_normally:
         msg = "Sniffer worker stopped unexpectedly."
-        raise RuntimeError(msg)
+        task_errors.append(RuntimeError(msg))
+
+    errors = [*task_errors, *cleanup_errors]
+    if len(errors) == 1:
+        raise errors[0]
+    if errors:
+        msg = "Browser host tasks failed."
+        raise BaseExceptionGroup(msg, errors)
+
+
+async def _cancel_tasks(
+    tasks: tuple[asyncio.Task[None], ...],
+) -> list[BaseException]:
+    for task in tasks:
+        if not task.done():
+            task.cancel()
+
+    errors: list[BaseException] = []
+    for task in tasks:
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+        except BaseException as error:  # noqa: BLE001
+            errors.append(error)
+    return errors
 
 
 def _make_playwright_command_executor(page: object) -> BrowserCommandExecutor:
