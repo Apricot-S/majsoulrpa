@@ -113,10 +113,7 @@ async def _serve_with_sniffer(
         cleanup_errors = await _cancel_tasks(tasks)
         if cleanup_errors:
             msg = "Browser host task cancellation failed."
-            raise BaseExceptionGroup(
-                msg,
-                [error, *cleanup_errors],
-            ) from None
+            raise BaseExceptionGroup(msg, [error, *cleanup_errors]) from None
         raise
 
     cleanup_errors = await _cancel_tasks(tuple(pending))
