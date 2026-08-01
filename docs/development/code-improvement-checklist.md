@@ -97,9 +97,9 @@
 - [x] `browser/controller.py`: Screen 向け操作 semantics、型付き request 共通処理、unexpected response の失敗を確認する。
 - [x] `browser/history.py`: command / response summary の網羅性、座標以外の text・認証情報の redaction を確認する。
 - [x] `browser/server.py`: 1 request / 1 response、stop response 後の停止、executor 例外の伝播を確認する。
-- [ ] `browser/zmq.py`: REQ/REP 順序、bind/connect、socket lifecycle、transport error の情報量を確認する。
-  - [ ] Windows向けRuntimeWarning抑制をprocess-globalなfilterとして残さず、request serverのbind処理中だけに限定する。
-- [ ] `browser/playwright.py`: 操作の原子性、mouse down 後 cleanup、HTTP response 待機、raw auth response の隔離を確認する。
+- [x] `browser/zmq.py`: REQ/REP 順序、bind/connect、socket lifecycle、transport error の情報量を確認する。
+  - [x] Windows向けRuntimeWarningは、Tornadoによる既定のfallbackで利用者の対応が不要なため、category・module・messageを限定したglobal filterをruntime初期化時に設定する。
+- [x] `browser/playwright.py`: 操作の原子性、mouse down 後 cleanup、HTTP response 待機、raw auth response の隔離を確認する。
   - [x] headless user-agent取得を外部Googleへのnavigationに依存させず、blank pageで取得できることをテストする。
   - [x] user-agent取得中の失敗も起動failure cleanupの対象に含め、開始済みPlaywrightを停止することをテストする。
   - [x] Yostar応答の`Code`にJSON booleanを整数として受理せず、明示的なerror responseにすることをテストする。
