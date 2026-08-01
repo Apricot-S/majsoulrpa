@@ -89,14 +89,32 @@
 ## `browser/`
 
 - [ ] `browser/__init__.py`: lazy export が optional Playwright import を隔離し、不足 extra を明示することを確認する。
+  - [ ] lazy import中の`ModuleNotFoundError`は不足しているmoduleがPlaywright自身の場合だけinstall案内へ変換し、Playwright module内の別のimport失敗を隠さないことをテストする。
 - [ ] `browser/messages.py`: command / response の判別共用体、strict schema、secret を含まない wire 契約を確認する。
-- [ ] `browser/transport.py`: client と server の最小 `Protocol` が fake と remote I/O の分離に実際に使われることを確認する。
-- [ ] `browser/controller.py`: Screen 向け操作 semantics、型付き request 共通処理、unexpected response の失敗を確認する。
-- [ ] `browser/history.py`: command / response summary の網羅性、座標以外の text・認証情報の redaction を確認する。
-- [ ] `browser/server.py`: 1 request / 1 response、stop response 後の停止、executor 例外の伝播を確認する。
+  - [ ] wire modelをstrictかつ`NaN`・無限大を拒否する設定にし、文字列から数値への型変換や非有限の座標・delayを受理しないことをテストする。
+  - [ ] malformed payloadのvalidation errorに入力値を表示せず、textや認証関連値が例外経由で漏れないことをテストする。
+- [x] `browser/transport.py`: client と server の最小 `Protocol` が fake と remote I/O の分離に実際に使われることを確認する。
+- [x] `browser/controller.py`: Screen 向け操作 semantics、型付き request 共通処理、unexpected response の失敗を確認する。
+- [x] `browser/history.py`: command / response summary の網羅性、座標以外の text・認証情報の redaction を確認する。
+- [x] `browser/server.py`: 1 request / 1 response、stop response 後の停止、executor 例外の伝播を確認する。
 - [ ] `browser/zmq.py`: REQ/REP 順序、bind/connect、socket lifecycle、transport error の情報量を確認する。
+  - [ ] Windows向けRuntimeWarning抑制をprocess-globalなfilterとして残さず、request serverのbind処理中だけに限定する。
 - [ ] `browser/playwright.py`: 操作の原子性、mouse down 後 cleanup、HTTP response 待機、raw auth response の隔離を確認する。
+  - [ ] headless user-agent取得を外部Googleへのnavigationに依存させず、blank pageで取得できることをテストする。
+  - [ ] user-agent取得中の失敗も起動failure cleanupの対象に含め、開始済みPlaywrightを停止することをテストする。
+  - [ ] Yostar応答の`Code`にJSON booleanを整数として受理せず、明示的なerror responseにすることをテストする。
 - [ ] `browser/runner.py`: backend・server・Sniffer の開始順、逆順 cleanup、主例外と副次例外の扱いを確認する。
+  - [ ] 既定ZMQ contextを作成直後からcleanup対象にし、backend start・Sniffer start・navigationの失敗でも`term()`することをテストする。
+  - [ ] serverまたはSnifferの主失敗後、兄弟taskがcancellation cleanupで別の例外を出しても主失敗を失わず、副次例外も確認できることをテストする。
+
+### `browser/`のキーワード専用引数確認
+
+- [x] `messages.py`のPydantic fieldはwire schemaの名前付きfieldであり、同型の座標・delay・textを順序で渡さないため、constructorのキーワード指定を維持する。
+- [x] `controller.py`はtransportを主要入力として位置指定し、乱数源・delay設定と`click()`の`warp`は省略可能なpolicyで取り違えやすいため、キーワード専用を維持する。
+- [x] `playwright.py`の`page_ready`は起動途中へ差し込むhook、browser起動helperの各引数は同型値を含む設定群であるため、キーワード専用を維持する。Playwright互換Protocolの`delay`と`timeout`も接続先APIの署名に合わせる。
+- [x] `runner.py`はconfigを主要入力として位置指定し、backend・Sniffer・factory群は通常利用から分離した注入点なので、キーワード専用を維持する。
+- [x] `zmq.py`のrequest server constructorはcontext・endpoint・executor・IPv6設定をcomposition rootで明示する配線用APIなので、キーワード専用を維持する。
+- [x] `__init__.py`、`transport.py`、`history.py`、`server.py`には解除を検討すべきキーワード専用引数がない。
 
 ## `client/`
 
