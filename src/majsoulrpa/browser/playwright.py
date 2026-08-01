@@ -286,26 +286,26 @@ class PlaywrightBrowserBackend:
         page_ready: Callable[[object], Awaitable[None]] | None = None,
     ) -> None:
         self._playwright = await async_playwright().start()
-        viewport_width = viewport_width_for_height(
-            config.browser.viewport_height,
-        )
-        viewport = ViewportSize(
-            width=viewport_width,
-            height=config.browser.viewport_height,
-        )
-        args = [
-            f"--window-position={config.browser.window_left},{config.browser.window_top}",
-        ]
-        ignore_default_args = (
-            ["--mute-audio"] if not config.browser.headless else None
-        )
-        user_agent = (
-            await _get_spoofed_user_agent(self._playwright)
-            if config.browser.headless
-            else None
-        )
-
         try:
+            viewport_width = viewport_width_for_height(
+                config.browser.viewport_height,
+            )
+            viewport = ViewportSize(
+                width=viewport_width,
+                height=config.browser.viewport_height,
+            )
+            args = [
+                f"--window-position={config.browser.window_left},{config.browser.window_top}",
+            ]
+            ignore_default_args = (
+                ["--mute-audio"] if not config.browser.headless else None
+            )
+            user_agent = (
+                await _get_spoofed_user_agent(self._playwright)
+                if config.browser.headless
+                else None
+            )
+
             if config.browser.user_data_dir is None:
                 await self._start_ephemeral_browser(
                     headless=config.browser.headless,

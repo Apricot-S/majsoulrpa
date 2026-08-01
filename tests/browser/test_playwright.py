@@ -581,12 +581,15 @@ class FakeChromium:
         self.browser = FakeBrowser()
         self.launched_browsers: list[FakeBrowser] = []
         self.persistent_context = FakeContext()
+        self.launch_error: BaseException | None = None
         self.launch_kwargs: dict[str, object] | None = None
         self.persistent_args: tuple[str, ...] | None = None
         self.persistent_kwargs: dict[str, object] | None = None
 
     async def launch(self, **kwargs: object) -> FakeBrowser:
         self.launch_kwargs = kwargs
+        if self.launch_error is not None:
+            raise self.launch_error
         browser = FakeBrowser()
         self.launched_browsers.append(browser)
         return browser
@@ -735,6 +738,31 @@ def test_playwright_browser_backend_starts_persistent_context(
 
     assert playwright.chromium.persistent_context.closed == 1
     assert playwright.chromium.browser.closed == 0
+    assert playwright.stopped == 1
+
+
+def test_playwright_browser_backend_stops_playwright_when_user_agent_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    playwright = FakePlaywright()
+    playwright.chromium.launch_error = RuntimeError(
+        "user-agent probe failed",
+    )
+    starter = FakePlaywrightStarter(playwright)
+    monkeypatch.setattr(
+        browser_playwright,
+        "async_playwright",
+        lambda: starter,
+    )
+    backend = PlaywrightBrowserBackend()
+
+    with pytest.raises(RuntimeError, match="user-agent probe failed"):
+        asyncio.run(
+            backend.start(
+                AppConfig(browser=BrowserConfig(headless=True)),
+            ),
+        )
+
     assert playwright.stopped == 1
 
 
