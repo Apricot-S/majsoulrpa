@@ -31,7 +31,7 @@ def make_sniffer_subscriber_tcp_endpoint(config: AppConfig) -> str:
     )
 
 
-def make_tcp_endpoint(*, host: str, port: int) -> str:
+def make_tcp_endpoint(host: str, port: int) -> str:
     return f"tcp://{format_tcp_host(host)}:{port}"
 
 

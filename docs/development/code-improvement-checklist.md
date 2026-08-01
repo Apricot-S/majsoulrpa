@@ -69,11 +69,22 @@
   - [x] browser command と Sniffer の4経路が、接続側の `browser_host`、bind側の `client_host`、対応するportを選ぶことをテストする。
   - [x] IPv4・hostnameを維持し、IPv6 literalをZeroMQのauthority用に角括弧で囲むことをテストする。
   - [x] IPv6判定を共通化し、browser REQ/REPでもsocketの `ZMQ_IPV6` をbind/connect前に有効化することをテストする。
+  - [x] `make_tcp_endpoint()`の必須引数`host, port`は自然な順序と異なる型を持つため、キーワード専用を解除する。
 - [x] `timing.py`: delay の範囲・単位・乱数注入、固定 sleep の代用になっていないことを確認する。
   - [x] `base_delay` と `sigma` の `NaN`・無限大を拒否し、再標本化 loop が終了不能にならないことをテストする。
   - [x] 最初の標本が 0 以下なら再標本化し、正の delay を返す分岐をテストする。
 - [x] `types.py`: callback generic が公開 API を正しく表し、不要な共通型置き場になっていないことを確認する。
 - [x] `viewport.py`: 対応 viewport の制約と config / template scale との責務分担を確認する。
+
+### rootのキーワード専用引数確認
+
+- [x] `__init__.py`、`_clock.py`、`constants.py`、`types.py`、`viewport.py`には、キーワード専用にするか判断すべき複数引数のcallableがない。
+- [x] `app.py`: `RPAApp.run()`の`detection_timeout`は主要入力の`config, data`と異なるruntime policyで、同じ位置に固定せず呼び出し側で名前を読めるため、キーワード専用を維持する。
+- [x] `app.py`: `RPAApp.on()`の`screen_type`、`run()`の`config, data`、runtime factoryの`callbacks, config`は主要入力または自然な順序を持つため、位置引数を維持する。`RPAApp.__init__()`のfactoryは単独引数なので位置指定も許容する。
+- [x] `cli.py`: `argv`は`main()`の主要入力として位置指定を維持し、`run_browser_host`はCLI利用者向けオプションではなく注入用collaboratorなのでキーワード専用を維持する。
+- [x] `config.py`: Pydantic modelのfieldは名前付き設定schemaであり、同型fieldの取り違え防止とfield追加時の安定性が必要なため、constructorのキーワード指定を維持する。validatorとTOML loaderの単独引数は位置指定を維持する。
+- [x] `endpoint.py`: `make_tcp_endpoint()`の`host, port`だけはキーワード専用を強制する理由が弱いため解除する。その他のendpoint helperは単独の主要入力を位置指定のまま維持する。
+- [x] `timing.py`: `base_delay`は主要入力として位置指定を維持する。`sigma`は同じfloat型の分布調整値、`rng`は注入用collaboratorなので、取り違え防止のためキーワード専用を維持する。
 
 ## `browser/`
 
