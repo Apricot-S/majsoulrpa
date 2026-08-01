@@ -12,7 +12,9 @@ class RPAApp:
     def __init__(self, runtime_factory: RuntimeFactory | None = None) -> None:
         self._callbacks: dict[type[Screen], Callback[Any]] = {}
         self._runtime_factory = (
-            runtime_factory or self._default_runtime_factory
+            self._default_runtime_factory
+            if runtime_factory is None
+            else runtime_factory
         )
 
     @property

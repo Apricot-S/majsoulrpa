@@ -130,6 +130,11 @@ class RuntimeFactorySpy:
         )
 
 
+class FalseyRuntimeFactory(RuntimeFactorySpy):
+    def __bool__(self) -> bool:
+        return False
+
+
 def test_rpa_app_registers_async_callback() -> None:
     app = RPAApp()
 
@@ -196,6 +201,32 @@ def test_rpa_app_preserves_registration_order() -> None:
 def test_rpa_app_run_dispatches_registered_screen() -> None:
     detector = SequenceScreenDetector(LoginScreen(), None)
     app = RPAApp(runtime_factory=RuntimeFactorySpy(detector))
+
+    @app.on(LoginScreen)
+    async def handle_login(_screen: LoginScreen, data: int) -> int:
+        return data + 1
+
+    data = asyncio.run(app.run(AppConfig(), 1, detection_timeout=0.001))
+
+    assert data == 2
+
+
+def test_rpa_app_run_uses_falsey_runtime_factory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    detector = SequenceScreenDetector(LoginScreen(), None)
+    factory = FalseyRuntimeFactory(detector)
+
+    def reject_default_factory(*_args: object) -> RPARuntime:
+        msg = "The default runtime factory must not be used."
+        raise AssertionError(msg)
+
+    monkeypatch.setattr(
+        RPAApp,
+        "_default_runtime_factory",
+        staticmethod(reject_default_factory),
+    )
+    app = RPAApp(runtime_factory=factory)
 
     @app.on(LoginScreen)
     async def handle_login(_screen: LoginScreen, data: int) -> int:

@@ -36,7 +36,13 @@
 
 - [x] `__init__.py`: `AppConfig`、`RPAApp`、version だけの小さい公開 surface、および core import の軽さを確認する。
 - [x] `_clock.py`: UTC aware clock とテスト用注入点の必要性・配置を確認する。
-- [ ] `app.py`: callback 登録、重複検出、runtime composition への委譲、data 非介入を確認する。
+- [x] `app.py`: callback 登録、重複検出、runtime composition への委譲、data 非介入を確認する。
+  - [x] async callbackだけを登録し、重複を拒否し、登録順を維持することをテストする。
+  - [x] callback間でdataの型とidentityを保ったまま受け渡し、表現・log出力しないことをテストする。
+  - [x] callback例外・cancellation・画面検出timeoutを伝播し、runtime cleanupを実行することをテストする。
+  - [x] `detection_timeout`の検証は期限計算と直接利用を担う`RPARuntime.run()`へ置き、`RPAApp.run()`は委譲に留める。
+  - [x] 注入されたruntime factoryをtruthinessで置き換えず、falsey callableでも使用することをテストする。
+  - [x] callback registryは共有mappingのままruntimeへ渡す。検出対象typeはruntime loop開始時にsnapshotされ、公開APIでは既存callbackの置換・削除を許可しない。
 - [x] `cli.py`: CLI 引数から config への変換、終了コード、secret 非表示、browser runner との境界を確認する。
   - [x] config fileを読み、指定されたCLI overrideだけをimmutableな`AppConfig`へ反映してrunnerへ渡すことをテストする。
   - [x] 正常終了を`0`、`KeyboardInterrupt`をtracebackなしの`130`として返すことをテストする。
@@ -76,6 +82,7 @@
 
 - [ ] `client/__init__.py`: 空の package root を維持する必要性と、意図しない public export がないことを確認する。
 - [ ] `client/runtime.py`: 登録 Screen の検出順、callback/data loop、兄弟 task、timeout・stop・cleanup を確認する。
+  - [ ] `detection_timeout`を`None`または有限の正数に限定し、`NaN`・無限大・0以下で終了不能にならないことをテストする。
 - [ ] `client/controller_runtime.py`: composition root として ZMQ、controller、Sniffer、session、`ScreenContext` だけを組み立てることを確認する。
 - [ ] `client/session.py`: decode 後 enqueue 前の account ID 観測、正値・再観測・不一致の不変条件を確認する。
 
