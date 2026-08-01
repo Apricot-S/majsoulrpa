@@ -357,6 +357,11 @@ def test_playwright_command_executor_returns_yostar_auth_rejection() -> None:
             {"Code": 200, "Data": {}},
             "Yostar authentication success response does not contain a token.",
         ),
+        (
+            200,
+            {"Code": True, "Data": {}},
+            "Yostar authentication response does not contain a valid code.",
+        ),
     ],
 )
 def test_playwright_command_executor_returns_error_for_invalid_yostar_auth(

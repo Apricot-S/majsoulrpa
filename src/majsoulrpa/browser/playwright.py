@@ -234,7 +234,10 @@ class PlaywrightCommandExecutor:
             raise TypeError(msg)
 
         application_code = payload.get("Code")
-        if not isinstance(application_code, int):
+        if isinstance(application_code, bool) or not isinstance(
+            application_code,
+            int,
+        ):
             msg = (
                 "Yostar authentication response does not contain a valid code."
             )
