@@ -37,7 +37,12 @@
 - [x] `__init__.py`: `AppConfig`、`RPAApp`、version だけの小さい公開 surface、および core import の軽さを確認する。
 - [x] `_clock.py`: UTC aware clock とテスト用注入点の必要性・配置を確認する。
 - [ ] `app.py`: callback 登録、重複検出、runtime composition への委譲、data 非介入を確認する。
-- [ ] `cli.py`: CLI 引数から config への変換、終了コード、secret 非表示、browser runner との境界を確認する。
+- [x] `cli.py`: CLI 引数から config への変換、終了コード、secret 非表示、browser runner との境界を確認する。
+  - [x] config fileを読み、指定されたCLI overrideだけをimmutableな`AppConfig`へ反映してrunnerへ渡すことをテストする。
+  - [x] 正常終了を`0`、`KeyboardInterrupt`をtracebackなしの`130`として返すことをテストする。
+  - [x] browser runnerの起動例外を成功終了へ変換せず、そのまま伝播することをテストする。
+  - [x] 不正なCLI overrideではbrowser runnerを呼ばず、config validation errorを伝播することをテストする。
+  - [x] `--version`がpackageの`__version__`を表示して`0`で終了することをテストする。
 - [x] `config.py`: default、strict validation、immutable 性、secret の `repr` / validation error 非表示を確認する。
   - [x] `email_address` を `YostarEmailConfig` と `AppConfig` の `repr` に表示しないことをテストする。
   - [x] 型不正な `email_address` を含む validation error にメールアドレスを表示しないことをテストする。
