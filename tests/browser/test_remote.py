@@ -1,7 +1,9 @@
 import asyncio
+import math
 from random import Random
 
 import pytest
+from pydantic import ValidationError
 
 from majsoulrpa.browser.controller import (
     BrowserOperationError,
@@ -28,6 +30,8 @@ from majsoulrpa.browser.messages import (
     TextInputCommand,
     TextInputResponse,
     YostarAuthAcceptedResponse,
+    parse_browser_command_json,
+    parse_browser_response_json,
 )
 
 
@@ -292,6 +296,60 @@ def test_browser_command_schema_rejects_invalid_delay() -> None:
             key="Control+A",
             key_down_up_delay_seconds=0,
         )
+
+
+def test_browser_wire_schema_rejects_numeric_strings() -> None:
+    with pytest.raises(ValidationError):
+        parse_browser_command_json(
+            b'{"type":"click","x":"10","y":20,'
+            b'"hover_delay_seconds":null,'
+            b'"mouse_down_up_delay_seconds":0.1}',
+        )
+
+    with pytest.raises(ValidationError):
+        parse_browser_response_json(
+            b'{"type":"click","x":"10","y":20}',
+        )
+
+
+@pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
+def test_browser_wire_schema_rejects_non_finite_floats(value: float) -> None:
+    with pytest.raises(ValidationError):
+        ClickCommand(
+            x=value,
+            y=20,
+            hover_delay_seconds=None,
+            mouse_down_up_delay_seconds=0.1,
+        )
+
+    with pytest.raises(ValidationError):
+        ClickCommand(
+            x=10,
+            y=20,
+            hover_delay_seconds=None,
+            mouse_down_up_delay_seconds=value,
+        )
+
+    with pytest.raises(ValidationError):
+        ClickResponse(x=value, y=20)
+
+
+def test_browser_wire_validation_errors_hide_input_values() -> None:
+    sensitive_text = "player@example.invalid"
+    with pytest.raises(ValidationError) as command_error:
+        parse_browser_command_json(
+            b'{"type":"text_input","text":{"value":'
+            b'"player@example.invalid"},"character_delay_seconds":0.1}',
+        )
+
+    sensitive_marker = "synthetic-auth-value"
+    with pytest.raises(ValidationError) as response_error:
+        parse_browser_response_json(
+            b'{"type":"error","message":{"value":"synthetic-auth-value"}}',
+        )
+
+    assert sensitive_text not in str(command_error.value)
+    assert sensitive_marker not in str(response_error.value)
 
 
 def test_browser_response_error_is_distinct_from_success_responses() -> None:
