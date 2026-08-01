@@ -1,9 +1,13 @@
-# `src/majsoulrpa` リファクタリングチェックリスト
+# `src/majsoulrpa` コード改善チェックリスト
 
 ## 目的
 
 次の機能改修へ進む前に、`src/majsoulrpa/` 配下の責務、依存方向、公開 API、
 失敗モデル、テスト容易性をファイルツリーごとに確認する。
+
+この確認は動作を維持する内部リファクタリングだけに限定しない。設計上の理由があれば、
+引数の渡し方、例外の型・発生条件などの公開契約も変更候補に含める。ただし、既存動作を
+無条件に契約とみなすことも、改善のためという理由だけで互換性を軽視することもしない。
 
 このリストは変更内容を先に決めるものではない。各項目を確認し、変更が必要なら先に
 `docs/development/test-plan.md` へ具体的なテスト項目を追加してから、t_wada の TDD 手順で
@@ -13,16 +17,21 @@
 
 - [ ] 各ファイルまたは資産グループについて、現状維持、変更、後続タスク化のいずれかを判断する。
 - [ ] 変更する場合は、守る振る舞いと失敗経路をテストリストへ先に追加する。
+- [ ] 引数、戻り値、例外などの契約を変更する場合は、理由、影響範囲、互換性の扱いを記録し、テストと公開ドキュメントを更新する。
 - [ ] 公開 API、wire schema、生成物、画像資産に影響する変更は、影響範囲を明記する。
 - [ ] 1 項目の変更ごとに関連テストを通し、まとまりごとに品質ゲートを通す。
 
 ## 全ファイル共通の確認観点
+
+この節は、すでに個別確認を完了したファイルにも遡及して適用する。追加された観点は
+該当サブツリーの完了までに再確認し、必要なら個別項目を再度開く。
 
 - [ ] 責務が現在のアーキテクチャと一致し、別 component の都合を抱え込んでいない。
 - [ ] 依存方向が `RPAApp -> client runtime -> Screen / browser client / Sniffer` を逆流しない。
 - [ ] 抽象化は fake への置換、実装差し替え、lifecycle 管理、公開拡張点のいずれかに寄与する。
 - [ ] 単なる横流し wrapper、重複 DTO、将来予測だけの interface が増えていない。
 - [ ] public と private の境界、export、命名、型注釈が実際の契約と一致する。
+- [ ] 関数・メソッドの各引数について positional / keyword-only の選択に明確な理由があり、特に optional 引数を慣例だけでキーワード専用にしていない。
 - [ ] timeout と cancellation を握りつぶさず、cleanup の失敗も見えなくしていない。
 - [ ] decode・validation・remote 操作の失敗を空値や成功へ変換していない。
 - [ ] mutable state の所有者、初期化条件、不変条件、terminal / stale 遷移が明確である。
@@ -144,8 +153,8 @@
 - [ ] `event/no_tile.py`: 聴牌/不聴、流局 score、手牌公開、終局状態を確認する。
 - [ ] `event/liuju.py`: 特殊流局の closed set と未知値の扱いを確認する。
 
-各 concrete event は `@final`、`frozen=True`、`slots=True`、`kw_only=True` の方針、constructor の
-runtime invariant、live / restore 双方から同じ object が作られることをまとめて確認する。
+各 concrete event は `@final`、`frozen=True`、`slots=True` の方針、`kw_only=True` の必要性、
+constructor の runtime invariant、live / restore 双方から同じ object が作られることをまとめて確認する。
 
 ### `screens/match/operation/`
 
