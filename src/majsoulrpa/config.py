@@ -1,6 +1,6 @@
 import tomllib
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Self
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
@@ -74,10 +74,10 @@ class AppConfig(BaseModel):
     yostar_email: YostarEmailConfig | None = None
 
     @classmethod
-    def from_toml_text(cls, text: str) -> "AppConfig":
+    def from_toml_text(cls, text: str) -> Self:
         return cls.model_validate(tomllib.loads(text))
 
     @classmethod
-    def from_toml_file(cls, path: Path) -> "AppConfig":
+    def from_toml_file(cls, path: Path) -> Self:
         with path.open("rb") as fp:
             return cls.model_validate(tomllib.load(fp))
