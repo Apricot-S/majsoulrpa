@@ -233,19 +233,14 @@ class PlaywrightCommandExecutor:
             msg = "Yostar authentication returned an unexpected JSON value."
             raise TypeError(msg)
 
-        application_code = payload.get("Code")
-        if isinstance(application_code, bool) or not isinstance(
-            application_code,
-            int,
-        ):
+        code = payload.get("Code")
+        if isinstance(code, bool) or not isinstance(code, int):
             msg = (
                 "Yostar authentication response does not contain a valid code."
             )
             raise TypeError(msg)
-        if application_code != HTTP_OK_STATUS:
-            return YostarAuthRejectedResponse(
-                application_code=application_code,
-            )
+        if code != HTTP_OK_STATUS:
+            return YostarAuthRejectedResponse(application_code=code)
 
         data = payload.get("Data")
         if not isinstance(data, dict):
