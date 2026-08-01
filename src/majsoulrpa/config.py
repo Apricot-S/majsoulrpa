@@ -17,9 +17,8 @@ from majsoulrpa.constants import (
     USER_PORT_MIN,
 )
 
-UserPort = Annotated[int, Field(ge=USER_PORT_MIN, le=USER_PORT_MAX)]
-
 Host = Annotated[str, Field(min_length=1)]
+UserPort = Annotated[int, Field(ge=USER_PORT_MIN, le=USER_PORT_MAX)]
 
 
 def _validate_viewport_height(value: int) -> int:
