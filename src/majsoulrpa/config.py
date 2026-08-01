@@ -49,7 +49,7 @@ def _validate_viewport_height(value: int) -> int:
 ViewportHeight = Annotated[int, AfterValidator(_validate_viewport_height)]
 
 
-class EndpointConfig(BaseModel):
+class _ConfigModel(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
         frozen=True,
@@ -57,6 +57,8 @@ class EndpointConfig(BaseModel):
         hide_input_in_errors=True,
     )
 
+
+class EndpointConfig(_ConfigModel):
     browser_host: Host = DEFAULT_BROWSER_HOST
     client_host: Host = DEFAULT_CLIENT_HOST
     remote_port: UserPort = DEFAULT_REMOTE_PORT
@@ -70,14 +72,7 @@ class EndpointConfig(BaseModel):
         return self
 
 
-class BrowserConfig(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-        frozen=True,
-        strict=True,
-        hide_input_in_errors=True,
-    )
-
+class BrowserConfig(_ConfigModel):
     window_left: int = DEFAULT_WINDOW_LEFT
     window_top: int = DEFAULT_WINDOW_TOP
     viewport_height: ViewportHeight = DEFAULT_VIEWPORT_HEIGHT
@@ -85,39 +80,18 @@ class BrowserConfig(BaseModel):
     user_data_dir: Annotated[Path, Field(strict=False)] | None = None
 
 
-class YostarEmailS3Config(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-        frozen=True,
-        strict=True,
-        hide_input_in_errors=True,
-    )
-
+class YostarEmailS3Config(_ConfigModel):
     bucket_name: Annotated[str, Field(min_length=1)]
     key_prefix: str = ""
     aws_profile: Annotated[str, Field(min_length=1)] | None = None
 
 
-class YostarEmailConfig(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-        frozen=True,
-        strict=True,
-        hide_input_in_errors=True,
-    )
-
+class YostarEmailConfig(_ConfigModel):
     email_address: Annotated[str, Field(min_length=1, repr=False)]
     s3: YostarEmailS3Config | None = None
 
 
-class AppConfig(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-        frozen=True,
-        strict=True,
-        hide_input_in_errors=True,
-    )
-
+class AppConfig(_ConfigModel):
     endpoint: EndpointConfig = Field(default_factory=EndpointConfig)
     browser: BrowserConfig = Field(default_factory=BrowserConfig)
     yostar_email: YostarEmailConfig | None = None
