@@ -34,16 +34,16 @@
 
 ## ルート
 
-- [ ] `__init__.py`: `RPAApp` と version だけの小さい公開 surface、および core import の軽さを確認する。
-- [ ] `_clock.py`: UTC aware clock とテスト用注入点の必要性・配置を確認する。
+- [x] `__init__.py`: `AppConfig`、`RPAApp`、version だけの小さい公開 surface、および core import の軽さを確認する。
+- [x] `_clock.py`: UTC aware clock とテスト用注入点の必要性・配置を確認する。
 - [ ] `app.py`: callback 登録、重複検出、runtime composition への委譲、data 非介入を確認する。
 - [ ] `cli.py`: CLI 引数から config への変換、終了コード、secret 非表示、browser runner との境界を確認する。
 - [ ] `config.py`: default、strict validation、immutable 性、secret の `repr` / validation error 非表示を確認する。
-- [ ] `constants.py`: component 固有値がルートへ流出していないか、定数の単位と根拠を確認する。
+- [x] `constants.py`: component 固有値がルートへ流出していないか、定数の単位と根拠を確認する。
 - [ ] `endpoint.py`: browser/client の接続先 semantics、IPv4・hostname・IPv6 literal の整形重複を確認する。
 - [ ] `timing.py`: delay の範囲・単位・乱数注入、固定 sleep の代用になっていないことを確認する。
-- [ ] `types.py`: callback generic が公開 API を正しく表し、不要な共通型置き場になっていないことを確認する。
-- [ ] `viewport.py`: 対応 viewport の制約と config / template scale との責務分担を確認する。
+- [x] `types.py`: callback generic が公開 API を正しく表し、不要な共通型置き場になっていないことを確認する。
+- [x] `viewport.py`: 対応 viewport の制約と config / template scale との責務分担を確認する。
 
 ## `browser/`
 
