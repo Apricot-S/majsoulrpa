@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import Awaitable, Callable, Mapping
+from math import isfinite
 from typing import Any, NoReturn, Protocol
 
 from majsoulrpa.config import AppConfig
@@ -66,6 +67,14 @@ class RPARuntime:
         detection_timeout: float | None = None,
     ) -> Any:  # noqa: ANN401
         try:
+            if detection_timeout is not None:
+                if not isfinite(detection_timeout):
+                    msg = "detection_timeout must be finite."
+                    raise ValueError(msg)
+                if detection_timeout <= 0:
+                    msg = "detection_timeout must be positive."
+                    raise ValueError(msg)
+
             if self._background_service is None:
                 return await self._run_loop(data, detection_timeout)
             return await self._run_with_background(data, detection_timeout)

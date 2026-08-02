@@ -88,6 +88,20 @@ class BlockingScreenDetector:
         return self.screenshot_bytes
 
 
+class UnexpectedScreenDetector:
+    async def detect(
+        self,
+        screen_types: tuple[type[Screen], ...],
+    ) -> Screen | None:
+        _ = screen_types
+        msg = "Screen detection must not start."
+        raise AssertionError(msg)
+
+    async def screenshot(self) -> bytes:
+        msg = "A screenshot must not be requested."
+        raise AssertionError(msg)
+
+
 class CleanupSpy:
     def __init__(self) -> None:
         self.called = 0
@@ -460,6 +474,21 @@ def test_rpa_runtime_waits_for_background_ready_before_main_loop() -> None:
     result = asyncio.run(runtime.run("done"))
 
     assert result == "done"
+
+
+@pytest.mark.parametrize(
+    "detection_timeout",
+    [0.0, -0.1, float("nan"), float("inf"), float("-inf")],
+)
+def test_rpa_runtime_rejects_invalid_detection_timeout(
+    detection_timeout: float,
+) -> None:
+    runtime = RPARuntime({}, UnexpectedScreenDetector())
+
+    with pytest.raises(ValueError, match="detection_timeout"):
+        asyncio.run(
+            runtime.run(None, detection_timeout=detection_timeout),
+        )
 
 
 async def _return_data(_screen: LoginScreen, data: object) -> object:
