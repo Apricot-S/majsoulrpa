@@ -41,6 +41,30 @@ def _make_playwright_command_executor(page: object) -> BrowserCommandExecutor:
     return playwright.PlaywrightCommandExecutor(cast("Any", page))
 
 
+def _make_default_sniffer_backend(config: AppConfig) -> SnifferBackend:
+    runtime = importlib.import_module("majsoulrpa.sniffer.runtime")
+    return runtime.BrowserHostSnifferBackend(config)
+
+
+def _make_zmq_request_server_factory(
+    config: AppConfig,
+    context: zmq.asyncio.Context,
+) -> RequestServerFactory:
+    endpoint = make_client_tcp_endpoint(config)
+
+    def request_server_factory(
+        executor: BrowserCommandExecutor,
+    ) -> BrowserRequestServer:
+        return BrowserZmqRequestServer(
+            context=context,
+            endpoint=endpoint,
+            executor=executor,
+            ipv6=is_ipv6_literal(config.endpoint.client_host),
+        )
+
+    return request_server_factory
+
+
 async def run_browser_host(
     config: AppConfig,
     *,
@@ -160,27 +184,3 @@ async def _cancel_tasks(
         except BaseException as error:  # noqa: BLE001
             errors.append(error)
     return errors
-
-
-def _make_default_sniffer_backend(config: AppConfig) -> SnifferBackend:
-    runtime = importlib.import_module("majsoulrpa.sniffer.runtime")
-    return runtime.BrowserHostSnifferBackend(config)
-
-
-def _make_zmq_request_server_factory(
-    config: AppConfig,
-    context: zmq.asyncio.Context,
-) -> RequestServerFactory:
-    endpoint = make_client_tcp_endpoint(config)
-
-    def request_server_factory(
-        executor: BrowserCommandExecutor,
-    ) -> BrowserRequestServer:
-        return BrowserZmqRequestServer(
-            context=context,
-            endpoint=endpoint,
-            executor=executor,
-            ipv6=is_ipv6_literal(config.endpoint.client_host),
-        )
-
-    return request_server_factory
