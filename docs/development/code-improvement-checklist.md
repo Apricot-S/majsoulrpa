@@ -118,7 +118,7 @@
 
 ## `client/`
 
-- [ ] `client/__init__.py`: 空の package root を維持する必要性と、意図しない public export がないことを確認する。
+- [x] `client/__init__.py`: 空の package root を維持する必要性と、意図しない public export がないことを確認する。
 - [ ] `client/runtime.py`: 登録 Screen の検出順、callback/data loop、兄弟 task、timeout・stop・cleanup を確認する。
   - [ ] `detection_timeout`を`None`または有限の正数に限定し、`NaN`・無限大・0以下で終了不能にならないことをテストする。
 - [ ] `client/controller_runtime.py`: composition root として ZMQ、controller、Sniffer、session、`ScreenContext` だけを組み立てることを確認する。
