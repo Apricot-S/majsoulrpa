@@ -114,7 +114,7 @@
 - [x] `browser/runner.py`: backend・server・Sniffer の開始順、逆順 cleanup、主例外と副次例外の扱いを確認する。
   - [x] 既定ZMQ contextを作成直後からcleanup対象にし、backend start・Sniffer start・navigationの失敗でも`term()`することをテストする。
   - [x] serverまたはSnifferの主失敗後、兄弟taskがcancellation cleanupで別の例外を出しても主失敗を失わず、副次例外も確認できることをテストする。
-  - [ ] `command_executor_factory`はstatelessな既定factoryを安全に共有できるため、`None`と初期化分岐を使わず直接デフォルト値にする。
+  - [x] `command_executor_factory`はstatelessな既定factoryを安全に共有できるため、`None`と初期化分岐を使わず直接デフォルト値にする。
 
 ### `browser/`の`None`デフォルト確認
 

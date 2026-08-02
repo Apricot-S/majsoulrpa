@@ -36,12 +36,19 @@ class SnifferBackend(Protocol):
     async def stop(self) -> None: ...
 
 
+def _make_playwright_command_executor(page: object) -> BrowserCommandExecutor:
+    playwright = importlib.import_module("majsoulrpa.browser.playwright")
+    return playwright.PlaywrightCommandExecutor(cast("Any", page))
+
+
 async def run_browser_host(
     config: AppConfig,
     *,
     backend: BrowserBackend | None = None,
     sniffer_backend: SnifferBackend | None = None,
-    command_executor_factory: CommandExecutorFactory | None = None,
+    command_executor_factory: CommandExecutorFactory = (
+        _make_playwright_command_executor
+    ),
     request_server_factory: RequestServerFactory | None = None,
 ) -> None:
     use_default_sniffer = backend is None and sniffer_backend is None
@@ -51,11 +58,6 @@ async def run_browser_host(
     if use_default_sniffer:
         sniffer_backend = _make_default_sniffer_backend(config)
 
-    executor_factory = (
-        _make_playwright_command_executor
-        if command_executor_factory is None
-        else command_executor_factory
-    )
     server_factory = request_server_factory
 
     async with AsyncExitStack() as stack:
@@ -86,7 +88,7 @@ async def run_browser_host(
             raise RuntimeError(msg)
 
         command_executor = LoggingBrowserCommandExecutor(
-            executor_factory(page),
+            command_executor_factory(page),
         )
         request_server = server_factory(command_executor)
         await request_server.bind()
@@ -158,11 +160,6 @@ async def _cancel_tasks(
         except BaseException as error:  # noqa: BLE001
             errors.append(error)
     return errors
-
-
-def _make_playwright_command_executor(page: object) -> BrowserCommandExecutor:
-    playwright = importlib.import_module("majsoulrpa.browser.playwright")
-    return playwright.PlaywrightCommandExecutor(cast("Any", page))
 
 
 def _make_default_sniffer_backend(config: AppConfig) -> SnifferBackend:
