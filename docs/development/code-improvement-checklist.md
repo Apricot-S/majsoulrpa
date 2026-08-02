@@ -53,6 +53,7 @@
   - [x] `detection_timeout`の検証は期限計算と直接利用を担う`RPARuntime.run()`へ置き、`RPAApp.run()`は委譲に留める。
   - [x] 注入されたruntime factoryをtruthinessで置き換えず、falsey callableでも使用することをテストする。
   - [x] callback registryは共有mappingのままruntimeへ渡す。検出対象typeはruntime loop開始時にsnapshotされ、公開APIでは既存callbackの置換・削除を許可しない。
+  - [ ] `runtime_factory`はstatelessな既定factoryを安全に共有できるため、`None`と初期化分岐を使わず直接デフォルト値にする。
 - [x] `cli.py`: CLI 引数から config への変換、終了コード、secret 非表示、browser runner との境界を確認する。
   - [x] config fileを読み、指定されたCLI overrideだけをimmutableな`AppConfig`へ反映してrunnerへ渡すことをテストする。
   - [x] 正常終了を`0`、`KeyboardInterrupt`をtracebackなしの`130`として返すことをテストする。
@@ -76,6 +77,12 @@
   - [x] 最初の標本が 0 以下なら再標本化し、正の delay を返す分岐をテストする。
 - [x] `types.py`: callback generic が公開 API を正しく表し、不要な共通型置き場になっていないことを確認する。
 - [x] `viewport.py`: 対応 viewport の制約と config / template scale との責務分担を確認する。
+
+### rootの`None`デフォルト確認
+
+- [x] `RPAApp.run()`の`detection_timeout`は期限なし、`cli.main()`の`argv`はprocess引数の利用、config modelのoptional fieldは機能・設定の欠如をそれぞれ表すため、`None`を維持する。
+- [x] `timing.py`の`rng`はstatefulな既定乱数源への委譲を表し、mutableな乱数源を関数デフォルトへ直接保持しないため、`None`を維持する。
+- [x] `__init__.py`、`_clock.py`、`constants.py`、`endpoint.py`、`types.py`、`viewport.py`には見直すべき`None`デフォルトがない。
 
 ### rootのキーワード専用引数確認
 
@@ -107,6 +114,14 @@
 - [x] `browser/runner.py`: backend・server・Sniffer の開始順、逆順 cleanup、主例外と副次例外の扱いを確認する。
   - [x] 既定ZMQ contextを作成直後からcleanup対象にし、backend start・Sniffer start・navigationの失敗でも`term()`することをテストする。
   - [x] serverまたはSnifferの主失敗後、兄弟taskがcancellation cleanupで別の例外を出しても主失敗を失わず、副次例外も確認できることをテストする。
+  - [ ] `command_executor_factory`はstatelessな既定factoryを安全に共有できるため、`None`と初期化分岐を使わず直接デフォルト値にする。
+
+### `browser/`の`None`デフォルト確認
+
+- [x] `runner.py`のbrowser backendは呼び出しごとに生成するstateful resource、Sniffer backendは既定構成の選択またはcustom backend利用時のSniffer欠如、request server factoryは実行時config・ZMQ contextへの依存を表すため、`None`を維持する。
+- [x] `controller.py`の`rng`はstatefulな既定乱数源への委譲、`runner.py`と`playwright.py`の`page_ready`はhookの欠如を表すため、`None`を維持する。
+- [x] `playwright.py`と`zmq.py`の`None`初期値は未開始・停止済みというlifecycle state、`messages.py`のnullable fieldはwire上の操作省略を表し、関数の便宜的なデフォルト値ではない。
+- [x] `__init__.py`、`transport.py`、`history.py`、`server.py`には見直すべき`None`デフォルトがない。
 
 ### `browser/`のキーワード専用引数確認
 
