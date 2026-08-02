@@ -18,6 +18,10 @@ type BackgroundReady = Callable[[], Awaitable[object]]
 SCREEN_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
 
 
+def _keep_running() -> bool:
+    return False
+
+
 class ScreenDetector(Protocol):
     async def detect(self, screen_types: ScreenTypes) -> Screen | None: ...
     async def screenshot(self) -> bytes: ...
@@ -49,14 +53,14 @@ class RPARuntime:
         callbacks: Mapping[type[Screen], Callback[Any]],
         detector: ScreenDetector,
         cleanup: Cleanup | None = None,
-        should_stop: StopPredicate | None = None,
+        should_stop: StopPredicate = _keep_running,
         background_service: BackgroundService | None = None,
         background_ready: BackgroundReady | None = None,
     ) -> None:
         self._callbacks = callbacks
         self._detector = detector
         self._cleanup = cleanup
-        self._should_stop = should_stop or _keep_running
+        self._should_stop = should_stop
         self._background_service = background_service
         self._background_ready = background_ready
 
@@ -198,7 +202,3 @@ type RuntimeFactory = Callable[
     [Mapping[type[Screen], Callback[Any]], AppConfig],
     RPARuntime,
 ]
-
-
-def _keep_running() -> bool:
-    return False

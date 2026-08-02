@@ -131,22 +131,35 @@ class RuntimeFactorySpy:
         config: AppConfig,
     ) -> RPARuntime:
         _ = config
-        should_stop = (
-            self._detector.has_detected_screen
-            if isinstance(self._detector, SequenceScreenDetector)
-            else None
-        )
+        if not isinstance(self._detector, SequenceScreenDetector):
+            return RPARuntime(
+                callbacks,
+                self._detector,
+                cleanup=self._cleanup,
+            )
         return RPARuntime(
             callbacks,
             self._detector,
             cleanup=self._cleanup,
-            should_stop=should_stop,
+            should_stop=self._detector.has_detected_screen,
         )
 
 
 class FalseyRuntimeFactory(RuntimeFactorySpy):
     def __bool__(self) -> bool:
         return False
+
+
+class FalseyStopPredicate:
+    def __init__(self) -> None:
+        self.called = 0
+
+    def __bool__(self) -> bool:
+        return False
+
+    def __call__(self) -> bool:
+        self.called += 1
+        return True
 
 
 def test_rpa_app_registers_async_callback() -> None:
@@ -489,6 +502,28 @@ def test_rpa_runtime_rejects_invalid_detection_timeout(
         asyncio.run(
             runtime.run(None, detection_timeout=detection_timeout),
         )
+
+
+def test_rpa_runtime_uses_falsey_stop_predicate() -> None:
+    should_stop = FalseyStopPredicate()
+
+    async def fail_if_dispatched(
+        _screen: UnknownScreen,
+        _data: object,
+    ) -> object:
+        msg = "Runtime did not use the configured stop predicate."
+        raise AssertionError(msg)
+
+    runtime = RPARuntime(
+        {LoginScreen: _return_data, UnknownScreen: fail_if_dispatched},
+        SequenceScreenDetector(LoginScreen(), UnknownScreen()),
+        should_stop=should_stop,
+    )
+
+    result = asyncio.run(runtime.run("data"))
+
+    assert result == "data"
+    assert should_stop.called == 1
 
 
 async def _return_data(_screen: LoginScreen, data: object) -> object:
