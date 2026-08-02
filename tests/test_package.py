@@ -183,10 +183,36 @@ def test_browser_lazy_export_reports_missing_browser_extra(
     def import_module(name: str) -> ModuleType:
         if name == "majsoulrpa.browser.playwright":
             msg = "No module named 'playwright'"
-            raise ModuleNotFoundError(msg)
+            raise ModuleNotFoundError(msg, name="playwright")
         return importlib.import_module(name)
 
     monkeypatch.setattr(browser.importlib, "import_module", import_module)
 
     with pytest.raises(ModuleNotFoundError, match=r"majsoulrpa\[browser\]"):
         _ = browser.PlaywrightBrowserBackend
+
+
+def test_browser_lazy_export_preserves_unrelated_import_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sys.modules.pop("majsoulrpa.browser", None)
+    if hasattr(majsoulrpa, "browser"):
+        delattr(majsoulrpa, "browser")
+    browser = importlib.import_module("majsoulrpa.browser")
+
+    def import_module(name: str) -> ModuleType:
+        if name == "majsoulrpa.browser.playwright":
+            missing_name = "browser_transitive_dependency"
+            msg = f"No module named {missing_name!r}"
+            raise ModuleNotFoundError(msg, name=missing_name)
+        return importlib.import_module(name)
+
+    monkeypatch.setattr(browser.importlib, "import_module", import_module)
+
+    with pytest.raises(
+        ModuleNotFoundError,
+        match="browser_transitive_dependency",
+    ) as exc_info:
+        _ = browser.PlaywrightBrowserBackend
+
+    assert exc_info.value.name == "browser_transitive_dependency"

@@ -88,8 +88,8 @@
 
 ## `browser/`
 
-- [ ] `browser/__init__.py`: lazy export が optional Playwright import を隔離し、不足 extra を明示することを確認する。
-  - [ ] lazy import中の`ModuleNotFoundError`は不足しているmoduleがPlaywright自身の場合だけinstall案内へ変換し、Playwright module内の別のimport失敗を隠さないことをテストする。
+- [x] `browser/__init__.py`: lazy export が optional Playwright import を隔離し、不足 extra を明示することを確認する。
+  - [x] lazy import中の`ModuleNotFoundError`は不足しているmoduleがPlaywright自身の場合だけinstall案内へ変換し、Playwright module内の別のimport失敗を隠さないことをテストする。
 - [x] `browser/messages.py`: command / response の判別共用体、strict schema、secret を含まない wire 契約を確認する。
   - [x] wire modelをstrictかつ`NaN`・無限大を拒否する設定にし、文字列から数値への型変換や非有限の座標・delayを受理しないことをテストする。
   - [x] malformed payloadのvalidation errorに入力値を表示せず、textや認証関連値が例外経由で漏れないことをテストする。

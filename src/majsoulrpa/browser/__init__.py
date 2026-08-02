@@ -30,11 +30,17 @@ def __getattr__(name: str) -> Any:  # noqa: ANN401
                 "majsoulrpa.browser.playwright",
             )
         except ModuleNotFoundError as error:
+            missing_name = error.name
+            if (
+                missing_name is None
+                or missing_name.partition(".")[0] != "playwright"
+            ):
+                raise
             msg = (
                 f"{name} requires the 'browser' optional dependency. "
                 "Install it with: pip install 'majsoulrpa[browser]'"
             )
-            raise ModuleNotFoundError(msg) from error
+            raise ModuleNotFoundError(msg, name=missing_name) from error
 
         value = getattr(playwright, name)
         globals()[name] = value
