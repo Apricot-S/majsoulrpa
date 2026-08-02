@@ -238,21 +238,9 @@ def test_rpa_app_run_dispatches_registered_screen() -> None:
     assert data == 2
 
 
-def test_rpa_app_run_uses_falsey_runtime_factory(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_rpa_app_run_uses_falsey_runtime_factory() -> None:
     detector = SequenceScreenDetector(LoginScreen(), None)
     factory = FalseyRuntimeFactory(detector)
-
-    def reject_default_factory(*_args: object) -> RPARuntime:
-        msg = "The default runtime factory must not be used."
-        raise AssertionError(msg)
-
-    monkeypatch.setattr(
-        RPAApp,
-        "_default_runtime_factory",
-        staticmethod(reject_default_factory),
-    )
     app = RPAApp(runtime_factory=factory)
 
     @app.on(LoginScreen)

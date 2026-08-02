@@ -53,7 +53,7 @@
   - [x] `detection_timeout`の検証は期限計算と直接利用を担う`RPARuntime.run()`へ置き、`RPAApp.run()`は委譲に留める。
   - [x] 注入されたruntime factoryをtruthinessで置き換えず、falsey callableでも使用することをテストする。
   - [x] callback registryは共有mappingのままruntimeへ渡す。検出対象typeはruntime loop開始時にsnapshotされ、公開APIでは既存callbackの置換・削除を許可しない。
-  - [ ] `runtime_factory`はstatelessな既定factoryを安全に共有できるため、`None`と初期化分岐を使わず直接デフォルト値にする。
+  - [x] `runtime_factory`はstatelessな既定factoryを安全に共有できるため、`None`と初期化分岐を使わず直接デフォルト値にする。
 - [x] `cli.py`: CLI 引数から config への変換、終了コード、secret 非表示、browser runner との境界を確認する。
   - [x] config fileを読み、指定されたCLI overrideだけをimmutableな`AppConfig`へ反映してrunnerへ渡すことをテストする。
   - [x] 正常終了を`0`、`KeyboardInterrupt`をtracebackなしの`130`として返すことをテストする。
