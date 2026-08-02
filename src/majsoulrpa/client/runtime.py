@@ -18,6 +18,10 @@ type BackgroundReady = Callable[[], Awaitable[object]]
 SCREEN_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
 
 
+async def _noop_cleanup() -> None:
+    pass
+
+
 def _keep_running() -> bool:
     return False
 
@@ -52,7 +56,7 @@ class RPARuntime:
         self,
         callbacks: Mapping[type[Screen], Callback[Any]],
         detector: ScreenDetector,
-        cleanup: Cleanup | None = None,
+        cleanup: Cleanup = _noop_cleanup,
         should_stop: StopPredicate = _keep_running,
         background_service: BackgroundService | None = None,
         background_ready: BackgroundReady | None = None,
@@ -83,7 +87,7 @@ class RPARuntime:
                 return await self._run_loop(data, detection_timeout)
             return await self._run_with_background(data, detection_timeout)
         finally:
-            await self._run_cleanup()
+            await self._cleanup()
 
     async def _run_loop(
         self,
@@ -190,12 +194,6 @@ class RPARuntime:
         screenshot = await self._detector.screenshot()
         msg = "Screen detection timed out."
         raise ScreenDetectionTimeoutError(msg, screenshot)
-
-    async def _run_cleanup(self) -> None:
-        if self._cleanup is None:
-            return
-
-        await self._cleanup()
 
 
 type RuntimeFactory = Callable[

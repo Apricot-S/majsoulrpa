@@ -132,10 +132,18 @@ class RuntimeFactorySpy:
     ) -> RPARuntime:
         _ = config
         if not isinstance(self._detector, SequenceScreenDetector):
+            if self._cleanup is None:
+                return RPARuntime(callbacks, self._detector)
             return RPARuntime(
                 callbacks,
                 self._detector,
                 cleanup=self._cleanup,
+            )
+        if self._cleanup is None:
+            return RPARuntime(
+                callbacks,
+                self._detector,
+                should_stop=self._detector.has_detected_screen,
             )
         return RPARuntime(
             callbacks,
