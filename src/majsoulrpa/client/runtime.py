@@ -141,26 +141,46 @@ class RPARuntime:
         background_task = asyncio.ensure_future(self._background_service())
         tasks = (main_task, background_task)
         try:
-            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            if background_task.done():
-                main_task.cancel()
-                await asyncio.gather(main_task, return_exceptions=True)
-                if background_task.exception() is None:
-                    msg = "RPA background service stopped unexpectedly."
-                    raise RuntimeError(msg)
-                # The background service has no result value. This call
-                # re-raises its exception; only the main task returns
-                # RPA data.
-                return background_task.result()
+            done, pending = await asyncio.wait(
+                tasks,
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+        except BaseException as error:
+            cancellation_errors = await _cancel_tasks(tasks)
+            if cancellation_errors:
+                msg = "RPA runtime task cancellation failed."
+                raise BaseExceptionGroup(
+                    msg,
+                    [error, *cancellation_errors],
+                ) from None
+            raise
 
-            background_task.cancel()
-            await asyncio.gather(background_task, return_exceptions=True)
-            return main_task.result()
-        finally:
-            for task in tasks:
-                if not task.done():
-                    task.cancel()
-            await asyncio.gather(*tasks, return_exceptions=True)
+        cancellation_errors = await _cancel_tasks(tuple(pending))
+        task_errors: list[BaseException] = []
+        main_succeeded = False
+        main_result: Any = None
+
+        for task in tasks:
+            if task not in done:
+                continue
+
+            try:
+                result = task.result()
+            except BaseException as error:  # noqa: BLE001
+                task_errors.append(error)
+            else:
+                if task is main_task:
+                    main_succeeded = True
+                    main_result = result
+                else:
+                    msg = "RPA background service stopped unexpectedly."
+                    task_errors.append(RuntimeError(msg))
+
+        _raise_task_errors([*task_errors, *cancellation_errors])
+        if not main_succeeded:
+            msg = "RPA main task did not produce a result."
+            raise RuntimeError(msg)
+        return main_result
 
     async def _run_main_when_ready(
         self,
@@ -211,6 +231,32 @@ class RPARuntime:
         screenshot = await self._detector.screenshot()
         msg = "Screen detection timed out."
         raise ScreenDetectionTimeoutError(msg, screenshot)
+
+
+async def _cancel_tasks(
+    tasks: tuple[asyncio.Future[Any], ...],
+) -> list[BaseException]:
+    for task in tasks:
+        if not task.done():
+            task.cancel()
+
+    errors: list[BaseException] = []
+    for task in tasks:
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+        except BaseException as error:  # noqa: BLE001
+            errors.append(error)
+    return errors
+
+
+def _raise_task_errors(errors: list[BaseException]) -> None:
+    if len(errors) == 1:
+        raise errors[0]
+    if errors:
+        msg = "RPA runtime tasks failed."
+        raise BaseExceptionGroup(msg, errors)
 
 
 type RuntimeFactory = Callable[

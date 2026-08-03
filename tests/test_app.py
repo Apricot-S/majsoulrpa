@@ -520,6 +520,97 @@ def test_rpa_runtime_cancels_background_service_after_normal_stop() -> None:
     assert cancelled
 
 
+def test_rpa_runtime_reports_background_cancellation_failure() -> None:
+    async def fail_when_cancelled() -> None:
+        try:
+            await asyncio.Future()
+        except asyncio.CancelledError:
+            msg = "background cancellation failed"
+            raise RuntimeError(msg) from None
+
+    runtime = RPARuntime(
+        {LoginScreen: _return_data},
+        SequenceScreenDetector(LoginScreen()),
+        should_stop=lambda: True,
+        background_service=fail_when_cancelled,
+    )
+
+    with pytest.raises(RuntimeError, match="background cancellation failed"):
+        asyncio.run(runtime.run("done"))
+
+
+def test_rpa_runtime_preserves_main_cancellation_failure() -> None:
+    detect_started = asyncio.Event()
+
+    class CancellationFailingDetector:
+        async def detect(
+            self,
+            screen_types: tuple[type[Screen], ...],
+        ) -> Screen | None:
+            _ = screen_types
+            detect_started.set()
+            try:
+                await asyncio.Future()
+            except asyncio.CancelledError:
+                msg = "main cancellation failed"
+                raise ValueError(msg) from None
+
+        async def screenshot(self) -> bytes:
+            return SYNTHETIC_PNG
+
+    async def fail_background_service() -> None:
+        await detect_started.wait()
+        msg = "background failed"
+        raise RuntimeError(msg)
+
+    runtime = RPARuntime(
+        {},
+        CancellationFailingDetector(),
+        background_service=fail_background_service,
+    )
+
+    with pytest.raises(ExceptionGroup) as exc_info:
+        asyncio.run(runtime.run(None))
+
+    background_error, cancellation_error = exc_info.value.exceptions
+    assert isinstance(background_error, RuntimeError)
+    assert str(background_error) == "background failed"
+    assert isinstance(cancellation_error, ValueError)
+    assert str(cancellation_error) == "main cancellation failed"
+
+
+def test_rpa_runtime_preserves_child_failure_when_cancelled() -> None:
+    background_started = asyncio.Event()
+
+    async def fail_when_cancelled() -> None:
+        background_started.set()
+        try:
+            await asyncio.Future()
+        except asyncio.CancelledError:
+            msg = "background cancellation failed"
+            raise RuntimeError(msg) from None
+
+    runtime = RPARuntime(
+        {},
+        BlockingScreenDetector(),
+        background_service=fail_when_cancelled,
+    )
+
+    async def cancel_runtime() -> None:
+        task = asyncio.create_task(runtime.run(None))
+        await background_started.wait()
+        task.cancel()
+        await task
+
+    with pytest.raises(BaseExceptionGroup) as exc_info:
+        asyncio.run(cancel_runtime())
+
+    cancellation, background_error = exc_info.value.exceptions
+    assert isinstance(cancellation, asyncio.CancelledError)
+    assert isinstance(background_error, RuntimeError)
+    assert str(background_error) == "background cancellation failed"
+
+
 def test_rpa_runtime_rejects_background_service_normal_exit() -> None:
     async def stop_unexpectedly() -> None:
         await asyncio.sleep(0)

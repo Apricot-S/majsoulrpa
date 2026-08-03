@@ -141,7 +141,7 @@
   - [x] `should_stop`はstatelessなdefault predicateを直接デフォルト値とし、falseyなcallableも指定値として保持して置き換えないことをテストする。
   - [x] `cleanup`は共通のasync no-opを直接デフォルト値として常にawait可能にし、`None`分岐だけのwrapperを置かない。
   - [x] callback・background service等の本処理とcleanupがともに失敗した場合に、一方を隠さず報告する契約をテストする。
-  - [ ] main loop終了後のbackground task cancel、background service終了後のmain task cancel、runtime自体のcancellationで、兄弟taskのcancellation cleanup失敗を握りつぶさず併せて報告する。
+  - [x] main loop終了後のbackground task cancel、background service終了後のmain task cancel、runtime自体のcancellationで、兄弟taskのcancellation cleanup失敗を握りつぶさず併せて報告する。
   - [ ] background service callableの呼び出しまたはtask化が失敗しても、先に開始したmain taskを残さずcancel・回収する契約をテストする。
   - [x] `background_ready`は共通のasync no-opを直接デフォルト値として常にawait可能にし、`None`分岐を置かない。
   - [x] `RPARuntime.run()`の`detection_timeout`はruntime policyとしてキーワード専用を維持する。`ScreenshotScreenDetector`のcontextはscreenshotと型・役割が異なるため、キーワード専用にする必要はない。
