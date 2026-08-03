@@ -46,6 +46,8 @@ headless = true
             "127.0.0.1",
             "--remote-port",
             "13000",
+            "--sniffer-port",
+            "14000",
             "--viewport-height",
             "1080",
             "--no-headless",
@@ -64,6 +66,7 @@ headless = true
     assert config.endpoint.browser_host == "192.0.2.10"
     assert config.endpoint.client_host == "127.0.0.1"
     assert config.endpoint.remote_port == 13000
+    assert config.endpoint.sniffer_port == 14000
     assert config.browser.viewport_height == 1080
     assert config.browser.headless is False
     assert config.browser.user_data_dir == tmp_path / "user-data"

@@ -32,6 +32,7 @@ def main(
     )
     parser.add_argument("--client-host")
     parser.add_argument("--remote-port", type=int)
+    parser.add_argument("--sniffer-port", type=int)
     parser.add_argument("--viewport-height", type=int)
     parser.add_argument(
         "--headless",
@@ -62,6 +63,8 @@ def _apply_overrides(config: AppConfig, args: argparse.Namespace) -> AppConfig:
         endpoint_updates["client_host"] = args.client_host
     if args.remote_port is not None:
         endpoint_updates["remote_port"] = args.remote_port
+    if args.sniffer_port is not None:
+        endpoint_updates["sniffer_port"] = args.sniffer_port
 
     browser_updates = {}
     if args.viewport_height is not None:
