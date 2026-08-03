@@ -140,7 +140,7 @@
   - [x] `detection_timeout`を`None`または有限の正数に限定し、`NaN`・無限大・0以下で終了不能にならないことをテストする。
   - [x] `should_stop`はstatelessなdefault predicateを直接デフォルト値とし、falseyなcallableも指定値として保持して置き換えないことをテストする。
   - [x] `cleanup`はasyncなno-opを直接デフォルト値として常にawait可能にし、`None`分岐だけのwrapperを置かない。
-  - [ ] callback・background service等の本処理とcleanupがともに失敗した場合に、一方を隠さず報告する契約をテストする。
+  - [x] callback・background service等の本処理とcleanupがともに失敗した場合に、一方を隠さず報告する契約をテストする。
   - [x] `RPARuntime.run()`の`detection_timeout`はruntime policyとしてキーワード専用を維持する。`ScreenshotScreenDetector`のcontextはscreenshotと型・役割が異なるため、キーワード専用にする必要はない。
   - [ ] `RPARuntime` constructorはcallbacks・detectorを主要入力として位置指定し、取り違えやすい残りのoptional callable群はキーワード専用にする。
 - [ ] `client/controller_runtime.py`: composition root として ZMQ、controller、Sniffer、session、`ScreenContext` だけを組み立てることを確認する。

@@ -26,6 +26,17 @@ def _keep_running() -> bool:
     return False
 
 
+def _validate_detection_timeout(detection_timeout: float | None) -> None:
+    if detection_timeout is None:
+        return
+    if not isfinite(detection_timeout):
+        msg = "detection_timeout must be finite."
+        raise ValueError(msg)
+    if detection_timeout <= 0:
+        msg = "detection_timeout must be positive."
+        raise ValueError(msg)
+
+
 class ScreenDetector(Protocol):
     async def detect(self, screen_types: ScreenTypes) -> Screen | None: ...
     async def screenshot(self) -> bytes: ...
@@ -75,19 +86,25 @@ class RPARuntime:
         detection_timeout: float | None = None,
     ) -> Any:  # noqa: ANN401
         try:
-            if detection_timeout is not None:
-                if not isfinite(detection_timeout):
-                    msg = "detection_timeout must be finite."
-                    raise ValueError(msg)
-                if detection_timeout <= 0:
-                    msg = "detection_timeout must be positive."
-                    raise ValueError(msg)
+            _validate_detection_timeout(detection_timeout)
 
             if self._background_service is None:
-                return await self._run_loop(data, detection_timeout)
-            return await self._run_with_background(data, detection_timeout)
-        finally:
+                result = await self._run_loop(data, detection_timeout)
+            else:
+                result = await self._run_with_background(
+                    data,
+                    detection_timeout,
+                )
+        except BaseException as error:
+            try:
+                await self._cleanup()
+            except BaseException as cleanup_error:  # noqa: BLE001
+                msg = "RPA runtime and cleanup failed."
+                raise BaseExceptionGroup(msg, [error, cleanup_error]) from None
+            raise
+        else:
             await self._cleanup()
+            return result
 
     async def _run_loop(
         self,

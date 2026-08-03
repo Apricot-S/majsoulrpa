@@ -6,7 +6,7 @@ import pytest
 
 import majsoulrpa.client.runtime as runtime_module
 from majsoulrpa import RPAApp
-from majsoulrpa.client.runtime import RPARuntime
+from majsoulrpa.client.runtime import Cleanup, RPARuntime
 from majsoulrpa.config import AppConfig
 from majsoulrpa.screens import Screen, ScreenDetectionSpec
 from majsoulrpa.screens.errors import ScreenDetectionTimeoutError
@@ -120,7 +120,7 @@ class RuntimeFactorySpy:
     def __init__(
         self,
         detector: SequenceScreenDetector | BlockingScreenDetector,
-        cleanup: CleanupSpy | None = None,
+        cleanup: Cleanup | None = None,
     ) -> None:
         self._detector = detector
         self._cleanup = cleanup
@@ -381,6 +381,29 @@ def test_rpa_app_run_cleans_up_when_callback_fails() -> None:
     assert cleanup.called == 1
 
 
+def test_rpa_app_run_preserves_callback_and_cleanup_failures() -> None:
+    async def fail_cleanup() -> None:
+        msg = "cleanup failed"
+        raise ValueError(msg)
+
+    detector = SequenceScreenDetector(LoginScreen())
+    app = RPAApp(runtime_factory=RuntimeFactorySpy(detector, fail_cleanup))
+
+    @app.on(LoginScreen)
+    async def handle_login(_screen: LoginScreen, _data: object) -> object:
+        msg = "callback failed"
+        raise RuntimeError(msg)
+
+    with pytest.raises(ExceptionGroup) as exc_info:
+        asyncio.run(app.run(AppConfig(), None))
+
+    callback_error, cleanup_error = exc_info.value.exceptions
+    assert isinstance(callback_error, RuntimeError)
+    assert str(callback_error) == "callback failed"
+    assert isinstance(cleanup_error, ValueError)
+    assert str(cleanup_error) == "cleanup failed"
+
+
 def test_rpa_app_run_raises_detection_timeout() -> None:
     app = RPAApp(runtime_factory=RuntimeFactorySpy(BlockingScreenDetector()))
 
@@ -405,6 +428,27 @@ def test_rpa_app_run_cleans_up_when_callback_is_cancelled() -> None:
     assert cleanup.called == 1
 
 
+def test_rpa_app_run_preserves_cancellation_and_cleanup_failure() -> None:
+    async def fail_cleanup() -> None:
+        msg = "cleanup failed"
+        raise RuntimeError(msg)
+
+    detector = SequenceScreenDetector(LoginScreen())
+    app = RPAApp(runtime_factory=RuntimeFactorySpy(detector, fail_cleanup))
+
+    @app.on(LoginScreen)
+    async def handle_login(_screen: LoginScreen, _data: object) -> object:
+        raise asyncio.CancelledError
+
+    with pytest.raises(BaseExceptionGroup) as exc_info:
+        asyncio.run(app.run(AppConfig(), None))
+
+    cancellation, cleanup_error = exc_info.value.exceptions
+    assert isinstance(cancellation, asyncio.CancelledError)
+    assert isinstance(cleanup_error, RuntimeError)
+    assert str(cleanup_error) == "cleanup failed"
+
+
 def test_rpa_runtime_propagates_background_service_failure() -> None:
     cleanup = CleanupSpy()
 
@@ -424,6 +468,33 @@ def test_rpa_runtime_propagates_background_service_failure() -> None:
         asyncio.run(runtime.run(None))
 
     assert cleanup.called == 1
+
+
+def test_rpa_runtime_preserves_background_and_cleanup_failures() -> None:
+    async def fail_background_service() -> None:
+        await asyncio.sleep(0)
+        msg = "sniffer failed"
+        raise RuntimeError(msg)
+
+    async def fail_cleanup() -> None:
+        msg = "cleanup failed"
+        raise ValueError(msg)
+
+    runtime = RPARuntime(
+        {},
+        BlockingScreenDetector(),
+        cleanup=fail_cleanup,
+        background_service=fail_background_service,
+    )
+
+    with pytest.raises(ExceptionGroup) as exc_info:
+        asyncio.run(runtime.run(None))
+
+    background_error, cleanup_error = exc_info.value.exceptions
+    assert isinstance(background_error, RuntimeError)
+    assert str(background_error) == "sniffer failed"
+    assert isinstance(cleanup_error, ValueError)
+    assert str(cleanup_error) == "cleanup failed"
 
 
 def test_rpa_runtime_cancels_background_service_after_normal_stop() -> None:
