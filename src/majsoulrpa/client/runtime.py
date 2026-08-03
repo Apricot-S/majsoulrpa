@@ -18,7 +18,7 @@ type BackgroundReady = Callable[[], Awaitable[object]]
 SCREEN_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
 
 
-async def _noop_cleanup() -> None:
+async def _noop() -> None:
     pass
 
 
@@ -68,10 +68,10 @@ class RPARuntime:
         callbacks: Mapping[type[Screen], Callback[Any]],
         detector: ScreenDetector,
         *,
-        cleanup: Cleanup = _noop_cleanup,
+        cleanup: Cleanup = _noop,
         should_stop: StopPredicate = _keep_running,
         background_service: BackgroundService | None = None,
-        background_ready: BackgroundReady | None = None,
+        background_ready: BackgroundReady = _noop,
     ) -> None:
         self._callbacks = callbacks
         self._detector = detector
@@ -167,8 +167,7 @@ class RPARuntime:
         data: Any,  # noqa: ANN401
         detection_timeout: float | None,
     ) -> Any:  # noqa: ANN401
-        if self._background_ready is not None:
-            await self._background_ready()
+        await self._background_ready()
         return await self._run_loop(data, detection_timeout)
 
     async def _detect(
