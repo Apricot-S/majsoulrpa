@@ -142,7 +142,7 @@
   - [x] `cleanup`はasyncなno-opを直接デフォルト値として常にawait可能にし、`None`分岐だけのwrapperを置かない。
   - [x] callback・background service等の本処理とcleanupがともに失敗した場合に、一方を隠さず報告する契約をテストする。
   - [x] `RPARuntime.run()`の`detection_timeout`はruntime policyとしてキーワード専用を維持する。`ScreenshotScreenDetector`のcontextはscreenshotと型・役割が異なるため、キーワード専用にする必要はない。
-  - [ ] `RPARuntime` constructorはcallbacks・detectorを主要入力として位置指定し、取り違えやすい残りのoptional callable群はキーワード専用にする。
+  - [x] `RPARuntime` constructorはcallbacks・detectorを主要入力として位置指定し、取り違えやすい残りのoptional callable群はキーワード専用にする。
 - [ ] `client/controller_runtime.py`: composition root として ZMQ、controller、Sniffer、session、`ScreenContext` だけを組み立てることを確認する。
 - [ ] `client/session.py`: decode 後 enqueue 前の account ID 観測、正値・再観測・不一致の不変条件を確認する。
 

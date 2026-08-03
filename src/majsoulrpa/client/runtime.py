@@ -67,6 +67,7 @@ class RPARuntime:
         self,
         callbacks: Mapping[type[Screen], Callback[Any]],
         detector: ScreenDetector,
+        *,
         cleanup: Cleanup = _noop_cleanup,
         should_stop: StopPredicate = _keep_running,
         background_service: BackgroundService | None = None,
