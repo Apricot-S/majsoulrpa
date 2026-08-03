@@ -26,17 +26,6 @@ def _keep_running() -> bool:
     return False
 
 
-def _validate_detection_timeout(detection_timeout: float | None) -> None:
-    if detection_timeout is None:
-        return
-    if not isfinite(detection_timeout):
-        msg = "detection_timeout must be finite."
-        raise ValueError(msg)
-    if detection_timeout <= 0:
-        msg = "detection_timeout must be positive."
-        raise ValueError(msg)
-
-
 class ScreenDetector(Protocol):
     async def detect(self, screen_types: ScreenTypes) -> Screen | None: ...
     async def screenshot(self) -> bytes: ...
@@ -231,6 +220,17 @@ class RPARuntime:
         screenshot = await self._detector.screenshot()
         msg = "Screen detection timed out."
         raise ScreenDetectionTimeoutError(msg, screenshot)
+
+
+def _validate_detection_timeout(detection_timeout: float | None) -> None:
+    if detection_timeout is None:
+        return
+    if not isfinite(detection_timeout):
+        msg = "detection_timeout must be finite."
+        raise ValueError(msg)
+    if detection_timeout <= 0:
+        msg = "detection_timeout must be positive."
+        raise ValueError(msg)
 
 
 async def _cancel_tasks(
