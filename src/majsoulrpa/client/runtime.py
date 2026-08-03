@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Collection, Mapping
 from math import isfinite
 from typing import Any, NoReturn, Protocol
 
@@ -155,7 +155,7 @@ class RPARuntime:
                 ) from None
             raise
 
-        cancellation_errors = await _cancel_tasks(tuple(pending))
+        cancellation_errors = await _cancel_tasks(pending)
         task_errors: list[BaseException] = []
         main_succeeded = False
         main_result: Any = None
@@ -234,7 +234,7 @@ class RPARuntime:
 
 
 async def _cancel_tasks(
-    tasks: tuple[asyncio.Future[Any], ...],
+    tasks: Collection[asyncio.Future[Any]],
 ) -> list[BaseException]:
     for task in tasks:
         if not task.done():
