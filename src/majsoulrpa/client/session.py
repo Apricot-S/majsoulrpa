@@ -41,17 +41,22 @@ def _extract_account_id(message: DecodedSnifferMessage) -> int | None:
         return None
 
     if message.raw.name == OAUTH2_LOGIN_API_NAME:
-        value = message.response.get("account_id")
-    elif message.raw.name == CREATE_ROOM_API_NAME:
-        room = message.response.get("room")
-        if not isinstance(room, dict):
+        if "account_id" not in message.response:
             return None
-        value = room.get("owner_id")
+        value = message.response["account_id"]
+    elif message.raw.name == CREATE_ROOM_API_NAME:
+        if "room" not in message.response:
+            return None
+        room = message.response["room"]
+        if not isinstance(room, dict):
+            msg = "Room in a decoded createRoom message must be an object."
+            raise AccountIDDecodeError(msg)
+        if "owner_id" not in room:
+            return None
+        value = room["owner_id"]
     else:
         return None
 
-    if value is None:
-        return None
     if isinstance(value, bool) or not isinstance(value, int):
         msg = "Account ID in a decoded message must be an integer."
         raise AccountIDDecodeError(msg)
