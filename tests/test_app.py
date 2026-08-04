@@ -497,6 +497,59 @@ def test_rpa_runtime_preserves_background_and_cleanup_failures() -> None:
     assert str(cleanup_error) == "cleanup failed"
 
 
+def test_rpa_runtime_cancels_main_when_background_call_fails() -> None:
+    def fail_background_call() -> asyncio.Future[None]:
+        msg = "background call failed"
+        raise RuntimeError(msg)
+
+    runtime = RPARuntime(
+        {},
+        BlockingScreenDetector(),
+        background_service=fail_background_call,
+    )
+
+    async def run_and_check_tasks() -> None:
+        tasks_before = asyncio.all_tasks()
+        with pytest.raises(RuntimeError, match="background call failed"):
+            await runtime.run(None)
+        assert asyncio.all_tasks() == tasks_before
+
+    asyncio.run(run_and_check_tasks())
+
+
+def test_rpa_runtime_cancels_main_when_background_task_creation_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def background_service() -> asyncio.Future[None]:
+        return asyncio.Future()
+
+    def fail_task_creation(_awaitable: object) -> asyncio.Future[None]:
+        msg = "background task creation failed"
+        raise RuntimeError(msg)
+
+    monkeypatch.setattr(
+        runtime_module.asyncio,
+        "ensure_future",
+        fail_task_creation,
+    )
+    runtime = RPARuntime(
+        {},
+        BlockingScreenDetector(),
+        background_service=background_service,
+    )
+
+    async def run_and_check_tasks() -> None:
+        tasks_before = asyncio.all_tasks()
+        with pytest.raises(
+            RuntimeError,
+            match="background task creation failed",
+        ):
+            await runtime.run(None)
+        assert asyncio.all_tasks() == tasks_before
+
+    asyncio.run(run_and_check_tasks())
+
+
 def test_rpa_runtime_cancels_background_service_after_normal_stop() -> None:
     cancelled = False
 

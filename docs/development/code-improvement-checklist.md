@@ -136,14 +136,14 @@
 ## `client/`
 
 - [x] `client/__init__.py`: 空の package root を維持する必要性と、意図しない public export がないことを確認する。
-- [ ] `client/runtime.py`: 登録 Screen の検出順、callback/data loop、兄弟 task、timeout・stop・cleanup を確認する。
+- [x] `client/runtime.py`: 登録 Screen の検出順、callback/data loop、兄弟 task、timeout・stop・cleanup を確認する。
   - [x] 登録順の検出、未登録 Screen の除外、callback 間の data 引き継ぎ、background service の異常終了・通常終了・ready待機・正常停止時cancelは既存テストで固定されている。
   - [x] `detection_timeout`を`None`または有限の正数に限定し、`NaN`・無限大・0以下で終了不能にならないことをテストする。
   - [x] `should_stop`はstatelessなdefault predicateを直接デフォルト値とし、falseyなcallableも指定値として保持して置き換えないことをテストする。
   - [x] `cleanup`は共通のasync no-opを直接デフォルト値として常にawait可能にし、`None`分岐だけのwrapperを置かない。
   - [x] callback・background service等の本処理とcleanupがともに失敗した場合に、一方を隠さず報告する契約をテストする。
   - [x] main loop終了後のbackground task cancel、background service終了後のmain task cancel、runtime自体のcancellationで、兄弟taskのcancellation cleanup失敗を握りつぶさず併せて報告する。
-  - [ ] background service callableの呼び出しまたはtask化が失敗しても、先に開始したmain taskを残さずcancel・回収する契約をテストする。
+  - [x] background service callableの呼び出しまたはtask化が失敗しても、先に開始したmain taskを残さずcancel・回収する契約をテストする。
   - [x] `background_ready`は共通のasync no-opを直接デフォルト値として常にawait可能にし、`None`分岐を置かない。
   - [x] `RPARuntime.run()`の`detection_timeout`はruntime policyとしてキーワード専用を維持する。`ScreenshotScreenDetector`のcontextはscreenshotと型・役割が異なるため、キーワード専用にする必要はない。
   - [x] `RPARuntime` constructorはcallbacks・detectorを主要入力として位置指定し、取り違えやすい残りのoptional callable群はキーワード専用にする。

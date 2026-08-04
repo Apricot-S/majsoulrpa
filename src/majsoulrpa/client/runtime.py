@@ -128,7 +128,18 @@ class RPARuntime:
         main_task = asyncio.create_task(
             self._run_main_when_ready(data, detection_timeout),
         )
-        background_task = asyncio.ensure_future(self._background_service())
+        try:
+            background_task = asyncio.ensure_future(self._background_service())
+        except BaseException as error:
+            cancellation_errors = await cancel_tasks((main_task,))
+            if cancellation_errors:
+                msg = "RPA runtime task startup cleanup failed."
+                raise BaseExceptionGroup(
+                    msg,
+                    [error, *cancellation_errors],
+                ) from None
+            raise
+
         tasks = (main_task, background_task)
         try:
             done, pending = await asyncio.wait(
