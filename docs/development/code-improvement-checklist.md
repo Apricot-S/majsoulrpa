@@ -152,8 +152,8 @@
   - [x] Sniffer subscriberのconnect完了をmain loopのready境界とし、session observerをqueueより前に呼ぶ契約は`SnifferClientRuntime`のテストで固定されている。
   - [x] REQ socket、Sniffer SUB socket、contextをruntime終了時に回収し、IPv6 optionをconnect前に設定する通常・callback失敗・cancellation経路をテストする。
   - [ ] context作成後のREQ socket生成失敗、またはsocket生成後のoption・connect・後続composition失敗でも、作成済みsocketとcontextを即座に逆順で回収する契約をテストする。
-  - [ ] `context_factory`はstatelessな既定factoryを直接デフォルト値としてfalsey callableも保持し、`None`とtruthiness分岐を使わない。
-  - [ ] constructorの`context_factory`は単独の注入用引数で取り違える対象がないため、キーワード専用を解除する。
+  - [x] `context_factory`はstatelessな既定factoryを直接デフォルト値としてfalsey callableも保持し、`None`とtruthiness分岐を使わない。
+  - [x] constructorの`context_factory`は単独の注入用引数で取り違える対象がないため、キーワード専用を解除する。
   - [x] Windows向けRuntimeWarningの限定的なglobal filterは`browser/zmq.py`で合意したprocess方針と一致する。
 - [x] `client/session.py`: decode 後 enqueue 前の account ID 観測、正値・再観測・不一致の不変条件を確認する。
   - [x] 初期値を`None`とし、`oauth2Login.account_id`と`createRoom.room.owner_id`の正値を取得し、対象外message・欠落field・0以下を無視することをテストする。

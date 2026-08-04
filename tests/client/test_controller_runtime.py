@@ -5,6 +5,7 @@ from typing import override
 import pytest
 import zmq
 
+import majsoulrpa.client.controller_runtime as controller_runtime_module
 from majsoulrpa.browser.controller import BrowserOperationError
 from majsoulrpa.browser.messages import (
     BrowserErrorResponse,
@@ -135,6 +136,42 @@ class ZmqContextSpy:
 
     def term(self) -> None:
         self.terminated = True
+
+
+class FalseyContextFactory:
+    def __init__(self, context: ZmqContextSpy) -> None:
+        self._context = context
+        self.called = 0
+
+    def __bool__(self) -> bool:
+        return False
+
+    def __call__(self) -> ZmqContextSpy:
+        self.called += 1
+        return self._context
+
+
+def test_controller_runtime_accepts_positional_falsey_context_factory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = ZmqContextSpy()
+    context_factory = FalseyContextFactory(context)
+
+    def reject_default_context() -> ZmqContextSpy:
+        msg = "The default context factory must not be used."
+        raise AssertionError(msg)
+
+    monkeypatch.setattr(
+        controller_runtime_module.zmq.asyncio,
+        "Context",
+        reject_default_context,
+    )
+
+    factory = ControllerRuntimeFactory(context_factory)
+    factory({}, AppConfig())
+
+    assert context_factory.called == 1
+    assert context.socket_types == [zmq.REQ]
 
 
 def test_controller_runtime_enables_ipv6_before_connect() -> None:

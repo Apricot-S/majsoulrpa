@@ -47,6 +47,10 @@ SNIFFER_QUEUE_CAPACITY = 1024
 SNIFFER_QUEUE_MAX_PAYLOAD_BYTES = 64 * 1024 * 1024
 
 
+def _make_zmq_context() -> ZmqContextLike:
+    return cast("ZmqContextLike", zmq.asyncio.Context())
+
+
 class StopFlag:
     def __init__(self) -> None:
         self._requested = False
@@ -61,10 +65,9 @@ class StopFlag:
 class ControllerRuntimeFactory:
     def __init__(
         self,
-        *,
-        context_factory: ZmqContextFactory | None = None,
+        context_factory: ZmqContextFactory = _make_zmq_context,
     ) -> None:
-        self._context_factory = context_factory or zmq.asyncio.Context
+        self._context_factory = context_factory
 
     def __call__(
         self,
