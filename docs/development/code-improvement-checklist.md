@@ -148,6 +148,13 @@
   - [x] `RPARuntime.run()`の`detection_timeout`はruntime policyとしてキーワード専用を維持する。`ScreenshotScreenDetector`のcontextはscreenshotと型・役割が異なるため、キーワード専用にする必要はない。
   - [x] `RPARuntime` constructorはcallbacks・detectorを主要入力として位置指定し、取り違えやすい残りのoptional callable群はキーワード専用にする。
 - [ ] `client/controller_runtime.py`: composition root として ZMQ、controller、Sniffer、session、`ScreenContext` だけを組み立てることを確認する。
+  - [x] REQ transport、browser controller、stop flag、Sniffer queue・subscriber・decoder・runtime、session state、`ScreenContext`、screen detectorの配線だけを担い、画面処理やdecode処理を持ち込んでいない。
+  - [x] Sniffer subscriberのconnect完了をmain loopのready境界とし、session observerをqueueより前に呼ぶ契約は`SnifferClientRuntime`のテストで固定されている。
+  - [x] REQ socket、Sniffer SUB socket、contextをruntime終了時に回収し、IPv6 optionをconnect前に設定する通常・callback失敗・cancellation経路をテストする。
+  - [ ] context作成後のREQ socket生成失敗、またはsocket生成後のoption・connect・後続composition失敗でも、作成済みsocketとcontextを即座に逆順で回収する契約をテストする。
+  - [ ] `context_factory`はstatelessな既定factoryを直接デフォルト値としてfalsey callableも保持し、`None`とtruthiness分岐を使わない。
+  - [ ] constructorの`context_factory`は単独の注入用引数で取り違える対象がないため、キーワード専用を解除する。
+  - [x] Windows向けRuntimeWarningの限定的なglobal filterは`browser/zmq.py`で合意したprocess方針と一致する。
 - [x] `client/session.py`: decode 後 enqueue 前の account ID 観測、正値・再観測・不一致の不変条件を確認する。
   - [x] 初期値を`None`とし、`oauth2Login.account_id`と`createRoom.room.owner_id`の正値を取得し、対象外message・欠落field・0以下を無視することをテストする。
   - [x] 同じaccount IDの再観測を許容し、異なる正値を`AccountIDMismatchError`として値を例外messageへ出さないことをテストする。
