@@ -165,8 +165,23 @@
 ## `presentation/`
 
 - [ ] `presentation/__init__.py`: OpenCV を core import から隔離する lazy export と公開名の一貫性を確認する。
+  - [ ] `rpa` extra の直接の欠落だけを案内用`ModuleNotFoundError`へ変換し、template module内の無関係なimport失敗を隠さないことをテストする。
+  - [x] `Region`は通常importし、OpenCV・NumPyを必要とする公開名だけをlazy exportする構成と、`__all__` / `__dir__()` / cacheの一貫性は既存テストで確認できる。
+  - [x] constructor引数と`None`デフォルトはない。
 - [ ] `presentation/region.py`: immutable value object、scale、座標境界、random point の決定可能なテストを確認する。
+  - [ ] 座標・size・viewport・`boundary_sigma`の`NaN` / infinityを拒否し、`random_point()`が非有限値で無限loopにならない契約をテストする。
+  - [ ] 負の`left` / `top`をruntime value objectで許容するか、screen座標として拒否するかを明示し、right / bottomを含む座標境界をテストする。
+  - [ ] falseyな`Random`実装も注入値として保持し、`None`のときだけ既定乱数源を使う。
+  - [ ] 4つの同型fieldを持つ`Region` constructorをキーワード専用にする必要性を検討する。`scale_to_viewport()`のwidth / heightと`random_point()`の調整・注入引数は取り違え防止のため現状のキーワード専用を維持する。
+  - [x] `rng=None`は呼出しごとの任意注入を表し、共有mutable defaultを避けるため必要である。
 - [ ] `presentation/template.py`: TOML validation、PNG adapter と ndarray matcher の分離、scale・margin・threshold の不変条件を確認する。
+  - [ ] 公開されるpydantic設定modelが文字列・boolean等を数値へ暗黙変換せず、全座標・size・margin・thresholdで非有限値を拒否する契約をテストする。
+  - [ ] ndarray matcherのtemplate / screenshotについて、2次元grayscale・`uint8`・非空という入口契約を明示し、OpenCV固有の例外へ漏らさないことをテストする。
+  - [ ] OpenCVが非有限scoreを返してもthreshold判定で一致扱いしないことと、`TemplateMatchResult.score`の範囲をテストする。
+  - [ ] PNG adapterがPNG以外のdecode可能な画像形式を受理するか拒否するかを、その公開名と利用境界に合わせて明示する。
+  - [x] TOMLのunknown key、基本的な値域、template size、scale、margin、threshold、探索領域、decode失敗と、PNG bytes adapter / ndarray matcherの分離は既存テストで確認できる。
+  - [x] `TemplateMatcher`のtemplate / settingsは型と役割が異なる主要入力なので位置指定のままでよく、`load_png_template_matcher()`の2 pathは同型で取り違えやすいためキーワード専用を維持する。他のconstructor・classmethodは単独または型の異なる入力だけである。
+  - [x] constructor引数と便宜的な`None`デフォルトはない。
 
 ## `screens/` 共通
 
