@@ -146,9 +146,11 @@ async def _serve_with_sniffer(
     cleanup_errors = await cancel_tasks(pending)
     task_errors: list[BaseException] = []
     sniffer_stopped_normally = False
+
     for task in tasks:
         if task not in done:
             continue
+
         try:
             task.result()
         except BaseException as error:  # noqa: BLE001
