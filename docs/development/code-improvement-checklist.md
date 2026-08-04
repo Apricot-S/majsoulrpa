@@ -147,11 +147,11 @@
   - [x] `background_ready`は共通のasync no-opを直接デフォルト値として常にawait可能にし、`None`分岐を置かない。
   - [x] `RPARuntime.run()`の`detection_timeout`はruntime policyとしてキーワード専用を維持する。`ScreenshotScreenDetector`のcontextはscreenshotと型・役割が異なるため、キーワード専用にする必要はない。
   - [x] `RPARuntime` constructorはcallbacks・detectorを主要入力として位置指定し、取り違えやすい残りのoptional callable群はキーワード専用にする。
-- [ ] `client/controller_runtime.py`: composition root として ZMQ、controller、Sniffer、session、`ScreenContext` だけを組み立てることを確認する。
+- [x] `client/controller_runtime.py`: composition root として ZMQ、controller、Sniffer、session、`ScreenContext` だけを組み立てることを確認する。
   - [x] REQ transport、browser controller、stop flag、Sniffer queue・subscriber・decoder・runtime、session state、`ScreenContext`、screen detectorの配線だけを担い、画面処理やdecode処理を持ち込んでいない。
   - [x] Sniffer subscriberのconnect完了をmain loopのready境界とし、session observerをqueueより前に呼ぶ契約は`SnifferClientRuntime`のテストで固定されている。
   - [x] REQ socket、Sniffer SUB socket、contextをruntime終了時に回収し、IPv6 optionをconnect前に設定する通常・callback失敗・cancellation経路をテストする。
-  - [ ] context作成後のREQ socket生成失敗、またはsocket生成後のoption・connect・後続composition失敗でも、作成済みsocketとcontextを即座に逆順で回収する契約をテストする。
+  - [x] context作成後のREQ socket生成失敗、またはsocket生成後のoption・connect・後続composition失敗でも、作成済みsocketとcontextを即座に逆順で回収する契約をテストする。
   - [x] `context_factory`はstatelessな既定factoryを直接デフォルト値としてfalsey callableも保持し、`None`とtruthiness分岐を使わない。
   - [x] constructorの`context_factory`は単独の注入用引数で取り違える対象がないため、キーワード専用を解除する。
   - [x] Windows向けRuntimeWarningの限定的なglobal filterは`browser/zmq.py`で合意したprocess方針と一致する。
