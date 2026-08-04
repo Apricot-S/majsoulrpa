@@ -1,6 +1,6 @@
 [project]
 name = "majsoulrpa"
-version = "0.1.0.dev3"
+version = "0.1.0.dev4"
 description = "A Robotic Process Automation (RPA) framework for Mahjong Soul (雀魂)"
 authors = [
     { name = "Apricot S." },
