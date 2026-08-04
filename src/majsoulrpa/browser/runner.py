@@ -1,6 +1,6 @@
 import asyncio
 import importlib
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Collection
 from contextlib import AsyncExitStack
 from typing import Any, Protocol, cast
 
@@ -142,7 +142,7 @@ async def _serve_with_sniffer(
             raise BaseExceptionGroup(msg, [error, *cleanup_errors]) from None
         raise
 
-    cleanup_errors = await _cancel_tasks(tuple(pending))
+    cleanup_errors = await _cancel_tasks(pending)
     task_errors: list[BaseException] = []
     sniffer_stopped_normally = False
     for task in tasks:
@@ -169,7 +169,7 @@ async def _serve_with_sniffer(
 
 
 async def _cancel_tasks(
-    tasks: tuple[asyncio.Task[None], ...],
+    tasks: Collection[asyncio.Task[None]],
 ) -> list[BaseException]:
     for task in tasks:
         if not task.done():
