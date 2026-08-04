@@ -1,6 +1,6 @@
 import warnings
 from collections.abc import Callable, Mapping
-from contextlib import AsyncExitStack
+from contextlib import ExitStack
 from typing import Any, Protocol, cast
 
 import zmq
@@ -12,7 +12,10 @@ from majsoulrpa.browser.zmq import BrowserZmqClientTransport
 from majsoulrpa.client.runtime import RPARuntime, ScreenshotScreenDetector
 from majsoulrpa.client.session import SessionState
 from majsoulrpa.config import AppConfig
-from majsoulrpa.endpoint import make_browser_host_tcp_endpoint
+from majsoulrpa.endpoint import (
+    is_ipv6_literal,
+    make_browser_host_tcp_endpoint,
+)
 from majsoulrpa.screens import Screen, ScreenContext
 from majsoulrpa.sniffer.client_runtime import SnifferClientRuntime
 from majsoulrpa.sniffer.decoder import SnifferMessageDecoder
@@ -26,6 +29,7 @@ from majsoulrpa.viewport import viewport_width_for_height
 
 
 class ZmqSocketLike(Protocol):
+    def setsockopt(self, option: int, value: int) -> None: ...
     def connect(self, endpoint: str) -> None: ...
     def close(self, *, linger: int) -> None: ...
     async def send(self, payload: bytes) -> None: ...
@@ -43,6 +47,10 @@ SNIFFER_QUEUE_CAPACITY = 1024
 SNIFFER_QUEUE_MAX_PAYLOAD_BYTES = 64 * 1024 * 1024
 
 
+def _make_zmq_context() -> ZmqContextLike:
+    return cast("ZmqContextLike", zmq.asyncio.Context())
+
+
 class StopFlag:
     def __init__(self) -> None:
         self._requested = False
@@ -57,10 +65,9 @@ class StopFlag:
 class ControllerRuntimeFactory:
     def __init__(
         self,
-        *,
-        context_factory: ZmqContextFactory | None = None,
+        context_factory: ZmqContextFactory = _make_zmq_context,
     ) -> None:
-        self._context_factory = context_factory or zmq.asyncio.Context
+        self._context_factory = context_factory
 
     def __call__(
         self,
@@ -83,56 +90,70 @@ class ControllerRuntimeFactory:
             module="zmq",
         )
 
-        context = self._context_factory()
-        socket = context.socket(zmq.REQ)
-        endpoint = make_browser_host_tcp_endpoint(config)
-        socket.connect(endpoint)
+        resources = ExitStack()
+        try:
+            context = self._context_factory()
+            resources.callback(context.term)
 
-        transport = LoggingBrowserClientTransport(
-            BrowserZmqClientTransport(socket),
-        )
-        controller = RemoteBrowserController(transport)
-        stop_flag = StopFlag()
-        sniffer_queue = SnifferMessageQueue(
-            capacity=SNIFFER_QUEUE_CAPACITY,
-            max_payload_bytes=SNIFFER_QUEUE_MAX_PAYLOAD_BYTES,
-        )
-        session_state = SessionState()
-        screen_context = ScreenContext(
-            browser=controller,
-            sniffer_messages=sniffer_queue,
-            account_state=session_state,
-            request_stop=stop_flag.request_stop,
-            viewport_width=viewport_width_for_height(
-                config.browser.viewport_height,
-            ),
-            viewport_height=config.browser.viewport_height,
-        )
-        detector = ScreenshotScreenDetector(
-            controller.screenshot,
-            context=screen_context,
-        )
-        sniffer_subscriber = ZmqSnifferSubscriber(
-            context=cast("AsyncZmqContextLike", context),
-            config=config,
-        )
-        sniffer_runtime = SnifferClientRuntime(
-            subscriber=sniffer_subscriber,
-            decoder=SnifferMessageDecoder(),
-            observer=session_state,
-            queue=sniffer_queue,
-        )
+            socket = context.socket(zmq.REQ)
+            resources.callback(socket.close, linger=0)
 
-        async def cleanup() -> None:
-            async with AsyncExitStack() as stack:
-                stack.callback(context.term)
-                stack.callback(socket.close, linger=0)
+            endpoint = make_browser_host_tcp_endpoint(config)
+            if is_ipv6_literal(config.endpoint.browser_host):
+                socket.setsockopt(zmq.IPV6, 1)
+            socket.connect(endpoint)
 
-        return RPARuntime(
-            callbacks,
-            detector,
-            cleanup=cleanup,
-            should_stop=stop_flag.is_requested,
-            background_service=sniffer_runtime.run,
-            background_ready=sniffer_runtime.wait_until_ready,
-        )
+            transport = LoggingBrowserClientTransport(
+                BrowserZmqClientTransport(socket),
+            )
+            controller = RemoteBrowserController(transport)
+            stop_flag = StopFlag()
+            sniffer_queue = SnifferMessageQueue(
+                capacity=SNIFFER_QUEUE_CAPACITY,
+                max_payload_bytes=SNIFFER_QUEUE_MAX_PAYLOAD_BYTES,
+            )
+            session_state = SessionState()
+            screen_context = ScreenContext(
+                browser=controller,
+                sniffer_messages=sniffer_queue,
+                account_state=session_state,
+                request_stop=stop_flag.request_stop,
+                viewport_width=viewport_width_for_height(
+                    config.browser.viewport_height,
+                ),
+                viewport_height=config.browser.viewport_height,
+            )
+            detector = ScreenshotScreenDetector(
+                controller.screenshot,
+                context=screen_context,
+            )
+            sniffer_subscriber = ZmqSnifferSubscriber(
+                context=cast("AsyncZmqContextLike", context),
+                config=config,
+            )
+            sniffer_runtime = SnifferClientRuntime(
+                subscriber=sniffer_subscriber,
+                decoder=SnifferMessageDecoder(),
+                observer=session_state,
+                queue=sniffer_queue,
+            )
+
+            async def cleanup() -> None:
+                resources.close()
+
+            runtime = RPARuntime(
+                callbacks,
+                detector,
+                cleanup=cleanup,
+                should_stop=stop_flag.is_requested,
+                background_service=sniffer_runtime.run,
+                background_ready=sniffer_runtime.wait_until_ready,
+            )
+        except BaseException as error:
+            try:
+                resources.close()
+            except BaseException as cleanup_error:  # noqa: BLE001
+                msg = "Controller runtime construction and cleanup failed."
+                raise BaseExceptionGroup(msg, [error, cleanup_error]) from None
+            raise
+        return runtime

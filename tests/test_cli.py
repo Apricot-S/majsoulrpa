@@ -1,6 +1,11 @@
 from pathlib import Path
 
+import pytest
+from pydantic import ValidationError
+
+from majsoulrpa import __version__
 from majsoulrpa.cli import main
+from majsoulrpa.config import AppConfig
 
 
 def test_browser_cli_entry_point_accepts_empty_arguments() -> None:
@@ -41,6 +46,8 @@ headless = true
             "127.0.0.1",
             "--remote-port",
             "13000",
+            "--sniffer-port",
+            "14000",
             "--viewport-height",
             "1080",
             "--no-headless",
@@ -59,11 +66,56 @@ headless = true
     assert config.endpoint.browser_host == "192.0.2.10"
     assert config.endpoint.client_host == "127.0.0.1"
     assert config.endpoint.remote_port == 13000
+    assert config.endpoint.sniffer_port == 14000
     assert config.browser.viewport_height == 1080
     assert config.browser.headless is False
     assert config.browser.user_data_dir == tmp_path / "user-data"
     assert config.browser.window_left == 10
     assert config.browser.window_top == 20
+
+
+def test_browser_cli_propagates_browser_runner_error() -> None:
+    async def run_browser_host(_config: AppConfig) -> None:
+        msg = "synthetic browser startup failure"
+        raise RuntimeError(msg)
+
+    with pytest.raises(
+        RuntimeError, match="synthetic browser startup failure"
+    ):
+        main([], run_browser_host=run_browser_host)
+
+
+def test_browser_cli_does_not_run_browser_with_invalid_override() -> None:
+    called = False
+
+    async def run_browser_host(_config: AppConfig) -> None:
+        nonlocal called
+        called = True
+
+    with pytest.raises(ValidationError, match="remote_port"):
+        main(
+            ["--remote-port", "1023"],
+            run_browser_host=run_browser_host,
+        )
+
+    assert not called
+
+
+def test_browser_cli_prints_version_and_exits_successfully(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    called = False
+
+    async def run_browser_host(_config: AppConfig) -> None:
+        nonlocal called
+        called = True
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--version"], run_browser_host=run_browser_host)
+
+    assert exc_info.value.code == 0
+    assert capsys.readouterr().out == f"majsoulrpa-browser {__version__}\n"
+    assert not called
 
 
 def test_browser_cli_handles_keyboard_interrupt_without_traceback() -> None:

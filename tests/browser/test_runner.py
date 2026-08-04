@@ -80,6 +80,16 @@ class FailingRunningSnifferBackend(SnifferBackendSpy):
         raise RuntimeError(msg)
 
 
+class CancellationFailingSnifferBackend(SnifferBackendSpy):
+    async def run(self) -> None:
+        self.run_started = True
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            msg = "sniffer cancellation failed"
+            raise CleanupError(msg) from None
+
+
 class RequestServerSpy:
     def __init__(self) -> None:
         self.bound = False
@@ -112,6 +122,16 @@ class BlockingRequestServer(RequestServerSpy):
             raise
 
 
+class CancellationFailingRequestServer(BlockingRequestServer):
+    async def serve_forever(self) -> None:
+        self.served = True
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            msg = "server cancellation failed"
+            raise CleanupError(msg) from None
+
+
 class NavigationFailingBackend(BackendSpy):
     async def start(
         self,
@@ -122,6 +142,26 @@ class NavigationFailingBackend(BackendSpy):
         await super().start(config, page_ready=page_ready)
         msg = "navigation failed"
         raise RuntimeError(msg)
+
+
+class StartFailingBackend(BackendSpy):
+    async def start(
+        self,
+        config: AppConfig,
+        *,
+        page_ready: Callable[[object], Awaitable[None]] | None = None,
+    ) -> None:
+        _ = (config, page_ready)
+        msg = "backend start failed"
+        raise RuntimeError(msg)
+
+
+class ZmqContextSpy:
+    def __init__(self) -> None:
+        self.terminated = 0
+
+    def term(self) -> None:
+        self.terminated += 1
 
 
 class FailingRequestServer(RequestServerSpy):
@@ -201,6 +241,69 @@ def test_run_browser_host_binds_and_serves_request_server() -> None:
     assert server.served
     assert server.stopped
     assert backend.stopped
+
+
+def test_run_browser_host_terminates_zmq_context_when_backend_start_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = ZmqContextSpy()
+    monkeypatch.setattr(
+        browser_runner.zmq.asyncio,
+        "Context",
+        lambda: context,
+    )
+
+    with pytest.raises(RuntimeError, match="backend start failed"):
+        asyncio.run(
+            run_browser_host(
+                AppConfig(),
+                backend=StartFailingBackend(),
+                command_executor_factory=ExecutorSpy,
+            ),
+        )
+
+    assert context.terminated == 1
+
+
+@pytest.mark.parametrize(
+    ("backend", "sniffer", "error_message"),
+    [
+        (
+            BackendSpy(),
+            FailingSnifferBackend(),
+            "sniffer start failed",
+        ),
+        (
+            NavigationFailingBackend(),
+            SnifferBackendSpy(),
+            "navigation failed",
+        ),
+    ],
+)
+def test_run_browser_host_terminates_zmq_context_during_page_startup_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    backend: BackendSpy,
+    sniffer: SnifferBackendSpy,
+    error_message: str,
+) -> None:
+    context = ZmqContextSpy()
+    monkeypatch.setattr(
+        browser_runner.zmq.asyncio,
+        "Context",
+        lambda: context,
+    )
+
+    with pytest.raises(RuntimeError, match=error_message):
+        asyncio.run(
+            run_browser_host(
+                AppConfig(),
+                backend=backend,
+                sniffer_backend=sniffer,
+                command_executor_factory=ExecutorSpy,
+            ),
+        )
+
+    assert context.terminated == 1
 
 
 def test_run_browser_host_uses_sniffer_with_default_browser_backend(
@@ -303,6 +406,44 @@ def test_run_browser_host_propagates_sniffer_worker_failure() -> None:
     assert server.stopped
     assert sniffer.stopped
     assert backend.stopped
+
+
+@pytest.mark.parametrize(
+    ("server", "sniffer", "primary_message", "cleanup_message"),
+    [
+        (
+            FailingRequestServer(),
+            CancellationFailingSnifferBackend(),
+            "serve failed",
+            "sniffer cancellation failed",
+        ),
+        (
+            CancellationFailingRequestServer(),
+            FailingRunningSnifferBackend(),
+            "sniffer worker failed",
+            "server cancellation failed",
+        ),
+    ],
+)
+def test_run_browser_host_preserves_task_and_sibling_cleanup_failures(
+    server: RequestServerSpy,
+    sniffer: SnifferBackendSpy,
+    primary_message: str,
+    cleanup_message: str,
+) -> None:
+    with pytest.raises(ExceptionGroup) as exc_info:
+        asyncio.run(
+            run_browser_host(
+                AppConfig(),
+                backend=BackendSpy(),
+                sniffer_backend=sniffer,
+                command_executor_factory=ExecutorSpy,
+                request_server_factory=lambda _executor: server,
+            ),
+        )
+
+    assert exc_info.group_contains(RuntimeError, match=primary_message)
+    assert exc_info.group_contains(CleanupError, match=cleanup_message)
 
 
 def test_run_browser_host_stops_sniffer_when_request_server_fails() -> None:

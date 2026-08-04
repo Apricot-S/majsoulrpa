@@ -1,7 +1,9 @@
 import asyncio
 from collections.abc import Awaitable, Callable, Mapping
+from math import isfinite
 from typing import Any, NoReturn, Protocol
 
+from majsoulrpa._tasks import cancel_tasks, raise_task_errors
 from majsoulrpa.config import AppConfig
 from majsoulrpa.screens import Screen, ScreenContext
 from majsoulrpa.screens.errors import ScreenDetectionTimeoutError
@@ -15,6 +17,14 @@ type BackgroundService = Callable[[], Awaitable[None]]
 type BackgroundReady = Callable[[], Awaitable[object]]
 
 SCREEN_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
+
+
+async def _noop() -> None:
+    pass
+
+
+def _keep_running() -> bool:
+    return False
 
 
 class ScreenDetector(Protocol):
@@ -47,15 +57,16 @@ class RPARuntime:
         self,
         callbacks: Mapping[type[Screen], Callback[Any]],
         detector: ScreenDetector,
-        cleanup: Cleanup | None = None,
-        should_stop: StopPredicate | None = None,
+        *,
+        cleanup: Cleanup = _noop,
+        should_stop: StopPredicate = _keep_running,
         background_service: BackgroundService | None = None,
-        background_ready: BackgroundReady | None = None,
+        background_ready: BackgroundReady = _noop,
     ) -> None:
         self._callbacks = callbacks
         self._detector = detector
         self._cleanup = cleanup
-        self._should_stop = should_stop or _keep_running
+        self._should_stop = should_stop
         self._background_service = background_service
         self._background_ready = background_ready
 
@@ -66,11 +77,25 @@ class RPARuntime:
         detection_timeout: float | None = None,
     ) -> Any:  # noqa: ANN401
         try:
+            _validate_detection_timeout(detection_timeout)
+
             if self._background_service is None:
-                return await self._run_loop(data, detection_timeout)
-            return await self._run_with_background(data, detection_timeout)
-        finally:
-            await self._run_cleanup()
+                result = await self._run_loop(data, detection_timeout)
+            else:
+                result = await self._run_with_background(
+                    data,
+                    detection_timeout,
+                )
+        except BaseException as error:
+            try:
+                await self._cleanup()
+            except BaseException as cleanup_error:  # noqa: BLE001
+                msg = "RPA runtime and cleanup failed."
+                raise BaseExceptionGroup(msg, [error, cleanup_error]) from None
+            raise
+        else:
+            await self._cleanup()
+            return result
 
     async def _run_loop(
         self,
@@ -103,37 +128,71 @@ class RPARuntime:
         main_task = asyncio.create_task(
             self._run_main_when_ready(data, detection_timeout),
         )
-        background_task = asyncio.ensure_future(self._background_service())
+        try:
+            background_task = asyncio.ensure_future(self._background_service())
+        except BaseException as error:
+            cancellation_errors = await cancel_tasks((main_task,))
+            if cancellation_errors:
+                msg = "RPA runtime task startup cleanup failed."
+                raise BaseExceptionGroup(
+                    msg,
+                    [error, *cancellation_errors],
+                ) from None
+            raise
+
         tasks = (main_task, background_task)
         try:
-            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            if background_task.done():
-                main_task.cancel()
-                await asyncio.gather(main_task, return_exceptions=True)
-                if background_task.exception() is None:
-                    msg = "RPA background service stopped unexpectedly."
-                    raise RuntimeError(msg)
-                # The background service has no result value. This call
-                # re-raises its exception; only the main task returns
-                # RPA data.
-                return background_task.result()
+            done, pending = await asyncio.wait(
+                tasks,
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+        except BaseException as error:
+            cancellation_errors = await cancel_tasks(tasks)
+            if cancellation_errors:
+                msg = "RPA runtime task cancellation failed."
+                raise BaseExceptionGroup(
+                    msg,
+                    [error, *cancellation_errors],
+                ) from None
+            raise
 
-            background_task.cancel()
-            await asyncio.gather(background_task, return_exceptions=True)
-            return main_task.result()
-        finally:
-            for task in tasks:
-                if not task.done():
-                    task.cancel()
-            await asyncio.gather(*tasks, return_exceptions=True)
+        cancellation_errors = await cancel_tasks(pending)
+        task_errors: list[BaseException] = []
+        main_succeeded = False
+        main_result: Any = None
+
+        for task in tasks:
+            if task not in done:
+                continue
+
+            try:
+                result = task.result()
+            except BaseException as error:  # noqa: BLE001
+                task_errors.append(error)
+            else:
+                if task is main_task:
+                    main_succeeded = True
+                    main_result = result
+                else:
+                    msg = "RPA background service stopped unexpectedly."
+                    task_errors.append(RuntimeError(msg))
+
+        raise_task_errors(
+            [*task_errors, *cancellation_errors],
+            group_message="RPA runtime tasks failed.",
+        )
+
+        if not main_succeeded:
+            msg = "RPA main task did not produce a result."
+            raise RuntimeError(msg)
+        return main_result
 
     async def _run_main_when_ready(
         self,
         data: Any,  # noqa: ANN401
         detection_timeout: float | None,
     ) -> Any:  # noqa: ANN401
-        if self._background_ready is not None:
-            await self._background_ready()
+        await self._background_ready()
         return await self._run_loop(data, detection_timeout)
 
     async def _detect(
@@ -178,18 +237,19 @@ class RPARuntime:
         msg = "Screen detection timed out."
         raise ScreenDetectionTimeoutError(msg, screenshot)
 
-    async def _run_cleanup(self) -> None:
-        if self._cleanup is None:
-            return
 
-        await self._cleanup()
+def _validate_detection_timeout(detection_timeout: float | None) -> None:
+    if detection_timeout is None:
+        return
+    if not isfinite(detection_timeout):
+        msg = "detection_timeout must be finite."
+        raise ValueError(msg)
+    if detection_timeout <= 0:
+        msg = "detection_timeout must be positive."
+        raise ValueError(msg)
 
 
 type RuntimeFactory = Callable[
     [Mapping[type[Screen], Callback[Any]], AppConfig],
     RPARuntime,
 ]
-
-
-def _keep_running() -> bool:
-    return False

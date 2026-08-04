@@ -118,11 +118,14 @@ _MAX_PENG_CANDIDATE_COUNT = 2
 _MAX_ANGANG_JIAGANG_CANDIDATE_COUNT = 3
 _LIVE_ACTION_REORDER_BUFFER_CAPACITY = 8
 
+_INPUT_OPERATION_NAME = ".lq.FastTest.inputOperation"
 _INPUT_CHI_PENG_GANG_NAME = ".lq.FastTest.inputChiPengGang"
+_OPERATION_INPUT_RESPONSE_NAMES = frozenset(
+    {_INPUT_OPERATION_NAME, _INPUT_CHI_PENG_GANG_NAME}
+)
 _DAPAI_CLICK_PROGRESS_MESSAGE_NAMES = frozenset(
     {
-        ".lq.FastTest.inputOperation",
-        _INPUT_CHI_PENG_GANG_NAME,
+        *_OPERATION_INPUT_RESPONSE_NAMES,
         ACTION_PROTOTYPE_NAME,
     }
 )
@@ -139,7 +142,9 @@ _DEBUG_MESSAGE_NAMES = frozenset(
 _WARNING_MESSAGE_NAMES = frozenset(
     {".lq.Lobby.loginBeat", ".lq.Lobby.oauth2Login"}
 )
+_CONFIRM_NEW_ROUND_NAME = ".lq.FastTest.confirmNewRound"
 _GAME_END_NOTIFICATION_NAME = ".lq.NotifyGameEndResult"
+_ACTIVITY_REWARD_NOTIFICATION_NAME = ".lq.NotifyActivityRewardV2"
 _MATCH_EXIT_MESSAGE_NAMES = frozenset(
     {
         ".lq.Lobby.enterCustomizedContest",
@@ -198,6 +203,12 @@ class MatchScreen(Screen):
         top=623,
         width=42,
         height=42,
+    )
+    EVENT_REWARD_ADVANCE_REGION = Region(
+        left=0,
+        top=0,
+        width=1600,
+        height=950,
     )
 
     SEAT_INDICATOR_TEMPLATES = tuple(
@@ -333,10 +344,23 @@ class MatchScreen(Screen):
             if not isinstance(event, HuleEvent | NoTileEvent | LiujuEvent):
                 msg = "A terminal match state must end with a terminal event."
                 raise RuntimeError(msg)
-            if await self._advance_terminal_event_screen(event):
-                await self._click_result_confirmation_or_wait(
-                    self.ROUND_RESULT_CONFIRM_TEMPLATE
-                )
+            deferred_game_end_notifications: list[DecodedSnifferMessage] = []
+            try:
+                if await self._advance_terminal_event_screen(
+                    event,
+                    deferred_game_end_notifications=(
+                        deferred_game_end_notifications
+                    ),
+                ):
+                    await self._click_result_confirmation_or_wait(
+                        self.ROUND_RESULT_CONFIRM_TEMPLATE,
+                        deferred_game_end_notifications=(
+                            deferred_game_end_notifications
+                        ),
+                    )
+            finally:
+                for notification in deferred_game_end_notifications:
+                    self._put_back_sniffer_message(notification)
             return await self._wait_for_round_transition()
 
         while True:
@@ -677,6 +701,9 @@ class MatchScreen(Screen):
         )
 
     async def _click_dapai_until_progress(self, region: Region) -> None:
+        # An input message can arrive while the preceding hand animation
+        # still blocks the UI. Retry clicks that may have been ignored,
+        # stopping only when an authoritative progress message arrives.
         loop = asyncio.get_running_loop()
         while True:
             await self.click_region(region)
@@ -772,6 +799,9 @@ class MatchScreen(Screen):
                 index,
             )
             await asyncio.sleep(OPERATION_OPTION_DISPLAY_DELAY_SECONDS)
+            # A higher-priority action can remove the candidate UI
+            # while it is opening. Recheck the queue before clicking a
+            # position that may already belong to a different screen.
             if await self._put_back_pending_action_while_waiting_for_ui():
                 return
             await self.click_region(selection_region)
@@ -904,10 +934,15 @@ class MatchScreen(Screen):
             return
 
         await asyncio.sleep(OPERATION_OPTION_DISPLAY_DELAY_SECONDS)
+        # Another player's winning action can remove the candidate UI
+        # during its opening animation, so do not click a stale
+        # position.
         if await self._put_back_pending_action_while_waiting_for_ui():
             return
 
         if len(operations) == _MAX_ANGANG_JIAGANG_CANDIDATE_COUNT:
+            # The three-candidate layout has not been observed, so its
+            # coordinates cannot be selected safely.
             screenshot = await self.context.browser.screenshot()
             msg = (
                 f"Selecting from three {operation_name} candidates is not "
@@ -941,6 +976,8 @@ class MatchScreen(Screen):
             )
 
         await asyncio.sleep(OPERATION_OPTION_DISPLAY_DELAY_SECONDS)
+        # The opportunity can disappear while discard candidates are
+        # opening. Check authoritative messages before clicking a tile.
         if await self._put_back_pending_action_while_waiting_for_ui():
             return
 
@@ -1109,17 +1146,25 @@ class MatchScreen(Screen):
                     ),
                 )
         finally:
+            # Preemption can finish the skip before this cleanup runs,
+            # but leaving the toggle enabled would affect later turns.
             await self.click_region(region, warp=True)
 
     async def _click_skip_button_or_detect_progress(self) -> None:
         while True:
-            if await self._put_back_pending_action_while_waiting_for_ui():
+            observed_message_names: set[str] = set()
+            if await self._put_back_pending_action_while_waiting_for_ui(
+                observed_message_names=observed_message_names
+            ):
                 return
             if await self.click_template_if_present(
                 self.SKIP_BUTTON_TEMPLATE,
                 warp=True,
             ):
                 return
+            await self._raise_if_input_response_without_button(
+                observed_message_names
+            )
             await asyncio.sleep(
                 OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
             )
@@ -1132,10 +1177,16 @@ class MatchScreen(Screen):
         # opportunity disappears before the click. The authoritative
         # event is verified later by the normal operation pipeline.
         while True:
-            if await self._put_back_pending_action_while_waiting_for_ui():
+            observed_message_names: set[str] = set()
+            if await self._put_back_pending_action_while_waiting_for_ui(
+                observed_message_names=observed_message_names
+            ):
                 return False
             if await self.click_template_if_present(button_template):
                 return True
+            await self._raise_if_input_response_without_button(
+                observed_message_names
+            )
             await asyncio.sleep(
                 OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
             )
@@ -1144,12 +1195,45 @@ class MatchScreen(Screen):
         self,
         *,
         additional_progress_message_names: frozenset[str] = frozenset(),
+        deferred_game_end_notifications: (
+            list[DecodedSnifferMessage] | None
+        ) = None,
+        reject_confirm_new_round: bool = False,
+        observed_message_names: set[str] | None = None,
     ) -> bool:
         while (message := self._get_sniffer_message_nowait()) is not None:
+            if observed_message_names is not None:
+                observed_message_names.add(message.raw.name)
+            if (
+                reject_confirm_new_round
+                and message.raw.name == _CONFIRM_NEW_ROUND_NAME
+            ):
+                self._log_sniffer_message(message)
+                error = ValueError(
+                    "confirmNewRound arrived before the winning "
+                    "confirmation UI was handled."
+                )
+                await self._raise_inconsistent_message(
+                    "The winning confirmation screen did not advance.",
+                    cause=error,
+                )
+            if (
+                deferred_game_end_notifications is not None
+                and message.raw.name == _GAME_END_NOTIFICATION_NAME
+            ):
+                # The game-end notification can precede the result
+                # confirmation UI. Defer state handling until the
+                # required confirmation interaction has finished.
+                deferred_game_end_notifications.append(message)
+                continue
             if (
                 message.raw.name == ACTION_PROTOTYPE_NAME
                 or message.raw.name in additional_progress_message_names
             ):
+                if deferred_game_end_notifications is not None:
+                    for notification in deferred_game_end_notifications:
+                        self._put_back_sniffer_message(notification)
+                    deferred_game_end_notifications.clear()
                 self._put_back_sniffer_message(message)
                 return True
             await self._apply_match_message_with_screen_errors(
@@ -1159,6 +1243,25 @@ class MatchScreen(Screen):
                 ),
             )
         return False
+
+    async def _raise_if_input_response_without_button(
+        self,
+        observed_message_names: set[str],
+    ) -> None:
+        if observed_message_names.isdisjoint(_OPERATION_INPUT_RESPONSE_NAMES):
+            return
+        # An input response alone does not prove that the UI accepted
+        # the operation. Without a visible button or a subsequent
+        # action, treating it as success would hide a stalled
+        # presentation.
+        error = ValueError(
+            "An operation input response arrived without a progress "
+            "action or a visible operation button."
+        )
+        await self._raise_inconsistent_message(
+            "The operation selection screen did not advance.",
+            cause=error,
+        )
 
     async def _move_mouse_away_from_hand(self) -> None:
         # Hovering over a tile in the hand can display winning-tile
@@ -1176,34 +1279,55 @@ class MatchScreen(Screen):
     async def _advance_terminal_event_screen(
         self,
         event: HuleEvent | NoTileEvent | LiujuEvent,
+        *,
+        deferred_game_end_notifications: list[DecodedSnifferMessage],
     ) -> bool:
         match event:
             case HuleEvent():
-                templates = (self.HULE_CONFIRM_TEMPLATE,) * len(event.hules)
+                confirmations = ((self.HULE_CONFIRM_TEMPLATE, True),) * len(
+                    event.hules
+                )
             case NoTileEvent():
                 hule_confirmation_count = sum(
                     score.seat is not None for score in event.scores
                 )
-                templates = (
-                    self.LIUJU_CONFIRM_TEMPLATE,
-                    *((self.HULE_CONFIRM_TEMPLATE,) * hule_confirmation_count),
+                confirmations = (
+                    (self.LIUJU_CONFIRM_TEMPLATE, False),
+                    *(
+                        ((self.HULE_CONFIRM_TEMPLATE, True),)
+                        * hule_confirmation_count
+                    ),
                 )
             case LiujuEvent():
-                templates = (self.LIUJU_CONFIRM_TEMPLATE,)
+                confirmations = ((self.LIUJU_CONFIRM_TEMPLATE, False),)
 
-        for template in templates:
-            if not await self._click_result_confirmation_or_wait(template):
+        for template, reject_confirm_new_round in confirmations:
+            if not await self._click_result_confirmation_or_wait(
+                template,
+                deferred_game_end_notifications=(
+                    deferred_game_end_notifications
+                ),
+                reject_confirm_new_round=reject_confirm_new_round,
+            ):
                 return False
         return True
 
     async def _click_result_confirmation_or_wait(
         self,
         template: TemplateMatcher,
+        *,
+        deferred_game_end_notifications: list[DecodedSnifferMessage],
+        reject_confirm_new_round: bool = False,
     ) -> bool:
         while True:
             if await self.click_template_if_present(template):
                 return True
-            if await self._put_back_pending_action_while_waiting_for_ui():
+            if await self._put_back_pending_action_while_waiting_for_ui(
+                deferred_game_end_notifications=(
+                    deferred_game_end_notifications
+                ),
+                reject_confirm_new_round=reject_confirm_new_round,
+            ):
                 # The confirmation screen can advance automatically
                 # after its on-screen countdown. A subsequent action or
                 # Screen transition proves that the button no longer
@@ -1217,24 +1341,95 @@ class MatchScreen(Screen):
 
     async def _click_match_result_confirmation(self) -> None:
         message_drain_stopped = False
+        observed_message_names: set[str] = set()
         while True:
             if await self.click_template_if_present(
                 self.MATCH_RESULT_CONFIRM_TEMPLATE
             ):
+                if not await self._consume_pending_activity_reward():
+                    return
+                await self._advance_event_reward_presentation()
+                await self._click_additional_match_result_confirmations()
                 return
             if not message_drain_stopped:
                 message_drain_stopped = (
-                    await self._put_back_pending_action_while_waiting_for_ui(
-                        additional_progress_message_names=(
-                            _MATCH_EXIT_MESSAGE_NAMES
-                        )
+                    await self._drain_pending_match_result_messages(
+                        observed_message_names
                     )
+                )
+                await self._advance_event_reward_if_observed(
+                    observed_message_names
                 )
             # Unlike the other result confirmations, the match result
             # screen does not advance automatically. A transition
             # message stops MatchScreen from draining the next Screen's
             # messages, but the confirmation button must still be
             # clicked.
+            await asyncio.sleep(
+                CONFIRMATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
+            )
+
+    async def _drain_pending_match_result_messages(
+        self,
+        observed_message_names: set[str],
+    ) -> bool:
+        return await self._put_back_pending_action_while_waiting_for_ui(
+            additional_progress_message_names=_MATCH_EXIT_MESSAGE_NAMES,
+            observed_message_names=observed_message_names,
+        )
+
+    async def _advance_event_reward_if_observed(
+        self,
+        observed_message_names: set[str],
+    ) -> bool:
+        if _ACTIVITY_REWARD_NOTIFICATION_NAME not in observed_message_names:
+            return False
+        observed_message_names.discard(_ACTIVITY_REWARD_NOTIFICATION_NAME)
+        await self._advance_event_reward_presentation()
+        return True
+
+    async def _consume_pending_activity_reward(self) -> bool:
+        messages_to_put_back: list[DecodedSnifferMessage] = []
+        activity_reward_observed = False
+        try:
+            while (message := self._get_sniffer_message_nowait()) is not None:
+                if message.raw.name != _ACTIVITY_REWARD_NOTIFICATION_NAME:
+                    messages_to_put_back.append(message)
+                    continue
+                await self._apply_match_message_with_screen_errors(
+                    message,
+                    inconsistent_message=(
+                        "Match state update failed after the match result."
+                    ),
+                )
+                activity_reward_observed = True
+        finally:
+            # Only the reward notification requires Match-owned UI work.
+            # Preserve every other message for the next Screen in its
+            # original order.
+            for message in messages_to_put_back:
+                self._put_back_sniffer_message(message)
+        return activity_reward_observed
+
+    async def _advance_event_reward_presentation(self) -> None:
+        while (
+            await self.find_template(self.MATCH_RESULT_CONFIRM_TEMPLATE)
+            is None
+        ):
+            # Event rewards can leave an input-blocking presentation
+            # after the match result. Advance it outside the area where
+            # the following confirmation button appears.
+            await self.click_region(self.EVENT_REWARD_ADVANCE_REGION)
+            await asyncio.sleep(
+                CONFIRMATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
+            )
+
+    async def _click_additional_match_result_confirmations(self) -> None:
+        while True:
+            if not await self.click_template_if_present(
+                self.MATCH_RESULT_CONFIRM_TEMPLATE
+            ):
+                return
             await asyncio.sleep(
                 CONFIRMATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
             )
@@ -1467,6 +1662,10 @@ class MatchScreen(Screen):
         event: MatchEvent,
         operation: MatchOperation,
     ) -> bool:
+        # Mahjong action priority can resolve another player's call or
+        # win before the requested call reaches the server. That
+        # outcome is an expected preemption rather than a failed UI
+        # operation.
         is_opponents_hule = isinstance(event, HuleEvent) and all(
             hule.seat != state.self_seat for hule in event.hules
         )

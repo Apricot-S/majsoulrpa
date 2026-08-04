@@ -7,9 +7,17 @@ NonEmptyKey = Annotated[str, Field(min_length=1)]
 NonEmptyUrl = Annotated[str, Field(min_length=1)]
 
 
-class ClickCommand(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+class _BrowserWireModel(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        strict=True,
+        allow_inf_nan=False,
+        hide_input_in_errors=True,
+    )
 
+
+class ClickCommand(_BrowserWireModel):
     type: Literal["click"] = "click"
     x: float
     y: float
@@ -17,58 +25,42 @@ class ClickCommand(BaseModel):
     mouse_down_up_delay_seconds: PositiveDelay
 
 
-class MoveMouseCommand(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class MoveMouseCommand(_BrowserWireModel):
     type: Literal["move_mouse"] = "move_mouse"
     x: float
     y: float
 
 
-class TextInputCommand(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class TextInputCommand(_BrowserWireModel):
     type: Literal["text_input"] = "text_input"
     text: str
     character_delay_seconds: PositiveDelay
 
 
-class PressKeyCommand(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class PressKeyCommand(_BrowserWireModel):
     type: Literal["press_key"] = "press_key"
     key: NonEmptyKey
     key_down_up_delay_seconds: PositiveDelay
 
 
-class ScreenshotCommand(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class ScreenshotCommand(_BrowserWireModel):
     type: Literal["screenshot"] = "screenshot"
 
 
-class GotoUrlCommand(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class GotoUrlCommand(_BrowserWireModel):
     type: Literal["goto_url"] = "goto_url"
     url: NonEmptyUrl
 
 
-class ReloadCommand(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class ReloadCommand(_BrowserWireModel):
     type: Literal["reload"] = "reload"
 
 
-class StopBrowserHostCommand(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class StopBrowserHostCommand(_BrowserWireModel):
     type: Literal["stop_browser_host"] = "stop_browser_host"
 
 
-class ClickAndWaitForYostarAuthCommand(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class ClickAndWaitForYostarAuthCommand(_BrowserWireModel):
     type: Literal["click_and_wait_for_yostar_auth"] = (
         "click_and_wait_for_yostar_auth"
     )
@@ -92,78 +84,56 @@ BrowserCommand = Annotated[
 ]
 
 
-class ClickResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class ClickResponse(_BrowserWireModel):
     type: Literal["click"] = "click"
     x: float
     y: float
 
 
-class MoveMouseResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class MoveMouseResponse(_BrowserWireModel):
     type: Literal["move_mouse"] = "move_mouse"
     x: float
     y: float
 
 
-class TextInputResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class TextInputResponse(_BrowserWireModel):
     type: Literal["text_input"] = "text_input"
     text: str
 
 
-class PressKeyResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class PressKeyResponse(_BrowserWireModel):
     type: Literal["press_key"] = "press_key"
     key: str
 
 
-class ScreenshotResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class ScreenshotResponse(_BrowserWireModel):
     type: Literal["screenshot"] = "screenshot"
     screenshot_base64: str
 
 
-class GotoUrlResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class GotoUrlResponse(_BrowserWireModel):
     type: Literal["goto_url"] = "goto_url"
     url: str
 
 
-class ReloadResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class ReloadResponse(_BrowserWireModel):
     type: Literal["reload"] = "reload"
 
 
-class StopBrowserHostResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class StopBrowserHostResponse(_BrowserWireModel):
     type: Literal["stop_browser_host"] = "stop_browser_host"
 
 
-class YostarAuthAcceptedResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class YostarAuthAcceptedResponse(_BrowserWireModel):
     type: Literal["yostar_auth_accepted"] = "yostar_auth_accepted"
 
 
-class YostarAuthRejectedResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class YostarAuthRejectedResponse(_BrowserWireModel):
     type: Literal["yostar_auth_rejected"] = "yostar_auth_rejected"
     application_code: int
 
 
-class BrowserErrorResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class BrowserErrorResponse(_BrowserWireModel):
     type: Literal["error"] = "error"
     message: str
 
@@ -183,8 +153,15 @@ BrowserResponse = Annotated[
     Field(discriminator="type"),
 ]
 
-_BROWSER_COMMAND_ADAPTER = TypeAdapter(BrowserCommand)
-_BROWSER_RESPONSE_ADAPTER = TypeAdapter(BrowserResponse)
+_WIRE_ADAPTER_CONFIG = ConfigDict(hide_input_in_errors=True)
+_BROWSER_COMMAND_ADAPTER = TypeAdapter(
+    BrowserCommand,
+    config=_WIRE_ADAPTER_CONFIG,
+)
+_BROWSER_RESPONSE_ADAPTER = TypeAdapter(
+    BrowserResponse,
+    config=_WIRE_ADAPTER_CONFIG,
+)
 
 
 def dump_browser_command_json(command: BrowserCommand) -> bytes:

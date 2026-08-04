@@ -1,5 +1,5 @@
 import inspect
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from majsoulrpa.client.runtime import RPARuntime, RuntimeFactory
@@ -8,12 +8,24 @@ from majsoulrpa.screens import Screen
 from majsoulrpa.types import Callback
 
 
+def _default_runtime_factory(
+    callbacks: Mapping[type[Screen], Callback[Any]],
+    config: AppConfig,
+) -> RPARuntime:
+    from majsoulrpa.client.controller_runtime import (  # noqa: PLC0415
+        ControllerRuntimeFactory,
+    )
+
+    return ControllerRuntimeFactory()(callbacks, config)
+
+
 class RPAApp:
-    def __init__(self, runtime_factory: RuntimeFactory | None = None) -> None:
+    def __init__(
+        self,
+        runtime_factory: RuntimeFactory = _default_runtime_factory,
+    ) -> None:
         self._callbacks: dict[type[Screen], Callback[Any]] = {}
-        self._runtime_factory = (
-            runtime_factory or self._default_runtime_factory
-        )
+        self._runtime_factory = runtime_factory
 
     @property
     def registered_screen_types(self) -> tuple[type[Screen], ...]:
@@ -49,14 +61,3 @@ class RPAApp:
             data,
             detection_timeout=detection_timeout,
         )
-
-    @staticmethod
-    def _default_runtime_factory(
-        callbacks: dict[type[Screen], Callback[Any]],
-        config: AppConfig,
-    ) -> RPARuntime:
-        from majsoulrpa.client.controller_runtime import (  # noqa: PLC0415
-            ControllerRuntimeFactory,
-        )
-
-        return ControllerRuntimeFactory()(callbacks, config)

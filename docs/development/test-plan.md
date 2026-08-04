@@ -27,8 +27,8 @@
 - [x] `user_data_dir` が未指定の場合の意味が明確である
 - [x] `config.example.toml` が全設定の意味とdefaultをコメントで説明する
 - [x] `config.example.toml` を読むと`AppConfig()`と同じ値になる
-- [ ] secret に相当する値を config repr に出さない
-- [ ] secret に相当する値を validation error に出さない
+- [x] secret に相当する値を config repr に出さない
+- [x] secret に相当する値を validation error に出さない
 
 ## Phase 3: browser host lifecycle
 
@@ -922,11 +922,11 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 操作buttonは共通して0.2秒間隔でスクリーンショットから再検出する
 - [x] 終局時の確認buttonは共通して0.5秒間隔でスクリーンショットから再検出する
 - [x] スキップbuttonは検出後に1回だけclickし、推定座標を連打しない
-- [ ] チーの選択・スキップ中に別playerのポン・大明槓・ロンが成立してもoperation失敗にしない
-- [ ] ポン・大明槓の選択・スキップ中に別playerのロンが成立してもoperation失敗にしない
-- [ ] 上位actionの ActionChiPengGang / ActionHule を先読みした場合は1回だけput_backして通常pipelineで処理する
-- [ ] 上位actionを確認できないbutton検出失敗を黙ってスキップ成功にしない
-- [ ] ロンのスキップはダブロン・トリロンでも自家の選択まで待たれ、別playerのActionHuleによるpreempt成功扱いをしない
+- [x] チーの選択・スキップ中に別playerのポン・大明槓・ロンが成立してもoperation失敗にしない
+- [x] ポン・大明槓の選択・スキップ中に別playerのロンが成立してもoperation失敗にしない
+- [x] 上位actionの ActionChiPengGang / ActionHule を先読みした場合は1回だけput_backして通常pipelineで処理する
+- [x] 上位actionを確認できないbutton検出失敗を黙ってスキップ成功にしない
+- [x] ロンのスキップはダブロン・トリロンでも自家の選択まで待たれ、別playerのActionHuleによるpreempt成功扱いをしない
 - [x] publicなスキップ表現は field のない `SkipOperation` とし、他の候補と同じ `operate()` APIへ渡す
 
 ### MatchScreen state 待機と次局自動遷移
@@ -954,15 +954,15 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `NotifyGameEndResult` を受信した試合終了時は `match-result-confirm` をclickして `MatchScreen` をstaleにする
 - [x] 終局結果画面の待機中に `fetchRoom` を先読みした場合はqueueへ戻してMatch側の
   message drainだけを終了し、必須の `match-result-confirm` は検出してclickする
-- [ ] 結果画面待機中もSniffer messageを処理し、全messageを共通formatterでlogへ出す
+- [x] 結果画面待機中もSniffer messageを処理し、全messageを共通formatterでlogへ出す
 - [x] 局終了後に遅れて届く `inputOperation` / `inputChiPengGang` responseを許容し、stateへ重複適用しない
 - [x] `.lq.FastTest.confirmNewRound` と `ActionNewRound` のどちらが先着しても同じ次局stateへ遷移する
 - [x] confirm responseがなくても `ActionNewRound` と新しいseat indicatorを確認できれば次局遷移を完了する
 - [x] confirm interaction省略時にstep 1以降がstep 0より先着した場合はbounded local bufferでstep順へ戻す
-- [ ] 並べ替えbufferは異なる同一step、上限超過、step 0が `ActionNewRound` 以外なら不整合にする
+- [x] 並べ替えbufferは異なる同一step、上限超過、step 0が `ActionNewRound` 以外なら不整合にする
 - [x] active matchの並べ替えworkaroundを初回 `ActionMJStart` / `ActionNewRound` へ適用しない
 - [x] `NotifyGameEndResult` の先着を次局開始と誤認せず、終局処理へ引き渡す
-- [ ] 和了確認中にconfirm responseだけが先着して画面も進まない場合はscreenshot付き不整合errorにする
+- [x] 和了確認中にconfirm responseだけが先着して画面も進まない場合はscreenshot付き不整合errorにする
 - [x] 次局のseat indicatorを検出するまで `wait_for_state_change()` を返さない
 - [x] 次局遷移時も同じ `MatchScreen` instanceとcallback invocationを維持し、staleにしない
 - [x] 次局の `ActionNewRound` はstep 0だけを受理し、round generationとmatch versionを1増やす
@@ -975,7 +975,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 次局がある場合は更新後の `MatchState`、試合終了時は画面遷移とstale化の完了後に `None` を返す
 - [x] 結果画面専用のpublic operationや `advance_round()` を設けない
 - [x] `wait_for_state_change()` のtimeoutは呼び出し側の `asyncio.timeout()` に委ねる
-- [ ] 順序差・遅延・画面省略に対応するworkaround分岐には理由を説明するcode commentを残す
+- [x] 順序差・遅延・画面省略に対応するworkaround分岐には理由を説明するcode commentを残す
 
 ### MatchScreen v1-develop workaround 回帰
 
@@ -996,42 +996,43 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
   次局の親が自家かどうかにかかわらず遷移を完了する
 - [x] `confirmNewRound` が省略されてstep 1以降がstep 0より先着した場合は、bounded local bufferで
   step 0の `ActionNewRound` まで待ってstep順へ戻す
-- [ ] 次局並べ替えbufferは同じstepの異なるAction、上限超過、step 0が `ActionNewRound` 以外の
+- [x] 次局並べ替えbufferは同じstepの異なるAction、上限超過、step 0が `ActionNewRound` 以外の
   場合をscreenshot付き不整合errorにする
 - [x] 次局遷移以外のactive live actionも、共通message適用経路のbounded bufferでstep順へ戻す
 - [x] 初回 `ActionMJStart` / `ActionNewRound` にはlive actionのstep並べ替えを適用しない
 - [x] 和了確認画面が省略されて `ActionNewRound` が先着した場合は、Actionを1回put backして
   存在しない和了確認buttonを待たない
-- [ ] 和了確認buttonより `NotifyGameEndResult` が先着した場合はnotificationを1回put backし、
+- [x] 和了確認buttonより `NotifyGameEndResult` が先着した場合はnotificationを1回put backし、
   和了確認buttonのclickを継続する
-- [ ] 和了確認中に `confirmNewRound` だけが先着してActionも次局画面も確認できない場合は、
+- [x] 和了確認中に `confirmNewRound` だけが先着してActionも次局画面も確認できない場合は、
   自動reloadせずscreenshot付き `ScreenInconsistentMessageError` にする
 - [x] match result確認前に `fetchRoom` が先着してもmessageを1回put backし、Match drainだけを
   止めて必須のmatch result確認buttonをclickする
-- [ ] match result確認前にtournament復帰messageが先着した場合もmessageを1回put backし、
+- [x] match result確認前にtournament復帰messageが先着した場合もmessageを1回put backし、
   必須のmatch result確認buttonをclickする
 - [x] 打牌・立直打牌は入力messageがUIより先着しても同じ牌領域を再clickし、入力進行messageを
   1回put backして通常pipelineへ戻す
-- [ ] チーのbutton待機・候補選択・スキップはポン・大明槓・ロンによるpreemptを許容し、
+- [x] チーのbutton待機・候補選択・スキップはポン・大明槓・ロンによるpreemptを許容し、
   上位Actionを1回put backして更新後stateを返す
-- [ ] ポン・大明槓のbutton待機・候補選択・スキップはロンによるpreemptを許容し、
+- [x] ポン・大明槓のbutton待機・候補選択・スキップはロンによるpreemptを許容し、
   `ActionHule` を1回put backして更新後stateを返す
 - [x] 「鳴きなし」中の `inputChiPengGang` responseまたは上位Actionを進行markerとしてput backし、
   toggleをoffへ戻してから通常pipelineで処理する
-- [ ] operationの入力responseだけが届き、進行Actionもbuttonも確認できない場合は成功扱いせず、
+- [x] operationの入力responseだけが届き、進行Actionもbuttonも確認できない場合は成功扱いせず、
   screenshot付きerrorにする
 - [x] 暗槓・加槓が3候補の場合は候補UIのscreenshotを持つ
   `ScreenNotImplementedOperationError` と情報提供依頼で停止する
-- [ ] イベント開催期間中は友人戦・大会戦の終局後にも `fetchAccountInfo` /
-  `NotifyActivityPointV2` が届くことを許容し、Room / tournament復帰までdrainを継続する
-- [ ] `NotifyAccountUpdate` / `NotifyGameFinishReward` / `NotifyActivityReward` /
+- [x] イベント開催期間中は友人戦・大会戦の終局後にも `fetchAccountInfo` /
+  `NotifyActivityPointV2` が届くことを許容する。Match固有の待機は追加せず、
+  結果確認前に取得した場合は通常のstate非関連messageとして無視し、
+  結果確認後に届いた場合は共有queueを通じて次のScreenへ引き渡す
+- [x] `NotifyAccountUpdate` / `NotifyGameFinishReward` / `NotifyActivityReward` /
   `NotifyActivityPoint` / `NotifyLeaderboardPoint` を通常formatterでlogへ出し、終局遷移を継続する
-- [ ] `NotifyActivityRewardV2` を受信したらmatch result確認buttonと重ならないsafe regionを
+- [x] `NotifyActivityRewardV2` を受信したらmatch result確認buttonと重ならないsafe regionを
   clickし、イベント報酬演出を進める
-- [ ] イベント報酬演出後に表示される追加の `match-result-confirm` templateを検出してclickする
-- [ ] イベント報酬の追加確認buttonが連続する場合は、表示されたbuttonをすべて順にclickする
-- [ ] イベント報酬演出または追加確認buttonが残っている間は `MatchScreen` をstaleにしない
-- [ ] イベント報酬処理中にRoom / tournament復帰messageを先読みした場合は1回put backし、
+- [x] イベント報酬演出後に表示される追加の `match-result-confirm` templateを検出してclickする
+- [x] イベント報酬の追加確認buttonが連続する場合は、表示されたbuttonをすべて順にclickする
+- [x] イベント報酬処理中にRoom / tournament復帰messageを先読みした場合は1回put backし、
   報酬UIを閉じてから次Screenへ引き渡す
 
 ### immutable state / reducer

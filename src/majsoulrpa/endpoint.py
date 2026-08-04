@@ -31,15 +31,19 @@ def make_sniffer_subscriber_tcp_endpoint(config: AppConfig) -> str:
     )
 
 
-def make_tcp_endpoint(*, host: str, port: int) -> str:
+def make_tcp_endpoint(host: str, port: int) -> str:
     return f"tcp://{format_tcp_host(host)}:{port}"
 
 
 def format_tcp_host(host: str) -> str:
+    if is_ipv6_literal(host):
+        return f"[{host}]"
+    return host
+
+
+def is_ipv6_literal(host: str) -> bool:
     try:
         address = ipaddress.ip_address(host)
     except ValueError:
-        return host
-    if isinstance(address, ipaddress.IPv6Address):
-        return f"[{host}]"
-    return host
+        return False
+    return isinstance(address, ipaddress.IPv6Address)

@@ -357,6 +357,11 @@ def test_playwright_command_executor_returns_yostar_auth_rejection() -> None:
             {"Code": 200, "Data": {}},
             "Yostar authentication success response does not contain a token.",
         ),
+        (
+            200,
+            {"Code": True, "Data": {}},
+            "Yostar authentication response does not contain a valid code.",
+        ),
     ],
 )
 def test_playwright_command_executor_returns_error_for_invalid_yostar_auth(
@@ -581,12 +586,15 @@ class FakeChromium:
         self.browser = FakeBrowser()
         self.launched_browsers: list[FakeBrowser] = []
         self.persistent_context = FakeContext()
+        self.launch_error: BaseException | None = None
         self.launch_kwargs: dict[str, object] | None = None
         self.persistent_args: tuple[str, ...] | None = None
         self.persistent_kwargs: dict[str, object] | None = None
 
     async def launch(self, **kwargs: object) -> FakeBrowser:
         self.launch_kwargs = kwargs
+        if self.launch_error is not None:
+            raise self.launch_error
         browser = FakeBrowser()
         self.launched_browsers.append(browser)
         return browser
@@ -719,9 +727,7 @@ def test_playwright_browser_backend_starts_persistent_context(
         "user_agent": "Mozilla/5.0 Chrome/120.0.0.0 Safari/537.36",
     }
     [user_agent_browser] = playwright.chromium.launched_browsers
-    assert user_agent_browser.context.pages[0].visited_urls == [
-        "https://www.google.com/",
-    ]
+    assert user_agent_browser.context.pages[0].visited_urls == []
     assert user_agent_browser.context.pages[0].evaluated_expressions == [
         "navigator.userAgent",
     ]
@@ -737,6 +743,31 @@ def test_playwright_browser_backend_starts_persistent_context(
 
     assert playwright.chromium.persistent_context.closed == 1
     assert playwright.chromium.browser.closed == 0
+    assert playwright.stopped == 1
+
+
+def test_playwright_browser_backend_stops_playwright_when_user_agent_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    playwright = FakePlaywright()
+    playwright.chromium.launch_error = RuntimeError(
+        "user-agent probe failed",
+    )
+    starter = FakePlaywrightStarter(playwright)
+    monkeypatch.setattr(
+        browser_playwright,
+        "async_playwright",
+        lambda: starter,
+    )
+    backend = PlaywrightBrowserBackend()
+
+    with pytest.raises(RuntimeError, match="user-agent probe failed"):
+        asyncio.run(
+            backend.start(
+                AppConfig(browser=BrowserConfig(headless=True)),
+            ),
+        )
+
     assert playwright.stopped == 1
 
 

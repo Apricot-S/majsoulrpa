@@ -98,6 +98,9 @@ terminal snapshotを処理した後、次のstateを待つ通常のloopを継続
 同一versionで矛盾する内容でないことをRoomScreenと同様に検証する。局終了時には
 operation候補が残っていないことも要求する。内部timeoutは設けず、他のScreen APIと同様に
 呼び出し側の `asyncio.timeout()` に上限を委ねる。
+結果画面のUI処理がcancelされた後に、同じ `MatchScreen` instanceから処理を再開することは
+サポートしない。途中まで消費したmessageや完了したclickをrollbackせず、cancel安全性のための
+追加状態も保持しない。
 
 terminal snapshotを渡して `wait_for_state_change()` を呼ぶと、まずUI描画を1.0秒待ち、
 以下の固有確認画面と点数授受結果画面を進める。その後、`ActionNewRound` を受信した場合は
@@ -158,8 +161,8 @@ v1-developに残されたworkaroundを次に列挙する。これらは推測に
 | 「鳴きなし」中に入力responseまたは上位actionが届く | response / actionをput backしてスキップ完了とし、toggleをoffへ戻す | cleanupを必須とし、offへ戻してから通常pipelineでmessageを処理する |
 | buttonが消えた後に `inputChiPengGang` responseだけが得られる | 描画不整合としてbrowser reloadを要求 | 成功fallbackにはせず、進行actionもbuttonも確認できなければscreenshot付きerrorにする |
 | 暗槓・加槓が3候補になる | 未確認UIとしてscreenshot保存付き専用例外を送出 | `ScreenNotImplementedOperationError` と情報提供依頼で停止する |
-| イベント開催期間中の終局後に `fetchAccountInfo` / activity messageが届く | 更新messageを処理し、短時間後続messageがなければ前の画面へ戻る | 友人戦・大会戦でも発生する終局処理として許容し、Room / tournament復帰までdrainを継続する |
-| `NotifyActivityRewardV2` によりイベント報酬演出が表示される | 確認buttonを誤clickしない領域をclickして演出を進め、追加のmatch result確認buttonを表示する | safe regionのclickと追加確認buttonのclickを必須とし、報酬画面を残したままstaleにしない |
+| イベント開催期間中の終局後に `fetchAccountInfo` / activity messageが届く | Match固有の待機は設けず、結果確認前に取得したmessageは通常どおり無視し、結果確認後のmessageは次のScreenへ引き渡す | 友人戦・大会戦でも発生し、共有queueにより画面遷移後も失われないため |
+| `NotifyActivityRewardV2` によりイベント報酬演出が表示される | 確認buttonを誤clickしない領域をclickして演出を進め、追加のmatch result確認buttonを表示する | safe regionのclickと追加確認buttonのclickを完了してから `wait_for_state_change()` を返す |
 
 `NotifyGameEndResult` は結果画面のclickより先に届く場合がある。次局開始とは解釈せず、終局markerとして
 保持する。match result確認buttonは自動遷移しないため、Room / tournament復帰messageが先着しても
@@ -169,13 +172,16 @@ activity関連messageの「イベント」はイベント戦という対局種�
 意味する。したがって友人戦・大会戦でも、終局報酬にイベントitemが含まれれば発生し得る。
 `NotifyAccountUpdate`、`NotifyGameFinishReward`、`NotifyActivityReward`、`NotifyActivityPoint`、
 `NotifyLeaderboardPoint` は共通formatterでlogへ出して終局drainを続ける。`fetchAccountInfo` と
-`NotifyActivityPointV2` も同様に処理し、後続のRoom / tournament復帰messageまたは画面遷移を待つ。
+`NotifyActivityPointV2` も通常のstate非関連messageとして扱う。これらのmessageだけを理由に
+MatchScreenの所有期間を延長せず、結果確認後に届いたmessageと復帰markerは共有queueを通じて
+次のScreenが処理する。
 
 `NotifyActivityRewardV2` はlogだけでは不十分である。イベント報酬演出が入力待ちになり得るため、
 match result確認buttonと重ならないsafe regionをclickして演出を進める。追加の
 `match-result-confirm` templateが表示されたら、その検出位置をclickする。追加確認が連続する場合は、
-表示された確認buttonをすべて順に処理する。この一連のUI処理が完了するまでは `MatchScreen` を
-staleにせず、次Screenのmessageを消費しない。
+表示された確認buttonをすべて順に処理してから `wait_for_state_change()` を終了する。
+報酬処理中にRoomまたはtournamentへの復帰messageを先読みしても適用せず、元の順序でqueueへ
+戻す。報酬UIをすべて閉じた後、次に検出されるScreenが同じmessageを消費する。
 
 初回の `ActionMJStart` / `ActionNewRound` は受信順を入れ替えないという既存方針を維持する。
 初期化完了後のlive actionは、局遷移、state取得、操作完了待ち、UI待機のいずれでも共通の

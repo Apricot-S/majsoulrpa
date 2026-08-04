@@ -5,6 +5,7 @@ from typing import override
 import pytest
 import zmq
 
+import majsoulrpa.client.controller_runtime as controller_runtime_module
 from majsoulrpa.browser.controller import BrowserOperationError
 from majsoulrpa.browser.messages import (
     BrowserErrorResponse,
@@ -79,9 +80,11 @@ class ZmqSocketSpy:
         self._last_response = responses[-1] if responses else None
         self.closed = False
         self.options: list[tuple[int, bytes | int]] = []
+        self.operations: list[tuple[str, object]] = []
 
     def connect(self, endpoint: str) -> None:
         self.connected_endpoints.append(endpoint)
+        self.operations.append(("connect", endpoint))
 
     def close(self, *, linger: int) -> None:
         _ = linger
@@ -102,6 +105,7 @@ class ZmqSocketSpy:
 
     def setsockopt(self, option: int, value: bytes | int) -> None:
         self.options.append((option, value))
+        self.operations.append(("setsockopt", (option, value)))
 
     async def recv_multipart(self) -> list[bytes]:
         future: asyncio.Future[list[bytes]] = (
@@ -132,6 +136,162 @@ class ZmqContextSpy:
 
     def term(self) -> None:
         self.terminated = True
+
+
+class SocketCreationFailingContext:
+    def __init__(self) -> None:
+        self.terminated = False
+
+    def socket(self, socket_type: int) -> ZmqSocketSpy:
+        _ = socket_type
+        msg = "socket creation failed"
+        raise RuntimeError(msg)
+
+    def term(self) -> None:
+        self.terminated = True
+
+
+class OperationFailingSocket(ZmqSocketSpy):
+    def __init__(self, failure_operation: str) -> None:
+        super().__init__()
+        self._failure_operation = failure_operation
+
+    def connect(self, endpoint: str) -> None:
+        if self._failure_operation == "connect":
+            msg = "connect failed"
+            raise RuntimeError(msg)
+        super().connect(endpoint)
+
+    def setsockopt(self, option: int, value: bytes | int) -> None:
+        if self._failure_operation == "setsockopt":
+            msg = "setsockopt failed"
+            raise RuntimeError(msg)
+        super().setsockopt(option, value)
+
+
+class CleanupOrderContext(ZmqContextSpy):
+    def __init__(self, socket: ZmqSocketSpy) -> None:
+        super().__init__()
+        self.socket_spy = socket
+
+    def term(self) -> None:
+        assert self.socket_spy.closed
+        super().term()
+
+
+class FalseyContextFactory:
+    def __init__(self, context: ZmqContextSpy) -> None:
+        self._context = context
+        self.called = 0
+
+    def __bool__(self) -> bool:
+        return False
+
+    def __call__(self) -> ZmqContextSpy:
+        self.called += 1
+        return self._context
+
+
+def test_controller_runtime_accepts_positional_falsey_context_factory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = ZmqContextSpy()
+    context_factory = FalseyContextFactory(context)
+
+    def reject_default_context() -> ZmqContextSpy:
+        msg = "The default context factory must not be used."
+        raise AssertionError(msg)
+
+    monkeypatch.setattr(
+        controller_runtime_module.zmq.asyncio,
+        "Context",
+        reject_default_context,
+    )
+
+    factory = ControllerRuntimeFactory(context_factory)
+    factory({}, AppConfig())
+
+    assert context_factory.called == 1
+    assert context.socket_types == [zmq.REQ]
+
+
+def test_controller_runtime_cleans_up_after_socket_creation_failure() -> None:
+    context = SocketCreationFailingContext()
+    factory = ControllerRuntimeFactory(lambda: context)
+
+    with pytest.raises(RuntimeError, match="socket creation failed"):
+        factory({}, AppConfig())
+
+    assert context.terminated
+
+
+@pytest.mark.parametrize(
+    ("browser_host", "failure_operation"),
+    [
+        ("127.0.0.1", "connect"),
+        ("::1", "setsockopt"),
+    ],
+)
+def test_controller_runtime_cleans_up_when_socket_setup_fails(
+    browser_host: str,
+    failure_operation: str,
+) -> None:
+    socket = OperationFailingSocket(failure_operation)
+    context = CleanupOrderContext(socket)
+    factory = ControllerRuntimeFactory(lambda: context)
+    config = AppConfig(
+        endpoint=EndpointConfig(browser_host=browser_host),
+    )
+
+    with pytest.raises(RuntimeError, match=f"{failure_operation} failed"):
+        factory({}, config)
+
+    assert socket.closed
+    assert context.terminated
+
+
+def test_controller_runtime_cleans_up_when_later_composition_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    socket = ZmqSocketSpy()
+    context = CleanupOrderContext(socket)
+
+    def fail_queue_creation(
+        *,
+        capacity: int,
+        max_payload_bytes: int,
+    ) -> SnifferMessageQueue:
+        _ = capacity, max_payload_bytes
+        msg = "queue creation failed"
+        raise RuntimeError(msg)
+
+    monkeypatch.setattr(
+        controller_runtime_module,
+        "SnifferMessageQueue",
+        fail_queue_creation,
+    )
+    factory = ControllerRuntimeFactory(lambda: context)
+
+    with pytest.raises(RuntimeError, match="queue creation failed"):
+        factory({}, AppConfig())
+
+    assert socket.closed
+    assert context.terminated
+
+
+def test_controller_runtime_enables_ipv6_before_connect() -> None:
+    context = ZmqContextSpy()
+    factory = ControllerRuntimeFactory(context_factory=lambda: context)
+    config = AppConfig(
+        endpoint=EndpointConfig(browser_host="::1"),
+    )
+
+    factory({}, config)
+
+    assert context.socket_spy.operations == [
+        ("setsockopt", (zmq.IPV6, 1)),
+        ("connect", f"tcp://[::1]:{config.endpoint.remote_port}"),
+    ]
 
 
 def test_controller_runtime_connects_screenshot_and_cleans_up() -> None:

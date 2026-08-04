@@ -1,6 +1,7 @@
 from majsoulrpa.config import AppConfig, EndpointConfig
 from majsoulrpa.endpoint import (
     format_tcp_host,
+    is_ipv6_literal,
     make_browser_host_tcp_endpoint,
     make_client_tcp_endpoint,
     make_sniffer_publisher_tcp_endpoint,
@@ -64,3 +65,15 @@ def test_make_tcp_endpoint_brackets_ipv6_literal() -> None:
 
 def test_format_tcp_host_keeps_hostname() -> None:
     assert format_tcp_host("browser-host.local") == "browser-host.local"
+
+
+def test_is_ipv6_literal_accepts_ipv6_address() -> None:
+    assert is_ipv6_literal("::1")
+
+
+def test_is_ipv6_literal_rejects_ipv4_address() -> None:
+    assert not is_ipv6_literal("192.0.2.10")
+
+
+def test_is_ipv6_literal_rejects_hostname() -> None:
+    assert not is_ipv6_literal("browser-host.local")

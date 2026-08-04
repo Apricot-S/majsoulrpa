@@ -67,10 +67,12 @@ class BrowserZmqRequestServer:
         context: zmq.asyncio.Context,
         endpoint: str,
         executor: BrowserCommandExecutor,
+        ipv6: bool = False,
     ) -> None:
         self._context = context
         self._endpoint = endpoint
         self._executor = executor
+        self._ipv6 = ipv6
         self._socket: Socket | None = None
 
     async def bind(self) -> None:
@@ -92,6 +94,8 @@ class BrowserZmqRequestServer:
 
         socket = self._context.socket(zmq.REP)
         try:
+            if self._ipv6:
+                socket.setsockopt(zmq.IPV6, 1)
             socket.bind(self._endpoint)
         except Exception:
             socket.close(linger=0)

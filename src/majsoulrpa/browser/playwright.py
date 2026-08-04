@@ -45,7 +45,6 @@ MAJSOUL_URL = "https://game.mahjongsoul.com/"  # JP version
 CANVAS_SELECTOR = "#unity-canvas"
 
 _CANVAS_WAIT_TIMEOUT_SECONDS = 60
-_USER_AGENT_PROBE_URL = "https://www.google.com/"
 
 YOSTAR_AUTH_URL = "https://jp-sdk-api.yostarplat.com/yostar/get-auth"
 HTTP_OK_STATUS = 200
@@ -234,16 +233,14 @@ class PlaywrightCommandExecutor:
             msg = "Yostar authentication returned an unexpected JSON value."
             raise TypeError(msg)
 
-        application_code = payload.get("Code")
-        if not isinstance(application_code, int):
+        code = payload.get("Code")
+        if isinstance(code, bool) or not isinstance(code, int):
             msg = (
                 "Yostar authentication response does not contain a valid code."
             )
             raise TypeError(msg)
-        if application_code != HTTP_OK_STATUS:
-            return YostarAuthRejectedResponse(
-                application_code=application_code,
-            )
+        if code != HTTP_OK_STATUS:
+            return YostarAuthRejectedResponse(application_code=code)
 
         data = payload.get("Data")
         if not isinstance(data, dict):
@@ -287,26 +284,26 @@ class PlaywrightBrowserBackend:
         page_ready: Callable[[object], Awaitable[None]] | None = None,
     ) -> None:
         self._playwright = await async_playwright().start()
-        viewport_width = viewport_width_for_height(
-            config.browser.viewport_height,
-        )
-        viewport = ViewportSize(
-            width=viewport_width,
-            height=config.browser.viewport_height,
-        )
-        args = [
-            f"--window-position={config.browser.window_left},{config.browser.window_top}",
-        ]
-        ignore_default_args = (
-            ["--mute-audio"] if not config.browser.headless else None
-        )
-        user_agent = (
-            await _get_spoofed_user_agent(self._playwright)
-            if config.browser.headless
-            else None
-        )
-
         try:
+            viewport_width = viewport_width_for_height(
+                config.browser.viewport_height,
+            )
+            viewport = ViewportSize(
+                width=viewport_width,
+                height=config.browser.viewport_height,
+            )
+            args = [
+                f"--window-position={config.browser.window_left},{config.browser.window_top}",
+            ]
+            ignore_default_args = (
+                ["--mute-audio"] if not config.browser.headless else None
+            )
+            user_agent = (
+                await _get_spoofed_user_agent(self._playwright)
+                if config.browser.headless
+                else None
+            )
+
             if config.browser.user_data_dir is None:
                 await self._start_ephemeral_browser(
                     headless=config.browser.headless,
@@ -424,7 +421,6 @@ async def _get_spoofed_user_agent(playwright: Playwright) -> str:
         await browser.new_context() as context,
         await context.new_page() as page,
     ):
-        await page.goto(_USER_AGENT_PROBE_URL)
         user_agent = await page.evaluate("navigator.userAgent")
 
     return str(user_agent).replace("HeadlessChrome", "Chrome")
