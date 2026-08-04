@@ -149,6 +149,11 @@
   - [x] `RPARuntime` constructorはcallbacks・detectorを主要入力として位置指定し、取り違えやすい残りのoptional callable群はキーワード専用にする。
 - [ ] `client/controller_runtime.py`: composition root として ZMQ、controller、Sniffer、session、`ScreenContext` だけを組み立てることを確認する。
 - [ ] `client/session.py`: decode 後 enqueue 前の account ID 観測、正値・再観測・不一致の不変条件を確認する。
+  - [x] 初期値を`None`とし、`oauth2Login.account_id`と`createRoom.room.owner_id`の正値を取得し、対象外message・欠落field・0以下を無視することをテストする。
+  - [x] 同じaccount IDの再観測を許容し、異なる正値を`AccountIDMismatchError`として値を例外messageへ出さないことをテストする。
+  - [ ] 既知fieldにJSON boolean・文字列・null等の非整数がある場合と、存在する`createRoom.room`がobjectでない場合を黙って無視せず`AccountIDDecodeError`にする契約をテストする。
+  - [ ] account ID不一致を拒否した後も、最初に確定したaccount IDを変更しないことをテストする。
+  - [x] constructor引数と便宜的な`None`デフォルトはなく、内部`account_id=None`は未観測というsession stateを表す。
 
 ## `presentation/`
 
