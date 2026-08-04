@@ -1,8 +1,9 @@
 import asyncio
-from collections.abc import Awaitable, Callable, Collection, Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from math import isfinite
 from typing import Any, NoReturn, Protocol
 
+from majsoulrpa._tasks import cancel_tasks, raise_task_errors
 from majsoulrpa.config import AppConfig
 from majsoulrpa.screens import Screen, ScreenContext
 from majsoulrpa.screens.errors import ScreenDetectionTimeoutError
@@ -135,7 +136,7 @@ class RPARuntime:
                 return_when=asyncio.FIRST_COMPLETED,
             )
         except BaseException as error:
-            cancellation_errors = await _cancel_tasks(tasks)
+            cancellation_errors = await cancel_tasks(tasks)
             if cancellation_errors:
                 msg = "RPA runtime task cancellation failed."
                 raise BaseExceptionGroup(
@@ -144,7 +145,7 @@ class RPARuntime:
                 ) from None
             raise
 
-        cancellation_errors = await _cancel_tasks(pending)
+        cancellation_errors = await cancel_tasks(pending)
         task_errors: list[BaseException] = []
         main_succeeded = False
         main_result: Any = None
@@ -165,7 +166,11 @@ class RPARuntime:
                     msg = "RPA background service stopped unexpectedly."
                     task_errors.append(RuntimeError(msg))
 
-        _raise_task_errors([*task_errors, *cancellation_errors])
+        raise_task_errors(
+            [*task_errors, *cancellation_errors],
+            group_message="RPA runtime tasks failed.",
+        )
+
         if not main_succeeded:
             msg = "RPA main task did not produce a result."
             raise RuntimeError(msg)
@@ -231,32 +236,6 @@ def _validate_detection_timeout(detection_timeout: float | None) -> None:
     if detection_timeout <= 0:
         msg = "detection_timeout must be positive."
         raise ValueError(msg)
-
-
-async def _cancel_tasks(
-    tasks: Collection[asyncio.Future[Any]],
-) -> list[BaseException]:
-    for task in tasks:
-        if not task.done():
-            task.cancel()
-
-    errors: list[BaseException] = []
-    for task in tasks:
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
-        except BaseException as error:  # noqa: BLE001
-            errors.append(error)
-    return errors
-
-
-def _raise_task_errors(errors: list[BaseException]) -> None:
-    if len(errors) == 1:
-        raise errors[0]
-    if errors:
-        msg = "RPA runtime tasks failed."
-        raise BaseExceptionGroup(msg, errors)
 
 
 type RuntimeFactory = Callable[

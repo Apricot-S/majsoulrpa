@@ -1,11 +1,12 @@
 import asyncio
 import importlib
-from collections.abc import Awaitable, Callable, Collection
+from collections.abc import Awaitable, Callable
 from contextlib import AsyncExitStack
 from typing import Any, Protocol, cast
 
 import zmq.asyncio
 
+from majsoulrpa._tasks import cancel_tasks, raise_task_errors
 from majsoulrpa.browser.history import LoggingBrowserCommandExecutor
 from majsoulrpa.browser.server import (
     BrowserCommandExecutor,
@@ -136,13 +137,13 @@ async def _serve_with_sniffer(
             return_when=asyncio.FIRST_COMPLETED,
         )
     except BaseException as error:
-        cleanup_errors = await _cancel_tasks(tasks)
+        cleanup_errors = await cancel_tasks(tasks)
         if cleanup_errors:
             msg = "Browser host task cancellation failed."
             raise BaseExceptionGroup(msg, [error, *cleanup_errors]) from None
         raise
 
-    cleanup_errors = await _cancel_tasks(pending)
+    cleanup_errors = await cancel_tasks(pending)
     task_errors: list[BaseException] = []
     sniffer_stopped_normally = False
     for task in tasks:
@@ -160,27 +161,7 @@ async def _serve_with_sniffer(
         msg = "Sniffer worker stopped unexpectedly."
         task_errors.append(RuntimeError(msg))
 
-    errors = [*task_errors, *cleanup_errors]
-    if len(errors) == 1:
-        raise errors[0]
-    if errors:
-        msg = "Browser host tasks failed."
-        raise BaseExceptionGroup(msg, errors)
-
-
-async def _cancel_tasks(
-    tasks: Collection[asyncio.Task[None]],
-) -> list[BaseException]:
-    for task in tasks:
-        if not task.done():
-            task.cancel()
-
-    errors: list[BaseException] = []
-    for task in tasks:
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
-        except BaseException as error:  # noqa: BLE001
-            errors.append(error)
-    return errors
+    raise_task_errors(
+        [*task_errors, *cleanup_errors],
+        group_message="Browser host tasks failed.",
+    )

@@ -46,6 +46,7 @@
 
 - [x] `__init__.py`: `AppConfig`、`RPAApp`、version だけの小さい公開 surface、および core import の軽さを確認する。
 - [x] `_clock.py`: UTC aware clock とテスト用注入点の必要性・配置を確認する。
+- [x] `_tasks.py`: browser/client runtimeで共通するtask cancellation・回収と複数例外報告だけを共有し、component固有のlifecycle判断を持ち込まない。
 - [x] `app.py`: callback 登録、重複検出、runtime composition への委譲、data 非介入を確認する。
   - [x] async callbackだけを登録し、重複を拒否し、登録順を維持することをテストする。
   - [x] callback間でdataの型とidentityを保ったまま受け渡し、表現・log出力しないことをテストする。
