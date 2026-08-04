@@ -159,3 +159,5 @@ def test_session_rejects_inconsistent_account_id() -> None:
                 {"room": {"owner_id": 654321}},
             ),
         )
+
+    assert state.account_id == 123456
