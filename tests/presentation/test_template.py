@@ -208,13 +208,6 @@ def test_region_config_converts_to_immutable_region() -> None:
         setattr(region, attr_name, 101)
 
 
-def test_region_calculates_right_and_bottom() -> None:
-    region = Region(left=100, top=200, width=320, height=80)
-
-    assert region.right == 420
-    assert region.bottom == 280
-
-
 def test_template_matcher_rejects_template_size_mismatch() -> None:
     settings = TemplateMatchSettings.from_toml_text(
         """

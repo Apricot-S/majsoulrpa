@@ -23,8 +23,14 @@ class Region:
         ):
             msg = "region coordinates and size must be finite."
             raise ValueError(msg)
+        if self.left < 0 or self.top < 0:
+            msg = "region coordinates must be non-negative."
+            raise ValueError(msg)
         if self.width <= 0 or self.height <= 0:
             msg = "region size must be positive."
+            raise ValueError(msg)
+        if not isfinite(self.right) or not isfinite(self.bottom):
+            msg = "region boundaries must be finite."
             raise ValueError(msg)
 
     @property

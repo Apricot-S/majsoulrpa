@@ -1,5 +1,6 @@
 import math
 from random import Random
+from sys import float_info
 
 import pytest
 
@@ -75,6 +76,35 @@ def test_region_random_point_rejects_non_positive_boundary_sigma() -> None:
 def test_region_rejects_non_positive_size() -> None:
     with pytest.raises(ValueError, match="region size"):
         Region(left=10, top=20, width=0, height=40)
+
+
+@pytest.mark.parametrize("field", ["left", "top"])
+def test_region_rejects_negative_coordinate(field: str) -> None:
+    values = {"left": 10.0, "top": 20.0, "width": 30.0, "height": 40.0}
+    values[field] = -1.0
+
+    with pytest.raises(ValueError, match="coordinates must be non-negative"):
+        Region(**values)
+
+
+@pytest.mark.parametrize("field", ["right", "bottom"])
+def test_region_rejects_non_finite_boundary(field: str) -> None:
+    values = {
+        "left": float_info.max if field == "right" else 10.0,
+        "top": float_info.max if field == "bottom" else 20.0,
+        "width": float_info.max if field == "right" else 30.0,
+        "height": float_info.max if field == "bottom" else 40.0,
+    }
+
+    with pytest.raises(ValueError, match="region boundaries must be finite"):
+        Region(**values)
+
+
+def test_region_calculates_right_and_bottom() -> None:
+    region = Region(left=100, top=200, width=320, height=80)
+
+    assert region.right == 420
+    assert region.bottom == 280
 
 
 @pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
