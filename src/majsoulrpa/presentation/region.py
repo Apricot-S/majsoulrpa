@@ -9,7 +9,7 @@ DEFAULT_BOUNDARY_SIGMA = 1.76
 _DEFAULT_RANDOM = Random()  # noqa: S311
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class Region:
     left: float
     top: float

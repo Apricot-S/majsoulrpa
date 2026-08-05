@@ -168,11 +168,11 @@
   - [x] `rpa` extra の直接の欠落だけを案内用`ModuleNotFoundError`へ変換し、template module内の無関係なimport失敗を隠さないことをテストする。
   - [x] `Region`は通常importし、OpenCV・NumPyを必要とする公開名だけをlazy exportする構成と、`__all__` / `__dir__()` / cacheの一貫性は既存テストで確認できる。
   - [x] constructor引数と`None`デフォルトはない。
-- [ ] `presentation/region.py`: immutable value object、scale、座標境界、random point の決定可能なテストを確認する。
+- [x] `presentation/region.py`: immutable value object、scale、座標境界、random point の決定可能なテストを確認する。
   - [x] 座標・size・viewport・`boundary_sigma`の`NaN` / infinityを拒否し、`random_point()`が非有限値で無限loopにならない契約をテストする。
   - [x] 負の`left` / `top`をscreen座標として拒否し、right / bottomを含む座標境界をテストする。
   - [x] falseyな`Random`実装も注入値として保持し、`None`のときだけ既定乱数源を使う。
-  - [ ] 4つの同型fieldを持つ`Region` constructorをキーワード専用にする必要性を検討する。`scale_to_viewport()`のwidth / heightと`random_point()`の調整・注入引数は取り違え防止のため現状のキーワード専用を維持する。
+  - [x] 4つの同型fieldを持つ`Region` constructorは取り違え防止のためキーワード専用にする。`scale_to_viewport()`のwidth / heightと`random_point()`の調整・注入引数も現状のキーワード専用を維持する。
   - [x] `rng=None`は呼出しごとの任意注入を表し、共有mutable defaultを避けるため必要である。
 - [ ] `presentation/template.py`: TOML validation、PNG adapter と ndarray matcher の分離、scale・margin・threshold の不変条件を確認する。
   - [ ] 公開されるpydantic設定modelが文字列・boolean等を数値へ暗黙変換せず、全座標・size・margin・thresholdで非有限値を拒否する契約をテストする。
