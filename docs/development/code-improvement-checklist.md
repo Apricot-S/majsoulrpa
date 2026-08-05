@@ -164,8 +164,8 @@
 
 ## `presentation/`
 
-- [ ] `presentation/__init__.py`: OpenCV を core import から隔離する lazy export と公開名の一貫性を確認する。
-  - [ ] `rpa` extra の直接の欠落だけを案内用`ModuleNotFoundError`へ変換し、template module内の無関係なimport失敗を隠さないことをテストする。
+- [x] `presentation/__init__.py`: OpenCV を core import から隔離する lazy export と公開名の一貫性を確認する。
+  - [x] `rpa` extra の直接の欠落だけを案内用`ModuleNotFoundError`へ変換し、template module内の無関係なimport失敗を隠さないことをテストする。
   - [x] `Region`は通常importし、OpenCV・NumPyを必要とする公開名だけをlazy exportする構成と、`__all__` / `__dir__()` / cacheの一貫性は既存テストで確認できる。
   - [x] constructor引数と`None`デフォルトはない。
 - [ ] `presentation/region.py`: immutable value object、scale、座標境界、random point の決定可能なテストを確認する。
