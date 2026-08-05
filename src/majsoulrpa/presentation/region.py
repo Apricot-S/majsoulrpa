@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from math import isfinite
 from random import Random
 
 from majsoulrpa.constants import BASE_VIEWPORT_HEIGHT, BASE_VIEWPORT_WIDTH
@@ -16,6 +17,12 @@ class Region:
     height: float
 
     def __post_init__(self) -> None:
+        if not all(
+            isfinite(value)
+            for value in (self.left, self.top, self.width, self.height)
+        ):
+            msg = "region coordinates and size must be finite."
+            raise ValueError(msg)
         if self.width <= 0 or self.height <= 0:
             msg = "region size must be positive."
             raise ValueError(msg)
@@ -29,6 +36,10 @@ class Region:
         return self.top + self.height
 
     def scale_to_viewport(self, *, width: int, height: int) -> "Region":
+        if not isfinite(width) or not isfinite(height):
+            msg = "viewport size must be finite."
+            raise ValueError(msg)
+
         scale_x = width / BASE_VIEWPORT_WIDTH
         scale_y = height / BASE_VIEWPORT_HEIGHT
         if scale_x != scale_y:
@@ -96,6 +107,9 @@ def _sample_truncated_normal(
     boundary_sigma: float,
     rng: Random,
 ) -> float:
+    if not isfinite(boundary_sigma):
+        msg = "boundary_sigma must be finite."
+        raise ValueError(msg)
     if boundary_sigma <= 0:
         msg = "boundary_sigma must be positive."
         raise ValueError(msg)

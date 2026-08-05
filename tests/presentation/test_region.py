@@ -1,8 +1,20 @@
+import math
 from random import Random
 
 import pytest
 
 from majsoulrpa.presentation import Region
+
+
+class FailOnUseRandom(Random):
+    def normalvariate(
+        self,
+        mu: float = 0.0,
+        sigma: float = 1.0,
+    ) -> float:
+        _ = mu, sigma
+        msg = "random source must not be used"
+        raise AssertionError(msg)
 
 
 def test_region_scales_to_viewport_size() -> None:
@@ -42,3 +54,40 @@ def test_region_random_point_rejects_non_positive_boundary_sigma() -> None:
 def test_region_rejects_non_positive_size() -> None:
     with pytest.raises(ValueError, match="region size"):
         Region(left=10, top=20, width=0, height=40)
+
+
+@pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
+@pytest.mark.parametrize("field", ["left", "top", "width", "height"])
+def test_region_rejects_non_finite_field(field: str, value: float) -> None:
+    values = {"left": 10.0, "top": 20.0, "width": 30.0, "height": 40.0}
+    values[field] = value
+
+    with pytest.raises(ValueError, match="finite"):
+        Region(**values)
+
+
+@pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
+@pytest.mark.parametrize("field", ["width", "height"])
+def test_region_scale_rejects_non_finite_viewport_size(
+    field: str,
+    value: float,
+) -> None:
+    region = Region(left=10, top=20, width=30, height=40)
+    viewport = {"width": 1920, "height": 1080}
+    viewport[field] = value
+
+    with pytest.raises(ValueError, match="viewport size must be finite"):
+        region.scale_to_viewport(**viewport)
+
+
+@pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
+def test_region_random_point_rejects_non_finite_boundary_sigma(
+    value: float,
+) -> None:
+    region = Region(left=10, top=20, width=30, height=40)
+
+    with pytest.raises(ValueError, match="boundary_sigma must be finite"):
+        region.random_point(
+            boundary_sigma=value,
+            rng=FailOnUseRandom(),
+        )

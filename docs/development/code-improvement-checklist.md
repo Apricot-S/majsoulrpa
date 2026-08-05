@@ -169,7 +169,7 @@
   - [x] `Region`は通常importし、OpenCV・NumPyを必要とする公開名だけをlazy exportする構成と、`__all__` / `__dir__()` / cacheの一貫性は既存テストで確認できる。
   - [x] constructor引数と`None`デフォルトはない。
 - [ ] `presentation/region.py`: immutable value object、scale、座標境界、random point の決定可能なテストを確認する。
-  - [ ] 座標・size・viewport・`boundary_sigma`の`NaN` / infinityを拒否し、`random_point()`が非有限値で無限loopにならない契約をテストする。
+  - [x] 座標・size・viewport・`boundary_sigma`の`NaN` / infinityを拒否し、`random_point()`が非有限値で無限loopにならない契約をテストする。
   - [ ] 負の`left` / `top`をruntime value objectで許容するか、screen座標として拒否するかを明示し、right / bottomを含む座標境界をテストする。
   - [ ] falseyな`Random`実装も注入値として保持し、`None`のときだけ既定乱数源を使う。
   - [ ] 4つの同型fieldを持つ`Region` constructorをキーワード専用にする必要性を検討する。`scale_to_viewport()`のwidth / heightと`random_point()`の調整・注入引数は取り違え防止のため現状のキーワード専用を維持する。
