@@ -17,6 +17,19 @@ class FailOnUseRandom(Random):
         raise AssertionError(msg)
 
 
+class FalseyCenterRandom(Random):
+    def __bool__(self) -> bool:
+        return False
+
+    def normalvariate(
+        self,
+        mu: float = 0.0,
+        sigma: float = 1.0,
+    ) -> float:
+        _ = sigma
+        return mu
+
+
 def test_region_scales_to_viewport_size() -> None:
     region = Region(left=300, top=150, width=6, height=3)
 
@@ -42,6 +55,14 @@ def test_region_random_point_is_inside_region() -> None:
 
     assert region.left < x < region.right
     assert region.top < y < region.bottom
+
+
+def test_region_random_point_uses_falsey_random_source() -> None:
+    region = Region(left=10, top=20, width=30, height=40)
+
+    point = region.random_point(rng=FalseyCenterRandom())
+
+    assert point == (25.0, 40.0)
 
 
 def test_region_random_point_rejects_non_positive_boundary_sigma() -> None:

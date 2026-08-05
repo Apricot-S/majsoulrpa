@@ -65,7 +65,7 @@ class Region:
         boundary_sigma: float = DEFAULT_BOUNDARY_SIGMA,
         rng: Random | None = None,
     ) -> tuple[float, float]:
-        random_source = rng or _DEFAULT_RANDOM
+        random_source = _DEFAULT_RANDOM if rng is None else rng
         x = _sample_truncated_normal(
             self.left,
             self.width,
