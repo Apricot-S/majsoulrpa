@@ -23,9 +23,16 @@ class TemplateMatchResult:
     region: Region
 
 
-class RegionConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+class _TemplateConfigModel(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        strict=True,
+        allow_inf_nan=False,
+    )
 
+
+class RegionConfig(_TemplateConfigModel):
     left: NonNegativeCoordinate
     top: NonNegativeCoordinate
     width: PositiveSize
@@ -40,24 +47,18 @@ class RegionConfig(BaseModel):
         )
 
 
-class MarginConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class MarginConfig(_TemplateConfigModel):
     top: NonNegativeCoordinate
     right: NonNegativeCoordinate
     bottom: NonNegativeCoordinate
     left: NonNegativeCoordinate
 
 
-class MatchConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class MatchConfig(_TemplateConfigModel):
     threshold: MatchThreshold
 
 
-class TemplateMatchSettings(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class TemplateMatchSettings(_TemplateConfigModel):
     region: RegionConfig
     margin: MarginConfig
     match: MatchConfig

@@ -1,5 +1,7 @@
+import math
 from dataclasses import FrozenInstanceError
 from pathlib import Path
+from typing import Any
 
 import cv2
 import numpy as np
@@ -13,6 +15,19 @@ from majsoulrpa.presentation import (
     TemplateMatchSettings,
     load_png_template_matcher,
 )
+
+
+def _valid_settings_data() -> dict[str, Any]:
+    return {
+        "region": {
+            "left": 100,
+            "top": 200,
+            "width": 320,
+            "height": 80,
+        },
+        "margin": {"top": 4, "right": 5, "bottom": 6, "left": 7},
+        "match": {"threshold": 0.92},
+    }
 
 
 def test_template_match_settings_loads_from_toml_text() -> None:
@@ -178,6 +193,60 @@ def test_template_match_settings_rejects_invalid_values(
 ) -> None:
     with pytest.raises(ValidationError):
         TemplateMatchSettings.from_toml_text(toml_text)
+
+
+@pytest.mark.parametrize(
+    ("section", "field"),
+    [
+        ("region", "left"),
+        ("region", "top"),
+        ("region", "width"),
+        ("region", "height"),
+        ("margin", "top"),
+        ("margin", "right"),
+        ("margin", "bottom"),
+        ("margin", "left"),
+        ("match", "threshold"),
+    ],
+)
+@pytest.mark.parametrize("value", ["1", True])
+def test_template_match_settings_rejects_numeric_coercion(
+    section: str,
+    field: str,
+    value: object,
+) -> None:
+    data = _valid_settings_data()
+    data[section][field] = value
+
+    with pytest.raises(ValidationError):
+        TemplateMatchSettings.model_validate(data)
+
+
+@pytest.mark.parametrize(
+    ("section", "field"),
+    [
+        ("region", "left"),
+        ("region", "top"),
+        ("region", "width"),
+        ("region", "height"),
+        ("margin", "top"),
+        ("margin", "right"),
+        ("margin", "bottom"),
+        ("margin", "left"),
+        ("match", "threshold"),
+    ],
+)
+@pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
+def test_template_match_settings_rejects_non_finite_number(
+    section: str,
+    field: str,
+    value: float,
+) -> None:
+    data = _valid_settings_data()
+    data[section][field] = value
+
+    with pytest.raises(ValidationError):
+        TemplateMatchSettings.model_validate(data)
 
 
 def test_region_config_converts_to_immutable_region() -> None:
