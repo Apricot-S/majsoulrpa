@@ -37,11 +37,17 @@ def __getattr__(name: str) -> Any:  # noqa: ANN401
                 "majsoulrpa.presentation.template",
             )
         except ModuleNotFoundError as error:
+            missing_name = error.name
+            if missing_name is None or missing_name.partition(".")[0] not in {
+                "cv2",
+                "numpy",
+            }:
+                raise
             msg = (
                 f"{name} requires the 'rpa' optional dependency. "
                 "Install it with: pip install 'majsoulrpa[rpa]'"
             )
-            raise ModuleNotFoundError(msg) from error
+            raise ModuleNotFoundError(msg, name=missing_name) from error
 
         value = getattr(template, name)
         globals()[name] = value

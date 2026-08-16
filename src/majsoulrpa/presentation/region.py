@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from math import isfinite
 from random import Random
 
 from majsoulrpa.constants import BASE_VIEWPORT_HEIGHT, BASE_VIEWPORT_WIDTH
@@ -8,7 +9,7 @@ DEFAULT_BOUNDARY_SIGMA = 1.76
 _DEFAULT_RANDOM = Random()  # noqa: S311
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class Region:
     left: float
     top: float
@@ -16,8 +17,20 @@ class Region:
     height: float
 
     def __post_init__(self) -> None:
+        if not all(
+            isfinite(value)
+            for value in (self.left, self.top, self.width, self.height)
+        ):
+            msg = "region coordinates and size must be finite."
+            raise ValueError(msg)
+        if self.left < 0 or self.top < 0:
+            msg = "region coordinates must be non-negative."
+            raise ValueError(msg)
         if self.width <= 0 or self.height <= 0:
             msg = "region size must be positive."
+            raise ValueError(msg)
+        if not isfinite(self.right) or not isfinite(self.bottom):
+            msg = "region boundaries must be finite."
             raise ValueError(msg)
 
     @property
@@ -29,6 +42,10 @@ class Region:
         return self.top + self.height
 
     def scale_to_viewport(self, *, width: int, height: int) -> "Region":
+        if not isfinite(width) or not isfinite(height):
+            msg = "viewport size must be finite."
+            raise ValueError(msg)
+
         scale_x = width / BASE_VIEWPORT_WIDTH
         scale_y = height / BASE_VIEWPORT_HEIGHT
         if scale_x != scale_y:
@@ -54,7 +71,7 @@ class Region:
         boundary_sigma: float = DEFAULT_BOUNDARY_SIGMA,
         rng: Random | None = None,
     ) -> tuple[float, float]:
-        random_source = rng or _DEFAULT_RANDOM
+        random_source = _DEFAULT_RANDOM if rng is None else rng
         x = _sample_truncated_normal(
             self.left,
             self.width,
@@ -96,6 +113,9 @@ def _sample_truncated_normal(
     boundary_sigma: float,
     rng: Random,
 ) -> float:
+    if not isfinite(boundary_sigma):
+        msg = "boundary_sigma must be finite."
+        raise ValueError(msg)
     if boundary_sigma <= 0:
         msg = "boundary_sigma must be positive."
         raise ValueError(msg)

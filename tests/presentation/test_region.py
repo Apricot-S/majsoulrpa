@@ -1,8 +1,34 @@
+import math
 from random import Random
+from sys import float_info
 
 import pytest
 
 from majsoulrpa.presentation import Region
+
+
+class FailOnUseRandom(Random):
+    def normalvariate(
+        self,
+        mu: float = 0.0,
+        sigma: float = 1.0,
+    ) -> float:
+        _ = mu, sigma
+        msg = "random source must not be used"
+        raise AssertionError(msg)
+
+
+class FalseyCenterRandom(Random):
+    def __bool__(self) -> bool:
+        return False
+
+    def normalvariate(
+        self,
+        mu: float = 0.0,
+        sigma: float = 1.0,
+    ) -> float:
+        _ = sigma
+        return mu
 
 
 def test_region_scales_to_viewport_size() -> None:
@@ -32,6 +58,14 @@ def test_region_random_point_is_inside_region() -> None:
     assert region.top < y < region.bottom
 
 
+def test_region_random_point_uses_falsey_random_source() -> None:
+    region = Region(left=10, top=20, width=30, height=40)
+
+    point = region.random_point(rng=FalseyCenterRandom())
+
+    assert point == (25.0, 40.0)
+
+
 def test_region_random_point_rejects_non_positive_boundary_sigma() -> None:
     region = Region(left=10, top=20, width=30, height=40)
 
@@ -42,3 +76,69 @@ def test_region_random_point_rejects_non_positive_boundary_sigma() -> None:
 def test_region_rejects_non_positive_size() -> None:
     with pytest.raises(ValueError, match="region size"):
         Region(left=10, top=20, width=0, height=40)
+
+
+@pytest.mark.parametrize("field", ["left", "top"])
+def test_region_rejects_negative_coordinate(field: str) -> None:
+    values = {"left": 10.0, "top": 20.0, "width": 30.0, "height": 40.0}
+    values[field] = -1.0
+
+    with pytest.raises(ValueError, match="coordinates must be non-negative"):
+        Region(**values)
+
+
+@pytest.mark.parametrize("field", ["right", "bottom"])
+def test_region_rejects_non_finite_boundary(field: str) -> None:
+    values = {
+        "left": float_info.max if field == "right" else 10.0,
+        "top": float_info.max if field == "bottom" else 20.0,
+        "width": float_info.max if field == "right" else 30.0,
+        "height": float_info.max if field == "bottom" else 40.0,
+    }
+
+    with pytest.raises(ValueError, match="region boundaries must be finite"):
+        Region(**values)
+
+
+def test_region_calculates_right_and_bottom() -> None:
+    region = Region(left=100, top=200, width=320, height=80)
+
+    assert region.right == 420
+    assert region.bottom == 280
+
+
+@pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
+@pytest.mark.parametrize("field", ["left", "top", "width", "height"])
+def test_region_rejects_non_finite_field(field: str, value: float) -> None:
+    values = {"left": 10.0, "top": 20.0, "width": 30.0, "height": 40.0}
+    values[field] = value
+
+    with pytest.raises(ValueError, match="finite"):
+        Region(**values)
+
+
+@pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
+@pytest.mark.parametrize("field", ["width", "height"])
+def test_region_scale_rejects_non_finite_viewport_size(
+    field: str,
+    value: float,
+) -> None:
+    region = Region(left=10, top=20, width=30, height=40)
+    viewport = {"width": 1920, "height": 1080}
+    viewport[field] = value
+
+    with pytest.raises(ValueError, match="viewport size must be finite"):
+        region.scale_to_viewport(**viewport)
+
+
+@pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
+def test_region_random_point_rejects_non_finite_boundary_sigma(
+    value: float,
+) -> None:
+    region = Region(left=10, top=20, width=30, height=40)
+
+    with pytest.raises(ValueError, match="boundary_sigma must be finite"):
+        region.random_point(
+            boundary_sigma=value,
+            rng=FailOnUseRandom(),
+        )

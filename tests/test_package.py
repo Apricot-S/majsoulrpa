@@ -163,13 +163,39 @@ def test_presentation_lazy_export_reports_missing_rpa_extra(
     def import_module(name: str) -> ModuleType:
         if name == "majsoulrpa.presentation.template":
             msg = "No module named 'cv2'"
-            raise ModuleNotFoundError(msg)
+            raise ModuleNotFoundError(msg, name="cv2")
         return importlib.import_module(name)
 
     monkeypatch.setattr(presentation.importlib, "import_module", import_module)
 
     with pytest.raises(ModuleNotFoundError, match=r"majsoulrpa\[rpa\]"):
         _ = presentation.TemplateMatcher
+
+
+def test_presentation_lazy_export_preserves_unrelated_import_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sys.modules.pop("majsoulrpa.presentation", None)
+    if hasattr(majsoulrpa, "presentation"):
+        delattr(majsoulrpa, "presentation")
+    presentation = importlib.import_module("majsoulrpa.presentation")
+
+    def import_module(name: str) -> ModuleType:
+        if name == "majsoulrpa.presentation.template":
+            missing_name = "template_transitive_dependency"
+            msg = f"No module named {missing_name!r}"
+            raise ModuleNotFoundError(msg, name=missing_name)
+        return importlib.import_module(name)
+
+    monkeypatch.setattr(presentation.importlib, "import_module", import_module)
+
+    with pytest.raises(
+        ModuleNotFoundError,
+        match="template_transitive_dependency",
+    ) as exc_info:
+        _ = presentation.TemplateMatcher
+
+    assert exc_info.value.name == "template_transitive_dependency"
 
 
 def test_browser_lazy_export_reports_missing_browser_extra(

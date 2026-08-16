@@ -209,77 +209,20 @@ class PageSpy:
         )
 
 
-def test_playwright_command_executor_hovers_before_mouse_down(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    page = PageSpy()
-    executor = PlaywrightCommandExecutor(page)
+class TestPlaywrightCommandExecutor:
+    def test_command_executor_hovers_before_mouse_down(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        page = PageSpy()
+        executor = PlaywrightCommandExecutor(page)
 
-    async def sleep(seconds: float) -> None:
-        page.events.append(f"sleep:{seconds}")
+        async def sleep(seconds: float) -> None:
+            page.events.append(f"sleep:{seconds}")
 
-    monkeypatch.setattr(browser_playwright.asyncio, "sleep", sleep)
+        monkeypatch.setattr(browser_playwright.asyncio, "sleep", sleep)
 
-    response = asyncio.run(
-        executor.execute(
-            ClickCommand(
-                x=25,
-                y=40,
-                hover_delay_seconds=0.125,
-                mouse_down_up_delay_seconds=0.1,
-            ),
-        ),
-    )
-
-    assert response == ClickResponse(x=25, y=40)
-    assert page.events == [
-        "move",
-        "sleep:0.125",
-        "down",
-        "sleep:0.1",
-        "up",
-    ]
-    assert page.mouse_spy.clicks == []
-
-
-def test_playwright_command_executor_warp_clicks_with_mouse_delay() -> None:
-    page = PageSpy()
-    executor = PlaywrightCommandExecutor(page)
-
-    response = asyncio.run(
-        executor.execute(
-            ClickCommand(
-                x=25,
-                y=40,
-                hover_delay_seconds=None,
-                mouse_down_up_delay_seconds=0.1,
-            ),
-        ),
-    )
-
-    assert response == ClickResponse(x=25, y=40)
-    assert page.events == ["click"]
-    assert page.mouse_spy.clicks == [(25, 40, 100)]
-
-
-def test_playwright_command_executor_releases_mouse_when_cancelled(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    page = PageSpy()
-    executor = PlaywrightCommandExecutor(page)
-    sleep_count = 0
-
-    async def sleep(seconds: float) -> None:
-        nonlocal sleep_count
-        sleep_count += 1
-        page.events.append(f"sleep:{seconds}")
-        if sleep_count == 2:
-            raise asyncio.CancelledError
-
-    monkeypatch.setattr(browser_playwright.asyncio, "sleep", sleep)
-
-    with pytest.raises(asyncio.CancelledError):
-        asyncio.run(
+        response = asyncio.run(
             executor.execute(
                 ClickCommand(
                     x=25,
@@ -290,225 +233,280 @@ def test_playwright_command_executor_releases_mouse_when_cancelled(
             ),
         )
 
-    assert page.events == [
-        "move",
-        "sleep:0.125",
-        "down",
-        "sleep:0.1",
-        "up",
-    ]
+        assert response == ClickResponse(x=25, y=40)
+        assert page.events == [
+            "move",
+            "sleep:0.125",
+            "down",
+            "sleep:0.1",
+            "up",
+        ]
+        assert page.mouse_spy.clicks == []
 
+    def test_command_executor_warp_clicks_with_mouse_delay(self) -> None:
+        page = PageSpy()
+        executor = PlaywrightCommandExecutor(page)
 
-def test_playwright_executor_waits_for_yostar_auth_before_click() -> None:
-    page = PageSpy()
-    executor = PlaywrightCommandExecutor(page)
-
-    response = asyncio.run(
-        executor.execute(
-            ClickAndWaitForYostarAuthCommand(
-                x=25,
-                y=40,
-                mouse_down_up_delay_seconds=0.1,
-                timeout_seconds=15,
+        response = asyncio.run(
+            executor.execute(
+                ClickCommand(
+                    x=25,
+                    y=40,
+                    hover_delay_seconds=None,
+                    mouse_down_up_delay_seconds=0.1,
+                ),
             ),
-        ),
-    )
+        )
 
-    assert response == YostarAuthAcceptedResponse()
-    assert page.events == [
-        "expect_response_timeout:15000.0",
-        "expect_response",
-        "click",
-    ]
+        assert response == ClickResponse(x=25, y=40)
+        assert page.events == ["click"]
+        assert page.mouse_spy.clicks == [(25, 40, 100)]
 
+    def test_command_executor_releases_mouse_when_cancelled(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        page = PageSpy()
+        executor = PlaywrightCommandExecutor(page)
+        sleep_count = 0
 
-def test_playwright_command_executor_returns_yostar_auth_rejection() -> None:
-    page = PageSpy()
-    page.yostar_response = HttpResponseSpy(
-        status=200,
-        payload={"Code": 100303, "Data": {}},
-    )
-    executor = PlaywrightCommandExecutor(page)
+        async def sleep(seconds: float) -> None:
+            nonlocal sleep_count
+            sleep_count += 1
+            page.events.append(f"sleep:{seconds}")
+            if sleep_count == 2:
+                raise asyncio.CancelledError
 
-    response = asyncio.run(
-        executor.execute(
-            ClickAndWaitForYostarAuthCommand(
-                x=25,
-                y=40,
-                mouse_down_up_delay_seconds=0.1,
-                timeout_seconds=15,
+        monkeypatch.setattr(browser_playwright.asyncio, "sleep", sleep)
+
+        with pytest.raises(asyncio.CancelledError):
+            asyncio.run(
+                executor.execute(
+                    ClickCommand(
+                        x=25,
+                        y=40,
+                        hover_delay_seconds=0.125,
+                        mouse_down_up_delay_seconds=0.1,
+                    ),
+                ),
+            )
+
+        assert page.events == [
+            "move",
+            "sleep:0.125",
+            "down",
+            "sleep:0.1",
+            "up",
+        ]
+
+    def test_executor_waits_for_yostar_auth_before_click(self) -> None:
+        page = PageSpy()
+        executor = PlaywrightCommandExecutor(page)
+
+        response = asyncio.run(
+            executor.execute(
+                ClickAndWaitForYostarAuthCommand(
+                    x=25,
+                    y=40,
+                    mouse_down_up_delay_seconds=0.1,
+                    timeout_seconds=15,
+                ),
             ),
-        ),
-    )
+        )
 
-    assert response == YostarAuthRejectedResponse(application_code=100303)
+        assert response == YostarAuthAcceptedResponse()
+        assert page.events == [
+            "expect_response_timeout:15000.0",
+            "expect_response",
+            "click",
+        ]
 
+    def test_command_executor_returns_yostar_auth_rejection(self) -> None:
+        page = PageSpy()
+        page.yostar_response = HttpResponseSpy(
+            status=200,
+            payload={"Code": 100303, "Data": {}},
+        )
+        executor = PlaywrightCommandExecutor(page)
 
-@pytest.mark.parametrize(
-    ("status", "payload", "expected_message"),
-    [
-        (
-            500,
-            {"Code": 200, "Data": {"Token": "synthetic-token"}},
-            "Yostar authentication returned an unexpected HTTP status.",
-        ),
-        (
-            200,
-            {"Code": 200, "Data": {}},
-            "Yostar authentication success response does not contain a token.",
-        ),
-        (
-            200,
-            {"Code": True, "Data": {}},
-            "Yostar authentication response does not contain a valid code.",
-        ),
-    ],
-)
-def test_playwright_command_executor_returns_error_for_invalid_yostar_auth(
-    status: int,
-    payload: object,
-    expected_message: str,
-) -> None:
-    page = PageSpy()
-    page.yostar_response = HttpResponseSpy(status=status, payload=payload)
-    executor = PlaywrightCommandExecutor(page)
-
-    response = asyncio.run(
-        executor.execute(
-            ClickAndWaitForYostarAuthCommand(
-                x=25,
-                y=40,
-                mouse_down_up_delay_seconds=0.1,
-                timeout_seconds=15,
+        response = asyncio.run(
+            executor.execute(
+                ClickAndWaitForYostarAuthCommand(
+                    x=25,
+                    y=40,
+                    mouse_down_up_delay_seconds=0.1,
+                    timeout_seconds=15,
+                ),
             ),
-        ),
-    )
+        )
 
-    assert response == BrowserErrorResponse(message=expected_message)
+        assert response == YostarAuthRejectedResponse(application_code=100303)
 
-
-def test_playwright_command_executor_moves_mouse() -> None:
-    page = PageSpy()
-    executor = PlaywrightCommandExecutor(page)
-
-    response = asyncio.run(
-        executor.execute(
-            MoveMouseCommand(
-                x=25,
-                y=40,
+    @pytest.mark.parametrize(
+        ("status", "payload", "expected_message"),
+        [
+            (
+                500,
+                {"Code": 200, "Data": {"Token": "synthetic-token"}},
+                "Yostar authentication returned an unexpected HTTP status.",
             ),
-        ),
-    )
-
-    assert response == MoveMouseResponse(x=25, y=40)
-    assert page.mouse_spy.moves == [(25, 40)]
-
-
-def test_playwright_command_executor_goes_to_url() -> None:
-    page = PageSpy()
-    executor = PlaywrightCommandExecutor(page)
-
-    response = asyncio.run(
-        executor.execute(
-            GotoUrlCommand(url="https://example.invalid/path"),
-        ),
-    )
-
-    assert response == GotoUrlResponse(url="https://example.invalid/path")
-    assert page.visited_urls == ["https://example.invalid/path"]
-
-
-def test_playwright_command_executor_reloads_page() -> None:
-    page = PageSpy()
-    executor = PlaywrightCommandExecutor(page)
-
-    response = asyncio.run(executor.execute(ReloadCommand()))
-
-    assert response == ReloadResponse()
-    assert page.reloads == 1
-
-
-def test_playwright_command_executor_accepts_stop_browser_host() -> None:
-    page = PageSpy()
-    executor = PlaywrightCommandExecutor(page)
-
-    response = asyncio.run(executor.execute(StopBrowserHostCommand()))
-
-    assert response == StopBrowserHostResponse()
-
-
-def test_playwright_command_executor_types_with_millisecond_delay() -> None:
-    page = PageSpy()
-    executor = PlaywrightCommandExecutor(page)
-
-    response = asyncio.run(
-        executor.execute(
-            TextInputCommand(
-                text="player@example.invalid",
-                character_delay_seconds=0.05,
+            (
+                200,
+                {"Code": 200, "Data": {}},
+                (
+                    "Yostar authentication success response does not "
+                    "contain a token."
+                ),
             ),
-        ),
-    )
-
-    assert response == TextInputResponse(text="player@example.invalid")
-    assert page.keyboard_spy.typed == [("player@example.invalid", 50)]
-
-
-def test_playwright_command_executor_presses_key() -> None:
-    page = PageSpy()
-    executor = PlaywrightCommandExecutor(page)
-
-    response = asyncio.run(
-        executor.execute(
-            PressKeyCommand(
-                key="Control+A",
-                key_down_up_delay_seconds=0.05,
+            (
+                200,
+                {"Code": True, "Data": {}},
+                (
+                    "Yostar authentication response does not contain a "
+                    "valid code."
+                ),
             ),
-        ),
+        ],
+        ids=["unexpected-http-status", "missing-token", "invalid-code"],
     )
+    def test_command_executor_returns_error_for_invalid_yostar_auth(
+        self,
+        status: int,
+        payload: object,
+        expected_message: str,
+    ) -> None:
+        page = PageSpy()
+        page.yostar_response = HttpResponseSpy(status=status, payload=payload)
+        executor = PlaywrightCommandExecutor(page)
 
-    assert response == PressKeyResponse(key="Control+A")
-    assert page.keyboard_spy.pressed == [("Control+A", 50)]
-
-
-def test_playwright_command_executor_returns_base64_screenshot() -> None:
-    page = PageSpy()
-    executor = PlaywrightCommandExecutor(page)
-
-    response = asyncio.run(executor.execute(ScreenshotCommand()))
-
-    assert response == ScreenshotResponse(
-        screenshot_base64=base64.b64encode(page.screenshot_bytes).decode(
-            "ascii",
-        ),
-    )
-    assert page.screenshot_types == ["png"]
-
-
-def test_playwright_command_executor_returns_error_response() -> None:
-    class BrokenMouse(MouseSpy):
-        @override
-        async def click(self, x: float, y: float, *, delay: float) -> None:
-            _ = (x, y, delay)
-            msg = "mouse failed"
-            raise RuntimeError(msg)
-
-    page = PageSpy()
-    page.mouse = BrokenMouse()
-    executor = PlaywrightCommandExecutor(page)
-
-    response = asyncio.run(
-        executor.execute(
-            ClickCommand(
-                x=25,
-                y=40,
-                hover_delay_seconds=None,
-                mouse_down_up_delay_seconds=0.1,
+        response = asyncio.run(
+            executor.execute(
+                ClickAndWaitForYostarAuthCommand(
+                    x=25,
+                    y=40,
+                    mouse_down_up_delay_seconds=0.1,
+                    timeout_seconds=15,
+                ),
             ),
-        ),
-    )
+        )
 
-    assert response == BrowserErrorResponse(message="mouse failed")
+        assert response == BrowserErrorResponse(message=expected_message)
+
+    def test_command_executor_moves_mouse(self) -> None:
+        page = PageSpy()
+        executor = PlaywrightCommandExecutor(page)
+
+        response = asyncio.run(
+            executor.execute(
+                MoveMouseCommand(
+                    x=25,
+                    y=40,
+                ),
+            ),
+        )
+
+        assert response == MoveMouseResponse(x=25, y=40)
+        assert page.mouse_spy.moves == [(25, 40)]
+
+    def test_command_executor_goes_to_url(self) -> None:
+        page = PageSpy()
+        executor = PlaywrightCommandExecutor(page)
+
+        response = asyncio.run(
+            executor.execute(
+                GotoUrlCommand(url="https://example.invalid/path"),
+            ),
+        )
+
+        assert response == GotoUrlResponse(url="https://example.invalid/path")
+        assert page.visited_urls == ["https://example.invalid/path"]
+
+    def test_command_executor_reloads_page(self) -> None:
+        page = PageSpy()
+        executor = PlaywrightCommandExecutor(page)
+
+        response = asyncio.run(executor.execute(ReloadCommand()))
+
+        assert response == ReloadResponse()
+        assert page.reloads == 1
+
+    def test_command_executor_accepts_stop_browser_host(self) -> None:
+        page = PageSpy()
+        executor = PlaywrightCommandExecutor(page)
+
+        response = asyncio.run(executor.execute(StopBrowserHostCommand()))
+
+        assert response == StopBrowserHostResponse()
+
+    def test_command_executor_types_with_millisecond_delay(self) -> None:
+        page = PageSpy()
+        executor = PlaywrightCommandExecutor(page)
+
+        response = asyncio.run(
+            executor.execute(
+                TextInputCommand(
+                    text="player@example.invalid",
+                    character_delay_seconds=0.05,
+                ),
+            ),
+        )
+
+        assert response == TextInputResponse(text="player@example.invalid")
+        assert page.keyboard_spy.typed == [("player@example.invalid", 50)]
+
+    def test_command_executor_presses_key(self) -> None:
+        page = PageSpy()
+        executor = PlaywrightCommandExecutor(page)
+
+        response = asyncio.run(
+            executor.execute(
+                PressKeyCommand(
+                    key="Control+A",
+                    key_down_up_delay_seconds=0.05,
+                ),
+            ),
+        )
+
+        assert response == PressKeyResponse(key="Control+A")
+        assert page.keyboard_spy.pressed == [("Control+A", 50)]
+
+    def test_command_executor_returns_base64_screenshot(self) -> None:
+        page = PageSpy()
+        executor = PlaywrightCommandExecutor(page)
+
+        response = asyncio.run(executor.execute(ScreenshotCommand()))
+
+        assert response == ScreenshotResponse(
+            screenshot_base64=base64.b64encode(page.screenshot_bytes).decode(
+                "ascii",
+            ),
+        )
+        assert page.screenshot_types == ["png"]
+
+    def test_command_executor_returns_error_response(self) -> None:
+        class BrokenMouse(MouseSpy):
+            @override
+            async def click(self, x: float, y: float, *, delay: float) -> None:
+                _ = (x, y, delay)
+                msg = "mouse failed"
+                raise RuntimeError(msg)
+
+        page = PageSpy()
+        page.mouse = BrokenMouse()
+        executor = PlaywrightCommandExecutor(page)
+
+        response = asyncio.run(
+            executor.execute(
+                ClickCommand(
+                    x=25,
+                    y=40,
+                    hover_delay_seconds=None,
+                    mouse_down_up_delay_seconds=0.1,
+                ),
+            ),
+        )
+
+        assert response == BrowserErrorResponse(message="mouse failed")
 
 
 class FakePage(PageSpy):
@@ -628,190 +626,192 @@ class FakePlaywrightStarter:
         return self._playwright
 
 
-def test_playwright_browser_backend_starts_ephemeral_browser(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    playwright = FakePlaywright()
-    starter = FakePlaywrightStarter(playwright)
-    monkeypatch.setattr(
-        browser_playwright,
-        "async_playwright",
-        lambda: starter,
-    )
-    backend = PlaywrightBrowserBackend()
+class TestPlaywrightBrowserBackend:
+    def test_starts_ephemeral_browser(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        playwright = FakePlaywright()
+        starter = FakePlaywrightStarter(playwright)
+        monkeypatch.setattr(
+            browser_playwright,
+            "async_playwright",
+            lambda: starter,
+        )
+        backend = PlaywrightBrowserBackend()
 
-    asyncio.run(backend.start(AppConfig()))
+        asyncio.run(backend.start(AppConfig()))
 
-    assert starter.started == 1
-    assert playwright.chromium.launch_kwargs == {
-        "headless": False,
-        "args": [
-            "--window-position=0,0",
-        ],
-        "ignore_default_args": ["--mute-audio"],
-    }
-    [browser] = playwright.chromium.launched_browsers
-    assert browser.new_context_kwargs == {
-        "viewport": {"width": 1920, "height": 1080},
-        "user_agent": None,
-    }
-    assert isinstance(backend.page, FakePage)
-    assert backend.page.visited_urls == [MAJSOUL_URL]
-    assert backend.page.waited_selectors == [
-        (CANVAS_SELECTOR, 60_000),
-    ]
+        assert starter.started == 1
+        assert playwright.chromium.launch_kwargs == {
+            "headless": False,
+            "args": [
+                "--window-position=0,0",
+            ],
+            "ignore_default_args": ["--mute-audio"],
+        }
+        [browser] = playwright.chromium.launched_browsers
+        assert browser.new_context_kwargs == {
+            "viewport": {"width": 1920, "height": 1080},
+            "user_agent": None,
+        }
+        assert isinstance(backend.page, FakePage)
+        assert backend.page.visited_urls == [MAJSOUL_URL]
+        assert backend.page.waited_selectors == [
+            (CANVAS_SELECTOR, 60_000),
+        ]
 
-    asyncio.run(backend.stop())
+        asyncio.run(backend.stop())
 
-    assert browser.context.closed == 1
-    assert browser.closed == 1
-    assert playwright.stopped == 1
+        assert browser.context.closed == 1
+        assert browser.closed == 1
+        assert playwright.stopped == 1
 
+    def test_calls_page_ready_before_navigation(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        playwright = FakePlaywright()
+        starter = FakePlaywrightStarter(playwright)
+        monkeypatch.setattr(
+            browser_playwright,
+            "async_playwright",
+            lambda: starter,
+        )
+        backend = PlaywrightBrowserBackend()
+        ready_pages: list[FakePage] = []
 
-def test_playwright_browser_backend_calls_page_ready_before_navigation(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    playwright = FakePlaywright()
-    starter = FakePlaywrightStarter(playwright)
-    monkeypatch.setattr(
-        browser_playwright,
-        "async_playwright",
-        lambda: starter,
-    )
-    backend = PlaywrightBrowserBackend()
-    ready_pages: list[FakePage] = []
+        async def page_ready(page: object) -> None:
+            assert isinstance(page, FakePage)
+            assert page.visited_urls == []
+            ready_pages.append(page)
 
-    async def page_ready(page: object) -> None:
-        assert isinstance(page, FakePage)
-        assert page.visited_urls == []
-        ready_pages.append(page)
+        asyncio.run(backend.start(AppConfig(), page_ready=page_ready))
 
-    asyncio.run(backend.start(AppConfig(), page_ready=page_ready))
+        assert ready_pages == [backend.page]
+        assert ready_pages[0].visited_urls == [MAJSOUL_URL]
 
-    assert ready_pages == [backend.page]
-    assert ready_pages[0].visited_urls == [MAJSOUL_URL]
+    def test_starts_persistent_context(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        playwright = FakePlaywright()
+        starter = FakePlaywrightStarter(playwright)
+        monkeypatch.setattr(
+            browser_playwright,
+            "async_playwright",
+            lambda: starter,
+        )
+        backend = PlaywrightBrowserBackend()
 
-
-def test_playwright_browser_backend_starts_persistent_context(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    playwright = FakePlaywright()
-    starter = FakePlaywrightStarter(playwright)
-    monkeypatch.setattr(
-        browser_playwright,
-        "async_playwright",
-        lambda: starter,
-    )
-    backend = PlaywrightBrowserBackend()
-
-    asyncio.run(
-        backend.start(
-            AppConfig(
-                browser=BrowserConfig(
-                    viewport_height=720,
-                    headless=True,
-                    user_data_dir=Path("user-data"),
-                ),
-            ),
-        ),
-    )
-
-    assert playwright.chromium.persistent_args == ("user-data",)
-    assert playwright.chromium.persistent_kwargs == {
-        "headless": True,
-        "viewport": {"width": 1280, "height": 720},
-        "args": [
-            "--window-position=0,0",
-        ],
-        "ignore_default_args": None,
-        "user_agent": "Mozilla/5.0 Chrome/120.0.0.0 Safari/537.36",
-    }
-    [user_agent_browser] = playwright.chromium.launched_browsers
-    assert user_agent_browser.context.pages[0].visited_urls == []
-    assert user_agent_browser.context.pages[0].evaluated_expressions == [
-        "navigator.userAgent",
-    ]
-    assert user_agent_browser.context.closed == 1
-    assert user_agent_browser.closed == 1
-    assert isinstance(backend.page, FakePage)
-    assert backend.page.visited_urls == [MAJSOUL_URL]
-    assert backend.page.waited_selectors == [
-        (CANVAS_SELECTOR, 60_000),
-    ]
-
-    asyncio.run(backend.stop())
-
-    assert playwright.chromium.persistent_context.closed == 1
-    assert playwright.chromium.browser.closed == 0
-    assert playwright.stopped == 1
-
-
-def test_playwright_browser_backend_stops_playwright_when_user_agent_fails(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    playwright = FakePlaywright()
-    playwright.chromium.launch_error = RuntimeError(
-        "user-agent probe failed",
-    )
-    starter = FakePlaywrightStarter(playwright)
-    monkeypatch.setattr(
-        browser_playwright,
-        "async_playwright",
-        lambda: starter,
-    )
-    backend = PlaywrightBrowserBackend()
-
-    with pytest.raises(RuntimeError, match="user-agent probe failed"):
         asyncio.run(
             backend.start(
-                AppConfig(browser=BrowserConfig(headless=True)),
+                AppConfig(
+                    browser=BrowserConfig(
+                        viewport_height=720,
+                        headless=True,
+                        user_data_dir=Path("user-data"),
+                    ),
+                ),
             ),
         )
 
-    assert playwright.stopped == 1
+        assert playwright.chromium.persistent_args == ("user-data",)
+        assert playwright.chromium.persistent_kwargs == {
+            "headless": True,
+            "viewport": {"width": 1280, "height": 720},
+            "args": [
+                "--window-position=0,0",
+            ],
+            "ignore_default_args": None,
+            "user_agent": "Mozilla/5.0 Chrome/120.0.0.0 Safari/537.36",
+        }
+        [user_agent_browser] = playwright.chromium.launched_browsers
+        assert user_agent_browser.context.pages[0].visited_urls == []
+        assert user_agent_browser.context.pages[0].evaluated_expressions == [
+            "navigator.userAgent",
+        ]
+        assert user_agent_browser.context.closed == 1
+        assert user_agent_browser.closed == 1
+        assert isinstance(backend.page, FakePage)
+        assert backend.page.visited_urls == [MAJSOUL_URL]
+        assert backend.page.waited_selectors == [
+            (CANVAS_SELECTOR, 60_000),
+        ]
 
-
-def test_playwright_browser_backend_stops_playwright_when_browser_close_fails(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    playwright = FakePlaywright()
-    starter = FakePlaywrightStarter(playwright)
-    monkeypatch.setattr(
-        browser_playwright,
-        "async_playwright",
-        lambda: starter,
-    )
-    backend = PlaywrightBrowserBackend()
-    asyncio.run(backend.start(AppConfig()))
-    [browser] = playwright.chromium.launched_browsers
-    browser.close_error = RuntimeError("browser close failed")
-
-    with pytest.raises(RuntimeError, match="browser close failed"):
         asyncio.run(backend.stop())
 
-    assert browser.context.closed == 1
-    assert browser.closed == 1
-    assert playwright.stopped == 1
+        assert playwright.chromium.persistent_context.closed == 1
+        assert playwright.chromium.browser.closed == 0
+        assert playwright.stopped == 1
 
+    def test_stops_playwright_when_user_agent_fails(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        playwright = FakePlaywright()
+        playwright.chromium.launch_error = RuntimeError(
+            "user-agent probe failed",
+        )
+        starter = FakePlaywrightStarter(playwright)
+        monkeypatch.setattr(
+            browser_playwright,
+            "async_playwright",
+            lambda: starter,
+        )
+        backend = PlaywrightBrowserBackend()
 
-def test_playwright_browser_backend_keeps_cleaning_up_after_base_exception(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    playwright = FakePlaywright()
-    starter = FakePlaywrightStarter(playwright)
-    monkeypatch.setattr(
-        browser_playwright,
-        "async_playwright",
-        lambda: starter,
-    )
-    backend = PlaywrightBrowserBackend()
-    asyncio.run(backend.start(AppConfig()))
-    [browser] = playwright.chromium.launched_browsers
-    browser.close_error = KeyboardInterrupt()
+        with pytest.raises(RuntimeError, match="user-agent probe failed"):
+            asyncio.run(
+                backend.start(
+                    AppConfig(browser=BrowserConfig(headless=True)),
+                ),
+            )
 
-    with pytest.raises(KeyboardInterrupt):
-        asyncio.run(backend.stop())
+        assert playwright.stopped == 1
 
-    assert browser.context.closed == 1
-    assert browser.closed == 1
-    assert playwright.stopped == 1
+    def test_stops_playwright_when_browser_close_fails(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        playwright = FakePlaywright()
+        starter = FakePlaywrightStarter(playwright)
+        monkeypatch.setattr(
+            browser_playwright,
+            "async_playwright",
+            lambda: starter,
+        )
+        backend = PlaywrightBrowserBackend()
+        asyncio.run(backend.start(AppConfig()))
+        [browser] = playwright.chromium.launched_browsers
+        browser.close_error = RuntimeError("browser close failed")
+
+        with pytest.raises(RuntimeError, match="browser close failed"):
+            asyncio.run(backend.stop())
+
+        assert browser.context.closed == 1
+        assert browser.closed == 1
+        assert playwright.stopped == 1
+
+    def test_keeps_cleaning_up_after_base_exception(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        playwright = FakePlaywright()
+        starter = FakePlaywrightStarter(playwright)
+        monkeypatch.setattr(
+            browser_playwright,
+            "async_playwright",
+            lambda: starter,
+        )
+        backend = PlaywrightBrowserBackend()
+        asyncio.run(backend.start(AppConfig()))
+        [browser] = playwright.chromium.launched_browsers
+        browser.close_error = KeyboardInterrupt()
+
+        with pytest.raises(KeyboardInterrupt):
+            asyncio.run(backend.stop())
+
+        assert browser.context.closed == 1
+        assert browser.closed == 1
+        assert playwright.stopped == 1

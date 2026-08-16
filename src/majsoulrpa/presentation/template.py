@@ -1,6 +1,7 @@
 import tomllib
 from dataclasses import dataclass
 from importlib.resources.abc import Traversable
+from math import isfinite
 from pathlib import Path
 from typing import Annotated, cast
 
@@ -15,6 +16,8 @@ from majsoulrpa.presentation.region import Region
 NonNegativeCoordinate = Annotated[float, Field(ge=0)]
 PositiveSize = Annotated[float, Field(gt=0)]
 MatchThreshold = Annotated[float, Field(ge=0, le=1)]
+_GRAYSCALE_IMAGE_DIMENSIONS = 2
+_PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
 @dataclass(frozen=True)
@@ -22,10 +25,22 @@ class TemplateMatchResult:
     score: float
     region: Region
 
+    def __post_init__(self) -> None:
+        if not isfinite(self.score) or not 0.0 <= self.score <= 1.0:
+            msg = "template match score must be finite and between 0 and 1."
+            raise ValueError(msg)
 
-class RegionConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
 
+class _TemplateConfigModel(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        strict=True,
+        allow_inf_nan=False,
+    )
+
+
+class RegionConfig(_TemplateConfigModel):
     left: NonNegativeCoordinate
     top: NonNegativeCoordinate
     width: PositiveSize
@@ -40,24 +55,18 @@ class RegionConfig(BaseModel):
         )
 
 
-class MarginConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class MarginConfig(_TemplateConfigModel):
     top: NonNegativeCoordinate
     right: NonNegativeCoordinate
     bottom: NonNegativeCoordinate
     left: NonNegativeCoordinate
 
 
-class MatchConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class MatchConfig(_TemplateConfigModel):
     threshold: MatchThreshold
 
 
-class TemplateMatchSettings(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
+class TemplateMatchSettings(_TemplateConfigModel):
     region: RegionConfig
     margin: MarginConfig
     match: MatchConfig
@@ -81,11 +90,13 @@ class TemplateMatcher:
         template: NDArray[np.uint8],
         settings: TemplateMatchSettings,
     ) -> None:
+        _validate_grayscale_image(template, name="template")
         self._template = template
         self._settings = settings
         self._validate_template_size()
 
     def match(self, screenshot: NDArray[np.uint8]) -> TemplateMatchResult:
+        _validate_grayscale_image(screenshot, name="screenshot")
         scale = self._calculate_scale(screenshot)
         search_region = self._scaled_search_region(scale)
         self._validate_search_region(screenshot, search_region)
@@ -258,9 +269,24 @@ def _read_grayscale_png(path: Path | Traversable) -> NDArray[np.uint8]:
 
 
 def _decode_grayscale_png(payload: bytes) -> NDArray[np.uint8]:
+    if not payload.startswith(_PNG_SIGNATURE):
+        msg = "PNG image could not be decoded."
+        raise ValueError(msg)
     encoded = np.frombuffer(payload, dtype=np.uint8)
     image = cv2.imdecode(encoded, cv2.IMREAD_GRAYSCALE)
     if image is None:
         msg = "PNG image could not be decoded."
         raise ValueError(msg)
     return cast("NDArray[np.uint8]", image)
+
+
+def _validate_grayscale_image(image: NDArray[np.uint8], *, name: str) -> None:
+    if image.ndim != _GRAYSCALE_IMAGE_DIMENSIONS:
+        msg = f"{name} must be a 2D grayscale image."
+        raise ValueError(msg)
+    if image.dtype != np.uint8:
+        msg = f"{name} dtype must be uint8."
+        raise TypeError(msg)
+    if image.size == 0:
+        msg = f"{name} must not be empty."
+        raise ValueError(msg)
