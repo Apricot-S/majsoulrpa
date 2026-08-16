@@ -9,6 +9,7 @@ import pytest
 from pydantic import ValidationError
 
 from majsoulrpa.presentation import (
+    PngTemplateMatcher,
     Region,
     TemplateMatcher,
     TemplateMatchResult,
@@ -870,3 +871,53 @@ def test_load_png_template_matcher_rejects_invalid_png(tmp_path: Path) -> None:
             template_path=template_path,
             settings_path=settings_path,
         )
+
+
+def test_load_png_template_matcher_rejects_jpeg_template(
+    tmp_path: Path,
+) -> None:
+    template_path = tmp_path / "template.png"
+    settings_path = tmp_path / "template.toml"
+    success, encoded = cv2.imencode(
+        ".jpg",
+        np.zeros((3, 4), dtype=np.uint8),
+    )
+    assert success
+    template_path.write_bytes(encoded.tobytes())
+    settings_path.write_text(
+        """
+        [region]
+        left = 100
+        top = 200
+        width = 4
+        height = 3
+
+        [margin]
+        top = 0
+        right = 0
+        bottom = 0
+        left = 0
+
+        [match]
+        threshold = 0.99
+        """,
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="PNG image"):
+        load_png_template_matcher(
+            template_path=template_path,
+            settings_path=settings_path,
+        )
+
+
+def test_png_template_matcher_rejects_jpeg_screenshot() -> None:
+    matcher = PngTemplateMatcher(_make_small_template_matcher())
+    success, encoded = cv2.imencode(
+        ".jpg",
+        np.zeros((3, 4), dtype=np.uint8),
+    )
+    assert success
+
+    with pytest.raises(ValueError, match="PNG image"):
+        matcher.matches(encoded.tobytes())

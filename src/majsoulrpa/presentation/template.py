@@ -17,6 +17,7 @@ NonNegativeCoordinate = Annotated[float, Field(ge=0)]
 PositiveSize = Annotated[float, Field(gt=0)]
 MatchThreshold = Annotated[float, Field(ge=0, le=1)]
 _GRAYSCALE_IMAGE_DIMENSIONS = 2
+_PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 
 @dataclass(frozen=True)
@@ -268,6 +269,9 @@ def _read_grayscale_png(path: Path | Traversable) -> NDArray[np.uint8]:
 
 
 def _decode_grayscale_png(payload: bytes) -> NDArray[np.uint8]:
+    if not payload.startswith(_PNG_SIGNATURE):
+        msg = "PNG image could not be decoded."
+        raise ValueError(msg)
     encoded = np.frombuffer(payload, dtype=np.uint8)
     image = cv2.imdecode(encoded, cv2.IMREAD_GRAYSCALE)
     if image is None:
