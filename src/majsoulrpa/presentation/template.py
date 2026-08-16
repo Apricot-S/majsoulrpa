@@ -1,6 +1,7 @@
 import tomllib
 from dataclasses import dataclass
 from importlib.resources.abc import Traversable
+from math import isfinite
 from pathlib import Path
 from typing import Annotated, cast
 
@@ -22,6 +23,11 @@ _GRAYSCALE_IMAGE_DIMENSIONS = 2
 class TemplateMatchResult:
     score: float
     region: Region
+
+    def __post_init__(self) -> None:
+        if not isfinite(self.score) or not 0.0 <= self.score <= 1.0:
+            msg = "template match score must be finite and between 0 and 1."
+            raise ValueError(msg)
 
 
 class _TemplateConfigModel(BaseModel):

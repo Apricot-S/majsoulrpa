@@ -660,6 +660,38 @@ def test_template_matcher_uses_better_score_between_ccoeff_and_sqdiff(
     assert result.score == pytest.approx(0.96)
 
 
+@pytest.mark.parametrize(
+    "score",
+    [math.nan, math.inf, -math.inf, -0.01, 1.01],
+)
+def test_template_match_result_rejects_invalid_score(score: float) -> None:
+    with pytest.raises(ValueError, match="score"):
+        TemplateMatchResult(
+            score=score,
+            region=Region(left=100, top=200, width=4, height=3),
+        )
+
+
+def test_template_matcher_rejects_non_finite_opencv_score(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    matcher = _make_small_template_matcher()
+    screenshot = np.zeros((1080, 1920), dtype=np.uint8)
+
+    def fake_match_template(
+        image: np.ndarray,
+        templ: np.ndarray,
+        method: int,
+    ) -> np.ndarray:
+        _ = image, templ, method
+        return np.array([[math.nan]], dtype=np.float32)
+
+    monkeypatch.setattr(cv2, "matchTemplate", fake_match_template)
+
+    with pytest.raises(ValueError, match="score"):
+        matcher.matches(screenshot)
+
+
 def test_template_matcher_returns_false_below_threshold() -> None:
     settings = TemplateMatchSettings.from_toml_text(
         """
