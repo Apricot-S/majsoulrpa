@@ -30,6 +30,17 @@ def _valid_settings_data() -> dict[str, Any]:
     }
 
 
+def _make_small_template_matcher() -> TemplateMatcher:
+    settings = TemplateMatchSettings.model_validate(
+        {
+            "region": {"left": 100, "top": 200, "width": 4, "height": 3},
+            "margin": {"top": 0, "right": 0, "bottom": 0, "left": 0},
+            "match": {"threshold": 0.99},
+        },
+    )
+    return TemplateMatcher(np.zeros((3, 4), dtype=np.uint8), settings)
+
+
 def test_template_match_settings_loads_from_toml_text() -> None:
     settings = TemplateMatchSettings.from_toml_text(
         """
@@ -300,6 +311,102 @@ def test_template_matcher_rejects_template_size_mismatch() -> None:
 
     with pytest.raises(ValueError, match="template size"):
         TemplateMatcher(template, settings)
+
+
+@pytest.mark.parametrize(
+    "template",
+    [
+        np.zeros(4, dtype=np.uint8),
+        np.zeros((3, 4, 1), dtype=np.uint8),
+    ],
+)
+def test_template_matcher_rejects_non_grayscale_template(
+    template: np.ndarray,
+) -> None:
+    settings = TemplateMatchSettings.model_validate(
+        {
+            "region": {"left": 100, "top": 200, "width": 4, "height": 3},
+            "margin": {"top": 0, "right": 0, "bottom": 0, "left": 0},
+            "match": {"threshold": 0.99},
+        },
+    )
+
+    with pytest.raises(ValueError, match="template must be a 2D"):
+        TemplateMatcher(template, settings)
+
+
+def test_template_matcher_rejects_non_uint8_template() -> None:
+    settings = TemplateMatchSettings.model_validate(
+        {
+            "region": {"left": 100, "top": 200, "width": 4, "height": 3},
+            "margin": {"top": 0, "right": 0, "bottom": 0, "left": 0},
+            "match": {"threshold": 0.99},
+        },
+    )
+
+    with pytest.raises(TypeError, match="template dtype must be uint8"):
+        TemplateMatcher(np.zeros((3, 4), dtype=np.float32), settings)
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        (0, 4),
+        (3, 0),
+    ],
+)
+def test_template_matcher_rejects_empty_template(
+    shape: tuple[int, int],
+) -> None:
+    settings = TemplateMatchSettings.model_validate(
+        {
+            "region": {"left": 100, "top": 200, "width": 4, "height": 3},
+            "margin": {"top": 0, "right": 0, "bottom": 0, "left": 0},
+            "match": {"threshold": 0.99},
+        },
+    )
+
+    with pytest.raises(ValueError, match="template must not be empty"):
+        TemplateMatcher(np.zeros(shape, dtype=np.uint8), settings)
+
+
+@pytest.mark.parametrize(
+    "screenshot",
+    [
+        np.zeros(1920, dtype=np.uint8),
+        np.zeros((1080, 1920, 1), dtype=np.uint8),
+    ],
+)
+def test_template_matcher_rejects_non_grayscale_screenshot(
+    screenshot: np.ndarray,
+) -> None:
+    matcher = _make_small_template_matcher()
+
+    with pytest.raises(ValueError, match="screenshot must be a 2D"):
+        matcher.match(screenshot)
+
+
+def test_template_matcher_rejects_non_uint8_screenshot() -> None:
+    matcher = _make_small_template_matcher()
+
+    with pytest.raises(TypeError, match="screenshot dtype must be uint8"):
+        matcher.match(np.zeros((1080, 1920), dtype=np.float32))
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        (0, 1920),
+        (1080, 0),
+    ],
+)
+def test_template_matcher_rejects_empty_screenshot(
+    shape: tuple[int, int],
+) -> None:
+    matcher = _make_small_template_matcher()
+
+    with pytest.raises(ValueError, match="screenshot must not be empty"):
+        matcher.match(np.zeros(shape, dtype=np.uint8))
 
 
 def test_template_matcher_uses_scale_one_for_1920x1080_screenshot() -> None:
@@ -628,7 +735,7 @@ def test_template_matcher_rejects_too_small_scaled_template() -> None:
         [region]
         left = 0
         top = 0
-        width = 0.1
+        width = 0.6
         height = 3
 
         [margin]
@@ -641,7 +748,7 @@ def test_template_matcher_rejects_too_small_scaled_template() -> None:
         threshold = 0.99
         """,
     )
-    template = np.zeros((3, 0), dtype=np.uint8)
+    template = np.zeros((3, 1), dtype=np.uint8)
     screenshot = np.zeros((720, 1280), dtype=np.uint8)
     matcher = TemplateMatcher(template, settings)
 

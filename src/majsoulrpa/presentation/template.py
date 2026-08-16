@@ -15,6 +15,7 @@ from majsoulrpa.presentation.region import Region
 NonNegativeCoordinate = Annotated[float, Field(ge=0)]
 PositiveSize = Annotated[float, Field(gt=0)]
 MatchThreshold = Annotated[float, Field(ge=0, le=1)]
+_GRAYSCALE_IMAGE_DIMENSIONS = 2
 
 
 @dataclass(frozen=True)
@@ -82,11 +83,13 @@ class TemplateMatcher:
         template: NDArray[np.uint8],
         settings: TemplateMatchSettings,
     ) -> None:
+        _validate_grayscale_image(template, name="template")
         self._template = template
         self._settings = settings
         self._validate_template_size()
 
     def match(self, screenshot: NDArray[np.uint8]) -> TemplateMatchResult:
+        _validate_grayscale_image(screenshot, name="screenshot")
         scale = self._calculate_scale(screenshot)
         search_region = self._scaled_search_region(scale)
         self._validate_search_region(screenshot, search_region)
@@ -265,3 +268,15 @@ def _decode_grayscale_png(payload: bytes) -> NDArray[np.uint8]:
         msg = "PNG image could not be decoded."
         raise ValueError(msg)
     return cast("NDArray[np.uint8]", image)
+
+
+def _validate_grayscale_image(image: NDArray[np.uint8], *, name: str) -> None:
+    if image.ndim != _GRAYSCALE_IMAGE_DIMENSIONS:
+        msg = f"{name} must be a 2D grayscale image."
+        raise ValueError(msg)
+    if image.dtype != np.uint8:
+        msg = f"{name} dtype must be uint8."
+        raise TypeError(msg)
+    if image.size == 0:
+        msg = f"{name} must not be empty."
+        raise ValueError(msg)

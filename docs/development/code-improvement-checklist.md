@@ -176,7 +176,7 @@
   - [x] `rng=None`は呼出しごとの任意注入を表し、共有mutable defaultを避けるため必要である。
 - [ ] `presentation/template.py`: TOML validation、PNG adapter と ndarray matcher の分離、scale・margin・threshold の不変条件を確認する。
   - [x] 公開されるpydantic設定modelが文字列・boolean等を数値へ暗黙変換せず、全座標・size・margin・thresholdで非有限値を拒否する契約をテストする。
-  - [ ] ndarray matcherのtemplate / screenshotについて、2次元grayscale・`uint8`・非空という入口契約を明示し、OpenCV固有の例外へ漏らさないことをテストする。
+  - [x] ndarray matcherのtemplate / screenshotについて、2次元grayscale・`uint8`・非空という入口契約を明示し、OpenCV固有の例外へ漏らさないことをテストする。
   - [ ] OpenCVが非有限scoreを返してもthreshold判定で一致扱いしないことと、`TemplateMatchResult.score`の範囲をテストする。
   - [ ] PNG adapterがPNG以外のdecode可能な画像形式を受理するか拒否するかを、その公開名と利用境界に合わせて明示する。
   - [x] TOMLのunknown key、基本的な値域、template size、scale、margin、threshold、探索領域、decode失敗と、PNG bytes adapter / ndarray matcherの分離は既存テストで確認できる。
