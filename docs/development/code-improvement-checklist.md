@@ -253,7 +253,8 @@ constructor の runtime invariant、live / restore 双方から同じ object が
 
 - [x] `sniffer/__init__.py`: raw / decoded 利用者向け event だけを export し、wire model や backend を漏らさないことを確認する。
   - [x] `Direction`、raw / decoded event とその union だけを export し、wire publication、capture、parser、correlator、decoder、transport、worker、backend を公開しないことを synthetic import test で固定した。
-- [ ] `sniffer/events.py`: raw bytes と decoded JSON-compatible body、timestamp、direction の immutable 契約を確認する。
+- [x] `sniffer/events.py`: raw bytes と decoded JSON-compatible body、timestamp、direction の immutable 契約を確認する。
+  - [x] raw / decoded event は `frozen=True, slots=True` の値 object とし、raw bytes、timestamp、direction、decoder が作る JSON-compatible body を保持する。属性の再代入を拒否する契約を synthetic test で固定した。
 - [ ] `sniffer/playwright.py`: listener 登録解除、binary frame 限定、bounded queue、connection/capture sequence を確認する。
 - [ ] `sniffer/envelope.py`: message kind、request number、Wrapper、API 名の byte-level strict decode を確認する。
 - [ ] `sniffer/correlator.py`: connection/direction/number key、duplicate/unmatched/incomplete exchange の失敗を確認する。
