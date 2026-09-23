@@ -43,6 +43,46 @@ def _connection_ids(*values: str) -> Callable[[], str]:
     return lambda: next(iterator)
 
 
+class FalseyCallable[T]:
+    def __init__(self, value: T) -> None:
+        self._value = value
+
+    def __bool__(self) -> bool:
+        return False
+
+    def __call__(self) -> T:
+        return self._value
+
+
+def test_capture_uses_falsey_clock_and_connection_id_factory() -> None:
+    async def run() -> None:
+        page = FakeEventEmitter()
+        websocket = FakeEventEmitter()
+        capture = PlaywrightFrameCapture(
+            clock=FalseyCallable(OBSERVED_AT),
+            connection_id_factory=FalseyCallable("connection-1"),
+        )
+        await capture.start(page)
+        page.emit("websocket", websocket)
+        websocket.emit("framesent", b"synthetic")
+        websocket.emit("close")
+
+        assert await capture.receive() == CapturedFrame(
+            connection_id="connection-1",
+            frame_sequence=1,
+            direction=Direction.OUTBOUND,
+            observed_at=OBSERVED_AT,
+            payload=b"synthetic",
+        )
+        assert await capture.receive() == CapturedConnectionClosed(
+            connection_id="connection-1",
+            observed_at=OBSERVED_AT,
+        )
+        await capture.stop()
+
+    asyncio.run(run())
+
+
 def test_capture_observes_sent_and_received_binary_frames() -> None:
     async def run() -> None:
         page = FakeEventEmitter()

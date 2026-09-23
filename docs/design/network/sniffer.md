@@ -77,6 +77,11 @@ Playwright の callback 内では payload のコピーと bounded queue への�
 キューの件数としては扱わない。それ以外の型の検証は追加しない。
 既定値1024と正の整数での利用は変わらず、公開eventやwire schemaへの影響はない。
 
+capture の `clock` / `connection_id_factory` は、未指定ならそれぞれ `utc_now` /
+UUID生成関数を使う。これらの関数を直接デフォルト値とし、注入されたcallableの真偽値は
+評価しない。`None` に独立した意味はないため、明示的な `None` 指定はサポートせず、
+既定動作を使う呼び出しでは引数を省略する。リポジトリ内に明示的な `None` 指定はない。
+
 ### `LiqiEnvelopeParser`（browser host）
 
 - 先頭 byte から Notice / Request / Response を分類する

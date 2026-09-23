@@ -59,13 +59,17 @@ type _WebSocketListeners = tuple[
 ]
 
 
+def _new_id() -> str:
+    return str(uuid.uuid4())
+
+
 class PlaywrightFrameCapture:
     def __init__(
         self,
         *,
         queue_size: int = 1024,
-        clock: Clock | None = None,
-        connection_id_factory: ConnectionIDFactory | None = None,
+        clock: Clock = utc_now,
+        connection_id_factory: ConnectionIDFactory = _new_id,
     ) -> None:
         if isinstance(queue_size, bool) or queue_size <= 0:
             msg = "queue_size must be a positive integer."
@@ -73,8 +77,8 @@ class PlaywrightFrameCapture:
         self._queue: asyncio.Queue[_QueueItem] = asyncio.Queue(
             maxsize=queue_size,
         )
-        self._clock = clock or utc_now
-        self._connection_id_factory = connection_id_factory or _new_id
+        self._clock = clock
+        self._connection_id_factory = connection_id_factory
         self._next_frame_sequence = 1
         self._failure: PlaywrightCaptureError | None = None
         self._page: EventEmitterLike | None = None
@@ -211,7 +215,3 @@ class PlaywrightFrameCapture:
         self._failure = error
         with suppress(asyncio.QueueFull):
             self._queue.put_nowait(error)
-
-
-def _new_id() -> str:
-    return str(uuid.uuid4())
