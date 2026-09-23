@@ -1238,6 +1238,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Playwright capture / lifecycle
 
+- [x] capture の `queue_size` は `int` 型注釈を前提とし、boolean と0以下を生成時に `ValueError` で拒否する。
+- [x] 最小の `queue_size=1` は1件受信後に容量を再利用でき、未受信のまま2件目が到着すると明示的に overflow する。
 - [x] fake WebSocket の sent / received binary frame を direction 付きで capture する
 - [x] WebSocket ごとに異なる connection id を割り当てる
 - [x] frame に capture 順の単調増加番号を付ける

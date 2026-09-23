@@ -72,6 +72,11 @@ Playwright の callback 内では payload のコピーと bounded queue への�
 行う。protobuf decode や ZMQ send で callback をブロックしない。queue overflow
 は frame を黙って捨てず、Sniffer の致命的エラーにする。
 
+`PlaywrightFrameCapture` の `queue_size` は `int` 型注釈を前提とし、boolean と0以下を
+生成時に `ValueError` にする。boolean は `int` の派生型として型検査でも許容されるが、
+キューの件数としては扱わない。それ以外の型の検証は追加しない。
+既定値1024と正の整数での利用は変わらず、公開eventやwire schemaへの影響はない。
+
 ### `LiqiEnvelopeParser`（browser host）
 
 - 先頭 byte から Notice / Request / Response を分類する

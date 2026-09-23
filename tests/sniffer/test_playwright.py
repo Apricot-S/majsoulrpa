@@ -220,6 +220,28 @@ def test_capture_queue_overflow_is_fatal() -> None:
     asyncio.run(run())
 
 
+def test_capture_reuses_queue_capacity_after_receive() -> None:
+    async def run() -> None:
+        page = FakeEventEmitter()
+        websocket = FakeEventEmitter()
+        capture = PlaywrightFrameCapture(queue_size=1)
+        await capture.start(page)
+        page.emit("websocket", websocket)
+
+        websocket.emit("framesent", b"first")
+        first = await capture.receive()
+        websocket.emit("framereceived", b"second")
+        second = await capture.receive()
+
+        assert isinstance(first, CapturedFrame)
+        assert isinstance(second, CapturedFrame)
+        assert (first.payload, second.payload) == (b"first", b"second")
+        assert (first.frame_sequence, second.frame_sequence) == (1, 2)
+        await capture.stop()
+
+    asyncio.run(run())
+
+
 def test_stop_removes_page_and_websocket_listeners() -> None:
     async def run() -> None:
         page = FakeEventEmitter()
@@ -241,6 +263,15 @@ def test_stop_removes_page_and_websocket_listeners() -> None:
     asyncio.run(run())
 
 
-def test_capture_rejects_nonpositive_queue_size() -> None:
+@pytest.mark.parametrize(
+    "queue_size",
+    [
+        pytest.param(0, id="zero"),
+        pytest.param(-1, id="negative"),
+        pytest.param(True, id="boolean-true"),
+        pytest.param(False, id="boolean-false"),
+    ],
+)
+def test_capture_rejects_invalid_queue_size(queue_size: int) -> None:
     with pytest.raises(ValueError, match="queue_size"):
-        PlaywrightFrameCapture(queue_size=0)
+        PlaywrightFrameCapture(queue_size=queue_size)

@@ -256,6 +256,8 @@ constructor の runtime invariant、live / restore 双方から同じ object が
 - [x] `sniffer/events.py`: raw bytes と decoded JSON-compatible body、timestamp、direction の immutable 契約を確認する。
   - [x] raw / decoded event は `frozen=True, slots=True` の値 object とし、raw bytes、timestamp、direction、decoder が作る JSON-compatible body を保持する。属性の再代入を拒否する契約を synthetic test で固定した。
 - [ ] `sniffer/playwright.py`: listener 登録解除、binary frame 限定、bounded queue、connection/capture sequence を確認する。
+  - [x] `queue_size` は `int` 型注釈を前提とし、型検査で許容されるbooleanと0以下を生成時に拒否する。容量1の再利用とoverflowをsynthetic testで確認する。
+  - [ ] listener lifecycle、依存callableのデフォルト値、残りの共通観点の確認は後続で行う。
 - [ ] `sniffer/envelope.py`: message kind、request number、Wrapper、API 名の byte-level strict decode を確認する。
 - [ ] `sniffer/correlator.py`: connection/direction/number key、duplicate/unmatched/incomplete exchange の失敗を確認する。
 - [ ] `sniffer/publication.py`: schema version、base64 validation、sequence metadata、unknown field rejection を確認する。

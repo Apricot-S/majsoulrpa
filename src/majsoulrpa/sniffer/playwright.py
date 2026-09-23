@@ -67,8 +67,8 @@ class PlaywrightFrameCapture:
         clock: Clock | None = None,
         connection_id_factory: ConnectionIDFactory | None = None,
     ) -> None:
-        if queue_size <= 0:
-            msg = "queue_size must be greater than zero."
+        if isinstance(queue_size, bool) or queue_size <= 0:
+            msg = "queue_size must be a positive integer."
             raise ValueError(msg)
         self._queue: asyncio.Queue[_QueueItem] = asyncio.Queue(
             maxsize=queue_size,
