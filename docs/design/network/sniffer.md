@@ -68,6 +68,12 @@ Playwright Page
 - text frame を対応済みとして扱わず、明示的な unsupported frame error にする
 - start / stop 時に event listener を確実に登録解除する
 
+`stop()` はpage listener、各WebSocketのsent / received / close listenerの順で解除を
+一通り試みる。解除に失敗しても後続の解除を試み、単一の失敗は元の例外を、複数の
+失敗は `BaseExceptionGroup`（通常の例外だけなら `ExceptionGroup`）を送出する。
+停止時にcapture側の保持参照は解放し、解除に失敗したlistenerの自動再試行は行わない。
+失敗を成功扱いにはせず、browser hostのresource cleanupへ伝播する。
+
 Playwright の callback 内では payload のコピーと bounded queue への投入だけを
 行う。protobuf decode や ZMQ send で callback をブロックしない。queue overflow
 は frame を黙って捨てず、Sniffer の致命的エラーにする。
