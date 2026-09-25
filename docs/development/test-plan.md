@@ -1238,6 +1238,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Playwright capture / lifecycle
 
+- [x] WebSocket listenerの登録途中で失敗した場合、登録が完了したlistenerを解除し、元の例外を伝播する。
+- [x] 登録失敗のrollbackも失敗した場合、登録と解除の両方の例外を報告する。
 - [x] connection close のlistener解除が失敗しても残りを解除し、capture側の保持参照を解放して元の例外を伝播する。後続stopで解除済みlistenerを再解除しない。
 - [x] capture stop はpage / WebSocket listenerの解除に失敗しても残りを解除し、元の例外を伝播する。
 - [x] capture stop で複数の解除が失敗した場合、すべての失敗を例外groupで報告する。

@@ -70,6 +70,73 @@ class FailingRemoveEmitter(FakeEventEmitter):
         super().remove_listener(event, callback)
 
 
+class FailingRegistrationEmitter(FakeEventEmitter):
+    def __init__(self, failed_event: str) -> None:
+        super().__init__()
+        self.failed_event = failed_event
+        self.error = RuntimeError("synthetic registration failure")
+
+    def on(self, event: str, callback: Callable[..., None]) -> None:
+        if event == self.failed_event:
+            raise self.error
+        super().on(event, callback)
+
+
+class FailingRegistrationAndRemovalEmitter(FailingRegistrationEmitter):
+    def __init__(self) -> None:
+        super().__init__("close")
+        self.cleanup_error = RuntimeError("synthetic rollback failure")
+
+    def remove_listener(
+        self,
+        event: str,
+        callback: Callable[..., None],
+    ) -> None:
+        if event == "framereceived":
+            raise self.cleanup_error
+        super().remove_listener(event, callback)
+
+
+def test_registration_and_rollback_failures_are_both_reported() -> None:
+    async def run() -> None:
+        page = FakeEventEmitter()
+        websocket = FailingRegistrationAndRemovalEmitter()
+        capture = PlaywrightFrameCapture()
+        await capture.start(page)
+
+        with pytest.raises(RuntimeError) as caught:
+            page.emit("websocket", websocket)
+
+        assert caught.value is websocket.cleanup_error
+        assert caught.value.__context__ is websocket.error
+        assert websocket.listener_count("framesent") == 0
+        assert websocket.listener_count("framereceived") == 1
+        await capture.stop()
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "failed_event", ["framesent", "framereceived", "close"]
+)
+def test_websocket_registration_failure_removes_registered_listeners(
+    failed_event: str,
+) -> None:
+    async def run() -> None:
+        page = FakeEventEmitter()
+        websocket = FailingRegistrationEmitter(failed_event)
+        capture = PlaywrightFrameCapture()
+        await capture.start(page)
+        with pytest.raises(RuntimeError) as caught:
+            page.emit("websocket", websocket)
+        assert caught.value is websocket.error
+        for event in ("framesent", "framereceived", "close"):
+            assert websocket.listener_count(event) == 0
+        await capture.stop()
+
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize(
     "failed_event",
     ["websocket", "framesent", "framereceived", "close"],

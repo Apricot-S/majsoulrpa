@@ -162,9 +162,20 @@ class PlaywrightFrameCapture:
             finally:
                 self._remove_websocket_listeners(websocket)
 
-        websocket.on("framesent", on_sent)
-        websocket.on("framereceived", on_received)
-        websocket.on("close", on_close)
+        registered: list[
+            tuple[EventEmitterLike, str, Callable[..., None]]
+        ] = []
+        try:
+            for event, callback in (
+                ("framesent", on_sent),
+                ("framereceived", on_received),
+                ("close", on_close),
+            ):
+                websocket.on(event, callback)
+                registered.append((websocket, event, callback))
+        except BaseException:
+            _remove_listeners(list(reversed(registered)))
+            raise
         self._websocket_listeners.append(
             (websocket, on_sent, on_received, on_close),
         )

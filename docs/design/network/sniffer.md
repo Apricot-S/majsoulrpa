@@ -68,6 +68,11 @@ Playwright Page
 - text frame を対応済みとして扱わず、明示的な unsupported frame error にする
 - start / stop 時に event listener を確実に登録解除する
 
+WebSocketのlistener登録途中で失敗した場合、`on()` が正常終了したlistenerだけを
+逆順に解除し、登録例外を伝播する。rollbackの解除も失敗した場合は残りの解除を
+試み、解除例外（複数なら例外group）のcontextに元の登録例外を保持する。
+登録が完了しなかったWebSocketはcapture側の登録済み一覧へ追加しない。
+
 `stop()` はpage listener、各WebSocketのsent / received / close listenerの順で解除を
 一通り試みる。解除に失敗しても後続の解除を試み、単一の失敗は元の例外を、複数の
 失敗は `BaseExceptionGroup`（通常の例外だけなら `ExceptionGroup`）を送出する。
