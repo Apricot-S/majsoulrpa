@@ -1,6 +1,7 @@
 import importlib
 import sys
 import tomllib
+from importlib.metadata import version
 from pathlib import Path
 from types import ModuleType
 
@@ -9,9 +10,8 @@ import pytest
 import majsoulrpa
 
 
-def test_package_exposes_string_version() -> None:
-    assert isinstance(majsoulrpa.__version__, str)
-    assert majsoulrpa.__version__
+def test_package_version_matches_distribution_metadata() -> None:
+    assert majsoulrpa.__version__ == version("majsoulrpa")
 
 
 def test_public_exports_are_explicit() -> None:
