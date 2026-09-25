@@ -74,6 +74,11 @@ Playwright Page
 停止時にcapture側の保持参照は解放し、解除に失敗したlistenerの自動再試行は行わない。
 失敗を成功扱いにはせず、browser hostのresource cleanupへ伝播する。
 
+connection close時も対象WebSocketのsent / received / close listenerを一通り解除し、
+同じ単一例外・例外groupの方針でclose callbackから失敗を伝播する。capture側の対象
+WebSocketの保持参照は解除結果によらず解放し、後続の `stop()` では再解除しない。
+他のconnectionのlistenerには触れず、close eventは従来どおり解除処理の前にqueueへ投入する。
+
 Playwright の callback 内では payload のコピーと bounded queue への投入だけを
 行う。protobuf decode や ZMQ send で callback をブロックしない。queue overflow
 は frame を黙って捨てず、Sniffer の致命的エラーにする。

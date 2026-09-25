@@ -126,18 +126,7 @@ class PlaywrightFrameCapture:
                 ),
             )
 
-        errors: list[BaseException] = []
-        for emitter, event, callback in removals:
-            try:
-                emitter.remove_listener(event, callback)
-            except BaseException as error:  # noqa: BLE001
-                # Finish cleanup, then propagate every failure below.
-                errors.append(error)
-        if len(errors) == 1:
-            raise errors[0]
-        if errors:
-            msg = "Playwright listener cleanup failed."
-            raise BaseExceptionGroup(msg, errors)
+        _remove_listeners(removals)
 
     def _observe_websocket(self, websocket: EventEmitterLike) -> None:
         if any(
@@ -189,10 +178,14 @@ class PlaywrightFrameCapture:
             if registered is not websocket:
                 continue
 
-            websocket.remove_listener("framesent", on_sent)
-            websocket.remove_listener("framereceived", on_received)
-            websocket.remove_listener("close", on_close)
             del self._websocket_listeners[index]
+            _remove_listeners(
+                [
+                    (websocket, "framesent", on_sent),
+                    (websocket, "framereceived", on_received),
+                    (websocket, "close", on_close),
+                ],
+            )
             return
 
     def _observe_frame(
@@ -232,3 +225,21 @@ class PlaywrightFrameCapture:
         self._failure = error
         with suppress(asyncio.QueueFull):
             self._queue.put_nowait(error)
+
+
+def _remove_listeners(
+    removals: list[tuple[EventEmitterLike, str, Callable[..., None]]],
+) -> None:
+    errors: list[BaseException] = []
+    for emitter, event, callback in removals:
+        try:
+            emitter.remove_listener(event, callback)
+        except BaseException as error:  # noqa: BLE001
+            # Finish cleanup, then propagate every failure below.
+            errors.append(error)
+
+    if len(errors) == 1:
+        raise errors[0]
+    if errors:
+        msg = "Playwright listener cleanup failed."
+        raise BaseExceptionGroup(msg, errors)

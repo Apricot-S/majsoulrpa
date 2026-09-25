@@ -103,6 +103,47 @@ def test_stop_attempts_remaining_removals_after_failure(
     asyncio.run(run())
 
 
+@pytest.mark.parametrize(
+    "failed_event", ["framesent", "framereceived", "close"]
+)
+def test_connection_close_finishes_cleanup_after_removal_failure(
+    failed_event: str,
+) -> None:
+    async def run() -> None:
+        error = RuntimeError("synthetic removal failure")
+        page = FakeEventEmitter()
+        websocket = FailingRemoveEmitter(failed_event, error)
+        other_websocket = FakeEventEmitter()
+        capture = PlaywrightFrameCapture(
+            clock=lambda: OBSERVED_AT,
+            connection_id_factory=_connection_ids(
+                "connection-1", "connection-2"
+            ),
+        )
+        await capture.start(page)
+        page.emit("websocket", websocket)
+        page.emit("websocket", other_websocket)
+
+        with pytest.raises(RuntimeError) as caught:
+            websocket.emit("close")
+
+        assert caught.value is error
+        for event in ("framesent", "framereceived", "close"):
+            assert websocket.listener_count(event) == int(
+                event == failed_event
+            )
+            assert other_websocket.listener_count(event) == 1
+        assert await capture.receive() == CapturedConnectionClosed(
+            connection_id="connection-1",
+            observed_at=OBSERVED_AT,
+        )
+        await capture.stop()
+        for event in ("framesent", "framereceived", "close"):
+            assert other_websocket.listener_count(event) == 0
+
+    asyncio.run(run())
+
+
 def test_stop_reports_multiple_removal_failures_together() -> None:
     async def run() -> None:
         page_error = RuntimeError("synthetic page removal failure")

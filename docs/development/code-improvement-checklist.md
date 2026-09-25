@@ -259,7 +259,8 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] `queue_size` は `int` 型注釈を前提とし、型検査で許容されるbooleanと0以下を生成時に拒否する。容量1の再利用とoverflowをsynthetic testで確認する。
   - [x] `clock` / `connection_id_factory` はstatelessな既定関数を直接デフォルト値とし、falsey callableも注入値として保持する。便宜的な `None` とtruthiness分岐を除去し、frame / close eventで注入結果を確認する。
   - [x] `stop()` はpage / 各WebSocketのlistener解除を一通り試み、単一の失敗はそのまま、複数の失敗は例外groupで報告する。解除失敗で後続listenerのcleanupを飛ばさないことをテストする。
-  - [ ] listener登録時・connection close時の失敗と残りの共通観点の確認は後続で行う。
+  - [x] connection close時も全listenerの解除を試みて失敗を伝播し、capture側の保持参照を解放する。stopと解除処理を共有し、他のconnectionを維持することと後続stopで二重解除しないことをテストする。
+  - [ ] listener登録時の失敗と残りの共通観点の確認は後続で行う。
 - [ ] `sniffer/envelope.py`: message kind、request number、Wrapper、API 名の byte-level strict decode を確認する。
 - [ ] `sniffer/correlator.py`: connection/direction/number key、duplicate/unmatched/incomplete exchange の失敗を確認する。
 - [ ] `sniffer/publication.py`: schema version、base64 validation、sequence metadata、unknown field rejection を確認する。
