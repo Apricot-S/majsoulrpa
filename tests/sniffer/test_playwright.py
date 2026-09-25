@@ -9,6 +9,7 @@ from majsoulrpa.sniffer.playwright import (
     CapturedConnectionClosed,
     CapturedFrame,
     CaptureQueueOverflowError,
+    PlaywrightCaptureError,
     PlaywrightFrameCapture,
     UnsupportedWebSocketFrameError,
 )
@@ -95,6 +96,47 @@ class FailingRegistrationAndRemovalEmitter(FailingRegistrationEmitter):
         if event == "framereceived":
             raise self.cleanup_error
         super().remove_listener(event, callback)
+
+
+def test_page_registration_failure_does_not_mark_capture_started() -> None:
+    async def run() -> None:
+        failed_page = FailingRegistrationEmitter("websocket")
+        page = FakeEventEmitter()
+        capture = PlaywrightFrameCapture()
+
+        with pytest.raises(RuntimeError) as caught:
+            await capture.start(failed_page)
+
+        assert caught.value is failed_page.error
+        assert failed_page.listener_count("websocket") == 0
+        await capture.start(page)
+        assert page.listener_count("websocket") == 1
+        await capture.stop()
+        assert page.listener_count("websocket") == 0
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "same_page", [True, False], ids=["same-page", "other-page"]
+)
+def test_repeated_start_preserves_original_page(*, same_page: bool) -> None:
+    async def run() -> None:
+        page = FakeEventEmitter()
+        other_page = page if same_page else FakeEventEmitter()
+        capture = PlaywrightFrameCapture()
+        await capture.start(page)
+
+        with pytest.raises(PlaywrightCaptureError, match="already started"):
+            await capture.start(other_page)
+
+        assert page.listener_count("websocket") == 1
+        assert other_page.listener_count("websocket") == int(same_page)
+        await capture.stop()
+        assert page.listener_count("websocket") == 0
+        assert other_page.listener_count("websocket") == 0
+
+    asyncio.run(run())
 
 
 def test_registration_and_rollback_failures_are_both_reported() -> None:

@@ -262,7 +262,8 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] connection close時も全listenerの解除を試みて失敗を伝播し、capture側の保持参照を解放する。stopと解除処理を共有し、他のconnectionを維持することと後続stopで二重解除しないことをテストする。
   - [x] WebSocket listenerの部分登録に失敗したら、登録完了済みのlistenerを逆順に解除する。rollback失敗時も残りの解除を試み、元の登録失敗を例外chainに保持することをテストする。
   - [x] `receive()` はqueue待機から再開した時点でも致命的エラーを優先する。frame投入直後のoverflow / text frameを正常受信として返さないことをテストする。
-  - [ ] page listener登録時の失敗と残りの共通観点の確認は後続で行う。
+  - [x] page listener登録前の失敗では起動状態を確定せず元の例外を伝播する。起動済みcaptureの同じpage / 別pageへの再startは拒否し、元のlistenerと停止対象を保つ。実装は維持し、回帰テストを追加した。
+  - [ ] 残りの共通観点の確認は後続で行う。
 - [ ] `sniffer/envelope.py`: message kind、request number、Wrapper、API 名の byte-level strict decode を確認する。
 - [ ] `sniffer/correlator.py`: connection/direction/number key、duplicate/unmatched/incomplete exchange の失敗を確認する。
 - [ ] `sniffer/publication.py`: schema version、base64 validation、sequence metadata、unknown field rejection を確認する。
