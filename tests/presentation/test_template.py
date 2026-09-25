@@ -346,7 +346,11 @@ def test_template_matcher_rejects_non_uint8_template() -> None:
     )
 
     with pytest.raises(TypeError, match="template dtype must be uint8"):
-        TemplateMatcher(np.zeros((3, 4), dtype=np.float32), settings)
+        # Pass an invalid dtype deliberately to test runtime validation.
+        TemplateMatcher(
+            np.zeros((3, 4), dtype=np.float32),  # ty: ignore[invalid-argument-type]
+            settings,
+        )
 
 
 @pytest.mark.parametrize(
