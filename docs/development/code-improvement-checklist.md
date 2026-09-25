@@ -268,10 +268,11 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] `queue_size` は唯一の整数設定として位置指定を許可し、既存のキーワード指定も維持する。2つのcallable注入引数は取り違えを防ぐためキーワード専用とする。内部frame生成helperは文字列を含む複数のmetadataを明示するためキーワード専用を維持し、単一入力のstartやevent emitterの自然なevent/callback順は位置指定のままとする。
   - [x] capture eventはfrozen/slotsの内部値object、queue・sequence・failure・listenerはinstance所有であり、decode・保存・Screen処理を持ち込まない。`None` は未観測failure / 未登録pageを表す。例外messageにはpayloadを出さず、Playwright自体のimportも不要な狭いProtocol境界を維持する。
   - [x] binary限定、connection ID、全connection共通のframe sequence、close通知、queue上限は既存テストで固定されている。追加したlifecycleテストは異なる失敗経路を守るため維持し、位置指定の確認は既存の容量再利用テストに統合した。
-- [ ] `sniffer/envelope.py`: message kind、request number、Wrapper、API 名の byte-level strict decode を確認する。
+- [x] `sniffer/envelope.py`: message kind、request number、Wrapper、API 名の byte-level strict decode を確認する。
   - [x] Request / Responseの2 byte little endian番号は符号なし16 bitの両端を許容し、番号が0 / 1 byteならヘッダー不正とする。実装は維持し、境界テストと既存の非対称byte値のテストで固定する。
   - [x] Wrapperの不正UTF-8名・途中で切れた本文fieldはprotobuf DecodeErrorを原因に持つSnifferDecodeErrorとする。空本文は全kindで許容し、空WrapperのResponseを受理する。実装は維持し、synthetic bytesで回帰テストを追加した。
-  - [ ] API名と残りの共通観点は後続で確認する。
+  - [x] Notice / RequestのAPI名省略・明示的空文字・空Wrapperを拒否し、Responseの非空名を拒否する。Responseの例外messageにAPI名・本文を出さない契約を既存テストへ追加した。未知APIの判定はclient decoderへ委譲し、名前の正規化や推測を行わない。
+  - [x] parserは単一bytes入力を位置指定し、helperのlabelは診断用の補助情報としてキーワード専用を維持する。内部envelopeはfrozen/slotsの値objectで、本文とraw payloadを別の役割として保持する。mutable state、便宜的なNone default、async lifecycle、optional dependencyの追加はなく、生成Wrapperによるparseとkind別の検証という分担を維持する。
 - [ ] `sniffer/correlator.py`: connection/direction/number key、duplicate/unmatched/incomplete exchange の失敗を確認する。
 - [ ] `sniffer/publication.py`: schema version、base64 validation、sequence metadata、unknown field rejection を確認する。
 - [ ] `sniffer/event_adapter.py`: wire publication から raw event への変換境界が decoder と重複せず、bytes 復元を一元化することを確認する。

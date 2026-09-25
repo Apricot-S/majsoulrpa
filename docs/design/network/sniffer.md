@@ -143,6 +143,10 @@ protobufの `DecodeError` を原因に保持した `SnifferDecodeError` にす�
 protobuf本文は有効であり、すべてのkindで許容する。Responseはnameも空なので、
 Wrapper全体が空でも有効である。Notice / Requestは空本文でもAPI名を必要とする。
 
+Notice / RequestのAPI名はfield省略・明示的空文字の両方を拒否する。非空名は
+正規化せず保持し、既知APIかどうかの判定はclient decoderのdescriptor照合に委ねる。
+Responseの非空名を拒否するときは、名前や本文を例外messageに含めない。
+
 ### `RequestResponseCorrelator`（browser host）
 
 pending Request の key は次とする。

@@ -130,9 +130,26 @@ def test_request_number_requires_two_bytes(
         parse_liqi_envelope(kind + number_bytes)
 
 
-@pytest.mark.parametrize("message_type", [b"\x01", b"\x02\x00\x00"])
-def test_notice_and_request_require_api_name(message_type: bytes) -> None:
-    payload = message_type + _wrapper(name="", data=b"synthetic")
+@pytest.mark.parametrize(
+    "message_type",
+    [b"\x01", b"\x02\x00\x00"],
+    ids=["notice", "request"],
+)
+@pytest.mark.parametrize(
+    "wrapper",
+    [
+        pytest.param(_wrapper(name="", data=b"synthetic"), id="omitted-name"),
+        pytest.param(
+            b"\x0a\x00" + _wrapper(name="", data=b"synthetic"),
+            id="explicit-empty-name",
+        ),
+        pytest.param(b"", id="empty-wrapper"),
+    ],
+)
+def test_notice_and_request_require_api_name(
+    message_type: bytes, wrapper: bytes
+) -> None:
+    payload = message_type + wrapper
 
     with pytest.raises(SnifferDecodeError, match="API name"):
         parse_liqi_envelope(payload)
@@ -186,5 +203,6 @@ def test_response_rejects_nonempty_api_name() -> None:
         data=b"synthetic",
     )
 
-    with pytest.raises(SnifferDecodeError, match="must be empty"):
+    with pytest.raises(SnifferDecodeError, match="must be empty") as caught:
         parse_liqi_envelope(payload)
+    assert str(caught.value) == "Response wrapper API name must be empty."

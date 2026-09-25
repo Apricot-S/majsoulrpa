@@ -1196,6 +1196,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Envelope decode
 
+- [x] Notice / Requestはname field省略・明示的空文字・空WrapperのいずれもAPI名欠落として拒否する。
+- [x] Responseの非空API名を拒否する例外messageにAPI名や本文を含めない。
 - [x] Wrapperの不正UTF-8名と途中で切れたlength-delimited fieldを全kindでSnifferDecodeErrorへ変換し、protobuf DecodeErrorを原因に保持する。
 - [x] 空のprotobuf本文を全kindで許容し、空WrapperのResponseも受理する。
 - [x] synthetic Notice を分類し、`Wrapper` の API 名と本文を取り出す
