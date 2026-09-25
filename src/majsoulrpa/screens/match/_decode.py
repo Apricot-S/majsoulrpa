@@ -58,7 +58,7 @@ def _get_dict_list(
     ):
         msg = f"{name} must be a list of objects."
         raise TypeError(msg)
-    return value
+    return cast("list[dict[str, JsonValue]]", value)
 
 
 def _get_optional_dict(
