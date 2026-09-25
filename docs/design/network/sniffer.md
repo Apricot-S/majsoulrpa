@@ -138,6 +138,11 @@ request / response message class への decode は行わない。空 payload、�
 で byte 単位の条件を固定し、`IgnoredControlFrame` として明示的に扱う。
 「parse できない payload を heartbeat とみなす」fallback は置かない。
 
+Wrapperのnameに不正UTF-8がある場合やlength-delimited fieldが途中で切れている場合は、
+protobufの `DecodeError` を原因に保持した `SnifferDecodeError` にする。一方、空の
+protobuf本文は有効であり、すべてのkindで許容する。Responseはnameも空なので、
+Wrapper全体が空でも有効である。Notice / Requestは空本文でもAPI名を必要とする。
+
 ### `RequestResponseCorrelator`（browser host）
 
 pending Request の key は次とする。

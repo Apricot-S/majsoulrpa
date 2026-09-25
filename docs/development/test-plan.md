@@ -1196,6 +1196,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Envelope decode
 
+- [x] Wrapperの不正UTF-8名と途中で切れたlength-delimited fieldを全kindでSnifferDecodeErrorへ変換し、protobuf DecodeErrorを原因に保持する。
+- [x] 空のprotobuf本文を全kindで許容し、空WrapperのResponseも受理する。
 - [x] synthetic Notice を分類し、`Wrapper` の API 名と本文を取り出す
 - [x] synthetic Request を分類し、2 byte little endian の番号を取り出す
 - [x] synthetic Response を分類し、2 byte little endian の番号を取り出す

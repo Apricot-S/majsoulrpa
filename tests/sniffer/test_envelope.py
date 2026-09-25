@@ -1,4 +1,5 @@
 import pytest
+from google.protobuf.message import DecodeError
 
 from majsoulrpa.assets.protocol.liqi_pb2 import Wrapper
 from majsoulrpa.sniffer.envelope import (
@@ -135,6 +136,48 @@ def test_notice_and_request_require_api_name(message_type: bytes) -> None:
 
     with pytest.raises(SnifferDecodeError, match="API name"):
         parse_liqi_envelope(payload)
+
+
+@pytest.mark.parametrize(
+    "header",
+    [b"\x01", b"\x02\x00\x00", b"\x03\x00\x00"],
+    ids=["notice", "request", "response"],
+)
+@pytest.mark.parametrize(
+    "wrapper",
+    [
+        pytest.param(b"\x0a\x01\xff", id="invalid-utf8-name"),
+        pytest.param(b"\x12\x02\x00", id="truncated-body"),
+    ],
+)
+def test_invalid_wrapper_bytes_preserve_decode_error_cause(
+    header: bytes,
+    wrapper: bytes,
+) -> None:
+    with pytest.raises(
+        SnifferDecodeError, match="wrapper is malformed"
+    ) as caught:
+        parse_liqi_envelope(header + wrapper)
+    assert isinstance(caught.value.__cause__, DecodeError)
+
+
+@pytest.mark.parametrize(
+    ("header", "name"),
+    [
+        pytest.param(b"\x01", ".lq.SyntheticNotice", id="notice"),
+        pytest.param(
+            b"\x02\x00\x00", ".lq.SyntheticService.call", id="request"
+        ),
+        pytest.param(b"\x03\x00\x00", "", id="empty-response-wrapper"),
+    ],
+)
+def test_empty_protobuf_body_is_valid(header: bytes, name: str) -> None:
+    payload = header + _wrapper(name=name, data=b"")
+
+    envelope = parse_liqi_envelope(payload)
+
+    assert envelope.body == b""
+    assert envelope.raw_payload == payload
 
 
 def test_response_rejects_nonempty_api_name() -> None:
