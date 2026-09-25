@@ -240,7 +240,7 @@ def _get_int_list(value: dict[str, JsonValue], name: str) -> list[int]:
     ):
         msg = f"authGame {name} must be a list of ints."
         raise MatchMetadataDecodeError(msg)
-    return result
+    return cast("list[int]", result)
 
 
 def _get_str(value: dict[str, JsonValue], name: str) -> str:
