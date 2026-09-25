@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import cast
 
 from pydantic import JsonValue
 
@@ -221,7 +222,7 @@ def _get_dict_list(
     ):
         msg = f"authGame {name} must be a list of objects."
         raise MatchMetadataDecodeError(msg)
-    return result
+    return cast("list[dict[str, JsonValue]]", result)
 
 
 def _get_int(value: dict[str, JsonValue], name: str) -> int:
