@@ -11,6 +11,8 @@ from majsoulrpa.screens.match import (
 
 
 def _new_round_data(*, tiles: list[str]) -> dict[str, JsonValue]:
+    json_tiles: list[JsonValue] = []
+    json_tiles.extend(tiles)
     return {
         "chang": 0,
         "ju": 1,
@@ -19,7 +21,7 @@ def _new_round_data(*, tiles: list[str]) -> dict[str, JsonValue]:
         "doras": ["3p"],
         "left_tile_count": 69,
         "scores": [25000, 24000, 26000, 25000],
-        "tiles": tiles,
+        "tiles": json_tiles,
     }
 
 
