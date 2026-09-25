@@ -1236,6 +1236,11 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 最初の sequence が 1 より大きければ途中参加として扱う
 - [x] fake PUB/SUB socket だけで自動テストできる
 
+### Envelope request number の境界
+
+- [x] Request / Response のrequest numberは符号なし16 bitの両端（0、65535）を受け付ける。
+- [x] Request / Response のrequest numberが0 byteまたは1 byteしかない場合、ヘッダー不正として拒否する。
+
 ### Playwright capture / lifecycle
 
 - [x] captureのqueue_sizeは位置指定でき、指定容量でframeを受信・再利用できる。callable注入引数はキーワード専用を維持する。

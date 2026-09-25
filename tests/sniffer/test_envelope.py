@@ -56,6 +56,32 @@ def test_parse_response_envelope() -> None:
     )
 
 
+@pytest.mark.parametrize("number", [0, 65535], ids=["zero", "uint16-max"])
+@pytest.mark.parametrize(
+    "kind", [b"\x02", b"\x03"], ids=["request", "response"]
+)
+def test_request_number_accepts_unsigned_16_bit_boundaries(
+    kind: bytes,
+    number: int,
+) -> None:
+    name = ".lq.SyntheticService.call" if kind == b"\x02" else ""
+    payload = (
+        kind
+        + number.to_bytes(2, "little")
+        + _wrapper(
+            name=name,
+            data=b"synthetic",
+        )
+    )
+
+    envelope = parse_liqi_envelope(payload)
+
+    assert isinstance(envelope, (RequestEnvelope, ResponseEnvelope))
+    assert envelope.request_number == number
+    assert envelope.body == b"synthetic"
+    assert envelope.raw_payload == payload
+
+
 def test_parse_response_envelope_accepts_explicit_empty_api_name() -> None:
     body = b"synthetic-response"
     wrapper = b"\x0a\x00" + Wrapper(data=body).SerializeToString()
@@ -75,8 +101,6 @@ def test_parse_response_envelope_accepts_explicit_empty_api_name() -> None:
     [
         (b"", "empty"),
         (b"\x04", "Unknown"),
-        (b"\x02\x00", "Request header"),
-        (b"\x03\x00", "Response header"),
         (b"\x01not-a-wrapper", "Notice wrapper"),
         (b"\x02\x00\x00not-a-wrapper", "Request wrapper"),
         (b"\x03\x00\x00not-a-wrapper", "Response wrapper"),
@@ -88,6 +112,21 @@ def test_parse_liqi_envelope_rejects_malformed_payload(
 ) -> None:
     with pytest.raises(SnifferDecodeError, match=message):
         parse_liqi_envelope(payload)
+
+
+@pytest.mark.parametrize(
+    ("kind", "label"),
+    [(b"\x02", "Request"), (b"\x03", "Response")],
+    ids=["request", "response"],
+)
+@pytest.mark.parametrize(
+    "number_bytes", [b"", b"\x00"], ids=["missing", "one-byte"]
+)
+def test_request_number_requires_two_bytes(
+    kind: bytes, label: str, number_bytes: bytes
+) -> None:
+    with pytest.raises(SnifferDecodeError, match=f"{label} header"):
+        parse_liqi_envelope(kind + number_bytes)
 
 
 @pytest.mark.parametrize("message_type", [b"\x01", b"\x02\x00\x00"])

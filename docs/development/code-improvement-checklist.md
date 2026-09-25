@@ -269,6 +269,8 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] capture eventはfrozen/slotsの内部値object、queue・sequence・failure・listenerはinstance所有であり、decode・保存・Screen処理を持ち込まない。`None` は未観測failure / 未登録pageを表す。例外messageにはpayloadを出さず、Playwright自体のimportも不要な狭いProtocol境界を維持する。
   - [x] binary限定、connection ID、全connection共通のframe sequence、close通知、queue上限は既存テストで固定されている。追加したlifecycleテストは異なる失敗経路を守るため維持し、位置指定の確認は既存の容量再利用テストに統合した。
 - [ ] `sniffer/envelope.py`: message kind、request number、Wrapper、API 名の byte-level strict decode を確認する。
+  - [x] Request / Responseの2 byte little endian番号は符号なし16 bitの両端を許容し、番号が0 / 1 byteならヘッダー不正とする。実装は維持し、境界テストと既存の非対称byte値のテストで固定する。
+  - [ ] Wrapper・API名と残りの共通観点は後続で確認する。
 - [ ] `sniffer/correlator.py`: connection/direction/number key、duplicate/unmatched/incomplete exchange の失敗を確認する。
 - [ ] `sniffer/publication.py`: schema version、base64 validation、sequence metadata、unknown field rejection を確認する。
 - [ ] `sniffer/event_adapter.py`: wire publication から raw event への変換境界が decoder と重複せず、bytes 復元を一元化することを確認する。
