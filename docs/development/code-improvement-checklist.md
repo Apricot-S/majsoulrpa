@@ -273,7 +273,9 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] Wrapperの不正UTF-8名・途中で切れた本文fieldはprotobuf DecodeErrorを原因に持つSnifferDecodeErrorとする。空本文は全kindで許容し、空WrapperのResponseを受理する。実装は維持し、synthetic bytesで回帰テストを追加した。
   - [x] Notice / RequestのAPI名省略・明示的空文字・空Wrapperを拒否し、Responseの非空名を拒否する。Responseの例外messageにAPI名・本文を出さない契約を既存テストへ追加した。未知APIの判定はclient decoderへ委譲し、名前の正規化や推測を行わない。
   - [x] parserは単一bytes入力を位置指定し、helperのlabelは診断用の補助情報としてキーワード専用を維持する。内部envelopeはfrozen/slotsの値objectで、本文とraw payloadを別の役割として保持する。mutable state、便宜的なNone default、async lifecycle、optional dependencyの追加はなく、生成Wrapperによるparseとkind別の検証という分担を維持する。
-- [ ] `sniffer/correlator.py`: connection/direction/number key、duplicate/unmatched/incomplete exchange の失敗を確認する。
+- [x] `sniffer/correlator.py`: connection/direction/number key、duplicate/unmatched/incomplete exchange の失敗を確認する。
+  - [x] `CorrelatedRequestResponse` の同型request / responseは取り違え防止のためキーワード専用にする。単一入力のprocess / connection_closed / CorrelatedNoticeは位置指定を維持し、ObservedEnvelopeは型・役割の異なる観測metadataを保持する内部値objectとして現状を維持する。
+  - [x] pendingはinstance所有で、Noticeは即時出力、Requestだけを保持し、対応付け時・close・stopで解放する。decode・配送・Screen処理や履歴保存は持たない。便宜的なNone defaultはなく、processのNoneはRequest保留、popのNoneは対応Requestなしを表す。payload本文は例外messageに含めない。テストは各失敗経路を維持し、既存ケースへ状態保持・解放の確認を統合した。
   - [x] connection closeは対象connectionの両方向のpendingだけを解放し、他connectionは正常に対応付けできる。stopは全connection・両方向を解放し、未完了件数を報告する。再close / stopと解放済みRequestへのResponse拒否も既存テストの補強で確認した。
   - [x] connection・番号の不一致と同方向Responseの拒否では元のpending Requestを消費せず、正しいResponseとの対応付けに保持する。実装は維持し、未対応Responseの回帰テスト追加と既存direction mismatchテストの補強で固定した。
   - [x] 同一connection・direction内の異なる番号は逆順のResponseでも独立して対応する。完了済み番号への重複Responseは拒否し、新Requestによる番号再利用では古いRequestを再使用しない。実装は維持し、回帰テストを追加した。

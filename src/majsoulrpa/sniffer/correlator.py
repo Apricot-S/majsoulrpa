@@ -24,7 +24,7 @@ class CorrelatedNotice:
     observation: ObservedEnvelope
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class CorrelatedRequestResponse:
     request: ObservedEnvelope
     response: ObservedEnvelope

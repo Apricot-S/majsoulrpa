@@ -172,6 +172,10 @@ key だけに対応する。
 時間をまだ決められず、任意の timeout は偽陽性になるためである。番号の再利用、
 connection close、Sniffer stop を検証境界とする。
 
+対応付け結果の内部値object `CorrelatedRequestResponse` は、同じ型のrequest / responseを
+取り違えないようキーワード専用で生成する。従来の位置指定は拒否するが、リポジトリ内の
+呼び出しはすべて名前付きであり影響はない。公開eventやwire schemaは変更しない。
+
 ### `ZmqSnifferPublisher`（browser host）
 
 - `AppConfig.endpoint.client_host` と `sniffer_port` から作った endpoint に bind する
