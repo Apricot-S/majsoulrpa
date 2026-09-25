@@ -79,12 +79,14 @@ def test_decode_chi_operation_specification() -> None:
 def test_decode_chi_operation_rejects_invalid_combinations(
     combination: list[str],
 ) -> None:
+    json_combination: list[JsonValue] = []
+    json_combination.extend(combination)
     with pytest.raises((TypeError, ValueError)):
         decode_operation_specification(
             {
                 "operation": {
                     "operation_list": [
-                        {"type": 2, "combination": combination}
+                        {"type": 2, "combination": json_combination}
                     ],
                     "time_add": 0,
                     "time_fixed": 0,
