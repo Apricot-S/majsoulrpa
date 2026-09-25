@@ -190,6 +190,56 @@ def test_publication_json_round_trip(
     assert parse_publication_json(encoded) == publication
 
 
+@pytest.mark.parametrize(
+    ("message", "field"),
+    [
+        pytest.param(
+            _notice(), "publication_sequence", id="notice-publication-sequence"
+        ),
+        pytest.param(_notice(), "frame_sequence", id="notice-frame-sequence"),
+        pytest.param(
+            _request_response(),
+            "publication_sequence",
+            id="exchange-publication-sequence",
+        ),
+        pytest.param(
+            _request_response(), "request_number", id="request-number"
+        ),
+        pytest.param(
+            _request_response(),
+            "request_frame_sequence",
+            id="request-frame-sequence",
+        ),
+        pytest.param(
+            _request_response(),
+            "response_frame_sequence",
+            id="response-frame-sequence",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "value", ["1", True, 1.0], ids=["string", "boolean", "float"]
+)
+def test_wire_integer_fields_reject_coercion(
+    message: CorrelatedNotice | CorrelatedRequestResponse,
+    field: str,
+    *,
+    value: str | bool | float,
+) -> None:
+    publication = make_publication(
+        message, stream_id=STREAM_ID, publication_sequence=1
+    )
+    data = json.loads(dump_publication_json(publication))
+    data[field] = value
+
+    with pytest.raises(ValidationError) as caught:
+        parse_publication_json(json.dumps(data))
+    assert any(
+        error["loc"][-1] == field and error["type"] == "int_type"
+        for error in caught.value.errors()
+    )
+
+
 def test_parse_publication_rejects_unknown_field() -> None:
     publication = make_publication(
         _notice(),

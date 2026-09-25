@@ -292,6 +292,11 @@ frame 2: publication JSON bytes
 schema に未知 field がある場合は初期実装では reject する。schema version が違う
 場合も暗黙に読み替えない。
 
+publication / frame sequenceとrequest numberはstrictな整数fieldとする。
+JSONの文字列・boolean・floatからの整数変換は行わず、型不正として拒否する。
+従来受け付けていたこれらの入力は拒否されるが、標準publisherの整数出力と
+field名・値域は変わらないためschema versionは維持する。
+
 ## 配送保証と Screen 状態
 
 ZeroMQ PUB/SUB は subscriber の接続前や処理遅延時の message を保証しない。

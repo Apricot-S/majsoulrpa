@@ -1230,6 +1230,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Publication / PUB-SUB
 
+- [x] JSONのpublication/frame sequenceとrequest numberは文字列・boolean・floatから整数へ暗黙変換しない。
 - [x] raw Notice publication を schema version 付き JSON にできる
 - [x] 対応済み Req/Res publication を schema version 付き JSON にできる
 - [x] raw payload は publication 内で base64 として round trip する

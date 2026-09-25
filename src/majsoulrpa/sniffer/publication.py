@@ -28,8 +28,8 @@ SCHEMA_VERSION = 1
 SNIFFER_TOPIC = b"majsoulrpa.sniffer.v1"
 
 NonEmptyString = Annotated[str, Field(min_length=1)]
-PositiveSequence = Annotated[int, Field(ge=1)]
-RequestNumber = Annotated[int, Field(ge=0, le=0xFFFF)]
+PositiveSequence = Annotated[int, Field(strict=True, ge=1)]
+RequestNumber = Annotated[int, Field(strict=True, ge=0, le=0xFFFF)]
 
 
 class _PublicationBase(BaseModel):
