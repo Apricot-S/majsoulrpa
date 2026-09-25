@@ -1212,6 +1212,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Request / Response 対応
 
+- [x] connection / numberが一致しないResponseと同方向Responseを拒否した後も、元のpending Requestを正しいResponseと対応付けられる。
 - [x] pending key が connection、request direction、2 byte 番号を含む
 - [x] Request は Response 到着まで publish しない
 - [x] Response 到着時に反対方向の Request と 1 event にまとめる

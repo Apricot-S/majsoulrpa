@@ -217,12 +217,47 @@ def test_response_without_request_is_rejected() -> None:
         correlator.process(_response())
 
 
-def test_response_in_same_direction_as_request_is_rejected() -> None:
+@pytest.mark.parametrize(
+    "invalid_response",
+    [
+        pytest.param(
+            _response(connection_id="connection-other"), id="other-connection"
+        ),
+        pytest.param(_response(request_number=0x1235), id="other-number"),
+    ],
+)
+def test_unmatched_response_preserves_pending_request(
+    invalid_response: ObservedEnvelope,
+) -> None:
     correlator = RequestResponseCorrelator()
-    correlator.process(_request(direction=Direction.INBOUND))
+    request = _request()
+    correlator.process(request)
+
+    with pytest.raises(UnmatchedResponseError):
+        correlator.process(invalid_response)
+
+    response = _response(frame_sequence=3)
+    assert correlator.process(response) == CorrelatedRequestResponse(
+        request=request,
+        response=response,
+    )
+    correlator.stop()
+
+
+def test_wrong_direction_response_preserves_pending_request() -> None:
+    correlator = RequestResponseCorrelator()
+    request = _request(direction=Direction.INBOUND)
+    correlator.process(request)
 
     with pytest.raises(ResponseDirectionMismatchError, match="same direction"):
         correlator.process(_response(direction=Direction.INBOUND))
+
+    response = _response(direction=Direction.OUTBOUND, frame_sequence=3)
+    assert correlator.process(response) == CorrelatedRequestResponse(
+        request=request,
+        response=response,
+    )
+    correlator.stop()
 
 
 def test_connection_close_rejects_and_removes_incomplete_exchange() -> None:
