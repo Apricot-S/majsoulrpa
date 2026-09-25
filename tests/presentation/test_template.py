@@ -393,9 +393,11 @@ def test_template_matcher_rejects_non_grayscale_screenshot(
 
 def test_template_matcher_rejects_non_uint8_screenshot() -> None:
     matcher = _make_small_template_matcher()
+    screenshot = np.zeros((1080, 1920), dtype=np.float32)
 
     with pytest.raises(TypeError, match="screenshot dtype must be uint8"):
-        matcher.match(np.zeros((1080, 1920), dtype=np.float32))
+        # Pass an invalid dtype deliberately to test runtime validation.
+        matcher.match(screenshot)  # ty: ignore[invalid-argument-type]
 
 
 @pytest.mark.parametrize(
