@@ -45,7 +45,7 @@ def _get_int_list(data: Mapping[str, JsonValue], name: str) -> list[int]:
     ):
         msg = f"{name} must be a list of ints."
         raise TypeError(msg)
-    return value
+    return cast("list[int]", value)
 
 
 def _get_dict_list(
