@@ -1,4 +1,5 @@
 import pytest
+from pydantic import JsonValue
 
 from majsoulrpa.screens.match import (
     Hule,
@@ -10,43 +11,41 @@ from majsoulrpa.screens.match import (
 
 
 def test_hule_event_from_dict() -> None:
-    event = HuleEvent.from_dict(
-        3,
-        {
-            "hules": [
-                {
-                    "hand": ["1m", "2m", "3m"],
-                    "ming": ["kezi(4p,4p,4p)"],
-                    "hu_tile": "0s",
-                    "seat": 0,
-                    "zimo": True,
-                    "qinjia": False,
-                    "liqi": True,
-                    "doras": ["0s"],
-                    "li_doras": ["4z"],
-                    "yiman": False,
-                    "count": 3,
-                    "fans": [{"name": "", "val": 1, "id": 2}],
-                    "fu": 30,
-                    "title": "",
-                    "point_rong": 0,
-                    "point_zimo_qin": 2000,
-                    "point_zimo_xian": 1000,
-                    "title_id": 0,
-                    "point_sum": 4000,
-                    "dadian": 4000,
-                    "baopai": 2,
-                    "baopai_seats": [2, 3],
-                },
-            ],
-            "old_scores": [25000, 25000, 25000, 25000],
-            "delta_scores": [4300, -2100, -1100, -1100],
-            "scores": [29300, 22900, 23900, 23900],
-            "doras": ["3p"],
-            "gameend": {"scores": [29300, 22900, 23900, 23900]},
-            "baopai": 3,
-        },
-    )
+    data: dict[str, JsonValue] = {
+        "hules": [
+            {
+                "hand": ["1m", "2m", "3m"],
+                "ming": ["kezi(4p,4p,4p)"],
+                "hu_tile": "0s",
+                "seat": 0,
+                "zimo": True,
+                "qinjia": False,
+                "liqi": True,
+                "doras": ["0s"],
+                "li_doras": ["4z"],
+                "yiman": False,
+                "count": 3,
+                "fans": [{"name": "", "val": 1, "id": 2}],
+                "fu": 30,
+                "title": "",
+                "point_rong": 0,
+                "point_zimo_qin": 2000,
+                "point_zimo_xian": 1000,
+                "title_id": 0,
+                "point_sum": 4000,
+                "dadian": 4000,
+                "baopai": 2,
+                "baopai_seats": [2, 3],
+            },
+        ],
+        "old_scores": [25000, 25000, 25000, 25000],
+        "delta_scores": [4300, -2100, -1100, -1100],
+        "scores": [29300, 22900, 23900, 23900],
+        "doras": ["3p"],
+        "gameend": {"scores": [29300, 22900, 23900, 23900]},
+        "baopai": 3,
+    }
+    event = HuleEvent.from_dict(3, data)
 
     assert event == HuleEvent(
         action_step=3,
@@ -87,21 +86,19 @@ def test_hule_event_from_dict() -> None:
 
 
 def test_hule_event_preserves_multiple_hules_in_message_order() -> None:
-    event = HuleEvent.from_dict(
-        5,
-        {
-            "hules": [
-                _hule_data(seat=2, tile="5m"),
-                _hule_data(seat=1, tile="5m"),
-            ],
-            "old_scores": [25000] * 4,
-            "delta_scores": [0] * 4,
-            "scores": [25000] * 4,
-            "doras": ["3p"],
-            "gameend": None,
-            "baopai": 0,
-        },
-    )
+    data: dict[str, JsonValue] = {
+        "hules": [
+            _hule_data(seat=2, tile="5m"),
+            _hule_data(seat=1, tile="5m"),
+        ],
+        "old_scores": [25000] * 4,
+        "delta_scores": [0] * 4,
+        "scores": [25000] * 4,
+        "doras": ["3p"],
+        "gameend": None,
+        "baopai": 0,
+    }
+    event = HuleEvent.from_dict(5, data)
 
     assert tuple(hule.seat for hule in event.hules) == (2, 1)
 
@@ -165,7 +162,7 @@ def _hule_data(
     seat: int,
     tile: str,
     zimo: bool = False,
-) -> dict[str, object]:
+) -> dict[str, JsonValue]:
     return {
         "hand": ["1m"] * 13,
         "ming": [],
