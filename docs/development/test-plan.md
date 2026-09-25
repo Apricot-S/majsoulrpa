@@ -1238,6 +1238,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Playwright capture / lifecycle
 
+- [x] receiveの待機中・frame投入後の再開前にcancelしてもCancelledErrorを伝播し、未受信frameを次のreceiveで取得できる。
 - [x] page listener登録前の失敗をそのまま伝播し、起動済み扱いにせず、その後に別pageで起動できる。
 - [x] 起動済みcaptureの再startは同じpage / 別pageとも拒否し、元のlistenerと停止対象を維持する。
 - [x] receive待機中、frame投入直後にoverflow / text frameの致命的エラーが起きた場合、通常frameを返さず検出済みエラーを送出する。

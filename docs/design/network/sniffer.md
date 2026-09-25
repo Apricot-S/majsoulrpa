@@ -96,6 +96,10 @@ Playwright の callback 内では payload のコピーと bounded queue への�
 待機中にframeが投入され、その直後にoverflowやunsupported frameが検出された場合も、
 通常frameを返す前に検出済みエラーを送出する。失敗後の受信も同じエラーで失敗する。
 
+`receive()` のqueue待機はcancellationをそのまま伝播する。空queueでの待機中だけでなく、
+frame投入後に受信taskが再開する前のcancelでも、未受信frameはqueueに残り、
+次の `receive()` で取得できる。capture全体の停止と単一の受信待機のcancelは区別する。
+
 `PlaywrightFrameCapture` の `queue_size` は `int` 型注釈を前提とし、boolean と0以下を
 生成時に `ValueError` にする。boolean は `int` の派生型として型検査でも許容されるが、
 キューの件数としては扱わない。それ以外の型の検証は追加しない。

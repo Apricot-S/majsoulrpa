@@ -514,6 +514,50 @@ def test_waiting_receive_prioritizes_failure_over_queued_frame(
     asyncio.run(run())
 
 
+@pytest.mark.parametrize(
+    "cancel_after_frame",
+    [False, True],
+    ids=["empty-queue", "frame-arrived-before-resume"],
+)
+def test_cancelled_receive_preserves_unread_frame(
+    *,
+    cancel_after_frame: bool,
+) -> None:
+    async def run() -> None:
+        page = FakeEventEmitter()
+        websocket = FakeEventEmitter()
+        capture = PlaywrightFrameCapture(
+            clock=lambda: OBSERVED_AT,
+            connection_id_factory=_connection_ids("connection-1"),
+        )
+        await capture.start(page)
+        page.emit("websocket", websocket)
+        receiver = asyncio.create_task(capture.receive())
+        await asyncio.sleep(0)
+        assert not receiver.done()
+
+        if cancel_after_frame:
+            websocket.emit("framereceived", b"synthetic")
+        receiver.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await receiver
+        if not cancel_after_frame:
+            websocket.emit("framereceived", b"synthetic")
+
+        async with asyncio.timeout(1):
+            message = await capture.receive()
+        assert message == CapturedFrame(
+            connection_id="connection-1",
+            frame_sequence=1,
+            direction=Direction.INBOUND,
+            observed_at=OBSERVED_AT,
+            payload=b"synthetic",
+        )
+        await capture.stop()
+
+    asyncio.run(run())
+
+
 def test_capture_reuses_queue_capacity_after_receive() -> None:
     async def run() -> None:
         page = FakeEventEmitter()
