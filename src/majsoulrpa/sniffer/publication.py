@@ -1,7 +1,7 @@
 import base64
 import binascii
 import uuid
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
 from pydantic import (
     AwareDatetime,
@@ -10,6 +10,7 @@ from pydantic import (
     Field,
     TypeAdapter,
     field_validator,
+    model_validator,
 )
 
 from majsoulrpa.sniffer.correlator import (
@@ -66,6 +67,13 @@ class RequestResponsePublication(_PublicationBase):
     api_name: NonEmptyString
     request_payload_base64: NonEmptyString
     response_payload_base64: NonEmptyString
+
+    @model_validator(mode="after")
+    def _validate_frame_order(self) -> Self:
+        if self.response_frame_sequence <= self.request_frame_sequence:
+            msg = "Response frame sequence must follow Request frame sequence."
+            raise ValueError(msg)
+        return self
 
     @field_validator("request_payload_base64", "response_payload_base64")
     @classmethod

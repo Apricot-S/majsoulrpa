@@ -297,6 +297,11 @@ JSONの文字列・boolean・floatからの整数変換は行わず、型不正�
 従来受け付けていたこれらの入力は拒否されるが、標準publisherの整数出力と
 field名・値域は変わらないためschema versionは維持する。
 
+Req/Res publicationはresponse frame sequenceがrequestより大きいことを生成時と
+JSON受信時に検証する。同値・逆順の組は拒否するが、途中に別frameが入るため連番は
+要求しない。観測時刻はwall clockなので、時刻の逆行をこの順序検証に使わない。
+標準captureの単調増加sequenceに沿う制約の明確化であり、schema versionは維持する。
+
 ## 配送保証と Screen 状態
 
 ZeroMQ PUB/SUB は subscriber の接続前や処理遅延時の message を保証しない。

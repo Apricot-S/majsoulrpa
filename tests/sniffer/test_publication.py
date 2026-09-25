@@ -240,6 +240,67 @@ def test_wire_integer_fields_reject_coercion(
     )
 
 
+@pytest.mark.parametrize(
+    "response_sequence", [20, 19], ids=["same", "earlier"]
+)
+def test_wire_exchange_rejects_invalid_frame_order(
+    response_sequence: int,
+) -> None:
+    publication = make_publication(
+        _request_response(),
+        stream_id=STREAM_ID,
+        publication_sequence=1,
+    )
+    data = json.loads(dump_publication_json(publication))
+    data["response_frame_sequence"] = response_sequence
+
+    with pytest.raises(
+        ValidationError, match="Response frame sequence must follow Request"
+    ):
+        parse_publication_json(json.dumps(data))
+
+
+@pytest.mark.parametrize(
+    "response_sequence", [20, 19], ids=["same", "earlier"]
+)
+def test_make_exchange_rejects_invalid_frame_order(
+    response_sequence: int,
+) -> None:
+    message = _request_response()
+    message = dataclasses.replace(
+        message,
+        response=dataclasses.replace(
+            message.response, frame_sequence=response_sequence
+        ),
+    )
+    with pytest.raises(
+        ValidationError, match="Response frame sequence must follow Request"
+    ):
+        make_publication(message, stream_id=STREAM_ID, publication_sequence=1)
+
+
+def test_exchange_accepts_frame_gap_and_clock_rollback() -> None:
+    message = _request_response()
+    message = dataclasses.replace(
+        message,
+        response=dataclasses.replace(
+            message.response,
+            frame_sequence=25,
+            observed_at=REQUEST_AT - datetime.timedelta(seconds=1),
+        ),
+    )
+    publication = make_publication(
+        message, stream_id=STREAM_ID, publication_sequence=1
+    )
+    assert isinstance(publication, RequestResponsePublication)
+    assert publication.response_frame_sequence == 25
+    assert publication.response_observed_at == message.response.observed_at
+    assert (
+        parse_publication_json(dump_publication_json(publication))
+        == publication
+    )
+
+
 def test_parse_publication_rejects_unknown_field() -> None:
     publication = make_publication(
         _notice(),

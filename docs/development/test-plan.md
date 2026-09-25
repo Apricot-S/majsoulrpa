@@ -1230,6 +1230,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Publication / PUB-SUB
 
+- [x] Req/Res publicationはresponse frame sequenceがrequest以下なら生成・JSON受信とも拒否する。
+- [x] Req/Res frame sequenceは連番でなくても受理し、wall clockの逆行をsequence逆行と混同しない。
 - [x] JSONのpublication/frame sequenceとrequest numberは文字列・boolean・floatから整数へ暗黙変換しない。
 - [x] raw Notice publication を schema version 付き JSON にできる
 - [x] 対応済み Req/Res publication を schema version 付き JSON にできる

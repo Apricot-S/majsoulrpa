@@ -280,6 +280,7 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] connection・番号の不一致と同方向Responseの拒否では元のpending Requestを消費せず、正しいResponseとの対応付けに保持する。実装は維持し、未対応Responseの回帰テスト追加と既存direction mismatchテストの補強で固定した。
   - [x] 同一connection・direction内の異なる番号は逆順のResponseでも独立して対応する。完了済み番号への重複Responseは拒否し、新Requestによる番号再利用では古いRequestを再使用しない。実装は維持し、回帰テストを追加した。
 - [ ] `sniffer/publication.py`: schema version、base64 validation、sequence metadata、unknown field rejection を確認する。
+  - [x] Req/Resのresponse frame sequenceはrequestより大きいことをmodelで検証し、生成とJSON受信の両経路で同値・逆行を拒否する。連番は要求せず、wall clock逆行は許容する。
   - [x] publication/frame sequenceとrequest numberをstrictな整数fieldにし、JSONの文字列・boolean・floatを整数へ暗黙変換しない。Notice / ReqResの全該当fieldでwire入力をテストした。
 - [ ] `sniffer/event_adapter.py`: wire publication から raw event への変換境界が decoder と重複せず、bytes 復元を一元化することを確認する。
 - [ ] `sniffer/decoder.py`: descriptor map、Notice/Req/Res body decode、publication/envelope API 一致、未知 API の失敗を確認する。
