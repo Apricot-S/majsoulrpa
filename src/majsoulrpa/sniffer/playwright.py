@@ -102,6 +102,8 @@ class PlaywrightFrameCapture:
             raise self._failure
 
         item = await self._queue.get()
+        if self._failure is not None:
+            raise self._failure
         if isinstance(item, PlaywrightCaptureError):
             raise item
         return item

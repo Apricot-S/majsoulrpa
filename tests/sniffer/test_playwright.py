@@ -437,6 +437,41 @@ def test_capture_queue_overflow_is_fatal() -> None:
     asyncio.run(run())
 
 
+@pytest.mark.parametrize(
+    ("payload", "error_type"),
+    [
+        pytest.param(b"overflow", CaptureQueueOverflowError, id="overflow"),
+        pytest.param(
+            "synthetic-text", UnsupportedWebSocketFrameError, id="text"
+        ),
+    ],
+)
+def test_waiting_receive_prioritizes_failure_over_queued_frame(
+    payload: bytes | str,
+    error_type: type[RuntimeError],
+) -> None:
+    async def run() -> None:
+        page = FakeEventEmitter()
+        websocket = FakeEventEmitter()
+        capture = PlaywrightFrameCapture(queue_size=1)
+        await capture.start(page)
+        page.emit("websocket", websocket)
+        receiver = asyncio.create_task(capture.receive())
+        await asyncio.sleep(0)
+        assert not receiver.done()
+
+        websocket.emit("framesent", b"first")
+        websocket.emit("framesent", payload)
+
+        with pytest.raises(error_type):
+            await receiver
+        with pytest.raises(error_type):
+            await capture.receive()
+        await capture.stop()
+
+    asyncio.run(run())
+
+
 def test_capture_reuses_queue_capacity_after_receive() -> None:
     async def run() -> None:
         page = FakeEventEmitter()

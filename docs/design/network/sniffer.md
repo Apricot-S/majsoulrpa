@@ -88,6 +88,10 @@ Playwright の callback 内では payload のコピーと bounded queue への�
 行う。protobuf decode や ZMQ send で callback をブロックしない。queue overflow
 は frame を黙って捨てず、Sniffer の致命的エラーにする。
 
+`receive()` は呼び出し時とqueue待機から再開した時点で致命的エラーを確認する。
+待機中にframeが投入され、その直後にoverflowやunsupported frameが検出された場合も、
+通常frameを返す前に検出済みエラーを送出する。失敗後の受信も同じエラーで失敗する。
+
 `PlaywrightFrameCapture` の `queue_size` は `int` 型注釈を前提とし、boolean と0以下を
 生成時に `ValueError` にする。boolean は `int` の派生型として型検査でも許容されるが、
 キューの件数としては扱わない。それ以外の型の検証は追加しない。
