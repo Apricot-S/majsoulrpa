@@ -1,3 +1,5 @@
+from pydantic import JsonValue
+
 from majsoulrpa.screens.match import (
     DapaiEvent,
     DapaiOperation,
@@ -83,7 +85,7 @@ def test_liqi_self_draw_candidates_include_trailing_skip() -> None:
 
 
 def _specification(
-    *operations: dict[str, object],
+    *operations: dict[str, JsonValue],
 ) -> _OperationCandidatesSpecification:
     specification = decode_operation_specification(
         {
