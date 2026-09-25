@@ -131,6 +131,26 @@ def test_same_request_number_on_different_connections_is_independent() -> None:
     )
 
 
+def test_different_request_numbers_pair_responses_in_reverse_order() -> None:
+    correlator = RequestResponseCorrelator()
+    first = _request(request_number=1)
+    second = _request(request_number=2, frame_sequence=2)
+    second_response = _response(request_number=2, frame_sequence=3)
+    first_response = _response(request_number=1, frame_sequence=4)
+    correlator.process(first)
+    correlator.process(second)
+
+    assert correlator.process(second_response) == CorrelatedRequestResponse(
+        request=second,
+        response=second_response,
+    )
+    assert correlator.process(first_response) == CorrelatedRequestResponse(
+        request=first,
+        response=first_response,
+    )
+    correlator.stop()
+
+
 def test_same_request_number_in_both_directions_is_independent() -> None:
     correlator = RequestResponseCorrelator()
     outbound_request = _request(direction=Direction.OUTBOUND)
@@ -149,6 +169,29 @@ def test_same_request_number_in_both_directions_is_independent() -> None:
         request=inbound_request,
         response=outbound_response,
     )
+
+
+def test_number_reuse_does_not_pair_completed_request() -> None:
+    correlator = RequestResponseCorrelator()
+    original = _request(api_name=".lq.Original")
+    response = _response()
+    correlator.process(original)
+    assert correlator.process(response) == CorrelatedRequestResponse(
+        request=original,
+        response=response,
+    )
+
+    with pytest.raises(UnmatchedResponseError):
+        correlator.process(_response(frame_sequence=3))
+
+    new_request = _request(api_name=".lq.New", frame_sequence=4)
+    new_response = _response(frame_sequence=5)
+    assert correlator.process(new_request) is None
+    assert correlator.process(new_response) == CorrelatedRequestResponse(
+        request=new_request,
+        response=new_response,
+    )
+    correlator.stop()
 
 
 def test_duplicate_request_does_not_replace_original() -> None:

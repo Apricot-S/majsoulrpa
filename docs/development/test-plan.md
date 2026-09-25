@@ -1216,6 +1216,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] Request は Response 到着まで publish しない
 - [x] Response 到着時に反対方向の Request と 1 event にまとめる
 - [x] 同じ番号でも connection が違えば独立して対応付ける
+- [x] 同一connection・directionでも番号が違えば独立し、逆順のResponseを対応するRequestに結び付ける。
+- [x] 完了済み番号のResponse再送は拒否し、その後に同じ番号を使う新Requestは新しいResponseと対応する。
 - [x] 同じ番号でも Request の方向が違えば独立して対応付ける
 - [x] 未完了 key の再利用を duplicate request error にする
 - [x] 対応 Request のない Response を unmatched response error にする
