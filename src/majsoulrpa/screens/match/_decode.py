@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from typing import cast
 
 from pydantic import JsonValue
 
@@ -34,7 +35,7 @@ def _get_str_list(data: Mapping[str, JsonValue], name: str) -> list[str]:
     ):
         msg = f"{name} must be a list of strings."
         raise TypeError(msg)
-    return value
+    return cast("list[str]", value)
 
 
 def _get_int_list(data: Mapping[str, JsonValue], name: str) -> list[int]:
