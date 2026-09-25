@@ -1212,6 +1212,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Request / Response 対応
 
+- [x] connection closeは対象connectionの両方向のpendingを全件解放し、他connectionのRequestはResponseと対応付けできる状態で保持する。
+- [x] stopは複数connection・両方向のpendingを全件解放し、未完了件数を報告する。
 - [x] connection / numberが一致しないResponseと同方向Responseを拒否した後も、元のpending Requestを正しいResponseと対応付けられる。
 - [x] pending key が connection、request direction、2 byte 番号を含む
 - [x] Request は Response 到着まで publish しない

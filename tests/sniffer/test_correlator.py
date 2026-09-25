@@ -263,23 +263,46 @@ def test_wrong_direction_response_preserves_pending_request() -> None:
 def test_connection_close_rejects_and_removes_incomplete_exchange() -> None:
     correlator = RequestResponseCorrelator()
     correlator.process(_request(connection_id="connection-1"))
-    correlator.process(_request(connection_id="connection-2"))
+    correlator.process(
+        _request(connection_id="connection-1", direction=Direction.INBOUND)
+    )
+    other_request = _request(connection_id="connection-2")
+    correlator.process(other_request)
 
-    with pytest.raises(IncompleteExchangeError, match="connection-1"):
+    with pytest.raises(
+        IncompleteExchangeError, match=r"connection-1.*2 pending"
+    ):
         correlator.connection_closed("connection-1")
 
     correlator.connection_closed("connection-1")
-    with pytest.raises(IncompleteExchangeError, match="connection-2"):
-        correlator.connection_closed("connection-2")
+    for direction in Direction:
+        with pytest.raises(UnmatchedResponseError):
+            correlator.process(
+                _response(connection_id="connection-1", direction=direction)
+            )
+    other_response = _response(connection_id="connection-2")
+    assert correlator.process(other_response) == CorrelatedRequestResponse(
+        request=other_request,
+        response=other_response,
+    )
     correlator.stop()
 
 
 def test_stop_rejects_and_removes_all_incomplete_exchanges() -> None:
     correlator = RequestResponseCorrelator()
-    correlator.process(_request(connection_id="connection-1"))
-    correlator.process(_request(connection_id="connection-2"))
+    for connection_id in ("connection-1", "connection-2"):
+        for direction in Direction:
+            correlator.process(
+                _request(connection_id=connection_id, direction=direction)
+            )
 
-    with pytest.raises(IncompleteExchangeError, match="2 pending"):
+    with pytest.raises(IncompleteExchangeError, match="4 pending"):
         correlator.stop()
 
     correlator.stop()
+    for connection_id in ("connection-1", "connection-2"):
+        for direction in Direction:
+            with pytest.raises(UnmatchedResponseError):
+                correlator.process(
+                    _response(connection_id=connection_id, direction=direction)
+                )
