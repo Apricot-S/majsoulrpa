@@ -203,12 +203,14 @@ def test_decode_angang_operation_specification() -> None:
 def test_decode_angang_operation_rejects_invalid_combinations(
     combination: list[str],
 ) -> None:
+    json_combination: list[JsonValue] = []
+    json_combination.extend(combination)
     with pytest.raises((TypeError, ValueError)):
         decode_operation_specification(
             {
                 "operation": {
                     "operation_list": [
-                        {"type": 4, "combination": combination}
+                        {"type": 4, "combination": json_combination}
                     ],
                     "time_add": 0,
                     "time_fixed": 0,
@@ -252,12 +254,14 @@ def test_decode_jiagang_operation_specification() -> None:
 def test_decode_jiagang_operation_rejects_invalid_combinations(
     combination: list[str],
 ) -> None:
+    json_combination: list[JsonValue] = []
+    json_combination.extend(combination)
     with pytest.raises((TypeError, ValueError)):
         decode_operation_specification(
             {
                 "operation": {
                     "operation_list": [
-                        {"type": 6, "combination": combination}
+                        {"type": 6, "combination": json_combination}
                     ],
                     "time_add": 0,
                     "time_fixed": 0,
