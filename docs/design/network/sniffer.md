@@ -72,6 +72,13 @@ Playwright Page
 元の例外を伝播し、その後に呼び出し側が別pageで起動できる。起動済みの場合は、
 同じpageでも別pageでも `PlaywrightCaptureError` で再startを拒否し、元の登録を維持する。
 
+`stop()` を呼んだinstanceは再startできず、`PlaywrightCaptureError` にする。
+起動前のstopやlistener解除失敗も停止済みとして扱い、stopの繰り返しは許容する。
+従来は再startできたが、queue・failure・frame sequenceが残って別の監視へ混入するため、
+再利用を禁止する。新しい監視には新しいinstanceを作る。標準runtimeは元から起動ごとに
+captureを生成するため影響しない。startの登録失敗だけでは停止済みにせず、stop前なら
+起動し直せる。これはcapture内部のlifecycleの変更で、wire schemaは変えない。
+
 WebSocketのlistener登録途中で失敗した場合、`on()` が正常終了したlistenerだけを
 逆順に解除し、登録例外を伝播する。rollbackの解除も失敗した場合は残りの解除を
 試み、解除例外（複数なら例外group）のcontextに元の登録例外を保持する。

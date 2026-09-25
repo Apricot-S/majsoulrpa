@@ -264,7 +264,8 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] `receive()` はqueue待機から再開した時点でも致命的エラーを優先する。frame投入直後のoverflow / text frameを正常受信として返さないことをテストする。
   - [x] page listener登録前の失敗では起動状態を確定せず元の例外を伝播する。起動済みcaptureの同じpage / 別pageへの再startは拒否し、元のlistenerと停止対象を保つ。実装は維持し、回帰テストを追加した。
   - [x] `receive()` の待機中とframe到着後の再開前のcancellationはそのまま伝播し、未受信frameを失わないことをテストする。実装は `asyncio.Queue.get()` への直接委譲を維持する。
-  - [ ] 再start時の内部状態、引数の位置指定 / キーワード専用、残りの共通観点の確認は後続で行う。
+  - [x] stop後の再startは拒否し、古いqueue・failure・sequenceを別の監視へ再利用しない。起動前stopとcleanup失敗もterminalとし、標準runtimeは従来どおり起動ごとに新しいcaptureを生成する。
+  - [ ] 引数の位置指定 / キーワード専用、残りの共通観点の確認は後続で行う。
 - [ ] `sniffer/envelope.py`: message kind、request number、Wrapper、API 名の byte-level strict decode を確認する。
 - [ ] `sniffer/correlator.py`: connection/direction/number key、duplicate/unmatched/incomplete exchange の失敗を確認する。
 - [ ] `sniffer/publication.py`: schema version、base64 validation、sequence metadata、unknown field rejection を確認する。

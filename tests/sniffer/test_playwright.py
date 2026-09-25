@@ -139,6 +139,50 @@ def test_repeated_start_preserves_original_page(*, same_page: bool) -> None:
     asyncio.run(run())
 
 
+@pytest.mark.parametrize(
+    "state", ["not-started", "started", "buffered", "failed"]
+)
+def test_stopped_capture_rejects_restart(state: str) -> None:
+    async def run() -> None:
+        capture = PlaywrightFrameCapture()
+        page = FakeEventEmitter()
+        new_page = FakeEventEmitter()
+        if state != "not-started":
+            await capture.start(page)
+            websocket = FakeEventEmitter()
+            page.emit("websocket", websocket)
+            if state == "buffered":
+                websocket.emit("framesent", b"synthetic")
+            elif state == "failed":
+                websocket.emit("framesent", "synthetic-text")
+        await capture.stop()
+        await capture.stop()
+
+        with pytest.raises(PlaywrightCaptureError, match="stopped"):
+            await capture.start(new_page)
+        assert new_page.listener_count("websocket") == 0
+
+    asyncio.run(run())
+
+
+def test_failed_stop_also_rejects_restart() -> None:
+    async def run() -> None:
+        error = RuntimeError("synthetic removal failure")
+        page = FailingRemoveEmitter("websocket", error)
+        new_page = FakeEventEmitter()
+        capture = PlaywrightFrameCapture()
+        await capture.start(page)
+        with pytest.raises(RuntimeError) as caught:
+            await capture.stop()
+        assert caught.value is error
+
+        with pytest.raises(PlaywrightCaptureError, match="stopped"):
+            await capture.start(new_page)
+        assert new_page.listener_count("websocket") == 0
+
+    asyncio.run(run())
+
+
 def test_registration_and_rollback_failures_are_both_reported() -> None:
     async def run() -> None:
         page = FakeEventEmitter()

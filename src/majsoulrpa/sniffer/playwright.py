@@ -84,8 +84,12 @@ class PlaywrightFrameCapture:
         self._page: EventEmitterLike | None = None
         self._page_listener: Callable[..., None] | None = None
         self._websocket_listeners: list[_WebSocketListeners] = []
+        self._stopped = False
 
     async def start(self, page: EventEmitterLike) -> None:
+        if self._stopped:
+            msg = "Playwright frame capture is stopped; create a new instance."
+            raise PlaywrightCaptureError(msg)
         if self._page is not None:
             msg = "Playwright frame capture is already started."
             raise PlaywrightCaptureError(msg)
@@ -109,6 +113,7 @@ class PlaywrightFrameCapture:
         return item
 
     async def stop(self) -> None:
+        self._stopped = True
         page = self._page
         page_listener = self._page_listener
         self._page = None
