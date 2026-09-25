@@ -606,7 +606,7 @@ def test_capture_reuses_queue_capacity_after_receive() -> None:
     async def run() -> None:
         page = FakeEventEmitter()
         websocket = FakeEventEmitter()
-        capture = PlaywrightFrameCapture(queue_size=1)
+        capture = PlaywrightFrameCapture(1)
         await capture.start(page)
         page.emit("websocket", websocket)
 

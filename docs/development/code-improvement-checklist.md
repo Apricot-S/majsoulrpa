@@ -255,7 +255,7 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] `Direction`、raw / decoded event とその union だけを export し、wire publication、capture、parser、correlator、decoder、transport、worker、backend を公開しないことを synthetic import test で固定した。
 - [x] `sniffer/events.py`: raw bytes と decoded JSON-compatible body、timestamp、direction の immutable 契約を確認する。
   - [x] raw / decoded event は `frozen=True, slots=True` の値 object とし、raw bytes、timestamp、direction、decoder が作る JSON-compatible body を保持する。属性の再代入を拒否する契約を synthetic test で固定した。
-- [ ] `sniffer/playwright.py`: listener 登録解除、binary frame 限定、bounded queue、connection/capture sequence を確認する。
+- [x] `sniffer/playwright.py`: listener 登録解除、binary frame 限定、bounded queue、connection/capture sequence を確認する。
   - [x] `queue_size` は `int` 型注釈を前提とし、型検査で許容されるbooleanと0以下を生成時に拒否する。容量1の再利用とoverflowをsynthetic testで確認する。
   - [x] `clock` / `connection_id_factory` はstatelessな既定関数を直接デフォルト値とし、falsey callableも注入値として保持する。便宜的な `None` とtruthiness分岐を除去し、frame / close eventで注入結果を確認する。
   - [x] `stop()` はpage / 各WebSocketのlistener解除を一通り試み、単一の失敗はそのまま、複数の失敗は例外groupで報告する。解除失敗で後続listenerのcleanupを飛ばさないことをテストする。
@@ -265,7 +265,9 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] page listener登録前の失敗では起動状態を確定せず元の例外を伝播する。起動済みcaptureの同じpage / 別pageへの再startは拒否し、元のlistenerと停止対象を保つ。実装は維持し、回帰テストを追加した。
   - [x] `receive()` の待機中とframe到着後の再開前のcancellationはそのまま伝播し、未受信frameを失わないことをテストする。実装は `asyncio.Queue.get()` への直接委譲を維持する。
   - [x] stop後の再startは拒否し、古いqueue・failure・sequenceを別の監視へ再利用しない。起動前stopとcleanup失敗もterminalとし、標準runtimeは従来どおり起動ごとに新しいcaptureを生成する。
-  - [ ] 引数の位置指定 / キーワード専用、残りの共通観点の確認は後続で行う。
+  - [x] `queue_size` は唯一の整数設定として位置指定を許可し、既存のキーワード指定も維持する。2つのcallable注入引数は取り違えを防ぐためキーワード専用とする。内部frame生成helperは文字列を含む複数のmetadataを明示するためキーワード専用を維持し、単一入力のstartやevent emitterの自然なevent/callback順は位置指定のままとする。
+  - [x] capture eventはfrozen/slotsの内部値object、queue・sequence・failure・listenerはinstance所有であり、decode・保存・Screen処理を持ち込まない。`None` は未観測failure / 未登録pageを表す。例外messageにはpayloadを出さず、Playwright自体のimportも不要な狭いProtocol境界を維持する。
+  - [x] binary限定、connection ID、全connection共通のframe sequence、close通知、queue上限は既存テストで固定されている。追加したlifecycleテストは異なる失敗経路を守るため維持し、位置指定の確認は既存の容量再利用テストに統合した。
 - [ ] `sniffer/envelope.py`: message kind、request number、Wrapper、API 名の byte-level strict decode を確認する。
 - [ ] `sniffer/correlator.py`: connection/direction/number key、duplicate/unmatched/incomplete exchange の失敗を確認する。
 - [ ] `sniffer/publication.py`: schema version、base64 validation、sequence metadata、unknown field rejection を確認する。

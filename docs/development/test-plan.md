@@ -1238,6 +1238,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Playwright capture / lifecycle
 
+- [x] captureのqueue_sizeは位置指定でき、指定容量でframeを受信・再利用できる。callable注入引数はキーワード専用を維持する。
 - [x] captureはstop後の再startを拒否し、新pageにlistenerを登録しない（起動前stop、正常停止、未受信frameあり、致命的エラー後）。
 - [x] stopのlistener解除が失敗した場合も再startを拒否する。
 - [x] receiveの待機中・frame投入後の再開前にcancelしてもCancelledErrorを伝播し、未受信frameを次のreceiveで取得できる。

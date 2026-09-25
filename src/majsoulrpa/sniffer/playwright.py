@@ -66,8 +66,8 @@ def _new_id() -> str:
 class PlaywrightFrameCapture:
     def __init__(
         self,
-        *,
         queue_size: int = 1024,
+        *,
         clock: Clock = utc_now,
         connection_id_factory: ConnectionIDFactory = _new_id,
     ) -> None:

@@ -112,6 +112,10 @@ frame投入後に受信taskが再開する前のcancelでも、未受信frameは
 キューの件数としては扱わない。それ以外の型の検証は追加しない。
 既定値1024と正の整数での利用は変わらず、公開eventやwire schemaへの影響はない。
 
+`queue_size` は唯一の整数設定なので、`PlaywrightFrameCapture(1024)` のような位置指定も
+許可する。既存のキーワード指定は維持する。`clock` と `connection_id_factory` はともに
+引数なしのcallableで取り違えやすいため、キーワード専用とする。
+
 capture の `clock` / `connection_id_factory` は、未指定ならそれぞれ `utc_now` /
 UUID生成関数を使う。これらの関数を直接デフォルト値とし、注入されたcallableの真偽値は
 評価しない。`None` に独立した意味はないため、明示的な `None` 指定はサポートせず、
