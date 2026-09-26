@@ -291,6 +291,7 @@ constructor の runtime invariant、live / restore 双方から同じ object が
 - [x] `sniffer/event_adapter.py`: wire publication から raw event への変換境界が decoder と重複せず、bytes 復元を一元化することを確認する。
   - [x] decoderはadapterで復元したbytesを使い、envelope / protobuf解析を担う。publicationのbase64検証とは責務が異なるため維持する。既存の変換テストを両direction・全byte値へ拡張し、payloadとmetadataの保持、Request / Responseの取り違え防止を確認した。
 - [ ] `sniffer/decoder.py`: descriptor map、Notice/Req/Res body decode、publication/envelope API 一致、未知 API の失敗を確認する。
+  - [x] Notice / Request / Responseそれぞれの不正本文をLiqiBodyDecodeErrorとして拒否し、原因のDecodeErrorを保持することを確認した。有効な空本文はscalar既定値と未設定messageを区別してdecodeする。既存テストを補強し、実装は維持した。
   - [x] 番号0の正常decodeとpublication / Request / Responseの各番号不一致の拒否を確認した。Response番号0を既定値へ置き換えていたテストhelperを修正し、既存の番号照合テストを拡張した。decoder実装は維持した。
 - [ ] `sniffer/stream.py`: restart、gap、rollback、途中参加を区別し、欠落を補完したふりをしないことを確認する。
 - [ ] `sniffer/message_queue.py`: message 件数と payload byte の両上限、put-back 順序、overflow の明示失敗を確認する。

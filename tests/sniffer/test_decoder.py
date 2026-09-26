@@ -3,6 +3,7 @@ import datetime
 import uuid
 
 import pytest
+from google.protobuf.message import DecodeError
 
 from majsoulrpa.assets.protocol.liqi_pb2 import (
     AccountLevel,
@@ -167,11 +168,43 @@ def test_decoder_rejects_unknown_api(
         SnifferMessageDecoder().decode(publication)
 
 
-def test_decoder_rejects_malformed_known_message_body() -> None:
-    publication = _notice_publication(body=b"\x80")
-
-    with pytest.raises(LiqiBodyDecodeError, match="protobuf body"):
+@pytest.mark.parametrize(
+    "publication",
+    [
+        pytest.param(_notice_publication(body=b"\x80"), id="notice"),
+        pytest.param(
+            _request_response_publication(request_body=b"\x80"), id="request"
+        ),
+        pytest.param(
+            _request_response_publication(response_body=b"\x80"), id="response"
+        ),
+    ],
+)
+def test_decoder_rejects_malformed_known_message_body(
+    publication: NoticePublication | RequestResponsePublication,
+) -> None:
+    with pytest.raises(LiqiBodyDecodeError, match="protobuf body") as caught:
         SnifferMessageDecoder().decode(publication)
+    assert isinstance(caught.value.__cause__, DecodeError)
+
+
+def test_decoder_accepts_empty_notice_body() -> None:
+    decoded = SnifferMessageDecoder().decode(_notice_publication(body=b""))
+
+    assert isinstance(decoded, DecodedNotice)
+    assert decoded.message["type"] == 0
+    assert "origin" not in decoded.message
+    assert "final" not in decoded.message
+
+
+def test_decoder_accepts_empty_request_and_response_bodies() -> None:
+    decoded = SnifferMessageDecoder().decode(
+        _request_response_publication(request_body=b"", response_body=b"")
+    )
+
+    assert isinstance(decoded, DecodedRequestResponse)
+    assert decoded.request["no_operation_counter"] == 0
+    assert "error" not in decoded.response
 
 
 def test_decoder_rejects_publication_and_wrapper_api_name_mismatch() -> None:
