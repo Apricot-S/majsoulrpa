@@ -27,9 +27,11 @@ class CaptureSpy:
         events: list[str],
         *,
         start_error: Exception | None = None,
+        stop_error: Exception | None = None,
     ) -> None:
         self.events = events
         self.start_error = start_error
+        self.stop_error = stop_error
         self.started_pages: list[object] = []
 
     async def start(self, page: object) -> None:
@@ -44,6 +46,8 @@ class CaptureSpy:
 
     async def stop(self) -> None:
         self.events.append("capture_stop")
+        if self.stop_error is not None:
+            raise self.stop_error
 
 
 class PublisherSpy:
@@ -52,9 +56,11 @@ class PublisherSpy:
         events: list[str],
         *,
         bind_error: Exception | None = None,
+        stop_error: Exception | None = None,
     ) -> None:
         self.events = events
         self.bind_error = bind_error
+        self.stop_error = stop_error
 
     async def bind(self) -> None:
         self.events.append("publisher_bind")
@@ -68,6 +74,8 @@ class PublisherSpy:
 
     async def stop(self) -> None:
         self.events.append("publisher_stop")
+        if self.stop_error is not None:
+            raise self.stop_error
 
 
 class WorkerSpy:
@@ -213,22 +221,34 @@ def test_backend_cleans_resources_when_capture_start_fails() -> None:
     asyncio.run(run())
 
 
-def test_backend_keeps_cleaning_up_when_worker_stop_fails() -> None:
+@pytest.mark.parametrize("stage", ["worker", "capture", "publisher"])
+def test_backend_keeps_cleaning_up_when_stop_fails(stage: str) -> None:
     async def run() -> None:
         events: list[str] = []
+        error = RuntimeError("stop failed")
         worker = WorkerSpy(
             events,
-            stop_error=RuntimeError("pending request"),
+            stop_error=error if stage == "worker" else None,
+        )
+        capture = CaptureSpy(
+            events, stop_error=error if stage == "capture" else None
+        )
+        publisher = PublisherSpy(
+            events, stop_error=error if stage == "publisher" else None
         )
         backend, _capture, _publisher, _worker = _backend(
             events,
             worker=worker,
+            capture=capture,
+            publisher=publisher,
         )
         await backend.start(object())
         events.clear()
 
-        with pytest.raises(RuntimeError, match="pending request"):
+        with pytest.raises(RuntimeError) as caught:
             await backend.stop()
+        assert caught.value is error
+        await backend.stop()
 
         assert events == [
             "worker_stop",

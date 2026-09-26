@@ -314,6 +314,7 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] Notice / ReqResのpublish失敗でrunが元の例外を伝播し、再試行せず後続captureを未消費で残すことを既存テストの拡張で確認した。実装は維持した。
   - [x] 注入したcorrelatorを真偽値で置き換えず、Noneの場合だけ既定instanceを生成する。falseyなinstanceへRequestが保留され、stopで未完了を検出できる回帰テストを追加した。
 - [ ] `sniffer/runtime.py`: context・publisher・capture・worker の開始順、逆順 cleanup、失敗伝播を確認する。
+  - [x] worker / capture / publisher各stopの単独失敗でも残りを逆順にcleanupし、元の例外を伝播する。失敗後の再stopでcleanupを繰り返さないことも既存テストへ統合し、実装は維持した。
 - [ ] `sniffer/zmq.py`: PUB/SUB topic、bind/connect、IPv6、socket/context cleanup、multipart validation を確認する。
 - [ ] `sniffer/client_runtime.py`: receive -> stream validation -> raw adapter -> protobuf decode -> observer -> queue の順序を確認する。
 
