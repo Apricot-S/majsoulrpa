@@ -3,6 +3,12 @@ import datetime
 import uuid
 
 import pytest
+from google.protobuf.descriptor_pb2 import (
+    # These classes are generated dynamically by protobuf.
+    FieldDescriptorProto,  # ty: ignore[unresolved-import]
+    FileDescriptorProto,  # ty: ignore[unresolved-import]
+)
+from google.protobuf.descriptor_pool import DescriptorPool
 from google.protobuf.message import DecodeError
 
 from majsoulrpa.assets.protocol.liqi_pb2 import (
@@ -127,6 +133,60 @@ def test_decoder_decodes_notice_with_descriptor_message_type() -> None:
     assert decoded.message["type"] == 2
     assert decoded.message["origin"] == {"id": 10101, "score": 1200}
     assert decoded.message["final"] == {"id": 10102, "score": 1300}
+
+
+@pytest.mark.parametrize("kind", ["notice", "exchange"])
+def test_decoder_uses_injected_descriptor_without_sharing_api_map(
+    kind: str,
+) -> None:
+    schema = FileDescriptorProto(
+        name="synthetic_decoder.proto", package="synthetic", syntax="proto3"
+    )
+    for name, field in (
+        ("Notice", "notice_value"),
+        ("Request", "request_value"),
+        ("Response", "response_value"),
+    ):
+        message = schema.message_type.add(name=name)
+        message.field.add(
+            name=field,
+            number=1,
+            label=FieldDescriptorProto.LABEL_OPTIONAL,
+            type=FieldDescriptorProto.TYPE_INT32,
+        )
+    service = schema.service.add(name="Service")
+    service.method.add(
+        name="call",
+        input_type=".synthetic.Request",
+        output_type=".synthetic.Response",
+    )
+    standard = SnifferMessageDecoder()
+    # Protobuf selects the pool implementation dynamically.
+    pool = DescriptorPool()  # ty: ignore[possibly-missing-implicit-call]
+    custom = SnifferMessageDecoder(pool.Add(schema))
+    if kind == "notice":
+        publication = _notice_publication(
+            api_name=".synthetic.Notice", body=b""
+        )
+        decoded = custom.decode(publication)
+        assert isinstance(decoded, DecodedNotice)
+        assert decoded.message == {"notice_value": 0}
+    else:
+        publication = _request_response_publication(
+            api_name=".synthetic.Service.call",
+            request_body=b"",
+            response_body=b"",
+        )
+        decoded = custom.decode(publication)
+        assert isinstance(decoded, DecodedRequestResponse)
+        assert decoded.request == {"request_value": 0}
+        assert decoded.response == {"response_value": 0}
+
+    with pytest.raises(UnknownAPIError):
+        standard.decode(publication)
+    with pytest.raises(UnknownAPIError):
+        custom.decode(_notice_publication())
+    assert isinstance(standard.decode(_notice_publication()), DecodedNotice)
 
 
 def test_decoder_decodes_request_and_response_from_service_method() -> None:

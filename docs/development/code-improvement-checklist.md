@@ -290,7 +290,8 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] publication/frame sequenceとrequest numberをstrictな整数fieldにし、JSONの文字列・boolean・floatを整数へ暗黙変換しない。Notice / ReqResの全該当fieldでwire入力をテストした。
 - [x] `sniffer/event_adapter.py`: wire publication から raw event への変換境界が decoder と重複せず、bytes 復元を一元化することを確認する。
   - [x] decoderはadapterで復元したbytesを使い、envelope / protobuf解析を担う。publicationのbase64検証とは責務が異なるため維持する。既存の変換テストを両direction・全byte値へ拡張し、payloadとmetadataの保持、Request / Responseの取り違え防止を確認した。
-- [ ] `sniffer/decoder.py`: descriptor map、Notice/Req/Res body decode、publication/envelope API 一致、未知 API の失敗を確認する。
+- [x] `sniffer/decoder.py`: descriptor map、Notice/Req/Res body decode、publication/envelope API 一致、未知 API の失敗を確認する。
+  - [x] synthetic descriptorを注入し、Noticeとservice methodのRequest / Response型を解決すること、標準decoderとのAPI mapの独立性を確認した。既存実装を維持した。
   - [x] Notice / RequestのAPI名不一致と、Notice / Request / Response各欄のenvelope種別不一致を拒否することを確認した。別種別として有効なpayloadで照合の失敗経路をテストし、実装は維持した。
   - [x] Notice / Request / Responseそれぞれの不正本文をLiqiBodyDecodeErrorとして拒否し、原因のDecodeErrorを保持することを確認した。有効な空本文はscalar既定値と未設定messageを区別してdecodeする。既存テストを補強し、実装は維持した。
   - [x] 番号0の正常decodeとpublication / Request / Responseの各番号不一致の拒否を確認した。Response番号0を既定値へ置き換えていたテストhelperを修正し、既存の番号照合テストを拡張した。decoder実装は維持した。

@@ -1303,6 +1303,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Client decode / hook
 
+- [x] 注入したsynthetic descriptorのNotice / service methodを指定型でdecodeし、標準decoderとのAPI対応表を共有しない。
 - [x] decoderはNotice / RequestのAPI名不一致と、Notice / Request / Response欄に別種別の有効envelopeが入った場合をPublicationEnvelopeMismatchErrorで拒否する。
 - [x] Notice / Request / Responseの不正本文は原因のDecodeErrorを保持してLiqiBodyDecodeErrorにし、有効な空本文は既定値へdecodeする。
 - [x] decoderは番号0の対応を受理し、publication / Request / Responseの番号不一致を拒否する。テストhelperはResponse番号0を保持する。
