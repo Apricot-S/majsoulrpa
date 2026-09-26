@@ -238,10 +238,16 @@ def test_message_larger_than_byte_budget_is_rejected() -> None:
     ("capacity", "max_payload_bytes", "message"),
     [
         (0, 1, "capacity must be positive"),
+        (-1, 1, "capacity must be positive"),
+        (True, 1, "capacity must be positive"),
+        (False, 1, "capacity must be positive"),
         (1, 0, "max_payload_bytes must be positive"),
+        (1, -1, "max_payload_bytes must be positive"),
+        (1, True, "max_payload_bytes must be positive"),
+        (1, False, "max_payload_bytes must be positive"),
     ],
 )
-def test_queue_rejects_non_positive_limits(
+def test_queue_rejects_invalid_limits(
     capacity: int,
     max_payload_bytes: int,
     message: str,

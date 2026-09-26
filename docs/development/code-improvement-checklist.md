@@ -299,7 +299,8 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] Notice / ReqResと複数connectionの混在でもpublication番号で連続性を判定する。frame番号の飛び・巻き戻りを許容し、frameが連続でもpublication欠落は拒否するテストを追加した。実装は維持した。
   - [x] 先頭 / 途中参加ともgap・重複・巻き戻りの拒否でstream ID・最終番号・途中参加状態を保持する。欠落後の後続も拒否し、実際に次番号を受け取った場合だけ進むことを既存テストへ追加した。実装は維持した。
   - [x] stream ID変更を番号の重複・連続・欠落より優先して再起動と判定する。先頭 / 途中参加とも拒否時の状態保持と元streamの次番号による進行を既存テストの拡張で確認し、実装は維持した。
-- [ ] `sniffer/message_queue.py`: message 件数と payload byte の両上限、put-back 順序、overflow の明示失敗を確認する。
+- [x] `sniffer/message_queue.py`: message 件数と payload byte の両上限、put-back 順序、overflow の明示失敗を確認する。
+  - [x] capacity / max_payload_bytesはint型注釈を前提にboolと0以下を拒否する。Trueを上限1として受理していた箇所を修正し、既存の入力検証テストへboolean・負数を追加した。
   - [x] get / get_nowaitとも差し戻し順を優先し、未読・新着messageの到着順も保持することを確認した。既存の差し戻しテスト2件を混在ケースへ統合し、実装は維持した。
   - [x] getの空待機中とenqueue直後・再開前のキャンセルを確認した。CancelledErrorを伝播し、未読messageとbyte上限を保持し、取り出し後は容量を再利用できる。実装は維持した。
   - [x] Req/Resは両payloadの合計byteで単体上限を判定することをenqueue / put_backで確認した。Noticeとの混在、getによる容量解放、put_backによる再計上も確認し、実装は維持した。
