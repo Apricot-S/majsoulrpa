@@ -40,7 +40,7 @@ class _PublicationBase(BaseModel):
         hide_input_in_errors=True,
     )
 
-    schema_version: Literal[1] = SCHEMA_VERSION
+    schema_version: Literal[1]
     stream_id: uuid.UUID
     publication_sequence: PositiveSequence
     connection_id: NonEmptyString
@@ -143,6 +143,7 @@ def _make_notice_publication(
         msg = "Correlated Notice does not contain a Notice envelope."
         raise TypeError(msg)
     return NoticePublication(
+        schema_version=SCHEMA_VERSION,
         stream_id=stream_id,
         publication_sequence=publication_sequence,
         connection_id=observation.connection_id,
@@ -181,6 +182,7 @@ def _make_request_response_publication(
         raise ValueError(msg)
 
     return RequestResponsePublication(
+        schema_version=SCHEMA_VERSION,
         stream_id=stream_id,
         publication_sequence=publication_sequence,
         connection_id=request.connection_id,

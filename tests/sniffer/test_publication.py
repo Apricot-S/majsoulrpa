@@ -301,6 +301,28 @@ def test_exchange_accepts_frame_gap_and_clock_rollback() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "message",
+    [_notice(), _request_response()],
+    ids=["notice", "exchange"],
+)
+def test_wire_publication_requires_schema_version(
+    message: CorrelatedNotice | CorrelatedRequestResponse,
+) -> None:
+    publication = make_publication(
+        message, stream_id=STREAM_ID, publication_sequence=1
+    )
+    data = json.loads(dump_publication_json(publication))
+    del data["schema_version"]
+
+    with pytest.raises(ValidationError) as caught:
+        parse_publication_json(json.dumps(data))
+    assert any(
+        error["loc"][-1] == "schema_version" and error["type"] == "missing"
+        for error in caught.value.errors()
+    )
+
+
 def test_parse_publication_rejects_unknown_field() -> None:
     publication = make_publication(
         _notice(),

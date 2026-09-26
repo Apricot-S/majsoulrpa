@@ -32,6 +32,7 @@ def _encoded(payload: bytes) -> str:
 def test_notice_publication_becomes_public_raw_bytes_event() -> None:
     payload = b"synthetic-notice-payload"
     publication = NoticePublication(
+        schema_version=1,
         stream_id=STREAM_ID,
         publication_sequence=1,
         connection_id="connection-1",
@@ -56,6 +57,7 @@ def test_request_response_publication_becomes_public_raw_bytes_event() -> None:
     request = b"synthetic-request-payload"
     response = b"synthetic-response-payload"
     publication = RequestResponsePublication(
+        schema_version=1,
         stream_id=STREAM_ID,
         publication_sequence=1,
         connection_id="connection-1",

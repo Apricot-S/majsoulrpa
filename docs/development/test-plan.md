@@ -1230,6 +1230,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Publication / PUB-SUB
 
+- [x] schema_version欠落のJSONは両kindで拒否し、標準publisherはversionを明示して生成する。
 - [x] schema_versionはJSON整数の1のみを受理し、boolean・float・文字列・未対応整数を両publication kindで拒否する。
 - [x] publicationのbase64検証エラー文字列はNotice / Request / Responseの入力payloadを表示しない。
 - [x] Req/Resのmodel検証エラー文字列にも入力publication全体を表示しない。

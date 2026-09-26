@@ -23,6 +23,7 @@ def _publication(
     stream_id: uuid.UUID = STREAM_ID,
 ) -> NoticePublication:
     return NoticePublication(
+        schema_version=1,
         stream_id=stream_id,
         publication_sequence=sequence,
         connection_id="connection-1",

@@ -55,6 +55,7 @@ def _notice_publication(
         ).SerializeToString()
     )
     return NoticePublication(
+        schema_version=1,
         stream_id=STREAM_ID,
         publication_sequence=1,
         connection_id="connection-1",
@@ -96,6 +97,7 @@ def _request_response_publication(
         + Wrapper(data=response_body).SerializeToString()
     )
     return RequestResponsePublication(
+        schema_version=1,
         stream_id=STREAM_ID,
         publication_sequence=1,
         connection_id="connection-1",

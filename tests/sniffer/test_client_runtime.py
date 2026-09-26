@@ -95,6 +95,7 @@ class ObserverSpy:
 
 def _publication(sequence: int) -> NoticePublication:
     return NoticePublication(
+        schema_version=1,
         stream_id=uuid.UUID("12345678-1234-5678-1234-567812345678"),
         publication_sequence=sequence,
         connection_id="connection-1",
