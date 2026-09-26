@@ -369,6 +369,53 @@ def test_worker_run_stops_on_publisher_failure(kind: str) -> None:
     asyncio.run(run())
 
 
+def test_worker_cancels_pending_publish_without_consuming_next_frame() -> None:
+    async def run() -> None:
+        entered = asyncio.Event()
+        cancelled = asyncio.Event()
+        release = asyncio.Event()
+
+        class BlockingPublisher(FakePublisher):
+            async def publish(self, message: CorrelatedMessage) -> object:
+                self.attempts.append(message)
+                entered.set()
+                try:
+                    await release.wait()
+                except asyncio.CancelledError:
+                    cancelled.set()
+                    raise
+                self.messages.append(message)
+                return object()
+
+        first = _frame(
+            _notice_payload(), direction=Direction.INBOUND, frame_sequence=1
+        )
+        later = _frame(
+            _notice_payload(), direction=Direction.INBOUND, frame_sequence=2
+        )
+        capture = FakeCapture([first, later])
+        publisher = BlockingPublisher()
+        worker = SnifferWorker(capture=capture, publisher=publisher)
+        task = asyncio.create_task(worker.run())
+        try:
+            async with asyncio.timeout(1):
+                await entered.wait()
+            assert capture.events == [later]
+            assert not task.done()
+        finally:
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+
+        assert cancelled.is_set()
+        assert len(publisher.attempts) == 1
+        assert publisher.messages == []
+        assert capture.events == [later]
+        await worker.stop()
+
+    asyncio.run(run())
+
+
 def test_worker_run_propagates_capture_failure() -> None:
     async def run() -> None:
         worker = SnifferWorker(
