@@ -3,7 +3,13 @@ import datetime
 
 import pytest
 
-from majsoulrpa.sniffer.events import DecodedNotice, Direction, RawNotice
+from majsoulrpa.sniffer.events import (
+    DecodedNotice,
+    DecodedRequestResponse,
+    Direction,
+    RawNotice,
+    RawRequestResponse,
+)
 from majsoulrpa.sniffer.message_queue import (
     SnifferMessageQueue,
     SnifferMessageQueueOverflowError,
@@ -36,6 +42,62 @@ def _queue(*, capacity: int = 3) -> SnifferMessageQueue:
         capacity=capacity,
         max_payload_bytes=1024,
     )
+
+
+def _exchange() -> DecodedRequestResponse:
+    observed_at = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
+    return DecodedRequestResponse(
+        raw=RawRequestResponse(
+            request_direction=Direction.OUTBOUND,
+            name=".lq.SyntheticService.call",
+            request=b"req",
+            response=b"reply",
+            request_observed_at=observed_at,
+            response_observed_at=observed_at,
+        ),
+        request={},
+        response={},
+    )
+
+
+@pytest.mark.parametrize("insertion", ["enqueue", "put_back"])
+def test_exchange_byte_limit_counts_both_payloads(insertion: str) -> None:
+    message = _exchange()
+    queue = SnifferMessageQueue(capacity=3, max_payload_bytes=7)
+    insert = queue.enqueue if insertion == "enqueue" else queue.put_back
+    with pytest.raises(SnifferMessageTooLargeError):
+        insert(message)
+    assert queue.get_nowait() is None
+
+    queue = SnifferMessageQueue(capacity=3, max_payload_bytes=8)
+    insert = queue.enqueue if insertion == "enqueue" else queue.put_back
+    insert(message)
+    assert queue.get_nowait() is message
+
+
+def test_mixed_payload_budget_is_released_and_restored_on_put_back() -> None:
+    async def exercise() -> None:
+        notice = _notice(".lq.SyntheticNotice", 1)
+        exchange = _exchange()
+        queue = SnifferMessageQueue(
+            capacity=3, max_payload_bytes=len(notice.raw.payload) + 8
+        )
+        queue.enqueue(notice)
+        queue.enqueue(exchange)
+        with pytest.raises(SnifferMessageQueueOverflowError):
+            queue.enqueue(exchange)
+
+        assert await queue.get() is notice
+        assert await queue.get() is exchange
+        queue.put_back(exchange)
+        queue.enqueue(notice)
+        with pytest.raises(SnifferMessageQueueOverflowError):
+            queue.enqueue(exchange)
+        assert queue.get_nowait() is exchange
+        assert queue.get_nowait() is notice
+        assert queue.get_nowait() is None
+
+    asyncio.run(exercise())
 
 
 def test_queue_retains_all_messages_in_arrival_order() -> None:
