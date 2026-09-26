@@ -35,8 +35,7 @@ def _encoded(payload: bytes) -> str:
     return base64.b64encode(payload).decode("ascii")
 
 
-def _notice() -> CorrelatedNotice:
-    raw_payload = b"synthetic-notice"
+def _notice(raw_payload: bytes = b"synthetic-notice") -> CorrelatedNotice:
     return CorrelatedNotice(
         observation=ObservedEnvelope(
             connection_id="connection-1",
@@ -52,9 +51,11 @@ def _notice() -> CorrelatedNotice:
     )
 
 
-def _request_response() -> CorrelatedRequestResponse:
-    request_raw = b"synthetic-request"
-    response_raw = b"synthetic-response"
+def _request_response(
+    *,
+    request_raw: bytes = b"synthetic-request",
+    response_raw: bytes = b"synthetic-response",
+) -> CorrelatedRequestResponse:
     return CorrelatedRequestResponse(
         request=ObservedEnvelope(
             connection_id="connection-1",
@@ -408,3 +409,63 @@ def test_invalid_base64_error_hides_input(
         parse_publication_json(json.dumps(data))
     assert marker not in str(caught.value)
     assert "input_value=" not in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    ("message", "field"),
+    [
+        pytest.param(_notice(), "payload_base64", id="notice"),
+        pytest.param(
+            _request_response(), "request_payload_base64", id="request"
+        ),
+        pytest.param(
+            _request_response(), "response_payload_base64", id="response"
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "payload",
+    ["", "YQ==\n", "YQ", "あ"],
+    ids=["empty", "newline", "missing-padding", "non-ascii"],
+)
+def test_wire_publication_rejects_malformed_base64(
+    message: CorrelatedNotice | CorrelatedRequestResponse,
+    field: str,
+    payload: str,
+) -> None:
+    publication = make_publication(
+        message, stream_id=STREAM_ID, publication_sequence=1
+    )
+    data = json.loads(dump_publication_json(publication))
+    data[field] = payload
+
+    with pytest.raises(ValidationError) as caught:
+        parse_publication_json(json.dumps(data))
+    assert any(error["loc"][-1] == field for error in caught.value.errors())
+
+
+@pytest.mark.parametrize("size", [256, 257, 258])
+def test_publication_preserves_binary_payloads(size: int) -> None:
+    payload = (bytes(range(256)) * 2)[:size]
+    notice = _notice(payload)
+    exchange = _request_response(
+        request_raw=payload, response_raw=payload[::-1]
+    )
+    for message in (notice, exchange):
+        publication = parse_publication_json(
+            dump_publication_json(
+                make_publication(
+                    message, stream_id=STREAM_ID, publication_sequence=1
+                )
+            )
+        )
+        if isinstance(publication, NoticePublication):
+            assert base64.b64decode(publication.payload_base64) == payload
+        else:
+            assert (
+                base64.b64decode(publication.request_payload_base64) == payload
+            )
+            assert (
+                base64.b64decode(publication.response_payload_base64)
+                == payload[::-1]
+            )
