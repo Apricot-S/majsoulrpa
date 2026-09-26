@@ -207,10 +207,66 @@ def test_decoder_accepts_empty_request_and_response_bodies() -> None:
     assert "error" not in decoded.response
 
 
-def test_decoder_rejects_publication_and_wrapper_api_name_mismatch() -> None:
-    publication = _notice_publication(wrapper_name=".lq.NotifyAccountLogout")
-
+@pytest.mark.parametrize(
+    "publication",
+    [
+        pytest.param(
+            _notice_publication(wrapper_name=".lq.NotifyAccountLogout"),
+            id="notice",
+        ),
+        pytest.param(
+            _request_response_publication(wrapper_name=".lq.Lobby.login"),
+            id="request",
+        ),
+    ],
+)
+def test_decoder_rejects_publication_and_wrapper_api_name_mismatch(
+    publication: NoticePublication | RequestResponsePublication,
+) -> None:
     with pytest.raises(PublicationEnvelopeMismatchError, match="API name"):
+        SnifferMessageDecoder().decode(publication)
+
+
+@pytest.mark.parametrize(
+    ("publication", "field", "payload", "expected_kind"),
+    [
+        pytest.param(
+            _notice_publication(),
+            "payload_base64",
+            _request_response_publication().request_payload_base64,
+            "Notice",
+            id="request-in-notice",
+        ),
+        pytest.param(
+            _request_response_publication(),
+            "request_payload_base64",
+            _notice_publication().payload_base64,
+            "Request",
+            id="notice-in-request",
+        ),
+        pytest.param(
+            _request_response_publication(),
+            "response_payload_base64",
+            _request_response_publication().request_payload_base64,
+            "Response",
+            id="request-in-response",
+        ),
+    ],
+)
+def test_decoder_rejects_wrong_envelope_kind(
+    publication: NoticePublication | RequestResponsePublication,
+    field: str,
+    payload: str,
+    expected_kind: str,
+) -> None:
+    data = publication.model_dump()
+    data[field] = payload
+    publication = type(publication).model_validate(data)
+
+    with pytest.raises(
+        PublicationEnvelopeMismatchError,
+        match=f"does not contain a {expected_kind} envelope",
+    ):
         SnifferMessageDecoder().decode(publication)
 
 
