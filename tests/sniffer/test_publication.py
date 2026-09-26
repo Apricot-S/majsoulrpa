@@ -242,6 +242,99 @@ def test_wire_integer_fields_reject_coercion(
 
 
 @pytest.mark.parametrize(
+    ("message", "field"),
+    [
+        pytest.param(
+            _notice(), "publication_sequence", id="notice-publication"
+        ),
+        pytest.param(_notice(), "frame_sequence", id="notice-frame"),
+        pytest.param(
+            _request_response(),
+            "publication_sequence",
+            id="exchange-publication",
+        ),
+        pytest.param(
+            _request_response(), "request_frame_sequence", id="request-frame"
+        ),
+        pytest.param(
+            _request_response(), "response_frame_sequence", id="response-frame"
+        ),
+    ],
+)
+def test_wire_sequence_rejects_zero(
+    message: CorrelatedNotice | CorrelatedRequestResponse,
+    field: str,
+) -> None:
+    publication = make_publication(
+        message, stream_id=STREAM_ID, publication_sequence=1
+    )
+    data = json.loads(dump_publication_json(publication))
+    data[field] = 0
+
+    with pytest.raises(ValidationError) as caught:
+        parse_publication_json(json.dumps(data))
+    assert any(
+        error["loc"][-1] == field and error["type"] == "greater_than_equal"
+        for error in caught.value.errors()
+    )
+
+
+@pytest.mark.parametrize(
+    "message", [_notice(), _request_response()], ids=["notice", "exchange"]
+)
+def test_wire_publication_accepts_minimum_sequences(
+    message: CorrelatedNotice | CorrelatedRequestResponse,
+) -> None:
+    publication = make_publication(
+        message, stream_id=STREAM_ID, publication_sequence=1
+    )
+    data = json.loads(dump_publication_json(publication))
+    if isinstance(publication, NoticePublication):
+        data["frame_sequence"] = 1
+    else:
+        data["request_frame_sequence"] = 1
+        data["response_frame_sequence"] = 2
+
+    parsed = parse_publication_json(json.dumps(data))
+    assert parsed.model_dump(mode="json") == data
+
+
+@pytest.mark.parametrize("number", [0, 0xFFFF], ids=["minimum", "maximum"])
+def test_wire_request_number_accepts_boundaries(number: int) -> None:
+    publication = make_publication(
+        _request_response(), stream_id=STREAM_ID, publication_sequence=1
+    )
+    data = json.loads(dump_publication_json(publication))
+    data["request_number"] = number
+
+    parsed = parse_publication_json(json.dumps(data))
+    assert isinstance(parsed, RequestResponsePublication)
+    assert parsed.request_number == number
+
+
+@pytest.mark.parametrize(
+    ("number", "error_type"),
+    [(-1, "greater_than_equal"), (0x10000, "less_than_equal")],
+    ids=["below-minimum", "above-maximum"],
+)
+def test_wire_request_number_rejects_out_of_range(
+    number: int, error_type: str
+) -> None:
+    publication = make_publication(
+        _request_response(), stream_id=STREAM_ID, publication_sequence=1
+    )
+    data = json.loads(dump_publication_json(publication))
+    data["request_number"] = number
+
+    with pytest.raises(ValidationError) as caught:
+        parse_publication_json(json.dumps(data))
+    assert any(
+        error["loc"][-1] == "request_number" and error["type"] == error_type
+        for error in caught.value.errors()
+    )
+
+
+@pytest.mark.parametrize(
     "response_sequence", [20, 19], ids=["same", "earlier"]
 )
 def test_wire_exchange_rejects_invalid_frame_order(

@@ -280,6 +280,7 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] connection・番号の不一致と同方向Responseの拒否では元のpending Requestを消費せず、正しいResponseとの対応付けに保持する。実装は維持し、未対応Responseの回帰テスト追加と既存direction mismatchテストの補強で固定した。
   - [x] 同一connection・direction内の異なる番号は逆順のResponseでも独立して対応する。完了済み番号への重複Responseは拒否し、新Requestによる番号再利用では古いRequestを再使用しない。実装は維持し、回帰テストを追加した。
 - [ ] `sniffer/publication.py`: schema version、base64 validation、sequence metadata、unknown field rejection を確認する。
+  - [x] 全sequence fieldの0拒否と有効な最小値、request numberの0 / 65535受理と-1 / 65536拒否をJSON受信経路で確認した。既存の値域制約を維持し、境界値テストを追加した。
   - [x] 未知fieldの拒否を両kindで確認した。kind欠落・未知値は本文が既知の形でも種別を推測せず拒否する。既存テストを拡張し、実装は維持した。
   - [x] 3つのpayload fieldでbase64の空文字・改行・padding不足・非ASCII文字の拒否を確認した。全byte値とpaddingの有無を含むJSON往復でpayload保持を確認し、実装は維持した。
   - [x] schema_versionを必須fieldにして、version欠落のJSONを両kindで拒否する。標準publisherはversionを明示して生成する。
