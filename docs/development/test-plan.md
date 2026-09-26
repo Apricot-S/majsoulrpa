@@ -1297,6 +1297,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Sniffer worker
 
+- [x] falseyなcorrelatorを注入しても置き換えず、そのinstanceへRequestの保留状態を保持する。
 - [x] captureしたframeをenvelope decodeしてcorrelatorへ渡す
 - [x] Noticeをpublisherへ即時送信する
 - [x] Requestを保留し、Response到着後に対応済みeventを送信する

@@ -11,6 +11,7 @@ from majsoulrpa.sniffer.correlator import (
     CorrelatedRequestResponse,
     Direction,
     IncompleteExchangeError,
+    RequestResponseCorrelator,
 )
 from majsoulrpa.sniffer.envelope import SnifferDecodeError
 from majsoulrpa.sniffer.playwright import (
@@ -97,6 +98,37 @@ def _response_payload() -> bytes:
             data=b"response-body",
         ).SerializeToString()
     )
+
+
+def test_worker_preserves_falsey_injected_correlator() -> None:
+    class FalseyCorrelator(RequestResponseCorrelator):
+        def __bool__(self) -> bool:
+            return False
+
+    async def run() -> None:
+        correlator = FalseyCorrelator()
+        publisher = FakePublisher()
+        worker = SnifferWorker(
+            capture=FakeCapture(
+                [
+                    _frame(
+                        _request_payload(),
+                        direction=Direction.OUTBOUND,
+                        frame_sequence=1,
+                    ),
+                ]
+            ),
+            publisher=publisher,
+            correlator=correlator,
+        )
+
+        assert await worker.process_once() is None
+        assert publisher.messages == []
+        with pytest.raises(IncompleteExchangeError, match="1 pending"):
+            correlator.stop()
+        await worker.stop()
+
+    asyncio.run(run())
 
 
 def test_worker_publishes_notice_immediately() -> None:
