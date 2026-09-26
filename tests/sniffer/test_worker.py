@@ -429,22 +429,48 @@ def test_worker_run_propagates_capture_failure() -> None:
     asyncio.run(run())
 
 
-def test_worker_stop_rejects_pending_request_then_becomes_idempotent() -> None:
+def test_stop_reports_pending_request_after_capture_cancellation() -> None:
     async def run() -> None:
+        waiting = asyncio.Event()
+        cancelled = asyncio.Event()
+        release = asyncio.Event()
+
+        class BlockingCapture(FakeCapture):
+            async def receive(self) -> CaptureEvent:
+                if self.events:
+                    return await super().receive()
+                waiting.set()
+                try:
+                    await release.wait()
+                except asyncio.CancelledError:
+                    cancelled.set()
+                    raise
+                return await super().receive()
+
         request = _frame(
             _request_payload(),
             direction=Direction.OUTBOUND,
             frame_sequence=1,
         )
+        publisher = FakePublisher()
         worker = SnifferWorker(
-            capture=FakeCapture([request]),
-            publisher=FakePublisher(),
+            capture=BlockingCapture([request]), publisher=publisher
         )
-        await worker.process_once()
+        task = asyncio.create_task(worker.run())
+        try:
+            async with asyncio.timeout(1):
+                await waiting.wait()
+            assert not task.done()
+        finally:
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
 
+        assert cancelled.is_set()
         with pytest.raises(IncompleteExchangeError, match="1 pending"):
             await worker.stop()
         await worker.stop()
+        assert publisher.attempts == []
 
     asyncio.run(run())
 

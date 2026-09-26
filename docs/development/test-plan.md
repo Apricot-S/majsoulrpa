@@ -1297,6 +1297,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Sniffer worker
 
+- [x] Request保留中のcapture待機キャンセルを伝播し、続くstopで未完了を報告・解放する。再stopは成功し、未完了Requestをpublishしない。
 - [x] publish待機中は後続captureを消費せず、runのキャンセルをpublishへ伝播して再試行しない。
 - [x] Request保留中のheartbeatはpublishせず、Noticeは即時publishする。最後のResponseは元のRequestと対応し、出力順はNotice→ReqResとなる。
 - [x] decode失敗 / 未対応Responseでrunを停止し、publishを呼ばず後続captureを未消費で残す。
