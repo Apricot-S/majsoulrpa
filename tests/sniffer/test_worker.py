@@ -46,9 +46,11 @@ class FakeCapture:
 class FakePublisher:
     def __init__(self, *, error: Exception | None = None) -> None:
         self.messages: list[CorrelatedMessage] = []
+        self.attempts: list[CorrelatedMessage] = []
         self.error = error
 
     async def publish(self, message: CorrelatedMessage) -> object:
+        self.attempts.append(message)
         if self.error is not None:
             raise self.error
         self.messages.append(message)
@@ -283,22 +285,48 @@ def test_worker_does_not_treat_other_malformed_frames_as_heartbeat(
     asyncio.run(run())
 
 
-def test_worker_propagates_publisher_failure() -> None:
+@pytest.mark.parametrize("kind", ["notice", "exchange"])
+def test_worker_run_stops_on_publisher_failure(kind: str) -> None:
     async def run() -> None:
-        frame = _frame(
+        notice = _frame(
             _notice_payload(),
             direction=Direction.INBOUND,
             frame_sequence=1,
         )
-        worker = SnifferWorker(
-            capture=FakeCapture([frame]),
-            publisher=FakePublisher(
-                error=PublisherFailureError("publish failed"),
-            ),
+        frames = (
+            [notice]
+            if kind == "notice"
+            else [
+                _frame(
+                    _request_payload(),
+                    direction=Direction.OUTBOUND,
+                    frame_sequence=1,
+                ),
+                _frame(
+                    _response_payload(),
+                    direction=Direction.INBOUND,
+                    frame_sequence=2,
+                ),
+            ]
         )
+        later = _frame(
+            _notice_payload(), direction=Direction.INBOUND, frame_sequence=3
+        )
+        capture = FakeCapture([*frames, later])
+        error = PublisherFailureError("publish failed")
+        publisher = FakePublisher(error=error)
+        worker = SnifferWorker(capture=capture, publisher=publisher)
 
-        with pytest.raises(PublisherFailureError, match="publish failed"):
-            await worker.process_once()
+        with pytest.raises(PublisherFailureError) as caught:
+            await worker.run()
+        assert caught.value is error
+        assert capture.events == [later]
+        assert publisher.messages == []
+        assert len(publisher.attempts) == 1
+        expected_type = (
+            CorrelatedNotice if kind == "notice" else CorrelatedRequestResponse
+        )
+        assert isinstance(publisher.attempts[0], expected_type)
 
     asyncio.run(run())
 
