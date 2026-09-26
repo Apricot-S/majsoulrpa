@@ -132,6 +132,38 @@ def test_get_waits_for_next_message() -> None:
     asyncio.run(exercise())
 
 
+@pytest.mark.parametrize("timing", ["before-enqueue", "after-enqueue"])
+def test_cancelled_get_preserves_message_and_byte_budget(timing: str) -> None:
+    async def exercise() -> None:
+        first = _notice(".lq.First", 1)
+        second = _notice(".lq.Second", 2)
+        queue = SnifferMessageQueue(
+            capacity=3, max_payload_bytes=len(first.raw.payload)
+        )
+        waiting = asyncio.create_task(queue.get())
+        await asyncio.sleep(0)
+        assert not waiting.done()
+
+        if timing == "after-enqueue":
+            queue.enqueue(first)
+        waiting.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await waiting
+        if timing == "before-enqueue":
+            queue.enqueue(first)
+
+        with pytest.raises(SnifferMessageQueueOverflowError):
+            queue.enqueue(second)
+        assert queue.get_nowait() is first
+        assert queue.get_nowait() is None
+
+        queue.enqueue(second)
+        assert await queue.get() is second
+        assert queue.get_nowait() is None
+
+    asyncio.run(exercise())
+
+
 def test_put_back_messages_are_read_before_unread_messages() -> None:
     async def exercise() -> None:
         queue = _queue()
