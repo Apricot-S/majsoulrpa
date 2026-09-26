@@ -279,7 +279,7 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] connection closeは対象connectionの両方向のpendingだけを解放し、他connectionは正常に対応付けできる。stopは全connection・両方向を解放し、未完了件数を報告する。再close / stopと解放済みRequestへのResponse拒否も既存テストの補強で確認した。
   - [x] connection・番号の不一致と同方向Responseの拒否では元のpending Requestを消費せず、正しいResponseとの対応付けに保持する。実装は維持し、未対応Responseの回帰テスト追加と既存direction mismatchテストの補強で固定した。
   - [x] 同一connection・direction内の異なる番号は逆順のResponseでも独立して対応する。完了済み番号への重複Responseは拒否し、新Requestによる番号再利用では古いRequestを再使用しない。実装は維持し、回帰テストを追加した。
-- [ ] `sniffer/publication.py`: schema version、base64 validation、sequence metadata、unknown field rejection を確認する。
+- [x] `sniffer/publication.py`: schema version、base64 validation、sequence metadata、unknown field rejection を確認する。
   - [x] 全sequence fieldの0拒否と有効な最小値、request numberの0 / 65535受理と-1 / 65536拒否をJSON受信経路で確認した。既存の値域制約を維持し、境界値テストを追加した。
   - [x] 未知fieldの拒否を両kindで確認した。kind欠落・未知値は本文が既知の形でも種別を推測せず拒否する。既存テストを拡張し、実装は維持した。
   - [x] 3つのpayload fieldでbase64の空文字・改行・padding不足・非ASCII文字の拒否を確認した。全byte値とpaddingの有無を含むJSON往復でpayload保持を確認し、実装は維持した。
@@ -288,7 +288,8 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] modelとunion TypeAdapterの両方で検証エラー文字列の入力値表示を無効化する。各payload fieldのbase64失敗とReq/Res model検証失敗で確認した。構造化errors()の入力保持は別の扱いとする。
   - [x] Req/Resのresponse frame sequenceはrequestより大きいことをmodelで検証し、生成とJSON受信の両経路で同値・逆行を拒否する。連番は要求せず、wall clock逆行は許容する。
   - [x] publication/frame sequenceとrequest numberをstrictな整数fieldにし、JSONの文字列・boolean・floatを整数へ暗黙変換しない。Notice / ReqResの全該当fieldでwire入力をテストした。
-- [ ] `sniffer/event_adapter.py`: wire publication から raw event への変換境界が decoder と重複せず、bytes 復元を一元化することを確認する。
+- [x] `sniffer/event_adapter.py`: wire publication から raw event への変換境界が decoder と重複せず、bytes 復元を一元化することを確認する。
+  - [x] decoderはadapterで復元したbytesを使い、envelope / protobuf解析を担う。publicationのbase64検証とは責務が異なるため維持する。既存の変換テストを両direction・全byte値へ拡張し、payloadとmetadataの保持、Request / Responseの取り違え防止を確認した。
 - [ ] `sniffer/decoder.py`: descriptor map、Notice/Req/Res body decode、publication/envelope API 一致、未知 API の失敗を確認する。
 - [ ] `sniffer/stream.py`: restart、gap、rollback、途中参加を区別し、欠落を補完したふりをしないことを確認する。
 - [ ] `sniffer/message_queue.py`: message 件数と payload byte の両上限、put-back 順序、overflow の明示失敗を確認する。

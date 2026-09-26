@@ -29,14 +29,17 @@ def _encoded(payload: bytes) -> str:
     return base64.b64encode(payload).decode("ascii")
 
 
-def test_notice_publication_becomes_public_raw_bytes_event() -> None:
-    payload = b"synthetic-notice-payload"
+@pytest.mark.parametrize("direction", [Direction.INBOUND, Direction.OUTBOUND])
+def test_notice_publication_becomes_public_raw_bytes_event(
+    direction: Direction,
+) -> None:
+    payload = bytes(range(256))
     publication = NoticePublication(
         schema_version=1,
         stream_id=STREAM_ID,
         publication_sequence=1,
         connection_id="connection-1",
-        direction=Direction.INBOUND,
+        direction=direction,
         frame_sequence=10,
         observed_at=REQUEST_AT,
         api_name=".lq.SyntheticNotice",
@@ -46,22 +49,25 @@ def test_notice_publication_becomes_public_raw_bytes_event() -> None:
     event = raw_event_from_publication(publication)
 
     assert event == RawNotice(
-        direction=Direction.INBOUND,
+        direction=direction,
         name=".lq.SyntheticNotice",
         payload=payload,
         observed_at=REQUEST_AT,
     )
 
 
-def test_request_response_publication_becomes_public_raw_bytes_event() -> None:
-    request = b"synthetic-request-payload"
-    response = b"synthetic-response-payload"
+@pytest.mark.parametrize("direction", [Direction.INBOUND, Direction.OUTBOUND])
+def test_request_response_publication_becomes_public_raw_bytes_event(
+    direction: Direction,
+) -> None:
+    request = bytes(range(256))
+    response = request[::-1]
     publication = RequestResponsePublication(
         schema_version=1,
         stream_id=STREAM_ID,
         publication_sequence=1,
         connection_id="connection-1",
-        request_direction=Direction.OUTBOUND,
+        request_direction=direction,
         request_number=0x1234,
         request_frame_sequence=10,
         request_observed_at=REQUEST_AT,
@@ -75,7 +81,7 @@ def test_request_response_publication_becomes_public_raw_bytes_event() -> None:
     event = raw_event_from_publication(publication)
 
     assert event == RawRequestResponse(
-        request_direction=Direction.OUTBOUND,
+        request_direction=direction,
         name=".lq.SyntheticService.call",
         request=request,
         response=response,

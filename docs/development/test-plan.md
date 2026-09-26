@@ -1303,6 +1303,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Client decode / hook
 
+- [x] raw event変換は両directionと全byte値を保持し、Request / Responseのpayload・時刻を取り違えない。envelope解析はadapterでは行わない。
 - [x] wire publicationを利用者向けraw bytes eventへ変換する
 - [x] decode済みeventが対応するraw bytes eventを保持する
 - [x] `majsoulrpa.sniffer`のexportを利用者向けevent型に限定する
