@@ -292,6 +292,11 @@ frame 2: publication JSON bytes
 schema に未知 field がある場合は初期実装では reject する。schema version が違う
 場合も暗黙に読み替えない。
 
+publication modelとJSON受信用union adapterは、`ValidationError` の文字列表示で入力値を
+非表示にし、base64 payloadやpublication全体を通常のエラー出力へ含めない。
+これは構造化された `errors()` / `json()` 内の入力値を除去する設定ではないため、
+それらをそのまま通常ログへ出さない。
+
 publication / frame sequenceとrequest numberはstrictな整数fieldとする。
 JSONの文字列・boolean・floatからの整数変換は行わず、型不正として拒否する。
 従来受け付けていたこれらの入力は拒否されるが、標準publisherの整数出力と

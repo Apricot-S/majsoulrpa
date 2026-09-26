@@ -314,6 +314,24 @@ def test_parse_publication_rejects_unknown_field() -> None:
         parse_publication_json(json.dumps(data))
 
 
+def test_frame_order_error_hides_publication_input() -> None:
+    publication = make_publication(
+        _request_response(),
+        stream_id=STREAM_ID,
+        publication_sequence=1,
+    )
+    data = json.loads(dump_publication_json(publication))
+    data["response_frame_sequence"] = data["request_frame_sequence"]
+
+    with pytest.raises(
+        ValidationError, match="Response frame sequence"
+    ) as caught:
+        parse_publication_json(json.dumps(data))
+    assert "input_value=" not in str(caught.value)
+    assert data["request_payload_base64"] not in str(caught.value)
+    assert data["response_payload_base64"] not in str(caught.value)
+
+
 def test_parse_publication_rejects_unsupported_schema_version() -> None:
     publication = make_publication(
         _notice(),
@@ -327,14 +345,32 @@ def test_parse_publication_rejects_unsupported_schema_version() -> None:
         parse_publication_json(json.dumps(data))
 
 
-def test_parse_publication_rejects_invalid_base64() -> None:
+@pytest.mark.parametrize(
+    ("message", "field"),
+    [
+        pytest.param(_notice(), "payload_base64", id="notice"),
+        pytest.param(
+            _request_response(), "request_payload_base64", id="request"
+        ),
+        pytest.param(
+            _request_response(), "response_payload_base64", id="response"
+        ),
+    ],
+)
+def test_invalid_base64_error_hides_input(
+    message: CorrelatedNotice | CorrelatedRequestResponse,
+    field: str,
+) -> None:
     publication = make_publication(
-        _notice(),
+        message,
         stream_id=STREAM_ID,
         publication_sequence=1,
     )
     data = json.loads(dump_publication_json(publication))
-    data["payload_base64"] = "not base64!"
+    marker = "synthetic-payload-not-for-error-output!"
+    data[field] = marker
 
-    with pytest.raises(ValidationError, match="valid base64"):
+    with pytest.raises(ValidationError, match="valid base64") as caught:
         parse_publication_json(json.dumps(data))
+    assert marker not in str(caught.value)
+    assert "input_value=" not in str(caught.value)

@@ -34,7 +34,11 @@ RequestNumber = Annotated[int, Field(strict=True, ge=0, le=0xFFFF)]
 
 
 class _PublicationBase(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        hide_input_in_errors=True,
+    )
 
     schema_version: Literal[1] = SCHEMA_VERSION
     stream_id: uuid.UUID
@@ -85,6 +89,7 @@ type SnifferPublication = NoticePublication | RequestResponsePublication
 
 _PUBLICATION_ADAPTER = TypeAdapter(
     Annotated[SnifferPublication, Field(discriminator="kind")],
+    config=ConfigDict(hide_input_in_errors=True),
 )
 
 
