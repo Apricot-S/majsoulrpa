@@ -90,7 +90,9 @@ def _request_response_publication(
             data=request_body,
         ).SerializeToString()
     )
-    response_number = raw_response_number or request_number
+    response_number = (
+        request_number if raw_response_number is None else raw_response_number
+    )
     response_raw = (
         b"\x03"
         + response_number.to_bytes(2, byteorder="little")
@@ -179,14 +181,45 @@ def test_decoder_rejects_publication_and_wrapper_api_name_mismatch() -> None:
         SnifferMessageDecoder().decode(publication)
 
 
-def test_decoder_rejects_request_and_response_number_mismatch() -> None:
-    publication = _request_response_publication(raw_response_number=0x4321)
+@pytest.mark.parametrize(
+    ("publication_number", "request_number", "response_number"),
+    [
+        pytest.param(0x1234, 0x1234, 0, id="response-zero"),
+        pytest.param(0x1234, 0, 0x1234, id="request-zero"),
+        pytest.param(0, 0x1234, 0x1234, id="metadata-only"),
+    ],
+)
+def test_decoder_rejects_request_and_response_number_mismatch(
+    publication_number: int,
+    request_number: int,
+    response_number: int,
+) -> None:
+    publication = _request_response_publication(
+        request_number=request_number, raw_response_number=response_number
+    )
+    data = publication.model_dump()
+    data["request_number"] = publication_number
+    publication = RequestResponsePublication.model_validate(data)
 
     with pytest.raises(
         PublicationEnvelopeMismatchError,
         match="request number",
     ):
         SnifferMessageDecoder().decode(publication)
+
+
+def test_decoder_accepts_request_number_zero() -> None:
+    publication = _request_response_publication(
+        request_number=0, raw_response_number=0
+    )
+
+    decoded = SnifferMessageDecoder().decode(publication)
+
+    assert isinstance(decoded, DecodedRequestResponse)
+    assert decoded.request["no_operation_counter"] == 9
+    error = decoded.response["error"]
+    assert isinstance(error, dict)
+    assert error["code"] == 7
 
 
 def test_request_response_rejects_api_without_response_type() -> None:
