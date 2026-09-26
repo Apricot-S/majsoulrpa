@@ -45,6 +45,15 @@ class _PublicationBase(BaseModel):
     publication_sequence: PositiveSequence
     connection_id: NonEmptyString
 
+    @field_validator("schema_version", mode="before")
+    @classmethod
+    def _validate_schema_version_type(cls, value: object) -> int:
+        if not isinstance(value, int) or isinstance(value, bool):
+            msg = "Schema version must be an integer."
+            # Use ValueError for Pydantic's ValidationError conversion.
+            raise ValueError(msg)  # noqa: TRY004
+        return value
+
 
 class NoticePublication(_PublicationBase):
     kind: Literal["notice"] = "notice"

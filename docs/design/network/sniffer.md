@@ -292,6 +292,10 @@ frame 2: publication JSON bytes
 schema に未知 field がある場合は初期実装では reject する。schema version が違う
 場合も暗黙に読み替えない。
 
+明示された `schema_version` は整数の `1` のみを受理し、`true`・`1.0`・`"1"` は
+拒否する。従来のLiteral比較で受理されていたboolean / floatを排除する変更であり、
+標準publisherの整数出力とschema version自体は変更しない。
+
 publication modelとJSON受信用union adapterは、`ValidationError` の文字列表示で入力値を
 非表示にし、base64 payloadやpublication全体を通常のエラー出力へ含めない。
 これは構造化された `errors()` / `json()` 内の入力値を除去する設定ではないため、

@@ -332,16 +332,28 @@ def test_frame_order_error_hides_publication_input() -> None:
     assert data["response_payload_base64"] not in str(caught.value)
 
 
-def test_parse_publication_rejects_unsupported_schema_version() -> None:
+@pytest.mark.parametrize(
+    "message", [_notice(), _request_response()], ids=["notice", "exchange"]
+)
+@pytest.mark.parametrize(
+    "version",
+    [True, 1.0, "1", 2],
+    ids=["boolean", "float", "string", "unsupported"],
+)
+def test_parse_publication_rejects_invalid_schema_version(
+    message: CorrelatedNotice | CorrelatedRequestResponse,
+    *,
+    version: bool | float | str,
+) -> None:
     publication = make_publication(
-        _notice(),
+        message,
         stream_id=STREAM_ID,
         publication_sequence=1,
     )
     data = json.loads(dump_publication_json(publication))
-    data["schema_version"] = 2
+    data["schema_version"] = version
 
-    with pytest.raises(ValidationError, match="literal_error"):
+    with pytest.raises(ValidationError, match="schema_version"):
         parse_publication_json(json.dumps(data))
 
 
