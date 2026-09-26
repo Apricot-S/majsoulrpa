@@ -324,17 +324,55 @@ def test_wire_publication_requires_schema_version(
     )
 
 
-def test_parse_publication_rejects_unknown_field() -> None:
+@pytest.mark.parametrize(
+    "message", [_notice(), _request_response()], ids=["notice", "exchange"]
+)
+def test_parse_publication_rejects_unknown_field(
+    message: CorrelatedNotice | CorrelatedRequestResponse,
+) -> None:
     publication = make_publication(
-        _notice(),
+        message,
         stream_id=STREAM_ID,
         publication_sequence=1,
     )
     data = json.loads(dump_publication_json(publication))
     data["unexpected"] = True
 
-    with pytest.raises(ValidationError, match="extra_forbidden"):
+    with pytest.raises(ValidationError) as caught:
         parse_publication_json(json.dumps(data))
+    assert any(
+        error["loc"][-1] == "unexpected" and error["type"] == "extra_forbidden"
+        for error in caught.value.errors()
+    )
+
+
+@pytest.mark.parametrize(
+    "message", [_notice(), _request_response()], ids=["notice", "exchange"]
+)
+@pytest.mark.parametrize(
+    ("kind", "error_type"),
+    [
+        pytest.param(None, "union_tag_not_found", id="missing"),
+        pytest.param("unknown", "union_tag_invalid", id="unknown"),
+    ],
+)
+def test_wire_publication_requires_known_kind(
+    message: CorrelatedNotice | CorrelatedRequestResponse,
+    kind: str | None,
+    error_type: str,
+) -> None:
+    publication = make_publication(
+        message, stream_id=STREAM_ID, publication_sequence=1
+    )
+    data = json.loads(dump_publication_json(publication))
+    if kind is None:
+        del data["kind"]
+    else:
+        data["kind"] = kind
+
+    with pytest.raises(ValidationError) as caught:
+        parse_publication_json(json.dumps(data))
+    assert [error["type"] for error in caught.value.errors()] == [error_type]
 
 
 def test_frame_order_error_hides_publication_input() -> None:

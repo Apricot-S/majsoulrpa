@@ -1230,6 +1230,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Publication / PUB-SUB
 
+- [x] 両publication kindで未知fieldを拒否し、kind欠落・未知値では本文から種別を推測しない。
 - [x] Notice / Request / Responseのbase64は空文字・改行・padding不足・非ASCII文字を拒否し、全byte値を含むpayloadをJSON往復で保持する。
 - [x] schema_version欠落のJSONは両kindで拒否し、標準publisherはversionを明示して生成する。
 - [x] schema_versionはJSON整数の1のみを受理し、boolean・float・文字列・未対応整数を両publication kindで拒否する。
