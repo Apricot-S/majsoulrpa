@@ -164,34 +164,32 @@ def test_cancelled_get_preserves_message_and_byte_budget(timing: str) -> None:
     asyncio.run(exercise())
 
 
-def test_put_back_messages_are_read_before_unread_messages() -> None:
+@pytest.mark.parametrize("retrieval", ["get", "get_nowait"])
+def test_put_back_order_precedes_unread_and_new_messages(
+    retrieval: str,
+) -> None:
     async def exercise() -> None:
-        queue = _queue()
+        queue = _queue(capacity=4)
         first = _notice(".lq.First", 1)
         second = _notice(".lq.Second", 2)
+        third = _notice(".lq.Third", 3)
+        fourth = _notice(".lq.Fourth", 4)
         queue.enqueue(first)
         queue.enqueue(second)
-
-        consumed = await queue.get()
-        queue.put_back(consumed)
+        queue.enqueue(third)
 
         assert await queue.get() is first
         assert await queue.get() is second
-
-    asyncio.run(exercise())
-
-
-def test_multiple_put_back_messages_keep_put_back_order() -> None:
-    async def exercise() -> None:
-        queue = _queue()
-        first = _notice(".lq.First", 1)
-        second = _notice(".lq.Second", 2)
-
         queue.put_back(first)
+        queue.enqueue(fourth)
         queue.put_back(second)
 
-        assert await queue.get() is first
-        assert await queue.get() is second
+        for expected in (first, second, third, fourth):
+            actual = (
+                await queue.get() if retrieval == "get" else queue.get_nowait()
+            )
+            assert actual is expected
+        assert queue.get_nowait() is None
 
     asyncio.run(exercise())
 
