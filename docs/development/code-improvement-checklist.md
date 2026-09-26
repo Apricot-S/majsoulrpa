@@ -305,7 +305,8 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] getの空待機中とenqueue直後・再開前のキャンセルを確認した。CancelledErrorを伝播し、未読messageとbyte上限を保持し、取り出し後は容量を再利用できる。実装は維持した。
   - [x] Req/Resは両payloadの合計byteで単体上限を判定することをenqueue / put_backで確認した。Noticeとの混在、getによる容量解放、put_backによる再計上も確認し、実装は維持した。
   - [x] enqueue / put_backに保持したmessageが両経路の件数・byte上限へ算入されることを確認した。overflow後も既存messageを保持し、取り出し後に容量を再利用できることを既存テストの統合・拡張で確認した。実装は維持した。
-- [ ] `sniffer/worker.py`: capture -> envelope -> correlation -> publication の順序と、stop 時 pending request の失敗を確認する。
+- [x] `sniffer/worker.py`: capture -> envelope -> correlation -> publication の順序と、stop 時 pending request の失敗を確認する。
+  - [x] connection closeは対象のpendingだけを解放し、他connectionの同番号ReqResは対応できる。再closeと閉じた側の遅延Response拒否も既存テストへ統合し、実装は維持した。
   - [x] Request保留中のcapture待機をrunのキャンセルで中断し、続くstopが未完了を報告・解放することを確認した。再stopの成功とpublish未呼び出しも既存の停止テストへ統合し、実装は維持した。
   - [x] publish待機中は後続captureを消費せず、runのキャンセルをpublishへ伝播し、再試行しないことを同期用Eventで確認した。実装は維持した。
   - [x] Request保留中にheartbeatとNoticeが挟まっても対応付けを維持する。heartbeatをpublishせずNoticeを即時publishし、Response到着後にReqResを出力してpendingを解放することを既存テストへ統合した。実装は維持した。

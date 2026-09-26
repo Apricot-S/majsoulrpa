@@ -1297,6 +1297,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Sniffer worker
 
+- [x] connection closeは対象connectionのpendingだけを解放し、他connectionの同番号ReqResは対応できる。再closeは成功し、閉じた側の遅延Responseは拒否する。
 - [x] Request保留中のcapture待機キャンセルを伝播し、続くstopで未完了を報告・解放する。再stopは成功し、未完了Requestをpublishしない。
 - [x] publish待機中は後続captureを消費せず、runのキャンセルをpublishへ伝播して再試行しない。
 - [x] Request保留中のheartbeatはpublishせず、Noticeは即時publishする。最後のResponseは元のRequestと対応し、出力順はNotice→ReqResとなる。

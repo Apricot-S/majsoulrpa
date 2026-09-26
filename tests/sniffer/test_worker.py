@@ -208,7 +208,7 @@ def test_pending_request_survives_heartbeat_and_notice() -> None:
     asyncio.run(run())
 
 
-def test_worker_passes_connection_close_to_correlator() -> None:
+def test_worker_close_preserves_other_connection_pending_request() -> None:
     async def run() -> None:
         request = _frame(
             _request_payload(),
@@ -219,14 +219,57 @@ def test_worker_passes_connection_close_to_correlator() -> None:
             connection_id="connection-1",
             observed_at=OBSERVED_AT,
         )
-        worker = SnifferWorker(
-            capture=FakeCapture([request, close]),
-            publisher=FakePublisher(),
+        other_request = _frame(
+            _request_payload(),
+            direction=Direction.OUTBOUND,
+            frame_sequence=2,
+            connection_id="connection-2",
         )
+        other_response = _frame(
+            _response_payload(),
+            direction=Direction.INBOUND,
+            frame_sequence=3,
+            connection_id="connection-2",
+        )
+        late_response = _frame(
+            _response_payload(),
+            direction=Direction.INBOUND,
+            frame_sequence=4,
+        )
+        publisher = FakePublisher()
+        worker = SnifferWorker(
+            capture=FakeCapture(
+                [
+                    request,
+                    other_request,
+                    close,
+                    close,
+                    other_response,
+                    late_response,
+                ]
+            ),
+            publisher=publisher,
+        )
+        await worker.process_once()
         await worker.process_once()
 
         with pytest.raises(IncompleteExchangeError, match="connection-1"):
             await worker.process_once()
+        assert await worker.process_once() is None
+        assert publisher.attempts == []
+
+        correlated = await worker.process_once()
+        assert isinstance(correlated, CorrelatedRequestResponse)
+        assert correlated.request.connection_id == "connection-2"
+        assert correlated.response.connection_id == "connection-2"
+        assert correlated.request.frame_sequence == 2
+        assert correlated.response.frame_sequence == 3
+
+        with pytest.raises(UnmatchedResponseError):
+            await worker.process_once()
+        assert publisher.messages == [correlated]
+        assert publisher.attempts == [correlated]
+        await worker.stop()
 
     asyncio.run(run())
 
