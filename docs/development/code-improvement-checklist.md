@@ -296,6 +296,7 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] Notice / Request / Responseそれぞれの不正本文をLiqiBodyDecodeErrorとして拒否し、原因のDecodeErrorを保持することを確認した。有効な空本文はscalar既定値と未設定messageを区別してdecodeする。既存テストを補強し、実装は維持した。
   - [x] 番号0の正常decodeとpublication / Request / Responseの各番号不一致の拒否を確認した。Response番号0を既定値へ置き換えていたテストhelperを修正し、既存の番号照合テストを拡張した。decoder実装は維持した。
 - [ ] `sniffer/stream.py`: restart、gap、rollback、途中参加を区別し、欠落を補完したふりをしないことを確認する。
+  - [x] stream ID変更を番号の重複・連続・欠落より優先して再起動と判定する。先頭 / 途中参加とも拒否時の状態保持と元streamの次番号による進行を既存テストの拡張で確認し、実装は維持した。
 - [ ] `sniffer/message_queue.py`: message 件数と payload byte の両上限、put-back 順序、overflow の明示失敗を確認する。
 - [ ] `sniffer/worker.py`: capture -> envelope -> correlation -> publication の順序と、stop 時 pending request の失敗を確認する。
 - [ ] `sniffer/runtime.py`: context・publisher・capture・worker の開始順、逆順 cleanup、失敗伝播を確認する。

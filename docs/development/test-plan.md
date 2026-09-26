@@ -1230,6 +1230,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Publication / PUB-SUB
 
+- [x] stream ID変更は番号が重複・連続・欠落に見えても再起動として拒否する。先頭 / 途中参加どちらでも元の状態を保持し、元streamの次番号だけで進む。
 - [x] JSON受信で全sequence fieldの0を拒否し、最小の有効sequenceを受理する。request numberは0 / 65535を受理し、-1 / 65536を拒否する。
 - [x] 両publication kindで未知fieldを拒否し、kind欠落・未知値では本文から種別を推測しない。
 - [x] Notice / Request / Responseのbase64は空文字・改行・padding不足・非ASCII文字を拒否し、全byte値を含むpayloadをJSON往復で保持する。

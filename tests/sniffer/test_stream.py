@@ -64,15 +64,33 @@ def test_contiguous_sequence_advances_stream() -> None:
     assert tracker.last_sequence == 2
 
 
-def test_stream_id_change_is_rejected_without_replacing_state() -> None:
+@pytest.mark.parametrize(
+    "first_sequence", [1, 4], ids=["from-start", "midstream"]
+)
+@pytest.mark.parametrize(
+    "offset", [0, 1, 2], ids=["duplicate", "contiguous", "gap"]
+)
+def test_stream_id_change_is_rejected_without_replacing_state(
+    first_sequence: int,
+    offset: int,
+) -> None:
     tracker = PublicationStreamTracker()
-    tracker.observe(_publication(1))
+    tracker.observe(_publication(first_sequence))
 
     with pytest.raises(PublicationStreamRestartError, match="stream_id"):
-        tracker.observe(_publication(1, stream_id=OTHER_STREAM_ID))
+        tracker.observe(
+            _publication(first_sequence + offset, stream_id=OTHER_STREAM_ID)
+        )
 
     assert tracker.stream_id == STREAM_ID
-    assert tracker.last_sequence == 1
+    assert tracker.last_sequence == first_sequence
+    assert tracker.started_midstream is (first_sequence > 1)
+
+    tracker.observe(_publication(first_sequence + 1))
+
+    assert tracker.stream_id == STREAM_ID
+    assert tracker.last_sequence == first_sequence + 1
+    assert tracker.started_midstream is (first_sequence > 1)
 
 
 def test_sequence_gap_is_rejected_without_advancing_state() -> None:
