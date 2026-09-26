@@ -300,6 +300,7 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] 先頭 / 途中参加ともgap・重複・巻き戻りの拒否でstream ID・最終番号・途中参加状態を保持する。欠落後の後続も拒否し、実際に次番号を受け取った場合だけ進むことを既存テストへ追加した。実装は維持した。
   - [x] stream ID変更を番号の重複・連続・欠落より優先して再起動と判定する。先頭 / 途中参加とも拒否時の状態保持と元streamの次番号による進行を既存テストの拡張で確認し、実装は維持した。
 - [ ] `sniffer/message_queue.py`: message 件数と payload byte の両上限、put-back 順序、overflow の明示失敗を確認する。
+  - [x] enqueue / put_backに保持したmessageが両経路の件数・byte上限へ算入されることを確認した。overflow後も既存messageを保持し、取り出し後に容量を再利用できることを既存テストの統合・拡張で確認した。実装は維持した。
 - [ ] `sniffer/worker.py`: capture -> envelope -> correlation -> publication の順序と、stop 時 pending request の失敗を確認する。
 - [ ] `sniffer/runtime.py`: context・publisher・capture・worker の開始順、逆順 cleanup、失敗伝播を確認する。
 - [ ] `sniffer/zmq.py`: PUB/SUB topic、bind/connect、IPv6、socket/context cleanup、multipart validation を確認する。

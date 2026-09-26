@@ -1306,6 +1306,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Client decode / hook
 
+- [x] queueの件数 / byte上限はenqueue・put_back共通で適用し、overflow時に既存messageと容量を保持する。取り出し後は容量を再利用できる。
 - [x] 注入したsynthetic descriptorのNotice / service methodを指定型でdecodeし、標準decoderとのAPI対応表を共有しない。
 - [x] decoderはNotice / RequestのAPI名不一致と、Notice / Request / Response欄に別種別の有効envelopeが入った場合をPublicationEnvelopeMismatchErrorで拒否する。
 - [x] Notice / Request / Responseの不正本文は原因のDecodeErrorを保持してLiqiBodyDecodeErrorにし、有効な空本文は既定値へdecodeする。

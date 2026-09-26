@@ -102,23 +102,37 @@ def test_multiple_put_back_messages_keep_put_back_order() -> None:
     asyncio.run(exercise())
 
 
-def test_queue_overflow_is_not_silently_dropped() -> None:
-    queue = _queue(capacity=1)
-    queue.enqueue(_notice(".lq.First", 1))
-
-    with pytest.raises(SnifferMessageQueueOverflowError):
-        queue.enqueue(_notice(".lq.Second", 2))
-
-
-def test_byte_budget_overflow_is_not_silently_dropped() -> None:
+@pytest.mark.parametrize(
+    ("capacity", "max_payload_bytes"),
+    [(1, 1024), (3, len(b"synthetic-1"))],
+    ids=["count-limit", "byte-limit"],
+)
+@pytest.mark.parametrize("insertion", ["enqueue", "put_back"])
+def test_overflow_preserves_messages_and_reusable_capacity(
+    capacity: int,
+    max_payload_bytes: int,
+    insertion: str,
+) -> None:
     queue = SnifferMessageQueue(
-        capacity=3,
-        max_payload_bytes=len(b"synthetic-1"),
+        capacity=capacity,
+        max_payload_bytes=max_payload_bytes,
     )
-    queue.enqueue(_notice(".lq.First", 1))
+    insert = queue.enqueue if insertion == "enqueue" else queue.put_back
+    first = _notice(".lq.First", 1)
+    second = _notice(".lq.Second", 2)
+    insert(first)
 
     with pytest.raises(SnifferMessageQueueOverflowError):
-        queue.enqueue(_notice(".lq.Second", 2))
+        queue.enqueue(second)
+    with pytest.raises(SnifferMessageQueueOverflowError):
+        queue.put_back(second)
+
+    assert queue.get_nowait() is first
+    assert queue.get_nowait() is None
+
+    insert(second)
+    assert queue.get_nowait() is second
+    assert queue.get_nowait() is None
 
 
 def test_message_larger_than_byte_budget_is_rejected() -> None:
