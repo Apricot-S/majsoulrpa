@@ -12,6 +12,7 @@ from majsoulrpa.sniffer.correlator import (
     Direction,
     IncompleteExchangeError,
     RequestResponseCorrelator,
+    UnmatchedResponseError,
 )
 from majsoulrpa.sniffer.envelope import SnifferDecodeError
 from majsoulrpa.sniffer.playwright import (
@@ -211,20 +212,38 @@ def test_worker_passes_connection_close_to_correlator() -> None:
     asyncio.run(run())
 
 
-def test_worker_propagates_decode_failure() -> None:
+@pytest.mark.parametrize(
+    ("payload", "error_type"),
+    [
+        pytest.param(b"malformed", SnifferDecodeError, id="decode"),
+        pytest.param(
+            _response_payload(), UnmatchedResponseError, id="correlation"
+        ),
+    ],
+)
+def test_worker_run_stops_before_publish_on_invalid_frame(
+    payload: bytes,
+    error_type: type[Exception],
+) -> None:
     async def run() -> None:
         frame = _frame(
-            b"malformed",
+            payload,
             direction=Direction.INBOUND,
             frame_sequence=1,
         )
-        worker = SnifferWorker(
-            capture=FakeCapture([frame]),
-            publisher=FakePublisher(),
+        later = _frame(
+            _notice_payload(),
+            direction=Direction.INBOUND,
+            frame_sequence=2,
         )
+        capture = FakeCapture([frame, later])
+        publisher = FakePublisher()
+        worker = SnifferWorker(capture=capture, publisher=publisher)
 
-        with pytest.raises(SnifferDecodeError):
-            await worker.process_once()
+        with pytest.raises(error_type):
+            await worker.run()
+        assert publisher.attempts == []
+        assert capture.events == [later]
 
     asyncio.run(run())
 

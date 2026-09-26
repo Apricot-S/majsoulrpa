@@ -1297,6 +1297,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Sniffer worker
 
+- [x] decode失敗 / 未対応Responseでrunを停止し、publishを呼ばず後続captureを未消費で残す。
 - [x] Notice / ReqResのpublish失敗はrunから元の例外を伝播し、再試行や後続captureの消費をしない。
 - [x] falseyなcorrelatorを注入しても置き換えず、そのinstanceへRequestの保留状態を保持する。
 - [x] captureしたframeをenvelope decodeしてcorrelatorへ渡す
