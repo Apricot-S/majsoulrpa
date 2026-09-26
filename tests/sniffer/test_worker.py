@@ -159,32 +159,51 @@ def test_worker_publishes_notice_immediately() -> None:
     asyncio.run(run())
 
 
-def test_worker_holds_request_until_response_then_publishes_pair() -> None:
+def test_pending_request_survives_heartbeat_and_notice() -> None:
     async def run() -> None:
         request = _frame(
             _request_payload(),
             direction=Direction.OUTBOUND,
             frame_sequence=1,
         )
-        response = _frame(
-            _response_payload(),
+        heartbeat = _frame(
+            b"<= heartbeat - synthetic payload",
             direction=Direction.INBOUND,
             frame_sequence=2,
         )
+        notice = _frame(
+            _notice_payload(),
+            direction=Direction.INBOUND,
+            frame_sequence=3,
+        )
+        response = _frame(
+            _response_payload(),
+            direction=Direction.INBOUND,
+            frame_sequence=4,
+        )
         publisher = FakePublisher()
         worker = SnifferWorker(
-            capture=FakeCapture([request, response]),
+            capture=FakeCapture([request, heartbeat, notice, response]),
             publisher=publisher,
         )
 
         assert await worker.process_once() is None
         assert publisher.messages == []
+        assert await worker.process_once() is None
+        assert publisher.attempts == []
+
+        correlated_notice = await worker.process_once()
+        assert isinstance(correlated_notice, CorrelatedNotice)
+        assert correlated_notice.observation.frame_sequence == 3
+        assert publisher.messages == [correlated_notice]
         correlated = await worker.process_once()
 
         assert isinstance(correlated, CorrelatedRequestResponse)
         assert correlated.request.frame_sequence == 1
-        assert correlated.response.frame_sequence == 2
-        assert publisher.messages == [correlated]
+        assert correlated.response.frame_sequence == 4
+        assert publisher.messages == [correlated_notice, correlated]
+        assert publisher.attempts == publisher.messages
+        await worker.stop()
 
     asyncio.run(run())
 
