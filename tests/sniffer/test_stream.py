@@ -4,7 +4,10 @@ import uuid
 import pytest
 
 from majsoulrpa.sniffer.correlator import Direction
-from majsoulrpa.sniffer.publication import NoticePublication
+from majsoulrpa.sniffer.publication import (
+    NoticePublication,
+    RequestResponsePublication,
+)
 from majsoulrpa.sniffer.stream import (
     PublicationSequenceGapError,
     PublicationSequenceRollbackError,
@@ -62,6 +65,42 @@ def test_contiguous_sequence_advances_stream() -> None:
     tracker.observe(_publication(2))
 
     assert tracker.last_sequence == 2
+
+
+def test_mixed_stream_tracks_publication_sequence_only() -> None:
+    tracker = PublicationStreamTracker()
+    tracker.observe(_publication(1))
+    tracker.observe(
+        RequestResponsePublication(
+            schema_version=1,
+            stream_id=STREAM_ID,
+            publication_sequence=2,
+            connection_id="connection-1",
+            request_direction=Direction.OUTBOUND,
+            request_number=0,
+            request_frame_sequence=10,
+            response_frame_sequence=12,
+            request_observed_at=OBSERVED_AT,
+            response_observed_at=OBSERVED_AT,
+            api_name=".lq.SyntheticService.call",
+            request_payload_base64="c3ludGhldGlj",
+            response_payload_base64="c3ludGhldGlj",
+        )
+    )
+    data = _publication(3).model_dump()
+    data.update(connection_id="connection-2", frame_sequence=1)
+    tracker.observe(NoticePublication.model_validate(data))
+
+    assert tracker.stream_id == STREAM_ID
+    assert tracker.last_sequence == 3
+    assert tracker.started_midstream is False
+
+    data.update(publication_sequence=5, frame_sequence=2)
+    with pytest.raises(
+        PublicationSequenceGapError, match=r"expected 4.*received 5"
+    ):
+        tracker.observe(NoticePublication.model_validate(data))
+    assert tracker.last_sequence == 3
 
 
 @pytest.mark.parametrize(

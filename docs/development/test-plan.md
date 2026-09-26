@@ -1230,6 +1230,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Publication / PUB-SUB
 
+- [x] streamの連続性はNotice / ReqRes共通のpublication番号で判定し、connection変更やframe番号の飛び・巻き戻りと混同しない。frameが連続でもpublicationの欠落は拒否する。
 - [x] 先頭 / 途中参加ともgap・重複・巻き戻りの拒否で状態を保持する。gap後の後続も拒否し、欠落番号を実際に観測した場合だけ連続性を進める。
 - [x] stream ID変更は番号が重複・連続・欠落に見えても再起動として拒否する。先頭 / 途中参加どちらでも元の状態を保持し、元streamの次番号だけで進む。
 - [x] JSON受信で全sequence fieldの0を拒否し、最小の有効sequenceを受理する。request numberは0 / 65535を受理し、-1 / 65536を拒否する。
