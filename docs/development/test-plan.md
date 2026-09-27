@@ -1297,6 +1297,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Sniffer worker
 
+- [x] runtimeのbind / capture start待機中のキャンセルは生成済みresourceをcleanupして伝播し、未起動状態を残す。後続stopで二重解放しない。
 - [x] runtimeの各factory失敗は後続生成を止め、生成済みresourceだけをcleanupする。元の例外を伝播し、runは未起動として拒否、stopは二重cleanupしない。
 - [x] runtime停止時にworker / capture / publisherのいずれかが失敗しても残りを逆順cleanupし、元の例外を伝播する。再stopでcleanupを繰り返さない。
 - [x] connection closeは対象connectionのpendingだけを解放し、他connectionの同番号ReqResは対応できる。再closeは成功し、閉じた側の遅延Responseは拒否する。

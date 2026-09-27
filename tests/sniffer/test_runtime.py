@@ -308,6 +308,54 @@ def test_backend_cleans_resources_when_capture_start_fails() -> None:
     asyncio.run(run())
 
 
+@pytest.mark.parametrize("stage", ["bind", "capture-start"])
+def test_start_cancellation_cleans_resources(stage: str) -> None:
+    async def run() -> None:
+        events: list[str] = []
+        waiting = asyncio.Event()
+        release = asyncio.Event()
+
+        class BlockingPublisher(PublisherSpy):
+            async def bind(self) -> None:
+                await super().bind()
+                if stage == "bind":
+                    waiting.set()
+                    await release.wait()
+
+        class BlockingCapture(CaptureSpy):
+            async def start(self, page: object) -> None:
+                await super().start(page)
+                if stage == "capture-start":
+                    waiting.set()
+                    await release.wait()
+
+        backend, _capture, _publisher, _worker = _backend(
+            events,
+            capture=BlockingCapture(events),
+            publisher=BlockingPublisher(events),
+        )
+        task = asyncio.create_task(backend.start(object()))
+        try:
+            async with asyncio.timeout(1):
+                await waiting.wait()
+            assert not task.done()
+        finally:
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+
+        with pytest.raises(RuntimeError, match="not started"):
+            await backend.run()
+        await backend.stop()
+        expected = ["context_create", "publisher_bind"]
+        if stage == "capture-start":
+            expected.append("capture_start")
+        expected.extend(["capture_stop", "publisher_stop", "context_term"])
+        assert events == expected
+
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize("stage", ["worker", "capture", "publisher"])
 def test_backend_keeps_cleaning_up_when_stop_fails(stage: str) -> None:
     async def run() -> None:
