@@ -16,8 +16,14 @@ from majsoulrpa.sniffer.runtime import (
 
 
 class ContextSpy:
-    def __init__(self, events: list[str]) -> None:
+    def __init__(
+        self,
+        events: list[str],
+        *,
+        stop_error: Exception | None = None,
+    ) -> None:
         self.events = events
+        self.stop_error = stop_error
 
     def socket(self, socket_type: int) -> object:
         _ = socket_type
@@ -26,6 +32,8 @@ class ContextSpy:
 
     def term(self) -> None:
         self.events.append("context_term")
+        if self.stop_error is not None:
+            raise self.stop_error
 
 
 class CaptureSpy:
@@ -615,6 +623,47 @@ def test_backend_keeps_cleaning_up_when_stop_fails(stage: str) -> None:
         assert caught.value is error
         await backend.stop()
 
+        assert events == [
+            "worker_stop",
+            "capture_stop",
+            "publisher_stop",
+            "context_term",
+        ]
+
+    asyncio.run(run())
+
+
+def test_stop_preserves_all_failures_and_does_not_repeat_cleanup() -> None:
+    async def run() -> None:
+        events: list[str] = []
+        worker_error = RuntimeError("worker stop failed")
+        capture_error = RuntimeError("capture stop failed")
+        publisher_error = RuntimeError("publisher stop failed")
+        context_error = RuntimeError("context term failed")
+        context = ContextSpy(events, stop_error=context_error)
+        capture = CaptureSpy(events, stop_error=capture_error)
+        publisher = PublisherSpy(events, stop_error=publisher_error)
+        worker = WorkerSpy(events, stop_error=worker_error)
+        backend = BrowserHostSnifferBackend(
+            AppConfig(),
+            context_factory=lambda: context,
+            capture_factory=lambda: capture,
+            publisher_factory=lambda _context, _config: publisher,
+            worker_factory=lambda _capture, _publisher: worker,
+        )
+        await backend.start(object())
+        events.clear()
+
+        with pytest.raises(RuntimeError) as caught:
+            await backend.stop()
+        assert caught.value is context_error
+        assert context_error.__context__ is publisher_error
+        assert publisher_error.__context__ is capture_error
+        assert capture_error.__context__ is worker_error
+
+        await backend.stop()
+        with pytest.raises(RuntimeError, match="not started"):
+            await backend.run()
         assert events == [
             "worker_stop",
             "capture_stop",

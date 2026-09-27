@@ -1297,6 +1297,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Sniffer worker
 
+- [x] runtime停止時にworker / capture / publisher / contextがすべて失敗しても全cleanupを実行し、全例外をチェーンに保持する。再停止でcleanupし直さない。
 - [x] runtime起動失敗・キャンセルにcapture / publisher停止失敗が重なってもcontextを解放し、起動例外とcleanup例外をBaseExceptionGroupで保持する。cleanup間の例外チェーンも保持する。
 - [x] runtime.runはworker実行中の元の例外を伝播し、続くstopで全resourceを一度ずつ解放する。停止後のrunは拒否する。
 - [x] runtimeはbind / capture start失敗後、同じbackendで新しいresourceを生成して再起動できる。古いworkerを実行・停止せず、新しいresourceをcleanupする。
