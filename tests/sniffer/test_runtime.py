@@ -5,7 +5,12 @@ import pytest
 from majsoulrpa.config import AppConfig
 from majsoulrpa.sniffer.correlator import CorrelatedMessage
 from majsoulrpa.sniffer.playwright import CaptureEvent
-from majsoulrpa.sniffer.runtime import BrowserHostSnifferBackend
+from majsoulrpa.sniffer.runtime import (
+    BrowserHostSnifferBackend,
+    CaptureBackend,
+    PublisherBackend,
+    TerminableContext,
+)
 
 
 class ContextSpy:
@@ -125,6 +130,88 @@ def _backend(
         worker_factory=lambda _capture, _publisher: worker,
     )
     return backend, capture, publisher, worker
+
+
+@pytest.mark.parametrize(
+    ("stage", "expected"),
+    [
+        ("context", ["context_create"]),
+        ("capture", ["context_create", "capture_create", "context_term"]),
+        (
+            "publisher",
+            [
+                "context_create",
+                "capture_create",
+                "publisher_create",
+                "capture_stop",
+                "context_term",
+            ],
+        ),
+        (
+            "worker",
+            [
+                "context_create",
+                "capture_create",
+                "publisher_create",
+                "worker_create",
+                "capture_stop",
+                "publisher_stop",
+                "context_term",
+            ],
+        ),
+    ],
+)
+def test_factory_failure_cleans_only_created_resources(
+    stage: str,
+    expected: list[str],
+) -> None:
+    async def run() -> None:
+        events: list[str] = []
+        error = RuntimeError("factory failed")
+
+        def creating(name: str) -> None:
+            events.append(f"{name}_create")
+            if name == stage:
+                raise error
+
+        def context_factory() -> ContextSpy:
+            creating("context")
+            return ContextSpy(events)
+
+        def capture_factory() -> CaptureSpy:
+            creating("capture")
+            return CaptureSpy(events)
+
+        def publisher_factory(
+            _context: TerminableContext,
+            _config: AppConfig,
+        ) -> PublisherSpy:
+            creating("publisher")
+            return PublisherSpy(events)
+
+        def worker_factory(
+            _capture: CaptureBackend,
+            _publisher: PublisherBackend,
+        ) -> WorkerSpy:
+            creating("worker")
+            return WorkerSpy(events)
+
+        backend = BrowserHostSnifferBackend(
+            AppConfig(),
+            context_factory=context_factory,
+            capture_factory=capture_factory,
+            publisher_factory=publisher_factory,
+            worker_factory=worker_factory,
+        )
+        with pytest.raises(RuntimeError) as caught:
+            await backend.start(object())
+        assert caught.value is error
+        with pytest.raises(RuntimeError, match="not started"):
+            await backend.run()
+        await backend.stop()
+        assert events == expected
+
+    asyncio.run(run())
 
 
 def test_backend_lazily_starts_publisher_before_capture() -> None:
