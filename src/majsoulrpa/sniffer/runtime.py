@@ -107,12 +107,19 @@ class BrowserHostSnifferBackend:
             worker = self._worker_factory(created_capture, publisher)
             await publisher.bind()
             await created_capture.start(cast("EventEmitterLike", page))
-        except BaseException:
-            await _cleanup_resources(
-                context=context,
-                capture=capture,
-                publisher=publisher,
-            )
+        except BaseException as start_error:
+            try:
+                await _cleanup_resources(
+                    context=context,
+                    capture=capture,
+                    publisher=publisher,
+                )
+            # Preserve cancellation alongside ordinary failures.
+            except BaseException as cleanup_error:  # noqa: BLE001
+                msg = "Sniffer startup and cleanup both failed."
+                raise BaseExceptionGroup(
+                    msg, [start_error, cleanup_error]
+                ) from None
             raise
 
         self._context = context

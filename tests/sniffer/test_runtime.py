@@ -33,7 +33,7 @@ class CaptureSpy:
         self,
         events: list[str],
         *,
-        start_error: Exception | None = None,
+        start_error: BaseException | None = None,
         stop_error: Exception | None = None,
     ) -> None:
         self.events = events
@@ -62,7 +62,7 @@ class PublisherSpy:
         self,
         events: list[str],
         *,
-        bind_error: Exception | None = None,
+        bind_error: BaseException | None = None,
         stop_error: Exception | None = None,
     ) -> None:
         self.events = events
@@ -416,6 +416,48 @@ def test_backend_cleans_resources_when_capture_start_fails() -> None:
             "publisher_stop",
             "context_term",
         ]
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("stage", ["bind", "capture-start"])
+@pytest.mark.parametrize("error_type", [RuntimeError, asyncio.CancelledError])
+def test_start_and_cleanup_failures_preserve_all_causes(
+    stage: str,
+    error_type: type[BaseException],
+) -> None:
+    async def run() -> None:
+        events: list[str] = []
+        start_error = error_type("start failed")
+        capture_error = RuntimeError("capture stop failed")
+        publisher_error = RuntimeError("publisher stop failed")
+        backend, _capture, _publisher, _worker = _backend(
+            events,
+            capture=CaptureSpy(
+                events,
+                start_error=start_error if stage == "capture-start" else None,
+                stop_error=capture_error,
+            ),
+            publisher=PublisherSpy(
+                events,
+                bind_error=start_error if stage == "bind" else None,
+                stop_error=publisher_error,
+            ),
+        )
+
+        with pytest.raises(BaseExceptionGroup) as caught:
+            await backend.start(object())
+        assert caught.value.exceptions == (start_error, publisher_error)
+        assert publisher_error.__context__ is capture_error
+        with pytest.raises(RuntimeError, match="not started"):
+            await backend.run()
+        await backend.stop()
+
+        expected = ["context_create", "publisher_bind"]
+        if stage == "capture-start":
+            expected.append("capture_start")
+        expected.extend(["capture_stop", "publisher_stop", "context_term"])
+        assert events == expected
 
     asyncio.run(run())
 
