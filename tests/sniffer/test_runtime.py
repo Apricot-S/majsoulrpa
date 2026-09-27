@@ -387,6 +387,82 @@ def test_backend_cleans_resources_when_capture_start_fails() -> None:
 
 
 @pytest.mark.parametrize("stage", ["bind", "capture-start"])
+def test_backend_retries_start_with_fresh_resources(stage: str) -> None:
+    async def run() -> None:
+        old_events: list[str] = []
+        new_events: list[str] = []
+        failure = RuntimeError("start failed")
+        contexts = [ContextSpy(old_events), ContextSpy(new_events)]
+        captures = [
+            CaptureSpy(
+                old_events,
+                start_error=failure if stage == "capture-start" else None,
+            ),
+            CaptureSpy(new_events),
+        ]
+        publishers = [
+            PublisherSpy(
+                old_events, bind_error=failure if stage == "bind" else None
+            ),
+            PublisherSpy(new_events),
+        ]
+        workers = [WorkerSpy(old_events), WorkerSpy(new_events)]
+        context_iter = iter(contexts)
+        capture_iter = iter(captures)
+        publisher_iter = iter(publishers)
+        worker_iter = iter(workers)
+
+        def make_publisher(
+            context: TerminableContext, _config: AppConfig
+        ) -> PublisherSpy:
+            publisher = next(publisher_iter)
+            assert context is contexts[publishers.index(publisher)]
+            return publisher
+
+        def make_worker(
+            capture: CaptureBackend, publisher: PublisherBackend
+        ) -> WorkerSpy:
+            worker = next(worker_iter)
+            index = workers.index(worker)
+            assert capture is captures[index]
+            assert publisher is publishers[index]
+            return worker
+
+        backend = BrowserHostSnifferBackend(
+            AppConfig(),
+            context_factory=lambda: next(context_iter),
+            capture_factory=lambda: next(capture_iter),
+            publisher_factory=make_publisher,
+            worker_factory=make_worker,
+        )
+        with pytest.raises(RuntimeError) as caught:
+            await backend.start(object())
+        assert caught.value is failure
+        old_snapshot = old_events.copy()
+
+        page = object()
+        await backend.start(page)
+        await backend.run()
+        await backend.stop()
+
+        assert captures[1].started_pages == [page]
+        assert old_events == old_snapshot
+        assert "worker_run" not in old_events
+        assert "worker_stop" not in old_events
+        assert new_events == [
+            "publisher_bind",
+            "capture_start",
+            "worker_run",
+            "worker_stop",
+            "capture_stop",
+            "publisher_stop",
+            "context_term",
+        ]
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("stage", ["bind", "capture-start"])
 def test_start_cancellation_cleans_resources(stage: str) -> None:
     async def run() -> None:
         events: list[str] = []

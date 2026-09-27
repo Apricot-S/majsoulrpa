@@ -1297,6 +1297,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Sniffer worker
 
+- [x] runtimeはbind / capture start失敗後、同じbackendで新しいresourceを生成して再起動できる。古いworkerを実行・停止せず、新しいresourceをcleanupする。
 - [x] runtimeはfalseyな4種のfactoryを保持し、省略時は引数のデフォルトに指定したfactoryを使う。注入したresourceで起動・run・cleanupする。
 - [x] runtimeのbind / capture start待機中のキャンセルは生成済みresourceをcleanupして伝播し、未起動状態を残す。後続stopで二重解放しない。
 - [x] runtimeの各factory失敗は後続生成を止め、生成済みresourceだけをcleanupする。元の例外を伝播し、runは未起動として拒否、stopは二重cleanupしない。
