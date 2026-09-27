@@ -1,4 +1,6 @@
 import asyncio
+import importlib
+from collections.abc import Callable
 
 import pytest
 
@@ -210,6 +212,82 @@ def test_factory_failure_cleans_only_created_resources(
             await backend.run()
         await backend.stop()
         assert events == expected
+
+    asyncio.run(run())
+
+
+def test_backend_preserves_falsey_factories(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FalseyFactory[**P, T]:
+        def __init__(self, factory: Callable[P, T]) -> None:
+            self.factory = factory
+
+        def __bool__(self) -> bool:
+            return False
+
+        def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
+            return self.factory(*args, **kwargs)
+
+    def unexpected_default(*_args: object) -> None:
+        msg = "Injected factory was replaced."
+        raise AssertionError(msg)
+
+    for name in (
+        "_make_context",
+        "PlaywrightFrameCapture",
+        "_make_publisher",
+        "_make_worker",
+    ):
+        monkeypatch.setattr(
+            importlib.import_module("majsoulrpa.sniffer.runtime"),
+            name,
+            unexpected_default,
+        )
+
+    async def run() -> None:
+        events: list[str] = []
+        context = ContextSpy(events)
+        capture = CaptureSpy(events)
+        publisher = PublisherSpy(events)
+        worker = WorkerSpy(events)
+        config = AppConfig()
+
+        def make_publisher(
+            actual_context: TerminableContext, actual_config: AppConfig
+        ) -> PublisherSpy:
+            assert actual_context is context
+            assert actual_config is config
+            return publisher
+
+        def make_worker(
+            actual_capture: CaptureBackend, actual_publisher: PublisherBackend
+        ) -> WorkerSpy:
+            assert actual_capture is capture
+            assert actual_publisher is publisher
+            return worker
+
+        backend = BrowserHostSnifferBackend(
+            config,
+            context_factory=FalseyFactory(lambda: context),
+            capture_factory=FalseyFactory(lambda: capture),
+            publisher_factory=FalseyFactory(make_publisher),
+            worker_factory=FalseyFactory(make_worker),
+        )
+        page = object()
+        await backend.start(page)
+        await backend.run()
+        await backend.stop()
+        assert capture.started_pages == [page]
+        assert events == [
+            "publisher_bind",
+            "capture_start",
+            "worker_run",
+            "worker_stop",
+            "capture_stop",
+            "publisher_stop",
+            "context_term",
+        ]
 
     asyncio.run(run())
 
