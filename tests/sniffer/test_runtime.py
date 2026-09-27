@@ -91,12 +91,16 @@ class WorkerSpy:
         events: list[str],
         *,
         stop_error: Exception | None = None,
+        run_error: Exception | None = None,
     ) -> None:
         self.events = events
         self.stop_error = stop_error
+        self.run_error = run_error
 
     async def run(self) -> None:
         self.events.append("worker_run")
+        if self.run_error is not None:
+            raise self.run_error
 
     async def stop(self) -> None:
         self.events.append("worker_stop")
@@ -309,6 +313,36 @@ def test_backend_lazily_starts_publisher_before_capture() -> None:
             "worker_run",
         ]
         assert capture.started_pages == [page]
+
+    asyncio.run(run())
+
+
+def test_run_failure_propagates_and_all_resources_remain_stoppable() -> None:
+    async def run() -> None:
+        events: list[str] = []
+        error = RuntimeError("worker run failed")
+        backend, _capture, _publisher, _worker = _backend(
+            events, worker=WorkerSpy(events, run_error=error)
+        )
+        await backend.start(object())
+        events.clear()
+
+        with pytest.raises(RuntimeError) as caught:
+            await backend.run()
+        assert caught.value is error
+        assert events == ["worker_run"]
+
+        await backend.stop()
+        await backend.stop()
+        with pytest.raises(RuntimeError, match="not started"):
+            await backend.run()
+        assert events == [
+            "worker_run",
+            "worker_stop",
+            "capture_stop",
+            "publisher_stop",
+            "context_term",
+        ]
 
     asyncio.run(run())
 
