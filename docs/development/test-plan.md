@@ -1230,6 +1230,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Publication / PUB-SUB
 
+- [x] publisher / subscriberは二重bind・connectを新規socketなしで拒否し、元の接続を維持する。stopは冪等で、停止後の送受信は拒否する。
 - [x] subscriberは不正JSON / schemaをValidationErrorとして拒否し、受信済みstreamの番号を進めない。次の正常な同番号publicationは受理する。
 - [x] publisher / subscriberのoption設定失敗でもsocketをlinger=0で一度だけ閉じ、元の例外を伝播し送受信可能な状態を残さない。
 - [x] subscriberは空・1part・3partと不一致topic（正規topicの接尾辞付きも含む）を拒否し、stream追跡状態を変更しない。

@@ -123,9 +123,14 @@ def test_publisher_binds_and_sends_topic_and_json_parts() -> None:
         )
 
         await publisher.bind()
+        with pytest.raises(SnifferTransportError, match="already bound"):
+            await publisher.bind()
         first = await publisher.publish(_notice())
         second = await publisher.publish(_notice())
         await publisher.stop()
+        await publisher.stop()
+        with pytest.raises(SnifferTransportError, match="not bound"):
+            await publisher.publish(_notice())
 
         assert context.requested_socket_types == [zmq.PUB]
         assert socket.bound_endpoints == ["tcp://192.0.2.20:12001"]
@@ -177,8 +182,13 @@ def test_subscriber_connects_subscribes_and_receives_publication() -> None:
         )
         await subscriber.connect()
 
+        with pytest.raises(SnifferTransportError, match="already connected"):
+            await subscriber.connect()
         received = await subscriber.receive()
         await subscriber.stop()
+        await subscriber.stop()
+        with pytest.raises(SnifferTransportError, match="not connected"):
+            await subscriber.receive()
         await publisher.stop()
 
         assert context.requested_socket_types == [zmq.SUB]
