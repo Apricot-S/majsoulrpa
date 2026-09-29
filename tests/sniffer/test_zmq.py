@@ -16,6 +16,7 @@ from majsoulrpa.sniffer.publication import (
     SNIFFER_TOPIC,
     NoticePublication,
     dump_publication_json,
+    make_publication,
 )
 from majsoulrpa.sniffer.stream import PublicationSequenceGapError
 from majsoulrpa.sniffer.zmq import (
@@ -269,27 +270,52 @@ def test_subscriber_rejects_publication_sequence_gap() -> None:
 
 
 @pytest.mark.parametrize(
-    "parts",
+    ("topic", "part_count", "error_message"),
     [
-        [SNIFFER_TOPIC],
-        [SNIFFER_TOPIC, b"{}", b"unexpected"],
-        [b"unexpected.topic", b"{}"],
+        pytest.param(SNIFFER_TOPIC, 0, "exactly two parts", id="empty"),
+        pytest.param(
+            SNIFFER_TOPIC, 1, "exactly two parts", id="missing-payload"
+        ),
+        pytest.param(SNIFFER_TOPIC, 3, "exactly two parts", id="extra-part"),
+        pytest.param(
+            b"unexpected.topic", 2, "unexpected topic", id="wrong-topic"
+        ),
+        pytest.param(
+            SNIFFER_TOPIC + b".extra", 2, "unexpected topic", id="topic-suffix"
+        ),
     ],
 )
 def test_subscriber_rejects_invalid_multipart_message(
-    parts: list[bytes],
+    topic: bytes,
+    part_count: int,
+    error_message: str,
 ) -> None:
     async def run() -> None:
+        publication = make_publication(
+            _notice(), stream_id=STREAM_ID, publication_sequence=4
+        )
+        parts = [topic, dump_publication_json(publication), b"unexpected"][
+            :part_count
+        ]
+        first = make_publication(
+            _notice(), stream_id=STREAM_ID, publication_sequence=1
+        )
         socket = FakeSocket()
-        socket.to_receive.append(parts)
+        socket.to_receive.extend(
+            [parts, [SNIFFER_TOPIC, dump_publication_json(first)]]
+        )
         subscriber = ZmqSnifferSubscriber(
             context=FakeContext(socket),
             config=_config(),
         )
         await subscriber.connect()
 
-        with pytest.raises(SnifferTransportError):
+        with pytest.raises(SnifferTransportError, match=error_message):
             await subscriber.receive()
+        assert subscriber.started_midstream is None
+        assert await subscriber.receive() == first
+        assert subscriber.started_midstream is False
+        await subscriber.stop()
 
     asyncio.run(run())
 

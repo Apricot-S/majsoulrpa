@@ -324,6 +324,7 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] 各factoryの失敗時に後続生成を止め、生成済みresourceだけをcleanupすることを確認した。元の例外の伝播、失敗後のrun拒否とstopでの二重cleanup防止もテストし、実装は維持した。
   - [x] worker / capture / publisher各stopの単独失敗でも残りを逆順にcleanupし、元の例外を伝播する。失敗後の再stopでcleanupを繰り返さないことも既存テストへ統合し、実装は維持した。
 - [ ] `sniffer/zmq.py`: PUB/SUB topic、bind/connect、IPv6、socket/context cleanup、multipart validation を確認する。
+  - [x] 空・1part・3partと不一致topic（接尾辞付きも含む）の拒否を確認した。正常JSONを使ってtopic検証を分離し、不正受信でstreamを初期化せず後続の正常publicationを受理できることを既存テストへ追加した。実装は維持した。
 - [ ] `sniffer/client_runtime.py`: receive -> stream validation -> raw adapter -> protobuf decode -> observer -> queue の順序を確認する。
 
 Sniffer の各段は異なるデータ完全性を守るため、ファイル数だけを理由に大きな service へ統合しない。
