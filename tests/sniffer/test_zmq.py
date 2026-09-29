@@ -19,6 +19,7 @@ from majsoulrpa.sniffer.publication import (
     NoticePublication,
     dump_publication_json,
     make_publication,
+    parse_publication_json,
 )
 from majsoulrpa.sniffer.stream import (
     PublicationSequenceGapError,
@@ -46,7 +47,7 @@ class FakeSocket:
         self.closed_lingers: list[int] = []
         self.bind_error: Exception | None = None
         self.connect_error: Exception | None = None
-        self.send_error: Exception | None = None
+        self.send_error: BaseException | None = None
         self.close_error: Exception | None = None
         self.option_errors: dict[int, Exception] = {}
 
@@ -510,7 +511,10 @@ def test_close_failure_leaves_transport_stopped(
     asyncio.run(run())
 
 
-def test_failed_publish_does_not_advance_sequence() -> None:
+@pytest.mark.parametrize("error_type", [RuntimeError, asyncio.CancelledError])
+def test_failed_publish_does_not_advance_sequence(
+    error_type: type[BaseException],
+) -> None:
     async def run() -> None:
         socket = FakeSocket()
         publisher = ZmqSnifferPublisher(
@@ -519,13 +523,29 @@ def test_failed_publish_does_not_advance_sequence() -> None:
             stream_id=STREAM_ID,
         )
         await publisher.bind()
-        socket.send_error = RuntimeError("send failed")
+        first = await publisher.publish(_notice())
+        error = error_type("send failed")
+        socket.send_error = error
 
-        with pytest.raises(RuntimeError, match="send failed"):
+        with pytest.raises(error_type) as caught:
             await publisher.publish(_notice())
+        assert caught.value is error
+        assert len(socket.sent) == 1
 
         socket.send_error = None
-        publication = await publisher.publish(_notice())
-        assert publication.publication_sequence == 1
+        second = await publisher.publish(_notice())
+        third = await publisher.publish(_notice())
+        publications = [first, second, third]
+        assert [item.publication_sequence for item in publications] == [
+            1,
+            2,
+            3,
+        ]
+        assert all(item.stream_id == STREAM_ID for item in publications)
+        assert [parts[0] for parts in socket.sent] == [SNIFFER_TOPIC] * 3
+        assert [
+            parse_publication_json(parts[1]) for parts in socket.sent
+        ] == publications
+        await publisher.stop()
 
     asyncio.run(run())
