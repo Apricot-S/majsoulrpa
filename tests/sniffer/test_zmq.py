@@ -42,6 +42,7 @@ class FakeSocket:
         self.bind_error: Exception | None = None
         self.connect_error: Exception | None = None
         self.send_error: Exception | None = None
+        self.close_error: Exception | None = None
         self.option_errors: dict[int, Exception] = {}
 
     def bind(self, endpoint: str) -> None:
@@ -69,6 +70,8 @@ class FakeSocket:
 
     def close(self, *, linger: int) -> None:
         self.closed_lingers.append(linger)
+        if self.close_error is not None:
+            raise self.close_error
 
 
 class FakeContext:
@@ -435,6 +438,42 @@ def test_subscriber_closes_socket_when_setup_fails(option: int | None) -> None:
         await subscriber.stop()
         assert socket.connected_endpoints == []
         assert socket.closed_lingers == [0]
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    "transport_type",
+    [ZmqSnifferPublisher, ZmqSnifferSubscriber],
+    ids=["publisher", "subscriber"],
+)
+def test_close_failure_leaves_transport_stopped(
+    transport_type: type[ZmqSnifferPublisher] | type[ZmqSnifferSubscriber],
+) -> None:
+    async def run() -> None:
+        socket = FakeSocket()
+        transport = transport_type(
+            context=FakeContext(socket), config=_config()
+        )
+        if isinstance(transport, ZmqSnifferPublisher):
+            await transport.bind()
+        else:
+            await transport.connect()
+        error = RuntimeError("close failed")
+        socket.close_error = error
+
+        with pytest.raises(RuntimeError) as caught:
+            await transport.stop()
+        assert caught.value is error
+        await transport.stop()
+        assert socket.closed_lingers == [0]
+
+        if isinstance(transport, ZmqSnifferPublisher):
+            with pytest.raises(SnifferTransportError, match="not bound"):
+                await transport.publish(_notice())
+        else:
+            with pytest.raises(SnifferTransportError, match="not connected"):
+                await transport.receive()
 
     asyncio.run(run())
 
