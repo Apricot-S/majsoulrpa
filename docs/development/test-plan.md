@@ -1230,6 +1230,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Publication / PUB-SUB
 
+- [x] subscriberは不正JSON / schemaをValidationErrorとして拒否し、受信済みstreamの番号を進めない。次の正常な同番号publicationは受理する。
 - [x] publisher / subscriberのoption設定失敗でもsocketをlinger=0で一度だけ閉じ、元の例外を伝播し送受信可能な状態を残さない。
 - [x] subscriberは空・1part・3partと不一致topic（正規topicの接尾辞付きも含む）を拒否し、stream追跡状態を変更しない。
 - [x] streamの連続性はNotice / ReqRes共通のpublication番号で判定し、connection変更やframe番号の飛び・巻き戻りと混同しない。frameが連続でもpublicationの欠落は拒否する。

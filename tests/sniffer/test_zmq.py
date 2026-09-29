@@ -1,9 +1,11 @@
 import asyncio
 import datetime
+import json
 import uuid
 
 import pytest
 import zmq
+from pydantic import ValidationError
 
 from majsoulrpa.config import AppConfig, EndpointConfig
 from majsoulrpa.sniffer.correlator import (
@@ -236,6 +238,53 @@ def test_subscriber_records_when_first_publication_starts_midstream() -> None:
 
         assert await subscriber.receive() == publication
         assert subscriber.started_midstream is True
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    ("failure", "error_type"),
+    [("json", "json_invalid"), ("schema", "literal_error")],
+)
+def test_invalid_publication_does_not_advance_subscriber_sequence(
+    failure: str,
+    error_type: str,
+) -> None:
+    async def run() -> None:
+        first = make_publication(
+            _notice(), stream_id=STREAM_ID, publication_sequence=1
+        )
+        second = make_publication(
+            _notice(), stream_id=STREAM_ID, publication_sequence=2
+        )
+        if failure == "json":
+            invalid_payload = b'{"publication_sequence":2,'
+        else:
+            data = json.loads(dump_publication_json(second))
+            data["schema_version"] = 2
+            invalid_payload = json.dumps(data).encode()
+
+        socket = FakeSocket()
+        socket.to_receive.extend(
+            [
+                [SNIFFER_TOPIC, dump_publication_json(first)],
+                [SNIFFER_TOPIC, invalid_payload],
+                [SNIFFER_TOPIC, dump_publication_json(second)],
+            ]
+        )
+        subscriber = ZmqSnifferSubscriber(
+            context=FakeContext(socket), config=_config()
+        )
+        await subscriber.connect()
+        assert await subscriber.receive() == first
+        with pytest.raises(ValidationError) as caught:
+            await subscriber.receive()
+        assert [error["type"] for error in caught.value.errors()] == [
+            error_type
+        ]
+        assert subscriber.started_midstream is False
+        assert await subscriber.receive() == second
+        await subscriber.stop()
 
     asyncio.run(run())
 
