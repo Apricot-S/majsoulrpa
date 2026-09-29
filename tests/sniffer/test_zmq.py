@@ -40,6 +40,7 @@ class FakeSocket:
         self.bind_error: Exception | None = None
         self.connect_error: Exception | None = None
         self.send_error: Exception | None = None
+        self.option_errors: dict[int, Exception] = {}
 
     def bind(self, endpoint: str) -> None:
         if self.bind_error is not None:
@@ -52,6 +53,8 @@ class FakeSocket:
         self.connected_endpoints.append(endpoint)
 
     def setsockopt(self, option: int, value: bytes | int) -> None:
+        if option in self.option_errors:
+            raise self.option_errors[option]
         self.options.append((option, value))
 
     async def send_multipart(self, parts: list[bytes]) -> None:
@@ -320,36 +323,58 @@ def test_subscriber_rejects_invalid_multipart_message(
     asyncio.run(run())
 
 
-def test_publisher_closes_socket_when_bind_fails() -> None:
+@pytest.mark.parametrize("option", [None, zmq.IPV6], ids=["bind", "ipv6"])
+def test_publisher_closes_socket_when_setup_fails(option: int | None) -> None:
     async def run() -> None:
         socket = FakeSocket()
-        socket.bind_error = RuntimeError("bind failed")
+        error = RuntimeError("setup failed")
+        if option is None:
+            socket.bind_error = error
+        else:
+            socket.option_errors[option] = error
         publisher = ZmqSnifferPublisher(
             context=FakeContext(socket),
-            config=_config(),
+            config=_config(client_host="::1"),
             stream_id=STREAM_ID,
         )
 
-        with pytest.raises(RuntimeError, match="bind failed"):
+        with pytest.raises(RuntimeError) as caught:
             await publisher.bind()
-
+        assert caught.value is error
+        with pytest.raises(SnifferTransportError, match="not bound"):
+            await publisher.publish(_notice())
+        await publisher.stop()
+        assert socket.bound_endpoints == []
         assert socket.closed_lingers == [0]
 
     asyncio.run(run())
 
 
-def test_subscriber_closes_socket_when_connect_fails() -> None:
+@pytest.mark.parametrize(
+    "option",
+    [None, zmq.IPV6, zmq.SUBSCRIBE],
+    ids=["connect", "ipv6", "subscribe"],
+)
+def test_subscriber_closes_socket_when_setup_fails(option: int | None) -> None:
     async def run() -> None:
         socket = FakeSocket()
-        socket.connect_error = RuntimeError("connect failed")
+        error = RuntimeError("setup failed")
+        if option is None:
+            socket.connect_error = error
+        else:
+            socket.option_errors[option] = error
         subscriber = ZmqSnifferSubscriber(
             context=FakeContext(socket),
-            config=_config(),
+            config=_config(browser_host="::1"),
         )
 
-        with pytest.raises(RuntimeError, match="connect failed"):
+        with pytest.raises(RuntimeError) as caught:
             await subscriber.connect()
-
+        assert caught.value is error
+        with pytest.raises(SnifferTransportError, match="not connected"):
+            await subscriber.receive()
+        await subscriber.stop()
+        assert socket.connected_endpoints == []
         assert socket.closed_lingers == [0]
 
     asyncio.run(run())
