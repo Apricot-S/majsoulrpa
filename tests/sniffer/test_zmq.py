@@ -20,7 +20,12 @@ from majsoulrpa.sniffer.publication import (
     dump_publication_json,
     make_publication,
 )
-from majsoulrpa.sniffer.stream import PublicationSequenceGapError
+from majsoulrpa.sniffer.stream import (
+    PublicationSequenceGapError,
+    PublicationSequenceRollbackError,
+    PublicationStreamError,
+    PublicationStreamRestartError,
+)
 from majsoulrpa.sniffer.zmq import (
     SnifferTransportError,
     ZmqSnifferPublisher,
@@ -302,23 +307,46 @@ def test_invalid_publication_does_not_advance_subscriber_sequence(
     asyncio.run(run())
 
 
-def test_subscriber_rejects_publication_sequence_gap() -> None:
+@pytest.mark.parametrize(
+    ("sequence", "stream_id", "error_type"),
+    [
+        pytest.param(4, STREAM_ID, PublicationSequenceGapError, id="gap"),
+        pytest.param(
+            2, STREAM_ID, PublicationSequenceRollbackError, id="duplicate"
+        ),
+        pytest.param(
+            1, STREAM_ID, PublicationSequenceRollbackError, id="rollback"
+        ),
+        pytest.param(
+            3,
+            uuid.UUID("87654321-4321-8765-4321-876543218765"),
+            PublicationStreamRestartError,
+            id="restart",
+        ),
+    ],
+)
+def test_subscriber_rejects_discontinuity_without_changing_stream(
+    sequence: int,
+    stream_id: uuid.UUID,
+    error_type: type[PublicationStreamError],
+) -> None:
     async def run() -> None:
-        publisher_socket = FakeSocket()
-        publisher = ZmqSnifferPublisher(
-            context=FakeContext(publisher_socket),
-            config=_config(),
-            stream_id=STREAM_ID,
+        first = make_publication(
+            _notice(), stream_id=STREAM_ID, publication_sequence=2
         )
-        await publisher.bind()
-        first = await publisher.publish(_notice())
-        third = first.model_copy(update={"publication_sequence": 3})
+        invalid = make_publication(
+            _notice(), stream_id=stream_id, publication_sequence=sequence
+        )
+        following = make_publication(
+            _notice(), stream_id=STREAM_ID, publication_sequence=3
+        )
 
         socket = FakeSocket()
         socket.to_receive.extend(
             [
                 [SNIFFER_TOPIC, dump_publication_json(first)],
-                [SNIFFER_TOPIC, dump_publication_json(third)],
+                [SNIFFER_TOPIC, dump_publication_json(invalid)],
+                [SNIFFER_TOPIC, dump_publication_json(following)],
             ],
         )
         subscriber = ZmqSnifferSubscriber(
@@ -328,8 +356,12 @@ def test_subscriber_rejects_publication_sequence_gap() -> None:
         await subscriber.connect()
 
         assert await subscriber.receive() == first
-        with pytest.raises(PublicationSequenceGapError):
+        with pytest.raises(error_type):
             await subscriber.receive()
+        assert subscriber.started_midstream is True
+        assert await subscriber.receive() == following
+        assert subscriber.started_midstream is True
+        await subscriber.stop()
 
     asyncio.run(run())
 
