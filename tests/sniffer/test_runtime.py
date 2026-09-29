@@ -470,8 +470,8 @@ def test_start_and_cleanup_failures_preserve_all_causes(
     asyncio.run(run())
 
 
-@pytest.mark.parametrize("stage", ["bind", "capture-start"])
-def test_backend_retries_start_with_fresh_resources(stage: str) -> None:
+@pytest.mark.parametrize("stage", ["bind", "capture-start", "normal-stop"])
+def test_backend_restarts_with_fresh_resources(stage: str) -> None:
     async def run() -> None:
         old_events: list[str] = []
         new_events: list[str] = []
@@ -519,9 +519,25 @@ def test_backend_retries_start_with_fresh_resources(stage: str) -> None:
             publisher_factory=make_publisher,
             worker_factory=make_worker,
         )
-        with pytest.raises(RuntimeError) as caught:
+        if stage == "normal-stop":
             await backend.start(object())
-        assert caught.value is failure
+            await backend.run()
+            await backend.stop()
+            assert old_events == [
+                "publisher_bind",
+                "capture_start",
+                "worker_run",
+                "worker_stop",
+                "capture_stop",
+                "publisher_stop",
+                "context_term",
+            ]
+        else:
+            with pytest.raises(RuntimeError) as caught:
+                await backend.start(object())
+            assert caught.value is failure
+            assert "worker_run" not in old_events
+            assert "worker_stop" not in old_events
         old_snapshot = old_events.copy()
 
         page = object()
@@ -531,8 +547,6 @@ def test_backend_retries_start_with_fresh_resources(stage: str) -> None:
 
         assert captures[1].started_pages == [page]
         assert old_events == old_snapshot
-        assert "worker_run" not in old_events
-        assert "worker_stop" not in old_events
         assert new_events == [
             "publisher_bind",
             "capture_start",

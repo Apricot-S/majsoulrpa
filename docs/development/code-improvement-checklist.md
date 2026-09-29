@@ -313,7 +313,8 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] decode失敗と未対応Responseによるcorrelation失敗でrunが停止し、publishを呼ばず後続captureを未消費で残すことを確認した。既存のdecode失敗テストを拡張し、実装は維持した。
   - [x] Notice / ReqResのpublish失敗でrunが元の例外を伝播し、再試行せず後続captureを未消費で残すことを既存テストの拡張で確認した。実装は維持した。
   - [x] 注入したcorrelatorを真偽値で置き換えず、Noneの場合だけ既定instanceを生成する。falseyなinstanceへRequestが保留され、stopで未完了を検出できる回帰テストを追加した。
-- [ ] `sniffer/runtime.py`: context・publisher・capture・worker の開始順、逆順 cleanup、失敗伝播を確認する。
+- [x] `sniffer/runtime.py`: context・publisher・capture・worker の開始順、逆順 cleanup、失敗伝播を確認する。
+  - [x] 正常stop後も新しいresourceを取得して再起動し、前回のresourceを再実行・再cleanupしないことを既存の再起動テストへ統合した。実装は維持した。
   - [x] worker / capture / publisher / contextすべての停止失敗でも全cleanupを実行し、全例外をチェーンに保持することを確認した。再stopで二重cleanupせず、runは未起動として拒否する。実装は維持した。
   - [x] 起動失敗とcleanup失敗が重なると起動例外が失われる問題を修正した。両例外をBaseExceptionGroupで保持し、bind / capture startの失敗・キャンセルと複数cleanup失敗でcontext解放まで確認した。
   - [x] worker実行中の例外をrunがそのまま伝播し、続くstopで全resourceを一度ずつcleanupすることを確認した。停止後のrun拒否も回帰テストへ含め、実装は維持した。
