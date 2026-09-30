@@ -1332,6 +1332,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Client decode / hook
 
+- [x] observer失敗は元の例外を伝播し、queue投入と後続受信を行わずsubscriberを停止する。
 - [x] queueのcapacity / max_payload_bytesはint型注釈を前提にboolと0以下を拒否する。
 - [x] get / get_nowaitとも複数の差し戻しを優先し、その順序と未読・新着messageの到着順を保持する。
 - [x] queue.getの空待機中 / enqueue直後のキャンセルは伝播し、messageとbyte容量を消費しない。キャンセル後も受信・容量解放を継続できる。

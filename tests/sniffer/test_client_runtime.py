@@ -24,18 +24,21 @@ class SubscriberStub:
         self._publications = iter(publications)
         self.connected = False
         self.stopped = False
+        self.received: list[SnifferPublication] = []
 
     async def connect(self) -> None:
         self.connected = True
 
     async def receive(self) -> SnifferPublication:
         try:
-            return next(self._publications)
+            publication = next(self._publications)
         except StopIteration:
             future: asyncio.Future[SnifferPublication] = (
                 asyncio.get_running_loop().create_future()
             )
             return await future
+        self.received.append(publication)
+        return publication
 
     async def stop(self) -> None:
         self.stopped = True
@@ -83,14 +86,22 @@ class StopRuntimeError(RuntimeError):
 
 
 class ObserverSpy:
-    def __init__(self, events: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        events: list[str] | None = None,
+        *,
+        error: Exception | None = None,
+    ) -> None:
         self.messages: list[DecodedSnifferMessage] = []
         self._events = events
+        self._error = error
 
     def observe(self, message: DecodedSnifferMessage) -> None:
         if self._events is not None:
             self._events.append("observe")
         self.messages.append(message)
+        if self._error is not None:
+            raise self._error
 
 
 def _publication(sequence: int) -> NoticePublication:
@@ -162,6 +173,31 @@ def test_client_runtime_propagates_decode_error_and_stops_subscriber() -> None:
     with pytest.raises(RuntimeError, match="decode failed"):
         asyncio.run(runtime.run())
 
+    assert subscriber.stopped
+
+
+def test_observer_failure_stops_before_enqueue_and_next_receive() -> None:
+    publications = [_publication(1), _publication(2)]
+    message = _message(1)
+    subscriber = SubscriberStub(publications)
+    error = RuntimeError("observer failed")
+    observer = ObserverSpy(error=error)
+    queue = QueueSpy()
+    runtime = SnifferClientRuntime(
+        subscriber=subscriber,
+        decoder=DecoderStub({id(publications[0]): message}),
+        observer=observer,
+        queue=queue,
+    )
+
+    with pytest.raises(RuntimeError) as caught:
+        asyncio.run(runtime.run())
+
+    assert caught.value is error
+    assert observer.messages == [message]
+    assert observer.messages[0] is message
+    assert queue.messages == []
+    assert subscriber.received == [publications[0]]
     assert subscriber.stopped
 
 

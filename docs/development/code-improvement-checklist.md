@@ -335,6 +335,7 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] bind / connect失敗テストをIPv6・SUBSCRIBE設定失敗へ拡張した。元の例外を伝播し、socketをlinger=0で一度だけ閉じ、送受信可能な状態を残さないことを確認した。実装は維持した。
   - [x] 空・1part・3partと不一致topic（接尾辞付きも含む）の拒否を確認した。正常JSONを使ってtopic検証を分離し、不正受信でstreamを初期化せず後続の正常publicationを受理できることを既存テストへ追加した。実装は維持した。
 - [ ] `sniffer/client_runtime.py`: receive -> stream validation -> raw adapter -> protobuf decode -> observer -> queue の順序を確認する。
+  - [x] observer失敗時は元の例外を伝播し、queue投入と後続受信を行わずsubscriberを停止することを確認した。decode済みmessageをそのままobserverへ渡すことも確認し、実装は維持した。
 
 Sniffer の各段は異なるデータ完全性を守るため、ファイル数だけを理由に大きな service へ統合しない。
 統合候補は、失敗分類と synthetic unit test の境界を維持できる場合だけ検討する。
