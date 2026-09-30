@@ -1230,6 +1230,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Publication / PUB-SUB
 
+- [x] publisher / subscriberはbind / connect失敗後に新しいsocketを取得して再試行し、失敗したsocketを再利用・再closeせず送受信できる。
 - [x] bind / connect / option設定失敗にclose失敗が重なっても、設定時の例外をチェーンに保持し、送受信を拒否して二重closeしない。
 - [x] subscriberはrecv失敗・キャンセルをそのまま伝播し、受信済み番号と途中参加状態を保持する。失敗後も重複は拒否し次番号は受理する。
 - [x] publisherは送信成功後の失敗・キャンセルで番号を進めず、次の成功時だけ進める。送信JSONの番号・stream IDは返り値と一致する。

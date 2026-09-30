@@ -323,7 +323,8 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] bind / capture start待機中の起動タスクをキャンセルし、capture→publisher→contextのcleanupとCancelledError伝播を確認した。未起動状態でのrun拒否とstopの二重解放防止も確認し、実装は維持した。
   - [x] 各factoryの失敗時に後続生成を止め、生成済みresourceだけをcleanupすることを確認した。元の例外の伝播、失敗後のrun拒否とstopでの二重cleanup防止もテストし、実装は維持した。
   - [x] worker / capture / publisher各stopの単独失敗でも残りを逆順にcleanupし、元の例外を伝播する。失敗後の再stopでcleanupを繰り返さないことも既存テストへ統合し、実装は維持した。
-- [ ] `sniffer/zmq.py`: PUB/SUB topic、bind/connect、IPv6、socket/context cleanup、multipart validation を確認する。
+- [x] `sniffer/zmq.py`: PUB/SUB topic、bind/connect、IPv6、socket/context cleanup、multipart validation を確認する。
+  - [x] bind / connect失敗後に新しいsocketを取得して再試行し、送受信・停止できることを確認した。失敗socketを再利用・再closeせず、contextの所有と解放はruntimeへ委ねる。実装は維持した。
   - [x] bind / connect / option設定失敗にclose失敗が重なる5経路を既存テストへ追加した。元の設定例外をチェーンに保持し、以後の送受信拒否と二重close防止を確認した。実装は維持した。
   - [x] recv_multipartの失敗・キャンセルをそのまま伝播し、受信済み番号と途中参加状態を保持することを確認した。失敗後も重複を拒否し、次番号の受理とstopが可能である。実装は維持した。
   - [x] 送信失敗テストを成功後の失敗・キャンセルへ拡張した。元の例外を伝播し、失敗時に番号を進めず、後続の成功送信JSONが連番・同じstream IDで返り値と一致することを確認した。実装は維持した。

@@ -540,6 +540,65 @@ def test_close_failure_leaves_transport_stopped(
     asyncio.run(run())
 
 
+@pytest.mark.parametrize(
+    "transport_type",
+    [ZmqSnifferPublisher, ZmqSnifferSubscriber],
+    ids=["publisher", "subscriber"],
+)
+def test_setup_retry_uses_fresh_socket(
+    transport_type: type[ZmqSnifferPublisher] | type[ZmqSnifferSubscriber],
+) -> None:
+    async def run() -> None:
+        failed = FakeSocket()
+        fresh = FakeSocket()
+        sockets = iter([failed, fresh])
+        requested_types: list[int] = []
+
+        class Context:
+            def socket(self, socket_type: int) -> FakeSocket:
+                requested_types.append(socket_type)
+                return next(sockets)
+
+        transport = transport_type(context=Context(), config=_config())
+        error = RuntimeError("setup failed")
+        if isinstance(transport, ZmqSnifferPublisher):
+            failed.bind_error = error
+            start = transport.bind
+            socket_type = zmq.PUB
+        else:
+            failed.connect_error = error
+            start = transport.connect
+            socket_type = zmq.SUB
+
+        with pytest.raises(RuntimeError) as caught:
+            await start()
+        assert caught.value is error
+        assert failed.closed_lingers == [0]
+        await start()
+
+        if isinstance(transport, ZmqSnifferPublisher):
+            publication = await transport.publish(_notice())
+            assert publication.publication_sequence == 1
+            assert parse_publication_json(fresh.sent[0][1]) == publication
+        else:
+            publication = make_publication(
+                _notice(), stream_id=STREAM_ID, publication_sequence=1
+            )
+            fresh.to_receive.append(
+                [SNIFFER_TOPIC, dump_publication_json(publication)]
+            )
+            assert await transport.receive() == publication
+            assert fresh.options == [(zmq.SUBSCRIBE, SNIFFER_TOPIC)]
+
+        await transport.stop()
+        assert requested_types == [socket_type, socket_type]
+        assert failed.closed_lingers == [0]
+        assert failed.sent == []
+        assert fresh.closed_lingers == [0]
+
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize("error_type", [RuntimeError, asyncio.CancelledError])
 def test_receive_failure_preserves_stream_state(
     error_type: type[BaseException],
