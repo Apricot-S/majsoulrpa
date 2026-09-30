@@ -48,6 +48,7 @@ class FakeSocket:
         self.bind_error: Exception | None = None
         self.connect_error: Exception | None = None
         self.send_error: BaseException | None = None
+        self.receive_error: BaseException | None = None
         self.close_error: Exception | None = None
         self.option_errors: dict[int, Exception] = {}
 
@@ -72,6 +73,8 @@ class FakeSocket:
         self.sent.append(parts)
 
     async def recv_multipart(self) -> list[bytes]:
+        if self.receive_error is not None:
+            raise self.receive_error
         return self.to_receive.pop(0)
 
     def close(self, *, linger: int) -> None:
@@ -507,6 +510,49 @@ def test_close_failure_leaves_transport_stopped(
         else:
             with pytest.raises(SnifferTransportError, match="not connected"):
                 await transport.receive()
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("error_type", [RuntimeError, asyncio.CancelledError])
+def test_receive_failure_preserves_stream_state(
+    error_type: type[BaseException],
+) -> None:
+    async def run() -> None:
+        first = make_publication(
+            _notice(), stream_id=STREAM_ID, publication_sequence=4
+        )
+        following = make_publication(
+            _notice(), stream_id=STREAM_ID, publication_sequence=5
+        )
+        socket = FakeSocket()
+        socket.to_receive.extend(
+            [
+                [SNIFFER_TOPIC, dump_publication_json(first)],
+                [SNIFFER_TOPIC, dump_publication_json(first)],
+                [SNIFFER_TOPIC, dump_publication_json(following)],
+            ]
+        )
+        subscriber = ZmqSnifferSubscriber(
+            context=FakeContext(socket), config=_config()
+        )
+        await subscriber.connect()
+        assert await subscriber.receive() == first
+
+        error = error_type("receive failed")
+        socket.receive_error = error
+        with pytest.raises(error_type) as caught:
+            await subscriber.receive()
+        assert caught.value is error
+        assert subscriber.started_midstream is True
+
+        socket.receive_error = None
+        with pytest.raises(PublicationSequenceRollbackError):
+            await subscriber.receive()
+        assert await subscriber.receive() == following
+        assert subscriber.started_midstream is True
+        await subscriber.stop()
+        assert socket.closed_lingers == [0]
 
     asyncio.run(run())
 
