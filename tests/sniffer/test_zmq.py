@@ -422,10 +422,19 @@ def test_subscriber_rejects_invalid_multipart_message(
 
 
 @pytest.mark.parametrize("option", [None, zmq.IPV6], ids=["bind", "ipv6"])
-def test_publisher_closes_socket_when_setup_fails(option: int | None) -> None:
+@pytest.mark.parametrize(
+    "close_fails", [False, True], ids=["close-ok", "close-error"]
+)
+def test_publisher_closes_socket_when_setup_fails(
+    option: int | None,
+    *,
+    close_fails: bool,
+) -> None:
     async def run() -> None:
         socket = FakeSocket()
         error = RuntimeError("setup failed")
+        close_error = RuntimeError("close failed")
+        socket.close_error = close_error if close_fails else None
         if option is None:
             socket.bind_error = error
         else:
@@ -438,7 +447,11 @@ def test_publisher_closes_socket_when_setup_fails(option: int | None) -> None:
 
         with pytest.raises(RuntimeError) as caught:
             await publisher.bind()
-        assert caught.value is error
+        if close_fails:
+            assert caught.value is close_error
+            assert close_error.__context__ is error
+        else:
+            assert caught.value is error
         with pytest.raises(SnifferTransportError, match="not bound"):
             await publisher.publish(_notice())
         await publisher.stop()
@@ -453,10 +466,19 @@ def test_publisher_closes_socket_when_setup_fails(option: int | None) -> None:
     [None, zmq.IPV6, zmq.SUBSCRIBE],
     ids=["connect", "ipv6", "subscribe"],
 )
-def test_subscriber_closes_socket_when_setup_fails(option: int | None) -> None:
+@pytest.mark.parametrize(
+    "close_fails", [False, True], ids=["close-ok", "close-error"]
+)
+def test_subscriber_closes_socket_when_setup_fails(
+    option: int | None,
+    *,
+    close_fails: bool,
+) -> None:
     async def run() -> None:
         socket = FakeSocket()
         error = RuntimeError("setup failed")
+        close_error = RuntimeError("close failed")
+        socket.close_error = close_error if close_fails else None
         if option is None:
             socket.connect_error = error
         else:
@@ -468,7 +490,11 @@ def test_subscriber_closes_socket_when_setup_fails(option: int | None) -> None:
 
         with pytest.raises(RuntimeError) as caught:
             await subscriber.connect()
-        assert caught.value is error
+        if close_fails:
+            assert caught.value is close_error
+            assert close_error.__context__ is error
+        else:
+            assert caught.value is error
         with pytest.raises(SnifferTransportError, match="not connected"):
             await subscriber.receive()
         await subscriber.stop()

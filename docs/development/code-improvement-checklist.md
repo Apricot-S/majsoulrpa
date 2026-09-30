@@ -324,6 +324,7 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] 各factoryの失敗時に後続生成を止め、生成済みresourceだけをcleanupすることを確認した。元の例外の伝播、失敗後のrun拒否とstopでの二重cleanup防止もテストし、実装は維持した。
   - [x] worker / capture / publisher各stopの単独失敗でも残りを逆順にcleanupし、元の例外を伝播する。失敗後の再stopでcleanupを繰り返さないことも既存テストへ統合し、実装は維持した。
 - [ ] `sniffer/zmq.py`: PUB/SUB topic、bind/connect、IPv6、socket/context cleanup、multipart validation を確認する。
+  - [x] bind / connect / option設定失敗にclose失敗が重なる5経路を既存テストへ追加した。元の設定例外をチェーンに保持し、以後の送受信拒否と二重close防止を確認した。実装は維持した。
   - [x] recv_multipartの失敗・キャンセルをそのまま伝播し、受信済み番号と途中参加状態を保持することを確認した。失敗後も重複を拒否し、次番号の受理とstopが可能である。実装は維持した。
   - [x] 送信失敗テストを成功後の失敗・キャンセルへ拡張した。元の例外を伝播し、失敗時に番号を進めず、後続の成功送信JSONが連番・同じstream IDで返り値と一致することを確認した。実装は維持した。
   - [x] subscriber経由のgap検出テストを重複・巻き戻り・再起動へ拡張した。各例外を区別して伝播し、拒否後も元streamの次番号を受理して途中参加状態を保持することを確認した。実装は維持した。

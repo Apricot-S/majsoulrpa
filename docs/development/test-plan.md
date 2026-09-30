@@ -1230,6 +1230,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Publication / PUB-SUB
 
+- [x] bind / connect / option設定失敗にclose失敗が重なっても、設定時の例外をチェーンに保持し、送受信を拒否して二重closeしない。
 - [x] subscriberはrecv失敗・キャンセルをそのまま伝播し、受信済み番号と途中参加状態を保持する。失敗後も重複は拒否し次番号は受理する。
 - [x] publisherは送信成功後の失敗・キャンセルで番号を進めず、次の成功時だけ進める。送信JSONの番号・stream IDは返り値と一致する。
 - [x] subscriber経由でもgap・重複・巻き戻り・stream再起動を区別して拒否し、元streamの次番号を受理できる状態を保持する。
