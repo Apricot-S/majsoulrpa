@@ -13,6 +13,10 @@ from majsoulrpa.sniffer.events import (
     Direction,
     RawNotice,
 )
+from majsoulrpa.sniffer.message_queue import (
+    SnifferMessageQueue,
+    SnifferMessageQueueOverflowError,
+)
 from majsoulrpa.sniffer.publication import (
     NoticePublication,
     SnifferPublication,
@@ -199,6 +203,41 @@ def test_observer_failure_stops_before_enqueue_and_next_receive() -> None:
     assert queue.messages == []
     assert subscriber.received == [publications[0]]
     assert subscriber.stopped
+
+
+@pytest.mark.parametrize(
+    ("capacity", "max_payload_bytes"),
+    [(1, 1024), (3, len(b"synthetic"))],
+    ids=["count-limit", "byte-limit"],
+)
+def test_queue_overflow_stops_receiving_and_preserves_retained_message(
+    capacity: int,
+    max_payload_bytes: int,
+) -> None:
+    publications = [_publication(1), _publication(2), _publication(3)]
+    messages = [_message(1), _message(2)]
+    subscriber = SubscriberStub(publications)
+    observer = ObserverSpy()
+    queue = SnifferMessageQueue(
+        capacity=capacity, max_payload_bytes=max_payload_bytes
+    )
+    runtime = SnifferClientRuntime(
+        subscriber=subscriber,
+        decoder=DecoderStub(
+            dict(zip(map(id, publications[:2]), messages, strict=True))
+        ),
+        observer=observer,
+        queue=queue,
+    )
+
+    with pytest.raises(SnifferMessageQueueOverflowError):
+        asyncio.run(runtime.run())
+
+    assert subscriber.received == publications[:2]
+    assert subscriber.stopped
+    assert observer.messages == messages
+    assert queue.get_nowait() is messages[0]
+    assert queue.get_nowait() is None
 
 
 def test_client_runtime_stops_subscriber_when_cancelled() -> None:
