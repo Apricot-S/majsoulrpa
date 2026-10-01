@@ -165,18 +165,26 @@ def test_client_runtime_connects_decodes_and_enqueues_every_publication() -> (
 
 def test_client_runtime_propagates_decode_error_and_stops_subscriber() -> None:
     publication = _publication(1)
-    subscriber = SubscriberStub([publication])
+    subscriber = SubscriberStub([publication, _publication(2)])
     error = RuntimeError("decode failed")
+    events: list[str] = []
+    observer = ObserverSpy(events)
+    queue = QueueSpy(events=events)
     runtime = SnifferClientRuntime(
         subscriber=subscriber,
         decoder=DecoderStub({}, error),
-        observer=ObserverSpy(),
-        queue=QueueSpy(),
+        observer=observer,
+        queue=queue,
     )
 
-    with pytest.raises(RuntimeError, match="decode failed"):
+    with pytest.raises(RuntimeError) as caught:
         asyncio.run(runtime.run())
 
+    assert caught.value is error
+    assert events == []
+    assert observer.messages == []
+    assert queue.messages == []
+    assert subscriber.received == [publication]
     assert subscriber.stopped
 
 
