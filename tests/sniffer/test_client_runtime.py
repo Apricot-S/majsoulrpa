@@ -314,6 +314,61 @@ def test_client_runtime_stops_subscriber_when_cancelled() -> None:
     assert subscriber.stopped
 
 
+@pytest.mark.parametrize("outcome", ["connected", "cancelled"])
+def test_ready_waits_for_connect_completion(outcome: str) -> None:
+    async def exercise() -> None:
+        connecting = asyncio.Event()
+        allow_connect = asyncio.Event()
+
+        class BlockingSubscriber(SubscriberStub):
+            receive_calls = 0
+
+            async def connect(self) -> None:
+                connecting.set()
+                await allow_connect.wait()
+                await super().connect()
+
+            async def receive(self) -> SnifferPublication:
+                self.receive_calls += 1
+                return await super().receive()
+
+        subscriber = BlockingSubscriber([])
+        runtime = SnifferClientRuntime(
+            subscriber=subscriber,
+            decoder=DecoderStub({}),
+            observer=ObserverSpy(),
+            queue=QueueSpy(),
+        )
+        ready = asyncio.create_task(runtime.wait_until_ready())
+        task = asyncio.create_task(runtime.run())
+        try:
+            async with asyncio.timeout(1):
+                await connecting.wait()
+            assert not ready.done()
+            assert subscriber.receive_calls == 0
+            if outcome == "connected":
+                allow_connect.set()
+                async with asyncio.timeout(1):
+                    await asyncio.shield(ready)
+                assert subscriber.connected
+                assert subscriber.receive_calls == 1
+
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+            assert subscriber.stopped
+            if outcome == "cancelled":
+                assert not ready.done()
+                assert not subscriber.connected
+                assert subscriber.receive_calls == 0
+        finally:
+            task.cancel()
+            ready.cancel()
+            await asyncio.gather(task, ready, return_exceptions=True)
+
+    asyncio.run(exercise())
+
+
 def test_client_runtime_stops_subscriber_when_connect_fails() -> None:
     class FailingSubscriber(SubscriberStub):
         async def connect(self) -> None:
