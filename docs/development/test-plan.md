@@ -1332,6 +1332,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Client decode / hook
 
+- [x] decode失敗 / 受信キャンセルにsubscriber停止失敗が重なっても、元の原因を例外チェーンに保持し、停止は1回だけ試みる。
 - [x] wait_until_readyはconnect完了まで待機する。接続待機中のキャンセルではreadyを通知せず、受信せずsubscriberを停止する。
 - [x] 正常受信後のreceive失敗 / stream gapは元の例外を伝播してsubscriberを停止する。再受信・追加decodeを行わず、処理済みmessageを保持する。
 - [x] decode失敗は元の例外を伝播し、observer・queueを呼ばず後続受信を止め、subscriberを停止する。

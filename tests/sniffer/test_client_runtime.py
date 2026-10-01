@@ -369,6 +369,47 @@ def test_ready_waits_for_connect_completion(outcome: str) -> None:
     asyncio.run(exercise())
 
 
+@pytest.mark.parametrize("stage", ["decode", "cancelled-receive"])
+def test_stop_failure_preserves_original_failure(stage: str) -> None:
+    decode_error = RuntimeError("decode failed")
+    cancellation = asyncio.CancelledError("receive cancelled")
+    stop_error = RuntimeError("stop failed")
+
+    class FailingStopSubscriber(SubscriberStub):
+        stop_calls = 0
+
+        async def receive(self) -> SnifferPublication:
+            if stage == "cancelled-receive":
+                raise cancellation
+            return await super().receive()
+
+        async def stop(self) -> None:
+            self.stop_calls += 1
+            raise stop_error
+
+    publication = _publication(1)
+    subscriber = FailingStopSubscriber([publication, _publication(2)])
+    decoder = DecoderStub({}, error=decode_error)
+    observer = ObserverSpy()
+    queue = QueueSpy()
+    runtime = SnifferClientRuntime(
+        subscriber=subscriber, decoder=decoder, observer=observer, queue=queue
+    )
+
+    with pytest.raises(RuntimeError) as caught:
+        asyncio.run(runtime.run())
+
+    assert caught.value is stop_error
+    original_error = decode_error if stage == "decode" else cancellation
+    assert stop_error.__context__ is original_error
+    assert subscriber.stop_calls == 1
+    expected = [publication] if stage == "decode" else []
+    assert subscriber.received == expected
+    assert decoder.publications == expected
+    assert observer.messages == []
+    assert queue.messages == []
+
+
 def test_client_runtime_stops_subscriber_when_connect_fails() -> None:
     class FailingSubscriber(SubscriberStub):
         async def connect(self) -> None:
