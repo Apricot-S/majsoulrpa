@@ -21,6 +21,7 @@ from majsoulrpa.sniffer.publication import (
     NoticePublication,
     SnifferPublication,
 )
+from majsoulrpa.sniffer.stream import PublicationSequenceGapError
 
 
 class SubscriberStub:
@@ -56,11 +57,13 @@ class DecoderStub:
     ) -> None:
         self._decoded = decoded
         self._error = error
+        self.publications: list[SnifferPublication] = []
 
     def decode(
         self,
         publication: SnifferPublication,
     ) -> DecodedSnifferMessage:
+        self.publications.append(publication)
         if self._error is not None:
             raise self._error
         return self._decoded[id(publication)]
@@ -246,6 +249,47 @@ def test_queue_overflow_stops_receiving_and_preserves_retained_message(
     assert observer.messages == messages
     assert queue.get_nowait() is messages[0]
     assert queue.get_nowait() is None
+
+
+@pytest.mark.parametrize(
+    "error_type",
+    [RuntimeError, PublicationSequenceGapError],
+    ids=["receive-error", "stream-gap"],
+)
+def test_receive_failure_stops_after_previously_processed_message(
+    error_type: type[Exception],
+) -> None:
+    error = error_type("receive failed")
+
+    class FailingSubscriber(SubscriberStub):
+        receive_calls = 0
+
+        async def receive(self) -> SnifferPublication:
+            self.receive_calls += 1
+            if self.receive_calls == 2:
+                raise error
+            return await super().receive()
+
+    first = _publication(1)
+    message = _message(1)
+    subscriber = FailingSubscriber([first, _publication(2)])
+    decoder = DecoderStub({id(first): message})
+    observer = ObserverSpy()
+    queue = QueueSpy()
+    runtime = SnifferClientRuntime(
+        subscriber=subscriber, decoder=decoder, observer=observer, queue=queue
+    )
+
+    with pytest.raises(error_type) as caught:
+        asyncio.run(runtime.run())
+
+    assert caught.value is error
+    assert subscriber.receive_calls == 2
+    assert subscriber.received == [first]
+    assert decoder.publications == [first]
+    assert observer.messages == [message]
+    assert queue.messages == [message]
+    assert subscriber.stopped
 
 
 def test_client_runtime_stops_subscriber_when_cancelled() -> None:

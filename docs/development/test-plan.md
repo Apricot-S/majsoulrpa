@@ -1332,6 +1332,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Client decode / hook
 
+- [x] 正常受信後のreceive失敗 / stream gapは元の例外を伝播してsubscriberを停止する。再受信・追加decodeを行わず、処理済みmessageを保持する。
 - [x] decode失敗は元の例外を伝播し、observer・queueを呼ばず後続受信を止め、subscriberを停止する。
 - [x] client runtimeは実queueの件数 / byte overflowを伝播して後続受信を止め、subscriberを停止する。observerは投入前に呼ばれ、保持済みmessageは失わない。
 - [x] observer失敗は元の例外を伝播し、queue投入と後続受信を行わずsubscriberを停止する。
