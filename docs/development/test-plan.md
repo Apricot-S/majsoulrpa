@@ -1332,6 +1332,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Client decode / hook
 
+- [x] 実decoder・queueを使うReqRes配送でRequest / Responseの本文・raw bytes・観測時刻を取り違えず、observerとqueueへ同一eventを渡す。
 - [x] 実decoder・queueを使ったruntime経路でsynthetic Notice本文をdecodeし、raw bytes・観測情報を保持した同一eventをobserver→queueへ渡す。
 - [x] decode失敗 / 受信キャンセルにsubscriber停止失敗が重なっても、元の原因を例外チェーンに保持し、停止は1回だけ試みる。
 - [x] wait_until_readyはconnect完了まで待機する。接続待機中のキャンセルではreadyを通知せず、受信せずsubscriberを停止する。

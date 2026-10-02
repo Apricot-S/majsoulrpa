@@ -7,16 +7,21 @@ from collections.abc import Iterable
 import pytest
 
 from majsoulrpa.assets.protocol.liqi_pb2 import (
+    Error,
     NotifyAccountLevelChange,
+    ReqHeatBeat,
+    ResCommon,
     Wrapper,
 )
 from majsoulrpa.sniffer.client_runtime import SnifferClientRuntime
 from majsoulrpa.sniffer.decoder import SnifferMessageDecoder
 from majsoulrpa.sniffer.events import (
     DecodedNotice,
+    DecodedRequestResponse,
     DecodedSnifferMessage,
     Direction,
     RawNotice,
+    RawRequestResponse,
 )
 from majsoulrpa.sniffer.message_queue import (
     SnifferMessageQueue,
@@ -24,6 +29,7 @@ from majsoulrpa.sniffer.message_queue import (
 )
 from majsoulrpa.sniffer.publication import (
     NoticePublication,
+    RequestResponsePublication,
     SnifferPublication,
 )
 from majsoulrpa.sniffer.stream import PublicationSequenceGapError
@@ -171,21 +177,11 @@ def test_client_runtime_connects_decodes_and_enqueues_every_publication() -> (
     assert subscriber.stopped
 
 
-def test_runtime_delivers_real_decoded_notice_to_observer_and_queue() -> None:
-    name = ".lq.NotifyAccountLevelChange"
-    payload = (
-        b"\x01"
-        + Wrapper(
-            name=name,
-            data=NotifyAccountLevelChange(type=2).SerializeToString(),
-        ).SerializeToString()
-    )
-    data = _publication(1).model_dump()
-    data.update(
-        api_name=name, payload_base64=base64.b64encode(payload).decode("ascii")
-    )
-    publication = NoticePublication.model_validate(data)
-    queue = SnifferMessageQueue(capacity=1, max_payload_bytes=len(payload))
+def _deliver_with_real_decoder(
+    publication: SnifferPublication,
+    payload_bytes: int,
+) -> DecodedSnifferMessage:
+    queue = SnifferMessageQueue(capacity=1, max_payload_bytes=payload_bytes)
 
     class InspectingObserver(ObserverSpy):
         def observe(self, message: DecodedSnifferMessage) -> None:
@@ -212,6 +208,27 @@ def test_runtime_delivers_real_decoded_notice_to_observer_and_queue() -> None:
     assert len(observer.messages) == 1
     message = queue.get_nowait()
     assert message is observer.messages[0]
+    assert message is not None
+    assert queue.get_nowait() is None
+    assert subscriber.stopped
+    return message
+
+
+def test_runtime_delivers_real_decoded_notice_to_observer_and_queue() -> None:
+    name = ".lq.NotifyAccountLevelChange"
+    payload = (
+        b"\x01"
+        + Wrapper(
+            name=name,
+            data=NotifyAccountLevelChange(type=2).SerializeToString(),
+        ).SerializeToString()
+    )
+    data = _publication(1).model_dump()
+    data.update(
+        api_name=name, payload_base64=base64.b64encode(payload).decode("ascii")
+    )
+    publication = NoticePublication.model_validate(data)
+    message = _deliver_with_real_decoder(publication, len(payload))
     assert isinstance(message, DecodedNotice)
     assert message.message["type"] == 2
     assert message.raw == RawNotice(
@@ -220,8 +237,59 @@ def test_runtime_delivers_real_decoded_notice_to_observer_and_queue() -> None:
         payload=payload,
         observed_at=publication.observed_at,
     )
-    assert queue.get_nowait() is None
-    assert subscriber.stopped
+
+
+def test_runtime_delivers_real_decoded_exchange_without_swapping_sides() -> (
+    None
+):
+    name = ".lq.Lobby.heatbeat"
+    request = (
+        b"\x02\x34\x12"
+        + Wrapper(
+            name=name,
+            data=ReqHeatBeat(no_operation_counter=9).SerializeToString(),
+        ).SerializeToString()
+    )
+    response = (
+        b"\x03\x34\x12"
+        + Wrapper(
+            data=ResCommon(error=Error(code=7)).SerializeToString()
+        ).SerializeToString()
+    )
+    request_at = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
+    response_at = request_at + datetime.timedelta(seconds=1)
+    publication = RequestResponsePublication(
+        schema_version=1,
+        stream_id=_publication(1).stream_id,
+        publication_sequence=1,
+        connection_id="connection-1",
+        request_direction=Direction.OUTBOUND,
+        request_number=0x1234,
+        request_frame_sequence=1,
+        response_frame_sequence=2,
+        request_observed_at=request_at,
+        response_observed_at=response_at,
+        api_name=name,
+        request_payload_base64=base64.b64encode(request).decode("ascii"),
+        response_payload_base64=base64.b64encode(response).decode("ascii"),
+    )
+    message = _deliver_with_real_decoder(
+        publication, len(request) + len(response)
+    )
+
+    assert isinstance(message, DecodedRequestResponse)
+    assert message.request["no_operation_counter"] == 9
+    error = message.response["error"]
+    assert isinstance(error, dict)
+    assert error["code"] == 7
+    assert message.raw == RawRequestResponse(
+        request_direction=Direction.OUTBOUND,
+        name=name,
+        request=request,
+        response=response,
+        request_observed_at=request_at,
+        response_observed_at=response_at,
+    )
 
 
 def test_client_runtime_propagates_decode_error_and_stops_subscriber() -> None:

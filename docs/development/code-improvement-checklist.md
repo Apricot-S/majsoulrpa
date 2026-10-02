@@ -335,6 +335,7 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] bind / connect失敗テストをIPv6・SUBSCRIBE設定失敗へ拡張した。元の例外を伝播し、socketをlinger=0で一度だけ閉じ、送受信可能な状態を残さないことを確認した。実装は維持した。
   - [x] 空・1part・3partと不一致topic（接尾辞付きも含む）の拒否を確認した。正常JSONを使ってtopic検証を分離し、不正受信でstreamを初期化せず後続の正常publicationを受理できることを既存テストへ追加した。実装は維持した。
 - [ ] `sniffer/client_runtime.py`: receive -> stream validation -> raw adapter -> protobuf decode -> observer -> queue の順序を確認する。
+  - [x] 実decoder・queueのReqRes統合テストで本文・raw bytes・観測時刻を両側で区別して保持し、observer→queueへ同一eventを配送することを確認した。Noticeと共通の配送確認をhelperへ整理し、実装は維持した。
   - [x] synthetic Noticeを実decoder・queueへ通し、本文decodeとraw bytes・観測情報の保持、observer→queueへの同一event配送を確認した。実装は維持した。
   - [x] decode失敗 / 受信キャンセルとsubscriber停止失敗が重なる場合、元の原因を例外チェーンに保持することを確認した。停止試行は1回で、observer・queueへ進まない。実装は維持した。
   - [x] wait_until_readyは接続完了まで待機し、接続待機中のキャンセルではreadyを通知せず、受信せずsubscriberを停止することをEventで同期して確認した。実装は維持した。
