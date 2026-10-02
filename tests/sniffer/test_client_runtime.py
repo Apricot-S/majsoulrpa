@@ -537,20 +537,40 @@ def test_stop_failure_preserves_original_failure(stage: str) -> None:
 
 
 def test_client_runtime_stops_subscriber_when_connect_fails() -> None:
+    error = RuntimeError("connect failed")
+
     class FailingSubscriber(SubscriberStub):
         async def connect(self) -> None:
-            msg = "connect failed"
-            raise RuntimeError(msg)
+            raise error
 
-    subscriber = FailingSubscriber([])
+    subscriber = FailingSubscriber([_publication(1)])
+    decoder = DecoderStub({})
+    observer = ObserverSpy()
+    queue = QueueSpy()
     runtime = SnifferClientRuntime(
         subscriber=subscriber,
-        decoder=DecoderStub({}),
-        observer=ObserverSpy(),
-        queue=QueueSpy(),
+        decoder=decoder,
+        observer=observer,
+        queue=queue,
     )
 
-    with pytest.raises(RuntimeError, match="connect failed"):
-        asyncio.run(runtime.run())
+    async def exercise() -> None:
+        ready = asyncio.create_task(runtime.wait_until_ready())
+        try:
+            await asyncio.sleep(0)
+            with pytest.raises(RuntimeError) as caught:
+                await runtime.run()
+            assert caught.value is error
+            await asyncio.sleep(0)
+            assert not ready.done()
+        finally:
+            ready.cancel()
+            await asyncio.gather(ready, return_exceptions=True)
 
+    asyncio.run(exercise())
+
+    assert subscriber.received == []
+    assert decoder.publications == []
+    assert observer.messages == []
+    assert queue.messages == []
     assert subscriber.stopped
