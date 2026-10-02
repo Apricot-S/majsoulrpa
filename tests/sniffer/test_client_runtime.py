@@ -6,7 +6,12 @@ from collections.abc import Iterable
 
 import pytest
 
+from majsoulrpa.assets.protocol.liqi_pb2 import (
+    NotifyAccountLevelChange,
+    Wrapper,
+)
 from majsoulrpa.sniffer.client_runtime import SnifferClientRuntime
+from majsoulrpa.sniffer.decoder import SnifferMessageDecoder
 from majsoulrpa.sniffer.events import (
     DecodedNotice,
     DecodedSnifferMessage,
@@ -163,6 +168,59 @@ def test_client_runtime_connects_decodes_and_enqueues_every_publication() -> (
     assert observer.messages == messages
     assert queue.messages == messages
     assert events == ["observe", "enqueue", "observe", "enqueue"]
+    assert subscriber.stopped
+
+
+def test_runtime_delivers_real_decoded_notice_to_observer_and_queue() -> None:
+    name = ".lq.NotifyAccountLevelChange"
+    payload = (
+        b"\x01"
+        + Wrapper(
+            name=name,
+            data=NotifyAccountLevelChange(type=2).SerializeToString(),
+        ).SerializeToString()
+    )
+    data = _publication(1).model_dump()
+    data.update(
+        api_name=name, payload_base64=base64.b64encode(payload).decode("ascii")
+    )
+    publication = NoticePublication.model_validate(data)
+    queue = SnifferMessageQueue(capacity=1, max_payload_bytes=len(payload))
+
+    class InspectingObserver(ObserverSpy):
+        def observe(self, message: DecodedSnifferMessage) -> None:
+            assert queue.get_nowait() is None
+            super().observe(message)
+
+    class OnePublicationSubscriber(SubscriberStub):
+        async def receive(self) -> SnifferPublication:
+            if self.received:
+                raise StopRuntimeError
+            return await super().receive()
+
+    subscriber = OnePublicationSubscriber([publication])
+    observer = InspectingObserver()
+    runtime = SnifferClientRuntime(
+        subscriber=subscriber,
+        decoder=SnifferMessageDecoder(),
+        observer=observer,
+        queue=queue,
+    )
+    with pytest.raises(StopRuntimeError):
+        asyncio.run(runtime.run())
+
+    assert len(observer.messages) == 1
+    message = queue.get_nowait()
+    assert message is observer.messages[0]
+    assert isinstance(message, DecodedNotice)
+    assert message.message["type"] == 2
+    assert message.raw == RawNotice(
+        direction=publication.direction,
+        name=name,
+        payload=payload,
+        observed_at=publication.observed_at,
+    )
+    assert queue.get_nowait() is None
     assert subscriber.stopped
 
 
