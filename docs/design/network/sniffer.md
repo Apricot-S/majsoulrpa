@@ -68,9 +68,58 @@ Playwright Page
 - text frame を対応済みとして扱わず、明示的な unsupported frame error にする
 - start / stop 時に event listener を確実に登録解除する
 
+`start()` はpage listenerの登録が正常終了した後に起動状態を確定する。登録前の失敗は
+元の例外を伝播し、その後に呼び出し側が別pageで起動できる。起動済みの場合は、
+同じpageでも別pageでも `PlaywrightCaptureError` で再startを拒否し、元の登録を維持する。
+
+`stop()` を呼んだinstanceは再startできず、`PlaywrightCaptureError` にする。
+起動前のstopやlistener解除失敗も停止済みとして扱い、stopの繰り返しは許容する。
+従来は再startできたが、queue・failure・frame sequenceが残って別の監視へ混入するため、
+再利用を禁止する。新しい監視には新しいinstanceを作る。標準runtimeは元から起動ごとに
+captureを生成するため影響しない。startの登録失敗だけでは停止済みにせず、stop前なら
+起動し直せる。これはcapture内部のlifecycleの変更で、wire schemaは変えない。
+
+WebSocketのlistener登録途中で失敗した場合、`on()` が正常終了したlistenerだけを
+逆順に解除し、登録例外を伝播する。rollbackの解除も失敗した場合は残りの解除を
+試み、解除例外（複数なら例外group）のcontextに元の登録例外を保持する。
+登録が完了しなかったWebSocketはcapture側の登録済み一覧へ追加しない。
+
+`stop()` はpage listener、各WebSocketのsent / received / close listenerの順で解除を
+一通り試みる。解除に失敗しても後続の解除を試み、単一の失敗は元の例外を、複数の
+失敗は `BaseExceptionGroup`（通常の例外だけなら `ExceptionGroup`）を送出する。
+停止時にcapture側の保持参照は解放し、解除に失敗したlistenerの自動再試行は行わない。
+失敗を成功扱いにはせず、browser hostのresource cleanupへ伝播する。
+
+connection close時も対象WebSocketのsent / received / close listenerを一通り解除し、
+同じ単一例外・例外groupの方針でclose callbackから失敗を伝播する。capture側の対象
+WebSocketの保持参照は解除結果によらず解放し、後続の `stop()` では再解除しない。
+他のconnectionのlistenerには触れず、close eventは従来どおり解除処理の前にqueueへ投入する。
+
 Playwright の callback 内では payload のコピーと bounded queue への投入だけを
 行う。protobuf decode や ZMQ send で callback をブロックしない。queue overflow
 は frame を黙って捨てず、Sniffer の致命的エラーにする。
+
+`receive()` は呼び出し時とqueue待機から再開した時点で致命的エラーを確認する。
+待機中にframeが投入され、その直後にoverflowやunsupported frameが検出された場合も、
+通常frameを返す前に検出済みエラーを送出する。失敗後の受信も同じエラーで失敗する。
+
+`receive()` のqueue待機はcancellationをそのまま伝播する。空queueでの待機中だけでなく、
+frame投入後に受信taskが再開する前のcancelでも、未受信frameはqueueに残り、
+次の `receive()` で取得できる。capture全体の停止と単一の受信待機のcancelは区別する。
+
+`PlaywrightFrameCapture` の `queue_size` は `int` 型注釈を前提とし、boolean と0以下を
+生成時に `ValueError` にする。boolean は `int` の派生型として型検査でも許容されるが、
+キューの件数としては扱わない。それ以外の型の検証は追加しない。
+既定値1024と正の整数での利用は変わらず、公開eventやwire schemaへの影響はない。
+
+`queue_size` は唯一の整数設定なので、`PlaywrightFrameCapture(1024)` のような位置指定も
+許可する。既存のキーワード指定は維持する。`clock` と `connection_id_factory` はともに
+引数なしのcallableで取り違えやすいため、キーワード専用とする。
+
+capture の `clock` / `connection_id_factory` は、未指定ならそれぞれ `utc_now` /
+UUID生成関数を使う。これらの関数を直接デフォルト値とし、注入されたcallableの真偽値は
+評価しない。`None` に独立した意味はないため、明示的な `None` 指定はサポートせず、
+既定動作を使う呼び出しでは引数を省略する。リポジトリ内に明示的な `None` 指定はない。
 
 ### `LiqiEnvelopeParser`（browser host）
 
@@ -88,6 +137,15 @@ request / response message class への decode は行わない。空 payload、�
 既知の protocol heartbeat を除外する必要が確認できた場合は、synthetic data
 で byte 単位の条件を固定し、`IgnoredControlFrame` として明示的に扱う。
 「parse できない payload を heartbeat とみなす」fallback は置かない。
+
+Wrapperのnameに不正UTF-8がある場合やlength-delimited fieldが途中で切れている場合は、
+protobufの `DecodeError` を原因に保持した `SnifferDecodeError` にする。一方、空の
+protobuf本文は有効であり、すべてのkindで許容する。Responseはnameも空なので、
+Wrapper全体が空でも有効である。Notice / Requestは空本文でもAPI名を必要とする。
+
+Notice / RequestのAPI名はfield省略・明示的空文字の両方を拒否する。非空名は
+正規化せず保持し、既知APIかどうかの判定はclient decoderのdescriptor照合に委ねる。
+Responseの非空名を拒否するときは、名前や本文を例外messageに含めない。
 
 ### `RequestResponseCorrelator`（browser host）
 
@@ -113,6 +171,10 @@ key だけに対応する。
 初期実装では Request の wall-clock timeout を設けない。実通信で正当な最大応答
 時間をまだ決められず、任意の timeout は偽陽性になるためである。番号の再利用、
 connection close、Sniffer stop を検証境界とする。
+
+対応付け結果の内部値object `CorrelatedRequestResponse` は、同じ型のrequest / responseを
+取り違えないようキーワード専用で生成する。従来の位置指定は拒否するが、リポジトリ内の
+呼び出しはすべて名前付きであり影響はない。公開eventやwire schemaは変更しない。
 
 ### `ZmqSnifferPublisher`（browser host）
 
@@ -229,6 +291,29 @@ frame 2: publication JSON bytes
 
 schema に未知 field がある場合は初期実装では reject する。schema version が違う
 場合も暗黙に読み替えない。
+
+`schema_version` は必須で、整数の `1` のみを受理し、`true`・`1.0`・`"1"` は
+拒否する。従来のLiteral比較で受理されていたboolean / floatを排除する変更であり、
+標準publisherの整数出力とschema version自体は変更しない。
+
+version欠落のJSONは既定値で補わず拒否する。Pythonでpublication modelを直接生成する
+場合もversionを明示する。標準publisherの生成関数は `SCHEMA_VERSION` を指定するため、
+従来の標準publisherが出力したJSONとの互換性は維持する。
+
+publication modelとJSON受信用union adapterは、`ValidationError` の文字列表示で入力値を
+非表示にし、base64 payloadやpublication全体を通常のエラー出力へ含めない。
+これは構造化された `errors()` / `json()` 内の入力値を除去する設定ではないため、
+それらをそのまま通常ログへ出さない。
+
+publication / frame sequenceとrequest numberはstrictな整数fieldとする。
+JSONの文字列・boolean・floatからの整数変換は行わず、型不正として拒否する。
+従来受け付けていたこれらの入力は拒否されるが、標準publisherの整数出力と
+field名・値域は変わらないためschema versionは維持する。
+
+Req/Res publicationはresponse frame sequenceがrequestより大きいことを生成時と
+JSON受信時に検証する。同値・逆順の組は拒否するが、途中に別frameが入るため連番は
+要求しない。観測時刻はwall clockなので、時刻の逆行をこの順序検証に使わない。
+標準captureの単調増加sequenceに沿う制約の明確化であり、schema versionは維持する。
 
 ## 配送保証と Screen 状態
 

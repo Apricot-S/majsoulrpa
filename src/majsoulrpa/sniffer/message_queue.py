@@ -21,10 +21,10 @@ class SnifferMessageQueue:
         capacity: int,
         max_payload_bytes: int,
     ) -> None:
-        if capacity <= 0:
+        if isinstance(capacity, bool) or capacity <= 0:
             msg = "Sniffer message queue capacity must be positive."
             raise ValueError(msg)
-        if max_payload_bytes <= 0:
+        if isinstance(max_payload_bytes, bool) or max_payload_bytes <= 0:
             msg = "Sniffer message queue max_payload_bytes must be positive."
             raise ValueError(msg)
         self._capacity = capacity

@@ -3,6 +3,13 @@ import datetime
 import uuid
 
 import pytest
+from google.protobuf.descriptor_pb2 import (
+    # These classes are generated dynamically by protobuf.
+    FieldDescriptorProto,  # ty: ignore[unresolved-import]
+    FileDescriptorProto,  # ty: ignore[unresolved-import]
+)
+from google.protobuf.descriptor_pool import DescriptorPool
+from google.protobuf.message import DecodeError
 
 from majsoulrpa.assets.protocol.liqi_pb2 import (
     AccountLevel,
@@ -55,6 +62,7 @@ def _notice_publication(
         ).SerializeToString()
     )
     return NoticePublication(
+        schema_version=1,
         stream_id=STREAM_ID,
         publication_sequence=1,
         connection_id="connection-1",
@@ -89,13 +97,16 @@ def _request_response_publication(
             data=request_body,
         ).SerializeToString()
     )
-    response_number = raw_response_number or request_number
+    response_number = (
+        request_number if raw_response_number is None else raw_response_number
+    )
     response_raw = (
         b"\x03"
         + response_number.to_bytes(2, byteorder="little")
         + Wrapper(data=response_body).SerializeToString()
     )
     return RequestResponsePublication(
+        schema_version=1,
         stream_id=STREAM_ID,
         publication_sequence=1,
         connection_id="connection-1",
@@ -122,6 +133,60 @@ def test_decoder_decodes_notice_with_descriptor_message_type() -> None:
     assert decoded.message["type"] == 2
     assert decoded.message["origin"] == {"id": 10101, "score": 1200}
     assert decoded.message["final"] == {"id": 10102, "score": 1300}
+
+
+@pytest.mark.parametrize("kind", ["notice", "exchange"])
+def test_decoder_uses_injected_descriptor_without_sharing_api_map(
+    kind: str,
+) -> None:
+    schema = FileDescriptorProto(
+        name="synthetic_decoder.proto", package="synthetic", syntax="proto3"
+    )
+    for name, field in (
+        ("Notice", "notice_value"),
+        ("Request", "request_value"),
+        ("Response", "response_value"),
+    ):
+        message = schema.message_type.add(name=name)
+        message.field.add(
+            name=field,
+            number=1,
+            label=FieldDescriptorProto.LABEL_OPTIONAL,
+            type=FieldDescriptorProto.TYPE_INT32,
+        )
+    service = schema.service.add(name="Service")
+    service.method.add(
+        name="call",
+        input_type=".synthetic.Request",
+        output_type=".synthetic.Response",
+    )
+    standard = SnifferMessageDecoder()
+    # Protobuf selects the pool implementation dynamically.
+    pool = DescriptorPool()  # ty: ignore[possibly-missing-implicit-call]
+    custom = SnifferMessageDecoder(pool.Add(schema))
+    if kind == "notice":
+        publication = _notice_publication(
+            api_name=".synthetic.Notice", body=b""
+        )
+        decoded = custom.decode(publication)
+        assert isinstance(decoded, DecodedNotice)
+        assert decoded.message == {"notice_value": 0}
+    else:
+        publication = _request_response_publication(
+            api_name=".synthetic.Service.call",
+            request_body=b"",
+            response_body=b"",
+        )
+        decoded = custom.decode(publication)
+        assert isinstance(decoded, DecodedRequestResponse)
+        assert decoded.request == {"request_value": 0}
+        assert decoded.response == {"response_value": 0}
+
+    with pytest.raises(UnknownAPIError):
+        standard.decode(publication)
+    with pytest.raises(UnknownAPIError):
+        custom.decode(_notice_publication())
+    assert isinstance(standard.decode(_notice_publication()), DecodedNotice)
 
 
 def test_decoder_decodes_request_and_response_from_service_method() -> None:
@@ -163,28 +228,147 @@ def test_decoder_rejects_unknown_api(
         SnifferMessageDecoder().decode(publication)
 
 
-def test_decoder_rejects_malformed_known_message_body() -> None:
-    publication = _notice_publication(body=b"\x80")
-
-    with pytest.raises(LiqiBodyDecodeError, match="protobuf body"):
+@pytest.mark.parametrize(
+    "publication",
+    [
+        pytest.param(_notice_publication(body=b"\x80"), id="notice"),
+        pytest.param(
+            _request_response_publication(request_body=b"\x80"), id="request"
+        ),
+        pytest.param(
+            _request_response_publication(response_body=b"\x80"), id="response"
+        ),
+    ],
+)
+def test_decoder_rejects_malformed_known_message_body(
+    publication: NoticePublication | RequestResponsePublication,
+) -> None:
+    with pytest.raises(LiqiBodyDecodeError, match="protobuf body") as caught:
         SnifferMessageDecoder().decode(publication)
+    assert isinstance(caught.value.__cause__, DecodeError)
 
 
-def test_decoder_rejects_publication_and_wrapper_api_name_mismatch() -> None:
-    publication = _notice_publication(wrapper_name=".lq.NotifyAccountLogout")
+def test_decoder_accepts_empty_notice_body() -> None:
+    decoded = SnifferMessageDecoder().decode(_notice_publication(body=b""))
 
+    assert isinstance(decoded, DecodedNotice)
+    assert decoded.message["type"] == 0
+    assert "origin" not in decoded.message
+    assert "final" not in decoded.message
+
+
+def test_decoder_accepts_empty_request_and_response_bodies() -> None:
+    decoded = SnifferMessageDecoder().decode(
+        _request_response_publication(request_body=b"", response_body=b"")
+    )
+
+    assert isinstance(decoded, DecodedRequestResponse)
+    assert decoded.request["no_operation_counter"] == 0
+    assert "error" not in decoded.response
+
+
+@pytest.mark.parametrize(
+    "publication",
+    [
+        pytest.param(
+            _notice_publication(wrapper_name=".lq.NotifyAccountLogout"),
+            id="notice",
+        ),
+        pytest.param(
+            _request_response_publication(wrapper_name=".lq.Lobby.login"),
+            id="request",
+        ),
+    ],
+)
+def test_decoder_rejects_publication_and_wrapper_api_name_mismatch(
+    publication: NoticePublication | RequestResponsePublication,
+) -> None:
     with pytest.raises(PublicationEnvelopeMismatchError, match="API name"):
         SnifferMessageDecoder().decode(publication)
 
 
-def test_decoder_rejects_request_and_response_number_mismatch() -> None:
-    publication = _request_response_publication(raw_response_number=0x4321)
+@pytest.mark.parametrize(
+    ("publication", "field", "payload", "expected_kind"),
+    [
+        pytest.param(
+            _notice_publication(),
+            "payload_base64",
+            _request_response_publication().request_payload_base64,
+            "Notice",
+            id="request-in-notice",
+        ),
+        pytest.param(
+            _request_response_publication(),
+            "request_payload_base64",
+            _notice_publication().payload_base64,
+            "Request",
+            id="notice-in-request",
+        ),
+        pytest.param(
+            _request_response_publication(),
+            "response_payload_base64",
+            _request_response_publication().request_payload_base64,
+            "Response",
+            id="request-in-response",
+        ),
+    ],
+)
+def test_decoder_rejects_wrong_envelope_kind(
+    publication: NoticePublication | RequestResponsePublication,
+    field: str,
+    payload: str,
+    expected_kind: str,
+) -> None:
+    data = publication.model_dump()
+    data[field] = payload
+    publication = type(publication).model_validate(data)
+
+    with pytest.raises(
+        PublicationEnvelopeMismatchError,
+        match=f"does not contain a {expected_kind} envelope",
+    ):
+        SnifferMessageDecoder().decode(publication)
+
+
+@pytest.mark.parametrize(
+    ("publication_number", "request_number", "response_number"),
+    [
+        pytest.param(0x1234, 0x1234, 0, id="response-zero"),
+        pytest.param(0x1234, 0, 0x1234, id="request-zero"),
+        pytest.param(0, 0x1234, 0x1234, id="metadata-only"),
+    ],
+)
+def test_decoder_rejects_request_and_response_number_mismatch(
+    publication_number: int,
+    request_number: int,
+    response_number: int,
+) -> None:
+    publication = _request_response_publication(
+        request_number=request_number, raw_response_number=response_number
+    )
+    data = publication.model_dump()
+    data["request_number"] = publication_number
+    publication = RequestResponsePublication.model_validate(data)
 
     with pytest.raises(
         PublicationEnvelopeMismatchError,
         match="request number",
     ):
         SnifferMessageDecoder().decode(publication)
+
+
+def test_decoder_accepts_request_number_zero() -> None:
+    publication = _request_response_publication(
+        request_number=0, raw_response_number=0
+    )
+
+    decoded = SnifferMessageDecoder().decode(publication)
+
+    assert isinstance(decoded, DecodedRequestResponse)
+    assert decoded.request["no_operation_counter"] == 9
+    error = decoded.response["error"]
+    assert isinstance(error, dict)
+    assert error["code"] == 7
 
 
 def test_request_response_rejects_api_without_response_type() -> None:

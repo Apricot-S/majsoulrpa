@@ -51,21 +51,42 @@ type WorkerFactory = Callable[
 ]
 
 
+def _make_context() -> TerminableContext:
+    return zmq.asyncio.Context()
+
+
+def _make_publisher(
+    context: TerminableContext,
+    config: AppConfig,
+) -> PublisherBackend:
+    return ZmqSnifferPublisher(
+        context=cast("AsyncZmqContextLike", context),
+        config=config,
+    )
+
+
+def _make_worker(
+    capture: CaptureBackend,
+    publisher: PublisherBackend,
+) -> WorkerBackend:
+    return SnifferWorker(capture=capture, publisher=publisher)
+
+
 class BrowserHostSnifferBackend:
     def __init__(
         self,
         config: AppConfig,
         *,
-        context_factory: ContextFactory | None = None,
-        capture_factory: CaptureFactory | None = None,
-        publisher_factory: PublisherFactory | None = None,
-        worker_factory: WorkerFactory | None = None,
+        context_factory: ContextFactory = _make_context,
+        capture_factory: CaptureFactory = PlaywrightFrameCapture,
+        publisher_factory: PublisherFactory = _make_publisher,
+        worker_factory: WorkerFactory = _make_worker,
     ) -> None:
         self._config = config
-        self._context_factory = context_factory or _make_context
-        self._capture_factory = capture_factory or PlaywrightFrameCapture
-        self._publisher_factory = publisher_factory or _make_publisher
-        self._worker_factory = worker_factory or _make_worker
+        self._context_factory = context_factory
+        self._capture_factory = capture_factory
+        self._publisher_factory = publisher_factory
+        self._worker_factory = worker_factory
         self._context: TerminableContext | None = None
         self._capture: CaptureBackend | None = None
         self._publisher: PublisherBackend | None = None
@@ -86,12 +107,19 @@ class BrowserHostSnifferBackend:
             worker = self._worker_factory(created_capture, publisher)
             await publisher.bind()
             await created_capture.start(cast("EventEmitterLike", page))
-        except BaseException:
-            await _cleanup_resources(
-                context=context,
-                capture=capture,
-                publisher=publisher,
-            )
+        except BaseException as start_error:
+            try:
+                await _cleanup_resources(
+                    context=context,
+                    capture=capture,
+                    publisher=publisher,
+                )
+            # Preserve cancellation alongside ordinary failures.
+            except BaseException as cleanup_error:  # noqa: BLE001
+                msg = "Sniffer startup and cleanup both failed."
+                raise BaseExceptionGroup(
+                    msg, [start_error, cleanup_error]
+                ) from None
             raise
 
         self._context = context
@@ -140,24 +168,3 @@ async def _cleanup_resources(
             stack.push_async_callback(publisher.stop)
         if capture is not None:
             stack.push_async_callback(capture.stop)
-
-
-def _make_context() -> TerminableContext:
-    return zmq.asyncio.Context()
-
-
-def _make_publisher(
-    context: TerminableContext,
-    config: AppConfig,
-) -> PublisherBackend:
-    return ZmqSnifferPublisher(
-        context=cast("AsyncZmqContextLike", context),
-        config=config,
-    )
-
-
-def _make_worker(
-    capture: CaptureBackend,
-    publisher: PublisherBackend,
-) -> WorkerBackend:
-    return SnifferWorker(capture=capture, publisher=publisher)

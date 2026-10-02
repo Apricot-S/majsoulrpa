@@ -59,29 +59,37 @@ type _WebSocketListeners = tuple[
 ]
 
 
+def _new_id() -> str:
+    return str(uuid.uuid4())
+
+
 class PlaywrightFrameCapture:
     def __init__(
         self,
-        *,
         queue_size: int = 1024,
-        clock: Clock | None = None,
-        connection_id_factory: ConnectionIDFactory | None = None,
+        *,
+        clock: Clock = utc_now,
+        connection_id_factory: ConnectionIDFactory = _new_id,
     ) -> None:
-        if queue_size <= 0:
-            msg = "queue_size must be greater than zero."
+        if isinstance(queue_size, bool) or queue_size <= 0:
+            msg = "queue_size must be a positive integer."
             raise ValueError(msg)
         self._queue: asyncio.Queue[_QueueItem] = asyncio.Queue(
             maxsize=queue_size,
         )
-        self._clock = clock or utc_now
-        self._connection_id_factory = connection_id_factory or _new_id
+        self._clock = clock
+        self._connection_id_factory = connection_id_factory
         self._next_frame_sequence = 1
         self._failure: PlaywrightCaptureError | None = None
         self._page: EventEmitterLike | None = None
         self._page_listener: Callable[..., None] | None = None
         self._websocket_listeners: list[_WebSocketListeners] = []
+        self._stopped = False
 
     async def start(self, page: EventEmitterLike) -> None:
+        if self._stopped:
+            msg = "Playwright frame capture is stopped; create a new instance."
+            raise PlaywrightCaptureError(msg)
         if self._page is not None:
             msg = "Playwright frame capture is already started."
             raise PlaywrightCaptureError(msg)
@@ -98,25 +106,34 @@ class PlaywrightFrameCapture:
             raise self._failure
 
         item = await self._queue.get()
+        if self._failure is not None:
+            raise self._failure
         if isinstance(item, PlaywrightCaptureError):
             raise item
         return item
 
     async def stop(self) -> None:
+        self._stopped = True
         page = self._page
         page_listener = self._page_listener
         self._page = None
         self._page_listener = None
 
-        if page is not None and page_listener is not None:
-            page.remove_listener("websocket", page_listener)
-
         listeners = self._websocket_listeners
         self._websocket_listeners = []
+        removals: list[tuple[EventEmitterLike, str, Callable[..., None]]] = []
+        if page is not None and page_listener is not None:
+            removals.append((page, "websocket", page_listener))
         for websocket, on_sent, on_received, on_close in listeners:
-            websocket.remove_listener("framesent", on_sent)
-            websocket.remove_listener("framereceived", on_received)
-            websocket.remove_listener("close", on_close)
+            removals.extend(
+                (
+                    (websocket, "framesent", on_sent),
+                    (websocket, "framereceived", on_received),
+                    (websocket, "close", on_close),
+                ),
+            )
+
+        _remove_listeners(removals)
 
     def _observe_websocket(self, websocket: EventEmitterLike) -> None:
         if any(
@@ -152,9 +169,20 @@ class PlaywrightFrameCapture:
             finally:
                 self._remove_websocket_listeners(websocket)
 
-        websocket.on("framesent", on_sent)
-        websocket.on("framereceived", on_received)
-        websocket.on("close", on_close)
+        registered: list[
+            tuple[EventEmitterLike, str, Callable[..., None]]
+        ] = []
+        try:
+            for event, callback in (
+                ("framesent", on_sent),
+                ("framereceived", on_received),
+                ("close", on_close),
+            ):
+                websocket.on(event, callback)
+                registered.append((websocket, event, callback))
+        except BaseException:
+            _remove_listeners(list(reversed(registered)))
+            raise
         self._websocket_listeners.append(
             (websocket, on_sent, on_received, on_close),
         )
@@ -168,10 +196,14 @@ class PlaywrightFrameCapture:
             if registered is not websocket:
                 continue
 
-            websocket.remove_listener("framesent", on_sent)
-            websocket.remove_listener("framereceived", on_received)
-            websocket.remove_listener("close", on_close)
             del self._websocket_listeners[index]
+            _remove_listeners(
+                [
+                    (websocket, "framesent", on_sent),
+                    (websocket, "framereceived", on_received),
+                    (websocket, "close", on_close),
+                ],
+            )
             return
 
     def _observe_frame(
@@ -213,5 +245,19 @@ class PlaywrightFrameCapture:
             self._queue.put_nowait(error)
 
 
-def _new_id() -> str:
-    return str(uuid.uuid4())
+def _remove_listeners(
+    removals: list[tuple[EventEmitterLike, str, Callable[..., None]]],
+) -> None:
+    errors: list[BaseException] = []
+    for emitter, event, callback in removals:
+        try:
+            emitter.remove_listener(event, callback)
+        except BaseException as error:  # noqa: BLE001
+            # Finish cleanup, then propagate every failure below.
+            errors.append(error)
+
+    if len(errors) == 1:
+        raise errors[0]
+    if errors:
+        msg = "Playwright listener cleanup failed."
+        raise BaseExceptionGroup(msg, errors)

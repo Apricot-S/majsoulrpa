@@ -131,6 +131,26 @@ def test_same_request_number_on_different_connections_is_independent() -> None:
     )
 
 
+def test_different_request_numbers_pair_responses_in_reverse_order() -> None:
+    correlator = RequestResponseCorrelator()
+    first = _request(request_number=1)
+    second = _request(request_number=2, frame_sequence=2)
+    second_response = _response(request_number=2, frame_sequence=3)
+    first_response = _response(request_number=1, frame_sequence=4)
+    correlator.process(first)
+    correlator.process(second)
+
+    assert correlator.process(second_response) == CorrelatedRequestResponse(
+        request=second,
+        response=second_response,
+    )
+    assert correlator.process(first_response) == CorrelatedRequestResponse(
+        request=first,
+        response=first_response,
+    )
+    correlator.stop()
+
+
 def test_same_request_number_in_both_directions_is_independent() -> None:
     correlator = RequestResponseCorrelator()
     outbound_request = _request(direction=Direction.OUTBOUND)
@@ -149,6 +169,29 @@ def test_same_request_number_in_both_directions_is_independent() -> None:
         request=inbound_request,
         response=outbound_response,
     )
+
+
+def test_number_reuse_does_not_pair_completed_request() -> None:
+    correlator = RequestResponseCorrelator()
+    original = _request(api_name=".lq.Original")
+    response = _response()
+    correlator.process(original)
+    assert correlator.process(response) == CorrelatedRequestResponse(
+        request=original,
+        response=response,
+    )
+
+    with pytest.raises(UnmatchedResponseError):
+        correlator.process(_response(frame_sequence=3))
+
+    new_request = _request(api_name=".lq.New", frame_sequence=4)
+    new_response = _response(frame_sequence=5)
+    assert correlator.process(new_request) is None
+    assert correlator.process(new_response) == CorrelatedRequestResponse(
+        request=new_request,
+        response=new_response,
+    )
+    correlator.stop()
 
 
 def test_duplicate_request_does_not_replace_original() -> None:
@@ -174,34 +217,92 @@ def test_response_without_request_is_rejected() -> None:
         correlator.process(_response())
 
 
-def test_response_in_same_direction_as_request_is_rejected() -> None:
+@pytest.mark.parametrize(
+    "invalid_response",
+    [
+        pytest.param(
+            _response(connection_id="connection-other"), id="other-connection"
+        ),
+        pytest.param(_response(request_number=0x1235), id="other-number"),
+    ],
+)
+def test_unmatched_response_preserves_pending_request(
+    invalid_response: ObservedEnvelope,
+) -> None:
     correlator = RequestResponseCorrelator()
-    correlator.process(_request(direction=Direction.INBOUND))
+    request = _request()
+    correlator.process(request)
+
+    with pytest.raises(UnmatchedResponseError):
+        correlator.process(invalid_response)
+
+    response = _response(frame_sequence=3)
+    assert correlator.process(response) == CorrelatedRequestResponse(
+        request=request,
+        response=response,
+    )
+    correlator.stop()
+
+
+def test_wrong_direction_response_preserves_pending_request() -> None:
+    correlator = RequestResponseCorrelator()
+    request = _request(direction=Direction.INBOUND)
+    correlator.process(request)
 
     with pytest.raises(ResponseDirectionMismatchError, match="same direction"):
         correlator.process(_response(direction=Direction.INBOUND))
+
+    response = _response(direction=Direction.OUTBOUND, frame_sequence=3)
+    assert correlator.process(response) == CorrelatedRequestResponse(
+        request=request,
+        response=response,
+    )
+    correlator.stop()
 
 
 def test_connection_close_rejects_and_removes_incomplete_exchange() -> None:
     correlator = RequestResponseCorrelator()
     correlator.process(_request(connection_id="connection-1"))
-    correlator.process(_request(connection_id="connection-2"))
+    correlator.process(
+        _request(connection_id="connection-1", direction=Direction.INBOUND)
+    )
+    other_request = _request(connection_id="connection-2")
+    correlator.process(other_request)
 
-    with pytest.raises(IncompleteExchangeError, match="connection-1"):
+    with pytest.raises(
+        IncompleteExchangeError, match=r"connection-1.*2 pending"
+    ):
         correlator.connection_closed("connection-1")
 
     correlator.connection_closed("connection-1")
-    with pytest.raises(IncompleteExchangeError, match="connection-2"):
-        correlator.connection_closed("connection-2")
+    for direction in Direction:
+        with pytest.raises(UnmatchedResponseError):
+            correlator.process(
+                _response(connection_id="connection-1", direction=direction)
+            )
+    other_response = _response(connection_id="connection-2")
+    assert correlator.process(other_response) == CorrelatedRequestResponse(
+        request=other_request,
+        response=other_response,
+    )
     correlator.stop()
 
 
 def test_stop_rejects_and_removes_all_incomplete_exchanges() -> None:
     correlator = RequestResponseCorrelator()
-    correlator.process(_request(connection_id="connection-1"))
-    correlator.process(_request(connection_id="connection-2"))
+    for connection_id in ("connection-1", "connection-2"):
+        for direction in Direction:
+            correlator.process(
+                _request(connection_id=connection_id, direction=direction)
+            )
 
-    with pytest.raises(IncompleteExchangeError, match="2 pending"):
+    with pytest.raises(IncompleteExchangeError, match="4 pending"):
         correlator.stop()
 
     correlator.stop()
+    for connection_id in ("connection-1", "connection-2"):
+        for direction in Direction:
+            with pytest.raises(UnmatchedResponseError):
+                correlator.process(
+                    _response(connection_id=connection_id, direction=direction)
+                )

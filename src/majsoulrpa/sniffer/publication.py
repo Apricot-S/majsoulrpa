@@ -1,7 +1,7 @@
 import base64
 import binascii
 import uuid
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
 from pydantic import (
     AwareDatetime,
@@ -10,6 +10,7 @@ from pydantic import (
     Field,
     TypeAdapter,
     field_validator,
+    model_validator,
 )
 
 from majsoulrpa.sniffer.correlator import (
@@ -28,17 +29,30 @@ SCHEMA_VERSION = 1
 SNIFFER_TOPIC = b"majsoulrpa.sniffer.v1"
 
 NonEmptyString = Annotated[str, Field(min_length=1)]
-PositiveSequence = Annotated[int, Field(ge=1)]
-RequestNumber = Annotated[int, Field(ge=0, le=0xFFFF)]
+PositiveSequence = Annotated[int, Field(strict=True, ge=1)]
+RequestNumber = Annotated[int, Field(strict=True, ge=0, le=0xFFFF)]
 
 
 class _PublicationBase(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+        hide_input_in_errors=True,
+    )
 
-    schema_version: Literal[1] = SCHEMA_VERSION
+    schema_version: Literal[1]
     stream_id: uuid.UUID
     publication_sequence: PositiveSequence
     connection_id: NonEmptyString
+
+    @field_validator("schema_version", mode="before")
+    @classmethod
+    def _validate_schema_version_type(cls, value: object) -> int:
+        if not isinstance(value, int) or isinstance(value, bool):
+            msg = "Schema version must be an integer."
+            # Use ValueError for Pydantic's ValidationError conversion.
+            raise ValueError(msg)  # noqa: TRY004
+        return value
 
 
 class NoticePublication(_PublicationBase):
@@ -67,6 +81,13 @@ class RequestResponsePublication(_PublicationBase):
     request_payload_base64: NonEmptyString
     response_payload_base64: NonEmptyString
 
+    @model_validator(mode="after")
+    def _validate_frame_order(self) -> Self:
+        if self.response_frame_sequence <= self.request_frame_sequence:
+            msg = "Response frame sequence must follow Request frame sequence."
+            raise ValueError(msg)
+        return self
+
     @field_validator("request_payload_base64", "response_payload_base64")
     @classmethod
     def _validate_payload_base64(cls, value: str) -> str:
@@ -77,6 +98,7 @@ type SnifferPublication = NoticePublication | RequestResponsePublication
 
 _PUBLICATION_ADAPTER = TypeAdapter(
     Annotated[SnifferPublication, Field(discriminator="kind")],
+    config=ConfigDict(hide_input_in_errors=True),
 )
 
 
@@ -121,6 +143,7 @@ def _make_notice_publication(
         msg = "Correlated Notice does not contain a Notice envelope."
         raise TypeError(msg)
     return NoticePublication(
+        schema_version=SCHEMA_VERSION,
         stream_id=stream_id,
         publication_sequence=publication_sequence,
         connection_id=observation.connection_id,
@@ -159,6 +182,7 @@ def _make_request_response_publication(
         raise ValueError(msg)
 
     return RequestResponsePublication(
+        schema_version=SCHEMA_VERSION,
         stream_id=stream_id,
         publication_sequence=publication_sequence,
         connection_id=request.connection_id,

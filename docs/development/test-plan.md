@@ -1196,6 +1196,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Envelope decode
 
+- [x] Notice / Requestはname field省略・明示的空文字・空WrapperのいずれもAPI名欠落として拒否する。
+- [x] Responseの非空API名を拒否する例外messageにAPI名や本文を含めない。
+- [x] Wrapperの不正UTF-8名と途中で切れたlength-delimited fieldを全kindでSnifferDecodeErrorへ変換し、protobuf DecodeErrorを原因に保持する。
+- [x] 空のprotobuf本文を全kindで許容し、空WrapperのResponseも受理する。
 - [x] synthetic Notice を分類し、`Wrapper` の API 名と本文を取り出す
 - [x] synthetic Request を分類し、2 byte little endian の番号を取り出す
 - [x] synthetic Response を分類し、2 byte little endian の番号を取り出す
@@ -1208,10 +1212,15 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Request / Response 対応
 
+- [x] connection closeは対象connectionの両方向のpendingを全件解放し、他connectionのRequestはResponseと対応付けできる状態で保持する。
+- [x] stopは複数connection・両方向のpendingを全件解放し、未完了件数を報告する。
+- [x] connection / numberが一致しないResponseと同方向Responseを拒否した後も、元のpending Requestを正しいResponseと対応付けられる。
 - [x] pending key が connection、request direction、2 byte 番号を含む
 - [x] Request は Response 到着まで publish しない
 - [x] Response 到着時に反対方向の Request と 1 event にまとめる
 - [x] 同じ番号でも connection が違えば独立して対応付ける
+- [x] 同一connection・directionでも番号が違えば独立し、逆順のResponseを対応するRequestに結び付ける。
+- [x] 完了済み番号のResponse再送は拒否し、その後に同じ番号を使う新Requestは新しいResponseと対応する。
 - [x] 同じ番号でも Request の方向が違えば独立して対応付ける
 - [x] 未完了 key の再利用を duplicate request error にする
 - [x] 対応 Request のない Response を unmatched response error にする
@@ -1221,6 +1230,29 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Publication / PUB-SUB
 
+- [x] publisher / subscriberはbind / connect失敗後に新しいsocketを取得して再試行し、失敗したsocketを再利用・再closeせず送受信できる。
+- [x] bind / connect / option設定失敗にclose失敗が重なっても、設定時の例外をチェーンに保持し、送受信を拒否して二重closeしない。
+- [x] subscriberはrecv失敗・キャンセルをそのまま伝播し、受信済み番号と途中参加状態を保持する。失敗後も重複は拒否し次番号は受理する。
+- [x] publisherは送信成功後の失敗・キャンセルで番号を進めず、次の成功時だけ進める。送信JSONの番号・stream IDは返り値と一致する。
+- [x] subscriber経由でもgap・重複・巻き戻り・stream再起動を区別して拒否し、元streamの次番号を受理できる状態を保持する。
+- [x] publisher / subscriberのclose失敗は元の例外を伝播し、停止済み状態を保持する。再stopでcloseを繰り返さず、停止後の送受信を拒否する。
+- [x] publisher / subscriberは二重bind・connectを新規socketなしで拒否し、元の接続を維持する。stopは冪等で、停止後の送受信は拒否する。
+- [x] subscriberは不正JSON / schemaをValidationErrorとして拒否し、受信済みstreamの番号を進めない。次の正常な同番号publicationは受理する。
+- [x] publisher / subscriberのoption設定失敗でもsocketをlinger=0で一度だけ閉じ、元の例外を伝播し送受信可能な状態を残さない。
+- [x] subscriberは空・1part・3partと不一致topic（正規topicの接尾辞付きも含む）を拒否し、stream追跡状態を変更しない。
+- [x] streamの連続性はNotice / ReqRes共通のpublication番号で判定し、connection変更やframe番号の飛び・巻き戻りと混同しない。frameが連続でもpublicationの欠落は拒否する。
+- [x] 先頭 / 途中参加ともgap・重複・巻き戻りの拒否で状態を保持する。gap後の後続も拒否し、欠落番号を実際に観測した場合だけ連続性を進める。
+- [x] stream ID変更は番号が重複・連続・欠落に見えても再起動として拒否する。先頭 / 途中参加どちらでも元の状態を保持し、元streamの次番号だけで進む。
+- [x] JSON受信で全sequence fieldの0を拒否し、最小の有効sequenceを受理する。request numberは0 / 65535を受理し、-1 / 65536を拒否する。
+- [x] 両publication kindで未知fieldを拒否し、kind欠落・未知値では本文から種別を推測しない。
+- [x] Notice / Request / Responseのbase64は空文字・改行・padding不足・非ASCII文字を拒否し、全byte値を含むpayloadをJSON往復で保持する。
+- [x] schema_version欠落のJSONは両kindで拒否し、標準publisherはversionを明示して生成する。
+- [x] schema_versionはJSON整数の1のみを受理し、boolean・float・文字列・未対応整数を両publication kindで拒否する。
+- [x] publicationのbase64検証エラー文字列はNotice / Request / Responseの入力payloadを表示しない。
+- [x] Req/Resのmodel検証エラー文字列にも入力publication全体を表示しない。
+- [x] Req/Res publicationはresponse frame sequenceがrequest以下なら生成・JSON受信とも拒否する。
+- [x] Req/Res frame sequenceは連番でなくても受理し、wall clockの逆行をsequence逆行と混同しない。
+- [x] JSONのpublication/frame sequenceとrequest numberは文字列・boolean・floatから整数へ暗黙変換しない。
 - [x] raw Notice publication を schema version 付き JSON にできる
 - [x] 対応済み Req/Res publication を schema version 付き JSON にできる
 - [x] raw payload は publication 内で base64 として round trip する
@@ -1236,8 +1268,28 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 最初の sequence が 1 より大きければ途中参加として扱う
 - [x] fake PUB/SUB socket だけで自動テストできる
 
+### Envelope request number の境界
+
+- [x] Request / Response のrequest numberは符号なし16 bitの両端（0、65535）を受け付ける。
+- [x] Request / Response のrequest numberが0 byteまたは1 byteしかない場合、ヘッダー不正として拒否する。
+
 ### Playwright capture / lifecycle
 
+- [x] captureのqueue_sizeは位置指定でき、指定容量でframeを受信・再利用できる。callable注入引数はキーワード専用を維持する。
+- [x] captureはstop後の再startを拒否し、新pageにlistenerを登録しない（起動前stop、正常停止、未受信frameあり、致命的エラー後）。
+- [x] stopのlistener解除が失敗した場合も再startを拒否する。
+- [x] receiveの待機中・frame投入後の再開前にcancelしてもCancelledErrorを伝播し、未受信frameを次のreceiveで取得できる。
+- [x] page listener登録前の失敗をそのまま伝播し、起動済み扱いにせず、その後に別pageで起動できる。
+- [x] 起動済みcaptureの再startは同じpage / 別pageとも拒否し、元のlistenerと停止対象を維持する。
+- [x] receive待機中、frame投入直後にoverflow / text frameの致命的エラーが起きた場合、通常frameを返さず検出済みエラーを送出する。
+- [x] WebSocket listenerの登録途中で失敗した場合、登録が完了したlistenerを解除し、元の例外を伝播する。
+- [x] 登録失敗のrollbackも失敗した場合、登録と解除の両方の例外を報告する。
+- [x] connection close のlistener解除が失敗しても残りを解除し、capture側の保持参照を解放して元の例外を伝播する。後続stopで解除済みlistenerを再解除しない。
+- [x] capture stop はpage / WebSocket listenerの解除に失敗しても残りを解除し、元の例外を伝播する。
+- [x] capture stop で複数の解除が失敗した場合、すべての失敗を例外groupで報告する。
+- [x] capture に注入した falsey な clock / connection ID factory も使用し、frame と close event にその結果を保持する。
+- [x] capture の `queue_size` は `int` 型注釈を前提とし、boolean と0以下を生成時に `ValueError` で拒否する。
+- [x] 最小の `queue_size=1` は1件受信後に容量を再利用でき、未受信のまま2件目が到着すると明示的に overflow する。
 - [x] fake WebSocket の sent / received binary frame を direction 付きで capture する
 - [x] WebSocket ごとに異なる connection id を割り当てる
 - [x] frame に capture 順の単調増加番号を付ける
@@ -1255,6 +1307,22 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Sniffer worker
 
+- [x] runtimeは正常stop後も新しいresourceで再起動し、前回のresourceを再実行・再cleanupしない。
+- [x] runtime停止時にworker / capture / publisher / contextがすべて失敗しても全cleanupを実行し、全例外をチェーンに保持する。再停止でcleanupし直さない。
+- [x] runtime起動失敗・キャンセルにcapture / publisher停止失敗が重なってもcontextを解放し、起動例外とcleanup例外をBaseExceptionGroupで保持する。cleanup間の例外チェーンも保持する。
+- [x] runtime.runはworker実行中の元の例外を伝播し、続くstopで全resourceを一度ずつ解放する。停止後のrunは拒否する。
+- [x] runtimeはbind / capture start失敗後、同じbackendで新しいresourceを生成して再起動できる。古いworkerを実行・停止せず、新しいresourceをcleanupする。
+- [x] runtimeはfalseyな4種のfactoryを保持し、省略時は引数のデフォルトに指定したfactoryを使う。注入したresourceで起動・run・cleanupする。
+- [x] runtimeのbind / capture start待機中のキャンセルは生成済みresourceをcleanupして伝播し、未起動状態を残す。後続stopで二重解放しない。
+- [x] runtimeの各factory失敗は後続生成を止め、生成済みresourceだけをcleanupする。元の例外を伝播し、runは未起動として拒否、stopは二重cleanupしない。
+- [x] runtime停止時にworker / capture / publisherのいずれかが失敗しても残りを逆順cleanupし、元の例外を伝播する。再stopでcleanupを繰り返さない。
+- [x] connection closeは対象connectionのpendingだけを解放し、他connectionの同番号ReqResは対応できる。再closeは成功し、閉じた側の遅延Responseは拒否する。
+- [x] Request保留中のcapture待機キャンセルを伝播し、続くstopで未完了を報告・解放する。再stopは成功し、未完了Requestをpublishしない。
+- [x] publish待機中は後続captureを消費せず、runのキャンセルをpublishへ伝播して再試行しない。
+- [x] Request保留中のheartbeatはpublishせず、Noticeは即時publishする。最後のResponseは元のRequestと対応し、出力順はNotice→ReqResとなる。
+- [x] decode失敗 / 未対応Responseでrunを停止し、publishを呼ばず後続captureを未消費で残す。
+- [x] Notice / ReqResのpublish失敗はrunから元の例外を伝播し、再試行や後続captureの消費をしない。
+- [x] falseyなcorrelatorを注入しても置き換えず、そのinstanceへRequestの保留状態を保持する。
 - [x] captureしたframeをenvelope decodeしてcorrelatorへ渡す
 - [x] Noticeをpublisherへ即時送信する
 - [x] Requestを保留し、Response到着後に対応済みeventを送信する
@@ -1264,6 +1332,25 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Client decode / hook
 
+- [x] 接続失敗は元の例外を伝播し、readyを通知せず受信・decode・observer・queueへ進まずsubscriberを停止する。
+- [x] 実decoder・queueを使うReqRes配送でRequest / Responseの本文・raw bytes・観測時刻を取り違えず、observerとqueueへ同一eventを渡す。
+- [x] 実decoder・queueを使ったruntime経路でsynthetic Notice本文をdecodeし、raw bytes・観測情報を保持した同一eventをobserver→queueへ渡す。
+- [x] decode失敗 / 受信キャンセルにsubscriber停止失敗が重なっても、元の原因を例外チェーンに保持し、停止は1回だけ試みる。
+- [x] wait_until_readyはconnect完了まで待機する。接続待機中のキャンセルではreadyを通知せず、受信せずsubscriberを停止する。
+- [x] 正常受信後のreceive失敗 / stream gapは元の例外を伝播してsubscriberを停止する。再受信・追加decodeを行わず、処理済みmessageを保持する。
+- [x] decode失敗は元の例外を伝播し、observer・queueを呼ばず後続受信を止め、subscriberを停止する。
+- [x] client runtimeは実queueの件数 / byte overflowを伝播して後続受信を止め、subscriberを停止する。observerは投入前に呼ばれ、保持済みmessageは失わない。
+- [x] observer失敗は元の例外を伝播し、queue投入と後続受信を行わずsubscriberを停止する。
+- [x] queueのcapacity / max_payload_bytesはint型注釈を前提にboolと0以下を拒否する。
+- [x] get / get_nowaitとも複数の差し戻しを優先し、その順序と未読・新着messageの到着順を保持する。
+- [x] queue.getの空待機中 / enqueue直後のキャンセルは伝播し、messageとbyte容量を消費しない。キャンセル後も受信・容量解放を継続できる。
+- [x] queueはReq/Resの両payloadの合計byteを計上する。単体上限ちょうどを受理し1 byte超過を拒否、Noticeとの混在とget / put_back後も正しく加算・解放する。
+- [x] queueの件数 / byte上限はenqueue・put_back共通で適用し、overflow時に既存messageと容量を保持する。取り出し後は容量を再利用できる。
+- [x] 注入したsynthetic descriptorのNotice / service methodを指定型でdecodeし、標準decoderとのAPI対応表を共有しない。
+- [x] decoderはNotice / RequestのAPI名不一致と、Notice / Request / Response欄に別種別の有効envelopeが入った場合をPublicationEnvelopeMismatchErrorで拒否する。
+- [x] Notice / Request / Responseの不正本文は原因のDecodeErrorを保持してLiqiBodyDecodeErrorにし、有効な空本文は既定値へdecodeする。
+- [x] decoderは番号0の対応を受理し、publication / Request / Responseの番号不一致を拒否する。テストhelperはResponse番号0を保持する。
+- [x] raw event変換は両directionと全byte値を保持し、Request / Responseのpayload・時刻を取り違えない。envelope解析はadapterでは行わない。
 - [x] wire publicationを利用者向けraw bytes eventへ変換する
 - [x] decode済みeventが対応するraw bytes eventを保持する
 - [x] `majsoulrpa.sniffer`のexportを利用者向けevent型に限定する

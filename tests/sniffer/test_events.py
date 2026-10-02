@@ -1,12 +1,20 @@
 import base64
+import dataclasses
 import datetime
 import importlib
 import sys
 import uuid
 
+import pytest
+
 from majsoulrpa.sniffer.correlator import Direction
 from majsoulrpa.sniffer.event_adapter import raw_event_from_publication
-from majsoulrpa.sniffer.events import RawNotice, RawRequestResponse
+from majsoulrpa.sniffer.events import (
+    DecodedNotice,
+    DecodedRequestResponse,
+    RawNotice,
+    RawRequestResponse,
+)
 from majsoulrpa.sniffer.publication import (
     NoticePublication,
     RequestResponsePublication,
@@ -21,13 +29,17 @@ def _encoded(payload: bytes) -> str:
     return base64.b64encode(payload).decode("ascii")
 
 
-def test_notice_publication_becomes_public_raw_bytes_event() -> None:
-    payload = b"synthetic-notice-payload"
+@pytest.mark.parametrize("direction", [Direction.INBOUND, Direction.OUTBOUND])
+def test_notice_publication_becomes_public_raw_bytes_event(
+    direction: Direction,
+) -> None:
+    payload = bytes(range(256))
     publication = NoticePublication(
+        schema_version=1,
         stream_id=STREAM_ID,
         publication_sequence=1,
         connection_id="connection-1",
-        direction=Direction.INBOUND,
+        direction=direction,
         frame_sequence=10,
         observed_at=REQUEST_AT,
         api_name=".lq.SyntheticNotice",
@@ -37,21 +49,25 @@ def test_notice_publication_becomes_public_raw_bytes_event() -> None:
     event = raw_event_from_publication(publication)
 
     assert event == RawNotice(
-        direction=Direction.INBOUND,
+        direction=direction,
         name=".lq.SyntheticNotice",
         payload=payload,
         observed_at=REQUEST_AT,
     )
 
 
-def test_request_response_publication_becomes_public_raw_bytes_event() -> None:
-    request = b"synthetic-request-payload"
-    response = b"synthetic-response-payload"
+@pytest.mark.parametrize("direction", [Direction.INBOUND, Direction.OUTBOUND])
+def test_request_response_publication_becomes_public_raw_bytes_event(
+    direction: Direction,
+) -> None:
+    request = bytes(range(256))
+    response = request[::-1]
     publication = RequestResponsePublication(
+        schema_version=1,
         stream_id=STREAM_ID,
         publication_sequence=1,
         connection_id="connection-1",
-        request_direction=Direction.OUTBOUND,
+        request_direction=direction,
         request_number=0x1234,
         request_frame_sequence=10,
         request_observed_at=REQUEST_AT,
@@ -65,13 +81,59 @@ def test_request_response_publication_becomes_public_raw_bytes_event() -> None:
     event = raw_event_from_publication(publication)
 
     assert event == RawRequestResponse(
-        request_direction=Direction.OUTBOUND,
+        request_direction=direction,
         name=".lq.SyntheticService.call",
         request=request,
         response=response,
         request_observed_at=REQUEST_AT,
         response_observed_at=RESPONSE_AT,
     )
+
+
+def test_raw_and_decoded_events_are_immutable_value_objects() -> None:
+    raw_notice = RawNotice(
+        direction=Direction.INBOUND,
+        name=".lq.SyntheticNotice",
+        payload=b"synthetic-notice-payload",
+        observed_at=REQUEST_AT,
+    )
+    raw_request_response = RawRequestResponse(
+        request_direction=Direction.OUTBOUND,
+        name=".lq.SyntheticService.call",
+        request=b"synthetic-request-payload",
+        response=b"synthetic-response-payload",
+        request_observed_at=REQUEST_AT,
+        response_observed_at=RESPONSE_AT,
+    )
+    decoded_notice = DecodedNotice(
+        raw=raw_notice,
+        message={"count": 1, "enabled": True},
+    )
+    decoded_request_response = DecodedRequestResponse(
+        raw=raw_request_response,
+        request={"account_id": 100001},
+        response={"error": {"code": 0}},
+    )
+
+    _assert_is_frozen(raw_notice, "payload", b"replacement")
+    _assert_is_frozen(raw_request_response, "response", b"replacement")
+    _assert_is_frozen(decoded_notice, "message", {})
+    _assert_is_frozen(decoded_request_response, "request", {})
+
+    assert raw_notice.direction is Direction.INBOUND
+    assert raw_notice.observed_at == REQUEST_AT
+    assert raw_notice.payload == b"synthetic-notice-payload"
+    assert decoded_notice.message == {"count": 1, "enabled": True}
+    assert decoded_request_response.response == {"error": {"code": 0}}
+
+
+def _assert_is_frozen(
+    event: object,
+    attribute: str,
+    replacement: object,
+) -> None:
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        setattr(event, attribute, replacement)
 
 
 def test_sniffer_package_exports_only_user_event_types() -> None:

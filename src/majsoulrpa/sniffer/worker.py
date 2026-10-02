@@ -33,7 +33,9 @@ class SnifferWorker:
     ) -> None:
         self._capture = capture
         self._publisher = publisher
-        self._correlator = correlator or RequestResponseCorrelator()
+        self._correlator = (
+            RequestResponseCorrelator() if correlator is None else correlator
+        )
 
     async def run(self) -> None:
         while True:

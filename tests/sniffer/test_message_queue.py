@@ -3,7 +3,13 @@ import datetime
 
 import pytest
 
-from majsoulrpa.sniffer.events import DecodedNotice, Direction, RawNotice
+from majsoulrpa.sniffer.events import (
+    DecodedNotice,
+    DecodedRequestResponse,
+    Direction,
+    RawNotice,
+    RawRequestResponse,
+)
 from majsoulrpa.sniffer.message_queue import (
     SnifferMessageQueue,
     SnifferMessageQueueOverflowError,
@@ -38,6 +44,62 @@ def _queue(*, capacity: int = 3) -> SnifferMessageQueue:
     )
 
 
+def _exchange() -> DecodedRequestResponse:
+    observed_at = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
+    return DecodedRequestResponse(
+        raw=RawRequestResponse(
+            request_direction=Direction.OUTBOUND,
+            name=".lq.SyntheticService.call",
+            request=b"req",
+            response=b"reply",
+            request_observed_at=observed_at,
+            response_observed_at=observed_at,
+        ),
+        request={},
+        response={},
+    )
+
+
+@pytest.mark.parametrize("insertion", ["enqueue", "put_back"])
+def test_exchange_byte_limit_counts_both_payloads(insertion: str) -> None:
+    message = _exchange()
+    queue = SnifferMessageQueue(capacity=3, max_payload_bytes=7)
+    insert = queue.enqueue if insertion == "enqueue" else queue.put_back
+    with pytest.raises(SnifferMessageTooLargeError):
+        insert(message)
+    assert queue.get_nowait() is None
+
+    queue = SnifferMessageQueue(capacity=3, max_payload_bytes=8)
+    insert = queue.enqueue if insertion == "enqueue" else queue.put_back
+    insert(message)
+    assert queue.get_nowait() is message
+
+
+def test_mixed_payload_budget_is_released_and_restored_on_put_back() -> None:
+    async def exercise() -> None:
+        notice = _notice(".lq.SyntheticNotice", 1)
+        exchange = _exchange()
+        queue = SnifferMessageQueue(
+            capacity=3, max_payload_bytes=len(notice.raw.payload) + 8
+        )
+        queue.enqueue(notice)
+        queue.enqueue(exchange)
+        with pytest.raises(SnifferMessageQueueOverflowError):
+            queue.enqueue(exchange)
+
+        assert await queue.get() is notice
+        assert await queue.get() is exchange
+        queue.put_back(exchange)
+        queue.enqueue(notice)
+        with pytest.raises(SnifferMessageQueueOverflowError):
+            queue.enqueue(exchange)
+        assert queue.get_nowait() is exchange
+        assert queue.get_nowait() is notice
+        assert queue.get_nowait() is None
+
+    asyncio.run(exercise())
+
+
 def test_queue_retains_all_messages_in_arrival_order() -> None:
     async def exercise() -> None:
         queue = _queue()
@@ -70,55 +132,99 @@ def test_get_waits_for_next_message() -> None:
     asyncio.run(exercise())
 
 
-def test_put_back_messages_are_read_before_unread_messages() -> None:
+@pytest.mark.parametrize("timing", ["before-enqueue", "after-enqueue"])
+def test_cancelled_get_preserves_message_and_byte_budget(timing: str) -> None:
     async def exercise() -> None:
-        queue = _queue()
         first = _notice(".lq.First", 1)
         second = _notice(".lq.Second", 2)
+        queue = SnifferMessageQueue(
+            capacity=3, max_payload_bytes=len(first.raw.payload)
+        )
+        waiting = asyncio.create_task(queue.get())
+        await asyncio.sleep(0)
+        assert not waiting.done()
+
+        if timing == "after-enqueue":
+            queue.enqueue(first)
+        waiting.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await waiting
+        if timing == "before-enqueue":
+            queue.enqueue(first)
+
+        with pytest.raises(SnifferMessageQueueOverflowError):
+            queue.enqueue(second)
+        assert queue.get_nowait() is first
+        assert queue.get_nowait() is None
+
+        queue.enqueue(second)
+        assert await queue.get() is second
+        assert queue.get_nowait() is None
+
+    asyncio.run(exercise())
+
+
+@pytest.mark.parametrize("retrieval", ["get", "get_nowait"])
+def test_put_back_order_precedes_unread_and_new_messages(
+    retrieval: str,
+) -> None:
+    async def exercise() -> None:
+        queue = _queue(capacity=4)
+        first = _notice(".lq.First", 1)
+        second = _notice(".lq.Second", 2)
+        third = _notice(".lq.Third", 3)
+        fourth = _notice(".lq.Fourth", 4)
         queue.enqueue(first)
         queue.enqueue(second)
-
-        consumed = await queue.get()
-        queue.put_back(consumed)
+        queue.enqueue(third)
 
         assert await queue.get() is first
         assert await queue.get() is second
-
-    asyncio.run(exercise())
-
-
-def test_multiple_put_back_messages_keep_put_back_order() -> None:
-    async def exercise() -> None:
-        queue = _queue()
-        first = _notice(".lq.First", 1)
-        second = _notice(".lq.Second", 2)
-
         queue.put_back(first)
+        queue.enqueue(fourth)
         queue.put_back(second)
 
-        assert await queue.get() is first
-        assert await queue.get() is second
+        for expected in (first, second, third, fourth):
+            actual = (
+                await queue.get() if retrieval == "get" else queue.get_nowait()
+            )
+            assert actual is expected
+        assert queue.get_nowait() is None
 
     asyncio.run(exercise())
 
 
-def test_queue_overflow_is_not_silently_dropped() -> None:
-    queue = _queue(capacity=1)
-    queue.enqueue(_notice(".lq.First", 1))
-
-    with pytest.raises(SnifferMessageQueueOverflowError):
-        queue.enqueue(_notice(".lq.Second", 2))
-
-
-def test_byte_budget_overflow_is_not_silently_dropped() -> None:
+@pytest.mark.parametrize(
+    ("capacity", "max_payload_bytes"),
+    [(1, 1024), (3, len(b"synthetic-1"))],
+    ids=["count-limit", "byte-limit"],
+)
+@pytest.mark.parametrize("insertion", ["enqueue", "put_back"])
+def test_overflow_preserves_messages_and_reusable_capacity(
+    capacity: int,
+    max_payload_bytes: int,
+    insertion: str,
+) -> None:
     queue = SnifferMessageQueue(
-        capacity=3,
-        max_payload_bytes=len(b"synthetic-1"),
+        capacity=capacity,
+        max_payload_bytes=max_payload_bytes,
     )
-    queue.enqueue(_notice(".lq.First", 1))
+    insert = queue.enqueue if insertion == "enqueue" else queue.put_back
+    first = _notice(".lq.First", 1)
+    second = _notice(".lq.Second", 2)
+    insert(first)
 
     with pytest.raises(SnifferMessageQueueOverflowError):
-        queue.enqueue(_notice(".lq.Second", 2))
+        queue.enqueue(second)
+    with pytest.raises(SnifferMessageQueueOverflowError):
+        queue.put_back(second)
+
+    assert queue.get_nowait() is first
+    assert queue.get_nowait() is None
+
+    insert(second)
+    assert queue.get_nowait() is second
+    assert queue.get_nowait() is None
 
 
 def test_message_larger_than_byte_budget_is_rejected() -> None:
@@ -132,10 +238,16 @@ def test_message_larger_than_byte_budget_is_rejected() -> None:
     ("capacity", "max_payload_bytes", "message"),
     [
         (0, 1, "capacity must be positive"),
+        (-1, 1, "capacity must be positive"),
+        (True, 1, "capacity must be positive"),
+        (False, 1, "capacity must be positive"),
         (1, 0, "max_payload_bytes must be positive"),
+        (1, -1, "max_payload_bytes must be positive"),
+        (1, True, "max_payload_bytes must be positive"),
+        (1, False, "max_payload_bytes must be positive"),
     ],
 )
-def test_queue_rejects_non_positive_limits(
+def test_queue_rejects_invalid_limits(
     capacity: int,
     max_payload_bytes: int,
     message: str,

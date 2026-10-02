@@ -251,20 +251,99 @@ constructor の runtime invariant、live / restore 双方から同じ object が
 
 ## `sniffer/`
 
-- [ ] `sniffer/__init__.py`: raw / decoded 利用者向け event だけを export し、wire model や backend を漏らさないことを確認する。
-- [ ] `sniffer/events.py`: raw bytes と decoded JSON-compatible body、timestamp、direction の immutable 契約を確認する。
-- [ ] `sniffer/playwright.py`: listener 登録解除、binary frame 限定、bounded queue、connection/capture sequence を確認する。
-- [ ] `sniffer/envelope.py`: message kind、request number、Wrapper、API 名の byte-level strict decode を確認する。
-- [ ] `sniffer/correlator.py`: connection/direction/number key、duplicate/unmatched/incomplete exchange の失敗を確認する。
-- [ ] `sniffer/publication.py`: schema version、base64 validation、sequence metadata、unknown field rejection を確認する。
-- [ ] `sniffer/event_adapter.py`: wire publication から raw event への変換境界が decoder と重複せず、bytes 復元を一元化することを確認する。
-- [ ] `sniffer/decoder.py`: descriptor map、Notice/Req/Res body decode、publication/envelope API 一致、未知 API の失敗を確認する。
-- [ ] `sniffer/stream.py`: restart、gap、rollback、途中参加を区別し、欠落を補完したふりをしないことを確認する。
-- [ ] `sniffer/message_queue.py`: message 件数と payload byte の両上限、put-back 順序、overflow の明示失敗を確認する。
-- [ ] `sniffer/worker.py`: capture -> envelope -> correlation -> publication の順序と、stop 時 pending request の失敗を確認する。
-- [ ] `sniffer/runtime.py`: context・publisher・capture・worker の開始順、逆順 cleanup、失敗伝播を確認する。
-- [ ] `sniffer/zmq.py`: PUB/SUB topic、bind/connect、IPv6、socket/context cleanup、multipart validation を確認する。
-- [ ] `sniffer/client_runtime.py`: receive -> stream validation -> raw adapter -> protobuf decode -> observer -> queue の順序を確認する。
+- [x] `sniffer/__init__.py`: raw / decoded 利用者向け event だけを export し、wire model や backend を漏らさないことを確認する。
+  - [x] `Direction`、raw / decoded event とその union だけを export し、wire publication、capture、parser、correlator、decoder、transport、worker、backend を公開しないことを synthetic import test で固定した。
+- [x] `sniffer/events.py`: raw bytes と decoded JSON-compatible body、timestamp、direction の immutable 契約を確認する。
+  - [x] raw / decoded event は `frozen=True, slots=True` の値 object とし、raw bytes、timestamp、direction、decoder が作る JSON-compatible body を保持する。属性の再代入を拒否する契約を synthetic test で固定した。
+- [x] `sniffer/playwright.py`: listener 登録解除、binary frame 限定、bounded queue、connection/capture sequence を確認する。
+  - [x] `queue_size` は `int` 型注釈を前提とし、型検査で許容されるbooleanと0以下を生成時に拒否する。容量1の再利用とoverflowをsynthetic testで確認する。
+  - [x] `clock` / `connection_id_factory` はstatelessな既定関数を直接デフォルト値とし、falsey callableも注入値として保持する。便宜的な `None` とtruthiness分岐を除去し、frame / close eventで注入結果を確認する。
+  - [x] `stop()` はpage / 各WebSocketのlistener解除を一通り試み、単一の失敗はそのまま、複数の失敗は例外groupで報告する。解除失敗で後続listenerのcleanupを飛ばさないことをテストする。
+  - [x] connection close時も全listenerの解除を試みて失敗を伝播し、capture側の保持参照を解放する。stopと解除処理を共有し、他のconnectionを維持することと後続stopで二重解除しないことをテストする。
+  - [x] WebSocket listenerの部分登録に失敗したら、登録完了済みのlistenerを逆順に解除する。rollback失敗時も残りの解除を試み、元の登録失敗を例外chainに保持することをテストする。
+  - [x] `receive()` はqueue待機から再開した時点でも致命的エラーを優先する。frame投入直後のoverflow / text frameを正常受信として返さないことをテストする。
+  - [x] page listener登録前の失敗では起動状態を確定せず元の例外を伝播する。起動済みcaptureの同じpage / 別pageへの再startは拒否し、元のlistenerと停止対象を保つ。実装は維持し、回帰テストを追加した。
+  - [x] `receive()` の待機中とframe到着後の再開前のcancellationはそのまま伝播し、未受信frameを失わないことをテストする。実装は `asyncio.Queue.get()` への直接委譲を維持する。
+  - [x] stop後の再startは拒否し、古いqueue・failure・sequenceを別の監視へ再利用しない。起動前stopとcleanup失敗もterminalとし、標準runtimeは従来どおり起動ごとに新しいcaptureを生成する。
+  - [x] `queue_size` は唯一の整数設定として位置指定を許可し、既存のキーワード指定も維持する。2つのcallable注入引数は取り違えを防ぐためキーワード専用とする。内部frame生成helperは文字列を含む複数のmetadataを明示するためキーワード専用を維持し、単一入力のstartやevent emitterの自然なevent/callback順は位置指定のままとする。
+  - [x] capture eventはfrozen/slotsの内部値object、queue・sequence・failure・listenerはinstance所有であり、decode・保存・Screen処理を持ち込まない。`None` は未観測failure / 未登録pageを表す。例外messageにはpayloadを出さず、Playwright自体のimportも不要な狭いProtocol境界を維持する。
+  - [x] binary限定、connection ID、全connection共通のframe sequence、close通知、queue上限は既存テストで固定されている。追加したlifecycleテストは異なる失敗経路を守るため維持し、位置指定の確認は既存の容量再利用テストに統合した。
+- [x] `sniffer/envelope.py`: message kind、request number、Wrapper、API 名の byte-level strict decode を確認する。
+  - [x] Request / Responseの2 byte little endian番号は符号なし16 bitの両端を許容し、番号が0 / 1 byteならヘッダー不正とする。実装は維持し、境界テストと既存の非対称byte値のテストで固定する。
+  - [x] Wrapperの不正UTF-8名・途中で切れた本文fieldはprotobuf DecodeErrorを原因に持つSnifferDecodeErrorとする。空本文は全kindで許容し、空WrapperのResponseを受理する。実装は維持し、synthetic bytesで回帰テストを追加した。
+  - [x] Notice / RequestのAPI名省略・明示的空文字・空Wrapperを拒否し、Responseの非空名を拒否する。Responseの例外messageにAPI名・本文を出さない契約を既存テストへ追加した。未知APIの判定はclient decoderへ委譲し、名前の正規化や推測を行わない。
+  - [x] parserは単一bytes入力を位置指定し、helperのlabelは診断用の補助情報としてキーワード専用を維持する。内部envelopeはfrozen/slotsの値objectで、本文とraw payloadを別の役割として保持する。mutable state、便宜的なNone default、async lifecycle、optional dependencyの追加はなく、生成Wrapperによるparseとkind別の検証という分担を維持する。
+- [x] `sniffer/correlator.py`: connection/direction/number key、duplicate/unmatched/incomplete exchange の失敗を確認する。
+  - [x] `CorrelatedRequestResponse` の同型request / responseは取り違え防止のためキーワード専用にする。単一入力のprocess / connection_closed / CorrelatedNoticeは位置指定を維持し、ObservedEnvelopeは型・役割の異なる観測metadataを保持する内部値objectとして現状を維持する。
+  - [x] pendingはinstance所有で、Noticeは即時出力、Requestだけを保持し、対応付け時・close・stopで解放する。decode・配送・Screen処理や履歴保存は持たない。便宜的なNone defaultはなく、processのNoneはRequest保留、popのNoneは対応Requestなしを表す。payload本文は例外messageに含めない。テストは各失敗経路を維持し、既存ケースへ状態保持・解放の確認を統合した。
+  - [x] connection closeは対象connectionの両方向のpendingだけを解放し、他connectionは正常に対応付けできる。stopは全connection・両方向を解放し、未完了件数を報告する。再close / stopと解放済みRequestへのResponse拒否も既存テストの補強で確認した。
+  - [x] connection・番号の不一致と同方向Responseの拒否では元のpending Requestを消費せず、正しいResponseとの対応付けに保持する。実装は維持し、未対応Responseの回帰テスト追加と既存direction mismatchテストの補強で固定した。
+  - [x] 同一connection・direction内の異なる番号は逆順のResponseでも独立して対応する。完了済み番号への重複Responseは拒否し、新Requestによる番号再利用では古いRequestを再使用しない。実装は維持し、回帰テストを追加した。
+- [x] `sniffer/publication.py`: schema version、base64 validation、sequence metadata、unknown field rejection を確認する。
+  - [x] 全sequence fieldの0拒否と有効な最小値、request numberの0 / 65535受理と-1 / 65536拒否をJSON受信経路で確認した。既存の値域制約を維持し、境界値テストを追加した。
+  - [x] 未知fieldの拒否を両kindで確認した。kind欠落・未知値は本文が既知の形でも種別を推測せず拒否する。既存テストを拡張し、実装は維持した。
+  - [x] 3つのpayload fieldでbase64の空文字・改行・padding不足・非ASCII文字の拒否を確認した。全byte値とpaddingの有無を含むJSON往復でpayload保持を確認し、実装は維持した。
+  - [x] schema_versionを必須fieldにして、version欠落のJSONを両kindで拒否する。標準publisherはversionを明示して生成する。
+  - [x] schema_versionのLiteral検証前に整数型を検証し、JSONのtrue / 1.0をversion 1として受理しない。文字列・未対応整数の拒否も両kindで確認する。
+  - [x] modelとunion TypeAdapterの両方で検証エラー文字列の入力値表示を無効化する。各payload fieldのbase64失敗とReq/Res model検証失敗で確認した。構造化errors()の入力保持は別の扱いとする。
+  - [x] Req/Resのresponse frame sequenceはrequestより大きいことをmodelで検証し、生成とJSON受信の両経路で同値・逆行を拒否する。連番は要求せず、wall clock逆行は許容する。
+  - [x] publication/frame sequenceとrequest numberをstrictな整数fieldにし、JSONの文字列・boolean・floatを整数へ暗黙変換しない。Notice / ReqResの全該当fieldでwire入力をテストした。
+- [x] `sniffer/event_adapter.py`: wire publication から raw event への変換境界が decoder と重複せず、bytes 復元を一元化することを確認する。
+  - [x] decoderはadapterで復元したbytesを使い、envelope / protobuf解析を担う。publicationのbase64検証とは責務が異なるため維持する。既存の変換テストを両direction・全byte値へ拡張し、payloadとmetadataの保持、Request / Responseの取り違え防止を確認した。
+- [x] `sniffer/decoder.py`: descriptor map、Notice/Req/Res body decode、publication/envelope API 一致、未知 API の失敗を確認する。
+  - [x] synthetic descriptorを注入し、Noticeとservice methodのRequest / Response型を解決すること、標準decoderとのAPI mapの独立性を確認した。既存実装を維持した。
+  - [x] Notice / RequestのAPI名不一致と、Notice / Request / Response各欄のenvelope種別不一致を拒否することを確認した。別種別として有効なpayloadで照合の失敗経路をテストし、実装は維持した。
+  - [x] Notice / Request / Responseそれぞれの不正本文をLiqiBodyDecodeErrorとして拒否し、原因のDecodeErrorを保持することを確認した。有効な空本文はscalar既定値と未設定messageを区別してdecodeする。既存テストを補強し、実装は維持した。
+  - [x] 番号0の正常decodeとpublication / Request / Responseの各番号不一致の拒否を確認した。Response番号0を既定値へ置き換えていたテストhelperを修正し、既存の番号照合テストを拡張した。decoder実装は維持した。
+- [x] `sniffer/stream.py`: restart、gap、rollback、途中参加を区別し、欠落を補完したふりをしないことを確認する。
+  - [x] Notice / ReqResと複数connectionの混在でもpublication番号で連続性を判定する。frame番号の飛び・巻き戻りを許容し、frameが連続でもpublication欠落は拒否するテストを追加した。実装は維持した。
+  - [x] 先頭 / 途中参加ともgap・重複・巻き戻りの拒否でstream ID・最終番号・途中参加状態を保持する。欠落後の後続も拒否し、実際に次番号を受け取った場合だけ進むことを既存テストへ追加した。実装は維持した。
+  - [x] stream ID変更を番号の重複・連続・欠落より優先して再起動と判定する。先頭 / 途中参加とも拒否時の状態保持と元streamの次番号による進行を既存テストの拡張で確認し、実装は維持した。
+- [x] `sniffer/message_queue.py`: message 件数と payload byte の両上限、put-back 順序、overflow の明示失敗を確認する。
+  - [x] capacity / max_payload_bytesはint型注釈を前提にboolと0以下を拒否する。Trueを上限1として受理していた箇所を修正し、既存の入力検証テストへboolean・負数を追加した。
+  - [x] get / get_nowaitとも差し戻し順を優先し、未読・新着messageの到着順も保持することを確認した。既存の差し戻しテスト2件を混在ケースへ統合し、実装は維持した。
+  - [x] getの空待機中とenqueue直後・再開前のキャンセルを確認した。CancelledErrorを伝播し、未読messageとbyte上限を保持し、取り出し後は容量を再利用できる。実装は維持した。
+  - [x] Req/Resは両payloadの合計byteで単体上限を判定することをenqueue / put_backで確認した。Noticeとの混在、getによる容量解放、put_backによる再計上も確認し、実装は維持した。
+  - [x] enqueue / put_backに保持したmessageが両経路の件数・byte上限へ算入されることを確認した。overflow後も既存messageを保持し、取り出し後に容量を再利用できることを既存テストの統合・拡張で確認した。実装は維持した。
+- [x] `sniffer/worker.py`: capture -> envelope -> correlation -> publication の順序と、stop 時 pending request の失敗を確認する。
+  - [x] connection closeは対象のpendingだけを解放し、他connectionの同番号ReqResは対応できる。再closeと閉じた側の遅延Response拒否も既存テストへ統合し、実装は維持した。
+  - [x] Request保留中のcapture待機をrunのキャンセルで中断し、続くstopが未完了を報告・解放することを確認した。再stopの成功とpublish未呼び出しも既存の停止テストへ統合し、実装は維持した。
+  - [x] publish待機中は後続captureを消費せず、runのキャンセルをpublishへ伝播し、再試行しないことを同期用Eventで確認した。実装は維持した。
+  - [x] Request保留中にheartbeatとNoticeが挟まっても対応付けを維持する。heartbeatをpublishせずNoticeを即時publishし、Response到着後にReqResを出力してpendingを解放することを既存テストへ統合した。実装は維持した。
+  - [x] decode失敗と未対応Responseによるcorrelation失敗でrunが停止し、publishを呼ばず後続captureを未消費で残すことを確認した。既存のdecode失敗テストを拡張し、実装は維持した。
+  - [x] Notice / ReqResのpublish失敗でrunが元の例外を伝播し、再試行せず後続captureを未消費で残すことを既存テストの拡張で確認した。実装は維持した。
+  - [x] 注入したcorrelatorを真偽値で置き換えず、Noneの場合だけ既定instanceを生成する。falseyなinstanceへRequestが保留され、stopで未完了を検出できる回帰テストを追加した。
+- [x] `sniffer/runtime.py`: context・publisher・capture・worker の開始順、逆順 cleanup、失敗伝播を確認する。
+  - [x] 正常stop後も新しいresourceを取得して再起動し、前回のresourceを再実行・再cleanupしないことを既存の再起動テストへ統合した。実装は維持した。
+  - [x] worker / capture / publisher / contextすべての停止失敗でも全cleanupを実行し、全例外をチェーンに保持することを確認した。再stopで二重cleanupせず、runは未起動として拒否する。実装は維持した。
+  - [x] 起動失敗とcleanup失敗が重なると起動例外が失われる問題を修正した。両例外をBaseExceptionGroupで保持し、bind / capture startの失敗・キャンセルと複数cleanup失敗でcontext解放まで確認した。
+  - [x] worker実行中の例外をrunがそのまま伝播し、続くstopで全resourceを一度ずつcleanupすることを確認した。停止後のrun拒否も回帰テストへ含め、実装は維持した。
+  - [x] bind / capture start失敗後に同じbackendを再起動し、factoryから新しいresourceを取得して配線・run・cleanupできることを確認した。失敗した起動のworkerを実行・停止せず、古いresourceを再cleanupしないことも確認し、実装は維持した。
+  - [x] 4種のfactoryを引数のデフォルト値へ直接指定し、None分岐をなくした。falseyなcallableも保持し、注入先への引数・起動・run・cleanupを回帰テストで確認した。
+  - [x] bind / capture start待機中の起動タスクをキャンセルし、capture→publisher→contextのcleanupとCancelledError伝播を確認した。未起動状態でのrun拒否とstopの二重解放防止も確認し、実装は維持した。
+  - [x] 各factoryの失敗時に後続生成を止め、生成済みresourceだけをcleanupすることを確認した。元の例外の伝播、失敗後のrun拒否とstopでの二重cleanup防止もテストし、実装は維持した。
+  - [x] worker / capture / publisher各stopの単独失敗でも残りを逆順にcleanupし、元の例外を伝播する。失敗後の再stopでcleanupを繰り返さないことも既存テストへ統合し、実装は維持した。
+- [x] `sniffer/zmq.py`: PUB/SUB topic、bind/connect、IPv6、socket/context cleanup、multipart validation を確認する。
+  - [x] bind / connect失敗後に新しいsocketを取得して再試行し、送受信・停止できることを確認した。失敗socketを再利用・再closeせず、contextの所有と解放はruntimeへ委ねる。実装は維持した。
+  - [x] bind / connect / option設定失敗にclose失敗が重なる5経路を既存テストへ追加した。元の設定例外をチェーンに保持し、以後の送受信拒否と二重close防止を確認した。実装は維持した。
+  - [x] recv_multipartの失敗・キャンセルをそのまま伝播し、受信済み番号と途中参加状態を保持することを確認した。失敗後も重複を拒否し、次番号の受理とstopが可能である。実装は維持した。
+  - [x] 送信失敗テストを成功後の失敗・キャンセルへ拡張した。元の例外を伝播し、失敗時に番号を進めず、後続の成功送信JSONが連番・同じstream IDで返り値と一致することを確認した。実装は維持した。
+  - [x] subscriber経由のgap検出テストを重複・巻き戻り・再起動へ拡張した。各例外を区別して伝播し、拒否後も元streamの次番号を受理して途中参加状態を保持することを確認した。実装は維持した。
+  - [x] publisher / subscriberのclose失敗でも停止済み状態を保持し、元の例外を伝播することを確認した。再stopでcloseを繰り返さず、以後の送受信を拒否する。実装は維持した。
+  - [x] 二重bind / connectをsocket追加生成なしで拒否して元の接続を維持すること、stopを繰り返してもcloseは1回で停止後の送受信を拒否することを正常系テストへ統合した。実装は維持した。
+  - [x] 不正JSONと未対応schema versionのValidationError伝播を確認した。正常受信後に不正な次番号を拒否してもstream番号を進めず、次の正常な同番号publicationを受理する。実装は維持した。
+  - [x] bind / connect失敗テストをIPv6・SUBSCRIBE設定失敗へ拡張した。元の例外を伝播し、socketをlinger=0で一度だけ閉じ、送受信可能な状態を残さないことを確認した。実装は維持した。
+  - [x] 空・1part・3partと不一致topic（接尾辞付きも含む）の拒否を確認した。正常JSONを使ってtopic検証を分離し、不正受信でstreamを初期化せず後続の正常publicationを受理できることを既存テストへ追加した。実装は維持した。
+- [x] `sniffer/client_runtime.py`: receive -> stream validation -> raw adapter -> protobuf decode -> observer -> queue の順序を確認する。
+  - [x] 接続失敗時に元の例外を伝播し、readyを通知せず受信・decode・observer・queueへ進まずsubscriberを停止することを既存テストへ追加した。実装は維持した。
+  - [x] 実decoder・queueのReqRes統合テストで本文・raw bytes・観測時刻を両側で区別して保持し、observer→queueへ同一eventを配送することを確認した。Noticeと共通の配送確認をhelperへ整理し、実装は維持した。
+  - [x] synthetic Noticeを実decoder・queueへ通し、本文decodeとraw bytes・観測情報の保持、observer→queueへの同一event配送を確認した。実装は維持した。
+  - [x] decode失敗 / 受信キャンセルとsubscriber停止失敗が重なる場合、元の原因を例外チェーンに保持することを確認した。停止試行は1回で、observer・queueへ進まない。実装は維持した。
+  - [x] wait_until_readyは接続完了まで待機し、接続待機中のキャンセルではreadyを通知せず、受信せずsubscriberを停止することをEventで同期して確認した。実装は維持した。
+  - [x] 正常受信後のreceive失敗とstream gapで元の例外を伝播し、再受信・追加decodeを行わずsubscriberを停止することを確認した。observer / queueの処理済みmessageも保持される。実装は維持した。
+  - [x] decode失敗で元の例外を伝播し、observer・queueを呼ばず後続publicationを未受信で残してsubscriberを停止することを既存テストへ追加した。実装は維持した。
+  - [x] 実queueの件数 / byte上限でoverflowを起こし、例外伝播・後続受信停止・subscriber停止を確認した。投入前のobserver呼び出しと保持済みmessageの保存も確認し、実装は維持した。
+  - [x] observer失敗時は元の例外を伝播し、queue投入と後続受信を行わずsubscriberを停止することを確認した。decode済みmessageをそのままobserverへ渡すことも確認し、実装は維持した。
 
 Sniffer の各段は異なるデータ完全性を守るため、ファイル数だけを理由に大きな service へ統合しない。
 統合候補は、失敗分類と synthetic unit test の境界を維持できる場合だけ検討する。
