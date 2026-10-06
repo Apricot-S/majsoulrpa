@@ -40,11 +40,14 @@ class VerificationEmail:
         )
 
         recipient_headers = message.get_all("To", [])
+        valid_recipient_headers = (
+            recipient_headers
+            if len(recipient_headers) == 1 and not recipient_headers[0].defects
+            else []
+        )
         recipients = frozenset(
             address.casefold()
-            for _, address in getaddresses(
-                recipient_headers if len(recipient_headers) == 1 else []
-            )
+            for _, address in getaddresses(valid_recipient_headers)
         )
 
         subjects = message.get_all("Subject", [])

@@ -137,6 +137,20 @@ def test_single_to_can_contain_multiple_recipients() -> None:
     assert email.matches_deletion_condition(recipient="user@example.com")
 
 
+def test_malformed_to_is_not_a_code_or_deletion_candidate() -> None:
+    email = VerificationEmail.parse(
+        _message().replace(
+            b"To: user@example.com\n",
+            b"To: User <user@example.com\n",
+            1,
+        )
+    )
+
+    assert not email.matches_deletion_condition(recipient="user@example.com")
+    with pytest.raises(InvalidYostarVerificationEmailError, match="recipient"):
+        email.extract_code(recipient="user@example.com")
+
+
 def test_parsed_email_representation_and_logs_hide_email_data(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
