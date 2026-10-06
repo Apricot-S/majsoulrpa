@@ -1447,6 +1447,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Message validation and retrieval
 
+- [x] VerificationEmailのrepr / strと通常ログへ送信元・宛先・認証コード・本文を含めず、コード取得と削除条件判定は維持する
+
 - [x] 件名のコードは ASCII 6桁だけを受理し、全角・Arabic-Indic数字、桁数違い、全角空白の変更、前後の追加文字を拒否する
 - [x] メールの有効期間は受信直後から30分未満とし、直前・境界・未来の受信日時を区別する
 

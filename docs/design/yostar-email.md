@@ -59,3 +59,7 @@ fixture に保存しない。
 フレームワークが生成するメール例外のmessageにはメールアドレス・コード・本文や
 S3 bucket・prefixを埋め込まない。利用者が独自に指定する例外messageや外部SDKの
 例外messageをこの例外階層が自動的に除去する仕組みは設けない。
+
+内部の `VerificationEmail` は送信元・宛先・コードを照合用に保持するが、全fieldを
+dataclassのreprから除外する。`repr()` / `str()` と通常ログの `%r` / `%s` に
+メール情報を含めない。本文はこのobjectへ保持しない。

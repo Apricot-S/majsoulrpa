@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime, timedelta
 from email.message import EmailMessage
 
@@ -8,6 +9,7 @@ from majsoulrpa.yostar_email import (
     YostarVerificationEmailError,
     extract_verification_code,
 )
+from majsoulrpa.yostar_email.email import VerificationEmail
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
@@ -27,6 +29,27 @@ def _message(
     message["Subject"] = subject
     message.set_content("Synthetic test message.")
     return message.as_bytes()
+
+
+def test_parsed_email_representation_and_logs_hide_email_data(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    email = VerificationEmail.parse(_message())
+
+    with caplog.at_level(logging.INFO):
+        logging.getLogger(__name__).info("Parsed email: %s / %r", email, email)
+
+    for output in (repr(email), str(email), caplog.text):
+        for value in (
+            "info@passport.yostar.co.jp",
+            "user@example.com",
+            "012345",
+            "Synthetic test message.",
+        ):
+            assert value not in output
+
+    assert email.extract_code(recipient="user@example.com") == "012345"
+    assert email.matches_deletion_condition(recipient="user@example.com")
 
 
 @pytest.mark.parametrize(

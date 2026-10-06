@@ -359,6 +359,7 @@ Sniffer の各段は異なるデータ完全性を守るため、ファイル数
 - [x] `yostar_email/provider.py`: `VerificationCodeProvider` が実際の公開差し替え点として最小であることを確認する。
   - [x] 2つのasync methodと削除optionだけのProtocolを維持した。継承しない独自providerを型付きconsumerへ渡し、両APIの戻り値と削除optionの省略・明示指定をpytest / tyで確認した。docstringと[設計資料](../design/yostar-email.md)へ構造的な差し替え方法と責務を明記した。
 - [ ] `yostar_email/email.py`: MIME sender/recipient/subject/date の strict validation と code/email/body 非漏洩を確認する。
+  - [x] VerificationEmailの全fieldをreprから除外し、repr / strと通常ログへの送信元・宛先・コードの漏洩を修正した。synthetic MIMEで非漏洩とコード取得・削除条件判定の維持を確認した。MIME headerと日時のstrict validationの残りは未完了とする。
 - [ ] `yostar_email/s3.py`: boto3 遅延 import、候補順、polling 条件、任意削除の対象制約、client lifecycle を確認する。
 
 ## `assets/`

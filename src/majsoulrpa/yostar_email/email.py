@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from email import policy
 from email.parser import BytesParser
@@ -19,9 +19,9 @@ from majsoulrpa.yostar_email.errors import (
 class VerificationEmail:
     """Parsed fields used to classify and validate an email."""
 
-    senders: tuple[str, ...]
-    recipients: frozenset[str]
-    verification_code: str | None
+    senders: tuple[str, ...] = field(repr=False)
+    recipients: frozenset[str] = field(repr=False)
+    verification_code: str | None = field(repr=False)
 
     @classmethod
     def parse(cls, message_bytes: bytes) -> Self:
