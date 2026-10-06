@@ -27,6 +27,7 @@ class VerificationEmail:
     def parse(cls, message_bytes: bytes) -> Self:
         """Parse the MIME headers used for verification emails."""
         message = BytesParser(policy=policy.default).parsebytes(message_bytes)
+
         sender_headers = message.get_all("From", [])
         valid_sender_headers = (
             sender_headers
@@ -37,6 +38,7 @@ class VerificationEmail:
             address.casefold()
             for _, address in getaddresses(valid_sender_headers)
         )
+
         recipient_headers = message.get_all("To", [])
         recipients = frozenset(
             address.casefold()
@@ -44,10 +46,12 @@ class VerificationEmail:
                 recipient_headers if len(recipient_headers) == 1 else []
             )
         )
+
         subjects = message.get_all("Subject", [])
         subject = subjects[0] if len(subjects) == 1 else None
         match = YOSTAR_EMAIL_SUBJECT_PATTERN.fullmatch(subject or "")
         verification_code = None if match is None else match.group("code")
+
         return cls(
             senders=senders,
             recipients=recipients,
