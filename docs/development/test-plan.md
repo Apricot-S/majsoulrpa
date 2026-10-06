@@ -1429,6 +1429,13 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ## Optional integration: Yostar verification email
 
+### Package import boundary
+
+- [x] package の公開 export が parser、provider Protocol、メール例外だけであり、定義元と同一 object である
+- [x] AWS SDK と型 stub を import できない新規 process でも package を import でき、S3 module を読み込まない
+
+### Email parsing and S3 provider
+
 - [x] `AppConfig` で `yostar_email` 設定を省略できる
 - [x] `yostar_email` でメールアドレスだけを設定し、S3 設定を省略できる
 - [x] TOML の `[yostar_email.s3]` から bucket、prefix、AWS profile を読める
