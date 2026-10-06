@@ -27,9 +27,15 @@ class VerificationEmail:
     def parse(cls, message_bytes: bytes) -> Self:
         """Parse the MIME headers used for verification emails."""
         message = BytesParser(policy=policy.default).parsebytes(message_bytes)
+        sender_headers = message.get_all("From", [])
+        valid_sender_headers = (
+            sender_headers
+            if len(sender_headers) == 1 and not sender_headers[0].defects
+            else []
+        )
         senders = tuple(
             address.casefold()
-            for _, address in getaddresses(message.get_all("From", []))
+            for _, address in getaddresses(valid_sender_headers)
         )
         recipient_headers = message.get_all("To", [])
         recipients = frozenset(

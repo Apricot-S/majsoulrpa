@@ -60,6 +60,47 @@ def test_missing_subject_is_not_a_code_or_deletion_candidate() -> None:
 
 
 @pytest.mark.parametrize(
+    "from_headers",
+    [
+        pytest.param(b"", id="missing-from"),
+        pytest.param(
+            b"From: info@passport.yostar.co.jp\n"
+            b"from: info@passport.yostar.co.jp\n",
+            id="duplicate-from",
+        ),
+        pytest.param(
+            b"From: info@passport.yostar.co.jp, other@example.com\n",
+            id="multiple-senders",
+        ),
+        pytest.param(
+            b"From: Yostar <info@passport.yostar.co.jp\n",
+            id="missing-closing-angle-bracket",
+        ),
+    ],
+)
+def test_invalid_from_cannot_supply_code_but_keeps_deletion_condition(
+    from_headers: bytes,
+) -> None:
+    email = VerificationEmail.parse(
+        _message().replace(
+            b"From: info@passport.yostar.co.jp\n", from_headers, 1
+        )
+    )
+
+    with pytest.raises(InvalidYostarVerificationEmailError, match="sender"):
+        email.extract_code(recipient="user@example.com")
+    assert email.matches_deletion_condition(recipient="user@example.com")
+
+
+def test_accepts_sender_with_display_name() -> None:
+    email = VerificationEmail.parse(
+        _message(sender="Yostar <info@passport.yostar.co.jp>")
+    )
+
+    assert email.extract_code(recipient="user@example.com") == "012345"
+
+
+@pytest.mark.parametrize(
     "extra_header",
     [
         pytest.param(b"To: other@example.com", id="duplicate-to"),

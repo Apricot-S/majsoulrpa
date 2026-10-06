@@ -359,6 +359,7 @@ Sniffer の各段は異なるデータ完全性を守るため、ファイル数
 - [x] `yostar_email/provider.py`: `VerificationCodeProvider` が実際の公開差し替え点として最小であることを確認する。
   - [x] 2つのasync methodと削除optionだけのProtocolを維持した。継承しない独自providerを型付きconsumerへ渡し、両APIの戻り値と削除optionの省略・明示指定をpytest / tyで確認した。docstringと[設計資料](../design/yostar-email.md)へ構造的な差し替え方法と責務を明記した。
 - [ ] `yostar_email/email.py`: MIME sender/recipient/subject/date の strict validation と code/email/body 非漏洩を確認する。
+  - [x] 構文不正なFromをparserの補正結果で受理する問題を修正した。Fromは1 headerかつdefectなしを要求し、欠落・重複・複数送信元・閉じ括弧欠落の拒否と正常な表示名付き送信元の受理を確認した。削除条件は宛先・件名による既存判定を維持する。
   - [x] To headerの重複時に複数headerをまとめて宛先として受理する問題を修正した。欠落・重複をコード取得・削除条件の両経路で拒否し、単一To内の複数宛先は維持する。header名の大文字小文字によらない拒否も回帰テストで確認した。
   - [x] Subject headerが1つの場合だけ件名を照合し、重複時に先頭の件名だけでコードを取得・削除対象にする問題を修正した。欠落・重複とheader名の大文字小文字によらない拒否をコード取得・削除条件の両経路で確認した。sender / recipient / 日時の残りは未完了とする。
   - [x] VerificationEmailの全fieldをreprから除外し、repr / strと通常ログへの送信元・宛先・コードの漏洩を修正した。synthetic MIMEで非漏洩とコード取得・削除条件判定の維持を確認した。MIME headerと日時のstrict validationの残りは未完了とする。
