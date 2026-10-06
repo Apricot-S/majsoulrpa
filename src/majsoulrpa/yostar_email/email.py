@@ -31,9 +31,12 @@ class VerificationEmail:
             address.casefold()
             for _, address in getaddresses(message.get_all("From", []))
         )
+        recipient_headers = message.get_all("To", [])
         recipients = frozenset(
             address.casefold()
-            for _, address in getaddresses(message.get_all("To", []))
+            for _, address in getaddresses(
+                recipient_headers if len(recipient_headers) == 1 else []
+            )
         )
         subjects = message.get_all("Subject", [])
         subject = subjects[0] if len(subjects) == 1 else None

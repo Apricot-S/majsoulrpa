@@ -1447,6 +1447,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Message validation and retrieval
 
+- [x] To headerの欠落・重複ではコード取得と削除条件を拒否し、単一To内の複数宛先は受理する
+
 - [x] Subjectが欠落・重複したメールはコード取得と削除条件の両方で拒否し、重複判定はheader名の大文字小文字によらない
 
 - [x] VerificationEmailのrepr / strと通常ログへ送信元・宛先・認証コード・本文を含めず、コード取得と削除条件判定は維持する

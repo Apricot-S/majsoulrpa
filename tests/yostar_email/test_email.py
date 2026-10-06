@@ -59,6 +59,43 @@ def test_missing_subject_is_not_a_code_or_deletion_candidate() -> None:
         email.extract_code(recipient="user@example.com")
 
 
+@pytest.mark.parametrize(
+    "extra_header",
+    [
+        pytest.param(b"To: other@example.com", id="duplicate-to"),
+        pytest.param(b"to: user@example.com", id="duplicate-lowercase-to"),
+    ],
+)
+def test_duplicate_to_is_not_a_code_or_deletion_candidate(
+    extra_header: bytes,
+) -> None:
+    message = _message().replace(b"\n\n", b"\n" + extra_header + b"\n\n", 1)
+    email = VerificationEmail.parse(message)
+
+    assert not email.matches_deletion_condition(recipient="user@example.com")
+    with pytest.raises(InvalidYostarVerificationEmailError, match="recipient"):
+        email.extract_code(recipient="user@example.com")
+
+
+def test_missing_to_is_not_a_code_or_deletion_candidate() -> None:
+    email = VerificationEmail.parse(
+        _message().replace(b"To: user@example.com\n", b"", 1)
+    )
+
+    assert not email.matches_deletion_condition(recipient="user@example.com")
+    with pytest.raises(InvalidYostarVerificationEmailError, match="recipient"):
+        email.extract_code(recipient="user@example.com")
+
+
+def test_single_to_can_contain_multiple_recipients() -> None:
+    email = VerificationEmail.parse(
+        _message(recipient="other@example.com, User <user@example.com>")
+    )
+
+    assert email.extract_code(recipient="user@example.com") == "012345"
+    assert email.matches_deletion_condition(recipient="user@example.com")
+
+
 def test_parsed_email_representation_and_logs_hide_email_data(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
