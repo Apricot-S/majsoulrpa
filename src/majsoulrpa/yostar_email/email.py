@@ -97,7 +97,7 @@ def extract_verification_code(
         msg = "Email timestamps must include timezone information."
         raise ValueError(msg)
 
-    age = current_time - received_at
+    age = current_time.astimezone(UTC) - received_at.astimezone(UTC)
     if age < timedelta(0) or age >= VERIFICATION_EMAIL_EXPIRATION:
         msg = "The verification email is outside its validity period."
         raise InvalidYostarVerificationEmailError(msg)

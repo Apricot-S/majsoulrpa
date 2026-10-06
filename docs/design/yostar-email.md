@@ -35,6 +35,8 @@ S3実装に加え、継承しない独自実装を型付きconsumerへ渡すテ�
   `extract_verification_code()` の `received_at` と `now` はUTC offsetが定義された
   日時を要求する。tzinfo欠落だけでなく `utcoffset()` が `None` の日時も
   減算前に `ValueError` で拒否する。異なる固定UTC offsetの日時も受理する。
+  期限判定の差は両日時をUTCへ変換して求め、同じtzinfo内でoffsetが変わった場合も
+  壁時計の差ではなく実経過時間を使う。
 
 ## 根拠と確認範囲
 

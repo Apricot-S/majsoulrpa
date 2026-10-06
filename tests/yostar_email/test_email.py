@@ -25,6 +25,67 @@ class UndefinedOffsetTimezone(tzinfo):
         return None
 
 
+class ChangingOffsetTimezone(tzinfo):
+    """Synthetic offset transition at local hour 3."""
+
+    def __init__(self, before: int, after: int) -> None:
+        self.before = timedelta(hours=before)
+        self.after = timedelta(hours=after)
+
+    def utcoffset(self, dt: datetime | None) -> timedelta | None:
+        if dt is None:
+            return None
+        return self.before if dt.hour < 3 else self.after
+
+    def dst(self, _dt: datetime | None) -> timedelta:
+        return timedelta(0)
+
+    def tzname(self, _dt: datetime | None) -> str:
+        return "Synthetic"
+
+
+@pytest.mark.parametrize(
+    ("before", "after", "received_hour", "expected_age"),
+    [
+        pytest.param(1, 2, 1, timedelta(minutes=20), id="forward-valid"),
+        pytest.param(2, 1, 2, timedelta(minutes=80), id="backward-expired"),
+        pytest.param(1, 2, 2, timedelta(minutes=-40), id="forward-future"),
+    ],
+)
+def test_validity_uses_utc_elapsed_time_with_same_changing_timezone(
+    before: int,
+    after: int,
+    received_hour: int,
+    expected_age: timedelta,
+) -> None:
+    zone = ChangingOffsetTimezone(before, after)
+    received_at = NOW.replace(hour=received_hour, minute=50, tzinfo=zone)
+    current_time = NOW.replace(hour=3, minute=10, tzinfo=zone)
+    assert (
+        current_time.astimezone(UTC) - received_at.astimezone(UTC)
+        == expected_age
+    )
+
+    if timedelta(0) <= expected_age < timedelta(minutes=30):
+        assert (
+            extract_verification_code(
+                _message(),
+                recipient="user@example.com",
+                received_at=received_at,
+                now=current_time,
+            )
+            == "012345"
+        )
+    else:
+        with pytest.raises(InvalidYostarVerificationEmailError):
+            extract_verification_code(
+                _message(),
+                recipient="user@example.com",
+                received_at=received_at,
+                now=current_time,
+            )
+
+
 @pytest.mark.parametrize(
     "timestamp",
     [
