@@ -1,5 +1,21 @@
 # Yostar 認証メールの照合条件
 
+## コード取得元の差し替え
+
+`majsoulrpa.yostar_email.VerificationCodeProvider` は取得元を選ぶ公開Protocolである。
+利用者はこれを継承せず、同じsignatureを持つ2つのasync methodを実装して差し替えられる。
+
+- `fetch()` はコード取得まで待機する。
+- `fetch_nowait()` はpollingせず一度だけ確認する。外部I/O自体の待機はあり得る。
+- 両methodはコードを `str` として返し、keyword専用の `delete_read_emails` を持つ。
+  削除は省略時に無効で、明示的に `True` を渡した場合だけ行う。
+
+取得元固有の設定やresource管理は具体的なproviderに置く。ProtocolにはS3 client、
+AWS設定、汎用factory、runtimeでの型判定を追加しない。callbackがユーザーdata内の
+providerを直接呼ぶため、core runtimeにproviderの登録や生成機構は不要である。
+S3実装に加え、継承しない独自実装を型付きconsumerへ渡すテストを型検査・実行して
+この差し替え境界を確認する。
+
 `yostar_email/constants.py` は JP 向けのメール照合条件を保持する。
 
 - 送信元は既存実装の `YOSTAR_EMAIL_ADDRESS` と完全一致させる。

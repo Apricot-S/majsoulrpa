@@ -1440,6 +1440,11 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 不正メールの例外 str / repr に送信元・宛先・コード・本文を含めず、未着の例外にメールアドレス・bucket・prefixを含めない
 - [x] polling はメール未着だけを再試行し、他のメール例外・外部処理失敗・キャンセルは元の例外を一度で伝播する
 
+### Provider substitution
+
+- [x] Protocolを継承しない独自providerをVerificationCodeProviderとして受け取り、fetch / fetch_nowaitの戻り値を保持できる
+- [x] 同じ差し替え経路で削除optionの省略時Falseと明示Trueを両APIへ渡せる
+
 ### Message validation and retrieval
 
 - [x] 件名のコードは ASCII 6桁だけを受理し、全角・Arabic-Indic数字、桁数違い、全角空白の変更、前後の追加文字を拒否する
