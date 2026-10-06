@@ -9,6 +9,10 @@ from typing import TYPE_CHECKING, Any, cast
 import pytest
 
 import majsoulrpa.yostar_email.s3 as s3_module
+from majsoulrpa.yostar_email import (
+    InvalidYostarVerificationEmailError,
+    YostarVerificationEmailError,
+)
 from majsoulrpa.yostar_email.s3 import (
     S3VerificationCodeProvider,
     VerificationEmailNotFoundError,
@@ -166,12 +170,65 @@ def test_fetch_fails_when_no_valid_email_exists() -> None:
     provider = S3VerificationCodeProvider(
         email_address="user@example.com",
         bucket_name="example-bucket",
+        key_prefix="example-prefix/",
         client=cast("S3Client", client),
         clock=lambda: NOW,
     )
 
-    with pytest.raises(VerificationEmailNotFoundError):
+    with pytest.raises(VerificationEmailNotFoundError) as exc_info:
         asyncio.run(provider.fetch_nowait())
+
+    assert isinstance(exc_info.value, YostarVerificationEmailError)
+    assert not isinstance(exc_info.value, InvalidYostarVerificationEmailError)
+    for error in (str(exc_info.value), repr(exc_info.value)):
+        assert "user@example.com" not in error
+        assert "example-bucket" not in error
+        assert "example-prefix/" not in error
+    assert len(client.list_calls) == 1
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        pytest.param(YostarVerificationEmailError(), id="base-email-error"),
+        pytest.param(
+            InvalidYostarVerificationEmailError(), id="invalid-email-error"
+        ),
+        pytest.param(RuntimeError(), id="external-operation-error"),
+        pytest.param(asyncio.CancelledError(), id="cancellation"),
+    ],
+)
+def test_fetch_propagates_non_missing_failure_without_retry(
+    failure: BaseException,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = S3ClientFake([], {})
+    attempts = 0
+
+    def fail_listing(**_kwargs: str) -> dict[str, Any]:
+        nonlocal attempts
+        attempts += 1
+        raise failure
+
+    async def unexpected_sleep(_delay: float) -> None:
+        pytest.fail("Only missing email may trigger polling sleep.")
+
+    monkeypatch.setattr(client, "list_objects_v2", fail_listing)
+    monkeypatch.setattr(s3_module.asyncio, "sleep", unexpected_sleep)
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: NOW,
+    )
+
+    with pytest.raises(type(failure)) as exc_info:
+        asyncio.run(provider.fetch())
+
+    assert exc_info.value is failure
+    assert attempts == 1
+    assert client.get_calls == []
+    assert client.delete_calls == []
 
 
 def test_fetch_retries_until_email_is_available() -> None:

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class VerificationEmailNotFoundError(YostarVerificationEmailError):
-    """No current valid verification email was found."""
+    """No valid email found; retry may find a new arrival."""
 
 
 @dataclass(frozen=True, slots=True)

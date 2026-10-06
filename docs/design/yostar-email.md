@@ -24,3 +24,22 @@
 synthetic MIME message により件名形式と期間の境界を検証する。実サービスの値が
 変わった場合は手動確認の結果として条件を見直し、実メールや実認証コードは資料や
 fixture に保存しない。
+
+## 例外と再試行
+
+`YostarVerificationEmailError` はメール処理の共通例外であり、これを捕捉しただけでは
+再試行可能とは判断しない。
+
+- `InvalidYostarVerificationEmailError` は個々のメールが照合条件や有効期間を
+  満たさないことを表す。同じメールを再処理しても有効にはならない。
+  S3 provider はこの候補を除外して他の候補を調べる。
+- `majsoulrpa.yostar_email.s3.VerificationEmailNotFoundError` は現在有効なメールが
+  見つからないことを表す。不正メール例外とは別の共通例外の派生であり、新着メールを
+  待って再取得できる。`fetch_nowait()` はこれを伝播し、`fetch()` はこの型だけを
+  polling の再試行対象にする。
+
+他のメール例外、外部処理の失敗、キャンセルは `fetch()` が再試行せず伝播する。
+外部処理の失敗に対する再試行判断は呼び出し側で行う。
+フレームワークが生成するメール例外のmessageにはメールアドレス・コード・本文や
+S3 bucket・prefixを埋め込まない。利用者が独自に指定する例外messageや外部SDKの
+例外messageをこの例外階層が自動的に除去する仕組みは設けない。

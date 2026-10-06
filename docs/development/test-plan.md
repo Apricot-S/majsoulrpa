@@ -1434,7 +1434,13 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] package の公開 export が parser、provider Protocol、メール例外だけであり、定義元と同一 object である
 - [x] AWS SDK と型 stub を import できない新規 process でも package を import でき、S3 module を読み込まない
 
-### Email parsing and S3 provider
+### Error classification and retry boundary
+
+- [x] 不正メールとメール未着を共通のメール例外で捕捉でき、未着を不正メールと区別できる
+- [x] 不正メールの例外 str / repr に送信元・宛先・コード・本文を含めず、未着の例外にメールアドレス・bucket・prefixを含めない
+- [x] polling はメール未着だけを再試行し、他のメール例外・外部処理失敗・キャンセルは元の例外を一度で伝播する
+
+### Message validation and retrieval
 
 - [x] 件名のコードは ASCII 6桁だけを受理し、全角・Arabic-Indic数字、桁数違い、全角空白の変更、前後の追加文字を拒否する
 - [x] メールの有効期間は受信直後から30分未満とし、直前・境界・未来の受信日時を区別する

@@ -1,6 +1,6 @@
 class YostarVerificationEmailError(Exception):
-    """Base exception for Yostar verification email processing."""
+    """Base email error; catching this alone does not justify retry."""
 
 
 class InvalidYostarVerificationEmailError(YostarVerificationEmailError):
-    """A message is not a current Yostar verification email."""
+    """Invalid email; retry will not make the same message valid."""

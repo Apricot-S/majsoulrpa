@@ -5,6 +5,7 @@ import pytest
 
 from majsoulrpa.yostar_email import (
     InvalidYostarVerificationEmailError,
+    YostarVerificationEmailError,
     extract_verification_code,
 )
 
@@ -125,6 +126,13 @@ def test_rejects_nonmatching_or_expired_message(
             now=NOW,
         )
 
-    error = str(exc_info.value)
-    assert "user@example.com" not in error
-    assert "012345" not in error
+    assert isinstance(exc_info.value, YostarVerificationEmailError)
+    for error in (str(exc_info.value), repr(exc_info.value)):
+        for value in (
+            "user@example.com",
+            "other@example.com",
+            "attacker@example.com",
+            "012345",
+            "Synthetic test message.",
+        ):
+            assert value not in error

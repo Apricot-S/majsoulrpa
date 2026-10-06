@@ -354,7 +354,8 @@ Sniffer の各段は異なるデータ完全性を守るため、ファイル数
   - [x] parser、provider Protocol、メール例外の4 exportが定義元と同一objectであることを確認した。新規processでboto3 / botocore / S3型stubのimportを禁止してもpackageを利用でき、S3 moduleを読み込まない回帰テストを追加した。既存実装を維持した。
 - [x] `yostar_email/constants.py`: sender、subject、期限などの値と調査根拠を確認する。
   - [x] 件名のcodeをASCII 6桁に限定し、LoginScreenの入力条件へ揃えた。Unicode数字・桁数・空白・前後文字の拒否と期限境界をsynthetic MIMEで確認した。送信元・件名の既存値と30分の受理期間を維持した。有効期限30分は認証メール本文の記載に基づく（2026-10-06ユーザー補足）。送信元・件名の調査根拠の未記録と期限の根拠を[設計資料](../design/yostar-email.md)へ明記した。
-- [ ] `yostar_email/errors.py`: 利用者が再試行可否を判断でき、secret を message に含めない例外階層を確認する。
+- [x] `yostar_email/errors.py`: 利用者が再試行可否を判断でき、secret を message に含めない例外階層を確認する。
+  - [x] 不正メールと未着を共通baseで捕捉でき、型で区別できる既存階層を維持した。例外docstringと[設計資料](../design/yostar-email.md)へ再試行条件を明記し、未着以外の例外・キャンセルの一度だけの伝播とstr / reprへのメール情報・S3設定の非漏洩を回帰テストで確認した。
 - [ ] `yostar_email/provider.py`: `VerificationCodeProvider` が実際の公開差し替え点として最小であることを確認する。
 - [ ] `yostar_email/email.py`: MIME sender/recipient/subject/date の strict validation と code/email/body 非漏洩を確認する。
 - [ ] `yostar_email/s3.py`: boto3 遅延 import、候補順、polling 条件、任意削除の対象制約、client lifecycle を確認する。
