@@ -14,6 +14,23 @@ from majsoulrpa.yostar_email.email import VerificationEmail
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
 
+def _message(
+    *,
+    sender: str = "info@passport.yostar.co.jp",
+    recipient: str = "user@example.com",
+    cc: str | None = None,
+    subject: str = "【Yostar】メールアドレスの認証コードは　012345",
+) -> bytes:
+    message = EmailMessage()
+    message["From"] = sender
+    message["To"] = recipient
+    if cc is not None:
+        message["Cc"] = cc
+    message["Subject"] = subject
+    message.set_content("Synthetic test message.")
+    return message.as_bytes()
+
+
 class UndefinedOffsetTimezone(tzinfo):
     def utcoffset(self, _dt: datetime | None) -> None:
         return None
@@ -142,23 +159,6 @@ def test_validity_uses_elapsed_time_across_utc_offsets(age: timedelta) -> None:
                 received_at=received_at,
                 now=NOW,
             )
-
-
-def _message(
-    *,
-    sender: str = "info@passport.yostar.co.jp",
-    recipient: str = "user@example.com",
-    cc: str | None = None,
-    subject: str = "【Yostar】メールアドレスの認証コードは　012345",
-) -> bytes:
-    message = EmailMessage()
-    message["From"] = sender
-    message["To"] = recipient
-    if cc is not None:
-        message["Cc"] = cc
-    message["Subject"] = subject
-    message.set_content("Synthetic test message.")
-    return message.as_bytes()
 
 
 @pytest.mark.parametrize("header_name", ["Subject", "subject"])
