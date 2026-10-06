@@ -31,6 +31,34 @@ def _message(
     return message.as_bytes()
 
 
+@pytest.mark.parametrize("header_name", ["Subject", "subject"])
+def test_duplicate_subject_is_not_a_code_or_deletion_candidate(
+    header_name: str,
+) -> None:
+    message = _message().replace(
+        b"\n\n",
+        f"\n{header_name}: Synthetic duplicate subject\n\n".encode(),
+        1,
+    )
+    email = VerificationEmail.parse(message)
+
+    assert not email.matches_deletion_condition(recipient="user@example.com")
+    with pytest.raises(InvalidYostarVerificationEmailError, match="subject"):
+        email.extract_code(recipient="user@example.com")
+
+
+def test_missing_subject_is_not_a_code_or_deletion_candidate() -> None:
+    message = EmailMessage()
+    message["From"] = "info@passport.yostar.co.jp"
+    message["To"] = "user@example.com"
+    message.set_content("Synthetic test message.")
+    email = VerificationEmail.parse(message.as_bytes())
+
+    assert not email.matches_deletion_condition(recipient="user@example.com")
+    with pytest.raises(InvalidYostarVerificationEmailError, match="subject"):
+        email.extract_code(recipient="user@example.com")
+
+
 def test_parsed_email_representation_and_logs_hide_email_data(
     caplog: pytest.LogCaptureFixture,
 ) -> None:

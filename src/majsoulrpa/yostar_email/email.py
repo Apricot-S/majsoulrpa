@@ -35,7 +35,8 @@ class VerificationEmail:
             address.casefold()
             for _, address in getaddresses(message.get_all("To", []))
         )
-        subject = message.get("Subject")
+        subjects = message.get_all("Subject", [])
+        subject = subjects[0] if len(subjects) == 1 else None
         match = YOSTAR_EMAIL_SUBJECT_PATTERN.fullmatch(subject or "")
         verification_code = None if match is None else match.group("code")
         return cls(
