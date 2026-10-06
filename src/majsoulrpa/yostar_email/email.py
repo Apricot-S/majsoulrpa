@@ -93,7 +93,7 @@ def extract_verification_code(
 ) -> str:
     """Validate a JP Yostar email and return its verification code."""
     current_time = datetime.now(UTC) if now is None else now
-    if current_time.tzinfo is None or received_at.tzinfo is None:
+    if current_time.utcoffset() is None or received_at.utcoffset() is None:
         msg = "Email timestamps must include timezone information."
         raise ValueError(msg)
 

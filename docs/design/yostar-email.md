@@ -32,6 +32,9 @@ S3実装に加え、継承しない独自実装を型付きconsumerへ渡すテ�
   任意削除の対象にも使わない。header名の大文字小文字によらず重複を判定する。
 - 有効期間は受信直後から30分未満とし、30分ちょうどと未来の受信時刻を拒否する。
   MIME parser と S3 候補の絞り込みは同じ期限定数を使用する。
+  `extract_verification_code()` の `received_at` と `now` はUTC offsetが定義された
+  日時を要求する。tzinfo欠落だけでなく `utcoffset()` が `None` の日時も
+  減算前に `ValueError` で拒否する。異なる固定UTC offsetの日時も受理する。
 
 ## 根拠と確認範囲
 

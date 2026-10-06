@@ -1,5 +1,5 @@
 import logging
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone, tzinfo
 from email.message import EmailMessage
 
 import pytest
@@ -12,6 +12,75 @@ from majsoulrpa.yostar_email import (
 from majsoulrpa.yostar_email.email import VerificationEmail
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
+
+
+class UndefinedOffsetTimezone(tzinfo):
+    def utcoffset(self, _dt: datetime | None) -> None:
+        return None
+
+    def dst(self, _dt: datetime | None) -> None:
+        return None
+
+    def tzname(self, _dt: datetime | None) -> None:
+        return None
+
+
+@pytest.mark.parametrize(
+    "timestamp",
+    [
+        pytest.param(NOW.replace(tzinfo=None), id="no-tzinfo"),
+        pytest.param(
+            NOW.replace(tzinfo=UndefinedOffsetTimezone()),
+            id="undefined-utc-offset",
+        ),
+    ],
+)
+@pytest.mark.parametrize("field_name", ["now", "received_at"])
+def test_rejects_timestamp_without_defined_utc_offset(
+    timestamp: datetime,
+    field_name: str,
+) -> None:
+    with pytest.raises(ValueError, match="timezone information") as exc_info:
+        extract_verification_code(
+            _message(),
+            recipient="user@example.com",
+            received_at=timestamp if field_name == "received_at" else NOW,
+            now=timestamp if field_name == "now" else NOW,
+        )
+
+    for output in (str(exc_info.value), repr(exc_info.value)):
+        assert "user@example.com" not in output
+        assert "012345" not in output
+
+
+@pytest.mark.parametrize(
+    "age",
+    [
+        pytest.param(timedelta(minutes=29), id="valid-age"),
+        pytest.param(timedelta(minutes=30), id="expired-age"),
+    ],
+)
+def test_validity_uses_elapsed_time_across_utc_offsets(age: timedelta) -> None:
+    received_at = (NOW - age).astimezone(timezone(timedelta(hours=9)))
+
+    if age < timedelta(minutes=30):
+        assert (
+            extract_verification_code(
+                _message(),
+                recipient="user@example.com",
+                received_at=received_at,
+                now=NOW,
+            )
+            == "012345"
+        )
+    else:
+        with pytest.raises(InvalidYostarVerificationEmailError):
+            extract_verification_code(
+                _message(),
+                recipient="user@example.com",
+                received_at=received_at,
+                now=NOW,
+            )
 
 
 def _message(

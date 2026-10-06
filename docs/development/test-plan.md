@@ -1447,6 +1447,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Message validation and retrieval
 
+- [x] now / received_atのtzinfo欠落とutcoffset未定義を秘密情報のないValueErrorで拒否し、異なるUTC offsetでも経過時間で期限を判定する
+
 - [x] 構文不正なToをparserの補正結果で受理せず、コード取得と削除対象への選択を拒否する
 
 - [x] Fromの欠落・重複・複数送信元・構文不正をコード取得で拒否し、正常な表示名付き送信元は受理する。削除条件は宛先・件名の判定を維持する
