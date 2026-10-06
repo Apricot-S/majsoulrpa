@@ -28,16 +28,65 @@ def _message(
     return message.as_bytes()
 
 
-def test_extracts_code_from_matching_message() -> None:
+@pytest.mark.parametrize(
+    "age",
+    [
+        pytest.param(timedelta(0), id="received-now"),
+        pytest.param(
+            timedelta(minutes=30) - timedelta(microseconds=1),
+            id="just-before-expiration",
+        ),
+    ],
+)
+def test_extracts_code_from_matching_message(age: timedelta) -> None:
     assert (
         extract_verification_code(
             _message(),
             recipient="user@example.com",
-            received_at=NOW - timedelta(minutes=1),
+            received_at=NOW - age,
             now=NOW,
         )
         == "012345"
     )
+
+
+@pytest.mark.parametrize(
+    "subject",
+    [
+        pytest.param(
+            "【Yostar】メールアドレスの認証コードは　０１２３４５",  # noqa: RUF001
+            id="fullwidth-digits",
+        ),
+        pytest.param(
+            "【Yostar】メールアドレスの認証コードは　٠١٢٣٤٥",
+            id="arabic-indic-digits",
+        ),
+        pytest.param(
+            "【Yostar】メールアドレスの認証コードは　0123456",
+            id="seven-digits",
+        ),
+        pytest.param(
+            "【Yostar】メールアドレスの認証コードは 012345",
+            id="ascii-space",
+        ),
+        pytest.param(
+            "prefix【Yostar】メールアドレスの認証コードは　012345",
+            id="extra-prefix",
+        ),
+        pytest.param(
+            "【Yostar】メールアドレスの認証コードは　012345suffix",
+            id="extra-suffix",
+        ),
+    ],
+)
+def test_rejects_subject_outside_known_ascii_code_format(subject: str) -> None:
+    with pytest.raises(InvalidYostarVerificationEmailError, match="subject"):
+        extract_verification_code(
+            _message(subject=subject),
+            recipient="user@example.com",
+            received_at=NOW,
+            now=NOW,
+        )
 
 
 @pytest.mark.parametrize(
@@ -57,6 +106,11 @@ def test_extracts_code_from_matching_message() -> None:
             NOW,
         ),
         (_message(), NOW - timedelta(minutes=30)),
+        pytest.param(
+            _message(),
+            NOW + timedelta(microseconds=1),
+            id="future-received-time",
+        ),
     ],
 )
 def test_rejects_nonmatching_or_expired_message(

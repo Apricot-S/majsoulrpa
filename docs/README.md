@@ -18,6 +18,7 @@
 - [カスタマイズ方針](design/customization.md)
 - [テンプレート照合](design/screens/template-matching.md)
 - [ログイン認証フロー](design/screens/login-verification.md)
+- [Yostar 認証メールの照合条件](design/yostar-email.md)
 - [RoomScreen](design/screens/room.md)
 - [MatchScreen](design/screens/match.md)
 - [WebSocket キャプチャ方針](design/network/websocket-capture.md)

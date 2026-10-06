@@ -1436,6 +1436,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Email parsing and S3 provider
 
+- [x] 件名のコードは ASCII 6桁だけを受理し、全角・Arabic-Indic数字、桁数違い、全角空白の変更、前後の追加文字を拒否する
+- [x] メールの有効期間は受信直後から30分未満とし、直前・境界・未来の受信日時を区別する
+
 - [x] `AppConfig` で `yostar_email` 設定を省略できる
 - [x] `yostar_email` でメールアドレスだけを設定し、S3 設定を省略できる
 - [x] TOML の `[yostar_email.s3]` から bucket、prefix、AWS profile を読める
