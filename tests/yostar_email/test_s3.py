@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, tzinfo
 from email.message import EmailMessage
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, cast
@@ -115,6 +115,41 @@ def test_fetch_uses_injected_falsey_clock(
 
     assert asyncio.run(provider.fetch_nowait()) == "012345"
     assert clock.calls == 1
+
+
+def test_fetch_excludes_expired_email_across_clock_rollback() -> None:
+    class RollbackTimezone(tzinfo):
+        def utcoffset(self, dt: datetime | None) -> timedelta | None:
+            if dt is None:
+                return None
+            return timedelta(hours=2 - dt.fold)
+
+        def dst(self, _dt: datetime | None) -> timedelta:
+            return timedelta(0)
+
+        def tzname(self, _dt: datetime | None) -> str:
+            return "Synthetic"
+
+    zone = RollbackTimezone()
+    current_time = NOW.replace(hour=2, minute=55, tzinfo=zone, fold=1)
+    expired_at = NOW.replace(hour=2, minute=50, tzinfo=zone, fold=0)
+    valid_at = NOW.replace(hour=2, minute=40, tzinfo=zone, fold=1)
+    client = S3ClientFake(
+        [
+            {"Key": "mail/expired", "LastModified": expired_at},
+            {"Key": "mail/valid", "LastModified": valid_at},
+        ],
+        {"mail/valid": _message()},
+    )
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: current_time,
+    )
+
+    assert asyncio.run(provider.fetch_nowait()) == "012345"
+    assert [call["Key"] for call in client.get_calls] == ["mail/valid"]
 
 
 @pytest.mark.parametrize(

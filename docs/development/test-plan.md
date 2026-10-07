@@ -1464,6 +1464,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 - [x] falseyなclockを既定clockへ置き換えず、注入した時刻で有効メールを取得する
 
+### S3 elapsed-time validation
+
+- [x] 同じtzinfo内の時刻の巻き戻りでも実経過時間で期限切れメールを除外し、有効なメールを取得する
+
 ### S3 listing pagination
 
 - [x] 継続tokenの欠落・型不正・空文字・再出現をValueErrorで拒否し、追加取得・メール読取・削除へ進まない

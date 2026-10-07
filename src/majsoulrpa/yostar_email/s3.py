@@ -5,7 +5,7 @@ import importlib
 import math
 from contextlib import closing
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from majsoulrpa._clock import Clock, utc_now
@@ -179,7 +179,7 @@ def _list_email_candidates(
 
 
 def _is_current(received_at: datetime, *, now: datetime) -> bool:
-    age = now - received_at
+    age = now.astimezone(UTC) - received_at.astimezone(UTC)
     return timedelta(0) <= age < VERIFICATION_EMAIL_EXPIRATION
 
 
