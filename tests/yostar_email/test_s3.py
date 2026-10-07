@@ -767,6 +767,8 @@ def test_fetch_creates_s3_client_once_before_polling(
     "poll_interval",
     [
         pytest.param(0.0, id="zero"),
+        pytest.param(True, id="boolean-true"),
+        pytest.param(False, id="boolean-false"),
         pytest.param(-1.0, id="negative"),
         pytest.param(float("nan"), id="nan"),
         pytest.param(float("inf"), id="positive-infinity"),

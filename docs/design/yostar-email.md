@@ -84,6 +84,7 @@ S3 providerの `poll_interval` は有限の正数かつ認証メールの有効�
 上限は `VERIFICATION_EMAIL_EXPIRATION` から求める。現在は `0 < poll_interval < 1800`
 秒とし、30分ちょうど・超過、ゼロ・負数・NaN・無限大をprovider構築時に
 `ValueError` で拒否する。
+booleanも待機秒数として受理せず `ValueError` で拒否する。
 フレームワークが生成するメール例外のmessageにはメールアドレス・コード・本文や
 S3 bucket・prefixを埋め込まない。利用者が独自に指定する例外messageや外部SDKの
 例外messageをこの例外階層が自動的に除去する仕組みは設けない。

@@ -46,11 +46,13 @@ class S3VerificationCodeProvider:
     ) -> None:
         max_poll_interval = VERIFICATION_EMAIL_EXPIRATION.total_seconds()
         if (
-            not math.isfinite(poll_interval)
+            isinstance(poll_interval, bool)
+            or not math.isfinite(poll_interval)
             or not 0.0 < poll_interval < max_poll_interval
         ):
             msg = (
-                "poll_interval must be finite, greater than zero, and less "
+                "poll_interval must be a finite number, excluding bool, "
+                "greater than zero, and less "
                 f"than the verification email lifetime ({max_poll_interval:g} "
                 "seconds)."
             )
