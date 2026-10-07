@@ -698,6 +698,44 @@ def test_fetch_retries_until_email_is_available() -> None:
     ]
 
 
+def test_fetch_cancellation_during_polling_stops_s3_access(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = S3ClientFake([], {})
+    delays: list[float] = []
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        poll_interval=7.0,
+        client=cast("S3Client", client),
+        clock=lambda: NOW,
+    )
+
+    async def scenario() -> None:
+        waiting = asyncio.Event()
+        release = asyncio.Event()
+
+        async def wait_for_next_poll(delay: float) -> None:
+            delays.append(delay)
+            waiting.set()
+            await release.wait()
+
+        monkeypatch.setattr(s3_module.asyncio, "sleep", wait_for_next_poll)
+        async with asyncio.TaskGroup() as group:
+            task = group.create_task(provider.fetch(delete_read_emails=True))
+            await waiting.wait()
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+
+    asyncio.run(scenario())
+
+    assert delays == [7.0]
+    assert len(client.list_calls) == 1
+    assert client.get_calls == []
+    assert client.delete_calls == []
+
+
 def test_fetch_creates_s3_client_once_before_polling(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

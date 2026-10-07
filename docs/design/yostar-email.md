@@ -78,6 +78,8 @@ fixture に保存しない。
 
 他のメール例外、外部処理の失敗、キャンセルは `fetch()` が再試行せず伝播する。
 外部処理の失敗に対する再試行判断は呼び出し側で行う。
+メール未着のpolling待機中にキャンセルされた場合も `CancelledError` を伝播し、
+次の一覧取得へ進まない。
 S3 providerの `poll_interval` は有限の正数かつ認証メールの有効期限未満を要求する。
 上限は `VERIFICATION_EMAIL_EXPIRATION` から求める。現在は `0 < poll_interval < 1800`
 秒とし、30分ちょうど・超過、ゼロ・負数・NaN・無限大をprovider構築時に

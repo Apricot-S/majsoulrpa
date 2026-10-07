@@ -1452,6 +1452,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### S3 polling interval
 
+- [x] メール未着のpolling待機中にキャンセルするとCancelledErrorを伝播し、追加の一覧取得・読取・削除をしない
+
 - [x] polling intervalの30分ちょうど・超過を拒否し、上限直前を受理する。上限は認証メールの期限定数から取得する
 
 - [x] polling intervalは有限の正数を要求し、ゼロ・負数・NaN・正負の無限大をprovider構築時に拒否する
