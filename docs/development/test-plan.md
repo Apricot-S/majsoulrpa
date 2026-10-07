@@ -1458,6 +1458,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Message validation and retrieval
 
+- [x] Subjectのbase64 encoded wordに含まれる不正文字を補正して受理せず、コード取得と削除条件を拒否する
+- [x] 有効期限はMIME Dateではなくreceived_atで判定し、Dateの欠落・不正・未来の値に左右されない
+
 - [x] MIME構造defect（header/body区切り不正、multipart境界欠落）をコード取得と削除条件の両経路で拒否し、正常なmultipartは受理する
 
 - [x] 不明charsetや指定charsetでdecodeできないSubjectをMIME parserの補正結果で受理せず、コード取得と削除条件を拒否する

@@ -207,6 +207,48 @@ def test_bad_subject_encoding_cannot_supply_code_or_allow_deletion(
         email.extract_code(recipient="user@example.com")
 
 
+def test_invalid_base64_subject_cannot_supply_code_or_allow_deletion() -> None:
+    message = _message().replace(b"?b?", b"?b?!", 1)
+    email = VerificationEmail.parse(message)
+
+    assert not email.matches_deletion_condition(recipient="user@example.com")
+    with pytest.raises(InvalidYostarVerificationEmailError, match="subject"):
+        email.extract_code(recipient="user@example.com")
+
+
+@pytest.mark.parametrize(
+    "date_header",
+    [
+        pytest.param(b"", id="missing-date"),
+        pytest.param(b"Date: Synthetic invalid date\n", id="invalid-date"),
+        pytest.param(
+            b"Date: Thu, 01 Jan 2099 00:00:00 +0000\n", id="future-date"
+        ),
+    ],
+)
+def test_validity_uses_received_time_instead_of_mime_date(
+    date_header: bytes,
+) -> None:
+    message = date_header + _message()
+
+    assert (
+        extract_verification_code(
+            message,
+            recipient="user@example.com",
+            received_at=NOW,
+            now=NOW,
+        )
+        == "012345"
+    )
+    with pytest.raises(InvalidYostarVerificationEmailError):
+        extract_verification_code(
+            message,
+            recipient="user@example.com",
+            received_at=NOW - timedelta(minutes=30),
+            now=NOW,
+        )
+
+
 @pytest.mark.parametrize(
     ("original", "replacement"),
     [

@@ -1,3 +1,6 @@
+import base64
+import binascii
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from email import policy
@@ -70,10 +73,19 @@ class VerificationEmail:
                 if name.casefold() == "subject"
             )
             try:
+                for encoded_word in re.finditer(
+                    r"=\?[^?]+\?[bB]\?([^?]*)\?=", raw_subject
+                ):
+                    base64.b64decode(encoded_word.group(1), validate=True)
                 for fragment, charset in decode_header(raw_subject):
                     if isinstance(fragment, bytes):
                         fragment.decode(charset or "ascii")
-            except (HeaderParseError, LookupError, UnicodeError):
+            except (
+                HeaderParseError,
+                LookupError,
+                UnicodeError,
+                binascii.Error,
+            ):
                 subject = None
 
         match = YOSTAR_EMAIL_SUBJECT_PATTERN.fullmatch(subject or "")

@@ -34,6 +34,7 @@ S3実装に加え、継承しない独自実装を型付きconsumerへ渡すテ�
   任意削除の対象にも使わない。header名の大文字小文字によらず重複を判定する。
   件名のdefectに加え、元のMIME encoded wordを宣言charsetでdecodeできることを
   確認する。不明charsetやdecode失敗は補正された文字列で照合せず、両用途で拒否する。
+  base64 encoded wordは不正文字を無視せず厳密に検証する。
 - 有効期間は受信直後から30分未満とし、30分ちょうどと未来の受信時刻を拒否する。
   MIME parser と S3 候補の絞り込みは同じ期限定数を使用する。
   `extract_verification_code()` の `received_at` と `now` はUTC offsetが定義された
@@ -41,6 +42,8 @@ S3実装に加え、継承しない独自実装を型付きconsumerへ渡すテ�
   減算前に `ValueError` で拒否する。異なる固定UTC offsetの日時も受理する。
   期限判定の差は両日時をUTCへ変換して求め、同じtzinfo内でoffsetが変わった場合も
   壁時計の差ではなく実経過時間を使う。
+  MIMEの `Date` は送信側の申告日時であり、期限判定には使わない。欠落・不正・未来の
+  Dateでも、呼び出し側が渡した `received_at` に基づいて有効期間を判定する。
 
 ## 根拠と確認範囲
 

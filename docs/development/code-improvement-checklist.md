@@ -358,16 +358,17 @@ Sniffer の各段は異なるデータ完全性を守るため、ファイル数
   - [x] 不正メールと未着を共通baseで捕捉でき、型で区別できる既存階層を維持した。例外docstringと[設計資料](../design/yostar-email.md)へ再試行条件を明記し、未着以外の例外・キャンセルの一度だけの伝播とstr / reprへのメール情報・S3設定の非漏洩を回帰テストで確認した。
 - [x] `yostar_email/provider.py`: `VerificationCodeProvider` が実際の公開差し替え点として最小であることを確認する。
   - [x] 2つのasync methodと削除optionだけのProtocolを維持した。継承しない独自providerを型付きconsumerへ渡し、両APIの戻り値と削除optionの省略・明示指定をpytest / tyで確認した。docstringと[設計資料](../design/yostar-email.md)へ構造的な差し替え方法と責務を明記した。
-- [ ] `yostar_email/email.py`: MIME sender/recipient/subject/date の strict validation と code/email/body 非漏洩を確認する。
+- [x] `yostar_email/email.py`: MIME sender/recipient/subject と受信日時の strict validation、code/email/body 非漏洩を確認する。
+  - [x] 最終確認でSubjectの不正base64文字を無視して受理する問題を修正し、厳密なbase64検証を追加した。日時はMIME Dateではなくreceived_atを使用する設計を明記し、Dateの欠落・不正・未来の値に左右されない有効・期限切れを確認した。現行の確認範囲を完了した。
   - [x] MIME構造defectを無視して件名からコードを取得・削除対象にする問題を修正した。全partの構造defectを確認し、header/body区切り不正・multipart境界欠落の拒否と正常なmultipartの受理をコード取得・削除条件の両経路で確認した。
-  - [x] 不正charsetの件名がparserの補正で受理される問題を修正した。Subjectのdefectを確認し、raw headerのencoded wordを宣言charsetで検証する。不明charsetと指定charsetでdecodeできないbytesをコード取得・削除条件の両経路で拒否する回帰テストを追加した。メール全体の構造など残りの確認は未完了とする。
+  - [x] 不正charsetの件名がparserの補正で受理される問題を修正した。Subjectのdefectを確認し、raw headerのencoded wordを宣言charsetで検証する。不明charsetと指定charsetでdecodeできないbytesをコード取得・削除条件の両経路で拒否する回帰テストを追加した。
   - [x] 同じtzinfo内でUTC offsetが変わると壁時計の差で期限を誤判定する問題を修正し、UTCへ変換して実経過時間を求める。synthetic timezoneでoffset変更時の有効・期限切れ・未来の3経路を回帰テストした。
   - [x] now / received_atのtzinfo存在だけで日時を受理する問題を修正し、utcoffsetが未定義なら減算前にValueErrorで拒否する。両引数のtzinfo欠落・offset未定義、例外への情報非漏洩、異なる固定UTC offsetでの有効・期限切れを確認した。
-  - [x] 構文不正なToをparserの補正結果で受理する問題を修正した。単一headerかつdefectなしを要求し、閉じ括弧欠落をコード取得・削除条件の両経路で拒否する回帰テストを追加した。日時検証など残りの確認は未完了とする。
+  - [x] 構文不正なToをparserの補正結果で受理する問題を修正した。単一headerかつdefectなしを要求し、閉じ括弧欠落をコード取得・削除条件の両経路で拒否する回帰テストを追加した。
   - [x] 構文不正なFromをparserの補正結果で受理する問題を修正した。Fromは1 headerかつdefectなしを要求し、欠落・重複・複数送信元・閉じ括弧欠落の拒否と正常な表示名付き送信元の受理を確認した。削除条件は宛先・件名による既存判定を維持する。
   - [x] To headerの重複時に複数headerをまとめて宛先として受理する問題を修正した。欠落・重複をコード取得・削除条件の両経路で拒否し、単一To内の複数宛先は維持する。header名の大文字小文字によらない拒否も回帰テストで確認した。
-  - [x] Subject headerが1つの場合だけ件名を照合し、重複時に先頭の件名だけでコードを取得・削除対象にする問題を修正した。欠落・重複とheader名の大文字小文字によらない拒否をコード取得・削除条件の両経路で確認した。sender / recipient / 日時の残りは未完了とする。
-  - [x] VerificationEmailの全fieldをreprから除外し、repr / strと通常ログへの送信元・宛先・コードの漏洩を修正した。synthetic MIMEで非漏洩とコード取得・削除条件判定の維持を確認した。MIME headerと日時のstrict validationの残りは未完了とする。
+  - [x] Subject headerが1つの場合だけ件名を照合し、重複時に先頭の件名だけでコードを取得・削除対象にする問題を修正した。欠落・重複とheader名の大文字小文字によらない拒否をコード取得・削除条件の両経路で確認した。
+  - [x] VerificationEmailの全fieldをreprから除外し、repr / strと通常ログへの送信元・宛先・コードの漏洩を修正した。synthetic MIMEで非漏洩とコード取得・削除条件判定の維持を確認した。
 - [ ] `yostar_email/s3.py`: boto3 遅延 import、候補順、polling 条件、任意削除の対象制約、client lifecycle を確認する。
   - [x] poll_intervalを認証メールの有効期限未満へ制限した。上限はVERIFICATION_EMAIL_EXPIRATIONから取得し、30分ちょうど・超過の拒否と上限直前の受理を回帰テストで確認した。
   - [x] poll_intervalのNaN・正の無限大を受理する問題を修正し、有限の正数を要求する。既存のゼロ拒否テストを負数・NaN・正負の無限大へ拡張し、provider構築時の失敗を確認した。
