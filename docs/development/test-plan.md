@@ -1462,6 +1462,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### S3 injected clock
 
+- [x] clockがtzinfo欠落・UTC offset未定義の日時を返した場合はValueErrorで拒否し、S3アクセスしない
+
 - [x] falseyなclockを既定clockへ置き換えず、注入した時刻で有効メールを取得する
 
 ### S3 elapsed-time validation

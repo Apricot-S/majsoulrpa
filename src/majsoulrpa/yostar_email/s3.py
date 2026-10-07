@@ -107,6 +107,10 @@ class S3VerificationCodeProvider:
         delete_read_emails: bool,
     ) -> str:
         now = self._clock()
+        if now.utcoffset() is None:
+            msg = "Clock timestamps must include timezone information."
+            raise ValueError(msg)
+
         candidates = _list_email_candidates(
             client,
             bucket_name=self._bucket_name,

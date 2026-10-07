@@ -117,6 +117,39 @@ def test_fetch_uses_injected_falsey_clock(
     assert clock.calls == 1
 
 
+@pytest.mark.parametrize("timestamp_kind", ["naive", "undefined-offset"])
+def test_fetch_rejects_undefined_clock_offset_before_s3_access(
+    timestamp_kind: str,
+) -> None:
+    class UndefinedOffsetTimezone(tzinfo):
+        def utcoffset(self, _dt: datetime | None) -> None:
+            return None
+
+        def dst(self, _dt: datetime | None) -> None:
+            return None
+
+        def tzname(self, _dt: datetime | None) -> None:
+            return None
+
+    timestamp = NOW.replace(
+        tzinfo=None if timestamp_kind == "naive" else UndefinedOffsetTimezone()
+    )
+    client = S3ClientFake([], {})
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: timestamp,
+    )
+
+    with pytest.raises(ValueError, match="timezone information"):
+        asyncio.run(provider.fetch_nowait())
+
+    assert client.list_calls == []
+    assert client.get_calls == []
+    assert client.delete_calls == []
+
+
 def test_fetch_excludes_expired_email_across_clock_rollback() -> None:
     class RollbackTimezone(tzinfo):
         def utcoffset(self, dt: datetime | None) -> timedelta | None:
