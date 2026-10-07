@@ -1447,6 +1447,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### S3 optional dependency failure
 
+- [x] falseyな注入clientをfetch / fetch_nowaitとも置き換えず、内部clientを生成しない
+
 - [x] client生成失敗はfetch / fetch_nowaitとも元の例外を一度で伝播し、S3操作・polling再試行へ進まない
 
 - [x] boto3自体のModuleNotFoundErrorだけextraの導入案内へ変換し、元の原因を保持する

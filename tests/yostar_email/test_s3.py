@@ -117,6 +117,38 @@ def test_fetch_uses_injected_falsey_clock(
     assert clock.calls == 1
 
 
+@pytest.mark.parametrize("method_name", ["fetch", "fetch_nowait"])
+def test_fetch_uses_injected_falsey_client_without_creating_client(
+    method_name: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FalseyS3Client(S3ClientFake):
+        def __bool__(self) -> bool:
+            return False
+
+    def unexpected_creation(_aws_profile: str | None) -> S3Client:
+        pytest.fail("An injected client must not be replaced.")
+
+    monkeypatch.setattr(s3_module, "_create_s3_client", unexpected_creation)
+    client = FalseyS3Client(
+        [{"Key": "mail/valid", "LastModified": NOW}],
+        {"mail/valid": _message()},
+    )
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: NOW,
+    )
+
+    assert asyncio.run(getattr(provider, method_name)()) == "012345"
+    assert client.list_calls == [
+        {"Bucket": "example-bucket", "Prefix": ""},
+    ]
+    assert [call["Key"] for call in client.get_calls] == ["mail/valid"]
+    assert client.delete_calls == []
+
+
 class UndefinedOffsetTimezone(tzinfo):
     def utcoffset(self, _dt: datetime | None) -> None:
         return None
