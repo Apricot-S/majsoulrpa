@@ -1450,6 +1450,12 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] boto3自体のModuleNotFoundErrorだけextraの導入案内へ変換し、元の原因を保持する
 - [x] boto3内部の依存不足や欠落module名不明のModuleNotFoundErrorは同じ例外を伝播する
 
+### S3 polling interval
+
+- [x] polling intervalの30分ちょうど・超過を拒否し、上限直前を受理する。上限は認証メールの期限定数から取得する
+
+- [x] polling intervalは有限の正数を要求し、ゼロ・負数・NaN・正負の無限大をprovider構築時に拒否する
+
 ### Message validation and retrieval
 
 - [x] MIME構造defect（header/body区切り不正、multipart境界欠落）をコード取得と削除条件の両経路で拒否し、正常なmultipartは受理する

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+import math
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
@@ -42,8 +43,16 @@ class S3VerificationCodeProvider:
         client: S3Client | None = None,
         clock: Clock | None = None,
     ) -> None:
-        if poll_interval <= 0.0:
-            msg = "poll_interval must be greater than zero."
+        max_poll_interval = VERIFICATION_EMAIL_EXPIRATION.total_seconds()
+        if (
+            not math.isfinite(poll_interval)
+            or not 0.0 < poll_interval < max_poll_interval
+        ):
+            msg = (
+                "poll_interval must be finite, greater than zero, and less "
+                f"than the verification email lifetime ({max_poll_interval:g} "
+                "seconds)."
+            )
             raise ValueError(msg)
         self._email_address = email_address
         self._bucket_name = bucket_name

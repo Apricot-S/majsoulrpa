@@ -287,15 +287,43 @@ def test_fetch_creates_s3_client_once_before_polling(
     assert created_profiles == ["example-profile"]
 
 
-def test_fetch_rejects_nonpositive_poll_interval() -> None:
+@pytest.mark.parametrize(
+    "poll_interval",
+    [
+        pytest.param(0.0, id="zero"),
+        pytest.param(-1.0, id="negative"),
+        pytest.param(float("nan"), id="nan"),
+        pytest.param(float("inf"), id="positive-infinity"),
+        pytest.param(float("-inf"), id="negative-infinity"),
+        pytest.param(1800.0, id="at-expiration"),
+        pytest.param(1800.001, id="above-expiration"),
+    ],
+)
+def test_provider_rejects_invalid_poll_interval(poll_interval: float) -> None:
     with pytest.raises(ValueError, match="poll_interval"):
         S3VerificationCodeProvider(
             email_address="user@example.com",
             bucket_name="example-bucket",
-            poll_interval=0.0,
+            poll_interval=poll_interval,
             client=cast("S3Client", S3ClientFake([], {})),
             clock=lambda: NOW,
         )
+
+
+def test_provider_accepts_poll_interval_just_below_expiration() -> None:
+    client = S3ClientFake(
+        [{"Key": "mail/valid", "LastModified": NOW}],
+        {"mail/valid": _message()},
+    )
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        poll_interval=1799.999,
+        client=cast("S3Client", client),
+        clock=lambda: NOW,
+    )
+
+    assert asyncio.run(provider.fetch_nowait()) == "012345"
 
 
 def test_missing_boto3_names_required_extra(
