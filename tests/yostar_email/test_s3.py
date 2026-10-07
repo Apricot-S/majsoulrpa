@@ -736,6 +736,41 @@ def test_fetch_cancellation_during_polling_stops_s3_access(
     assert client.delete_calls == []
 
 
+@pytest.mark.parametrize("method_name", ["fetch", "fetch_nowait"])
+def test_client_creation_failure_is_propagated_without_retry(
+    method_name: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failure = RuntimeError("Synthetic client creation failure")
+    profiles: list[str | None] = []
+
+    def fail_creation(aws_profile: str | None) -> S3Client:
+        profiles.append(aws_profile)
+        raise failure
+
+    async def unexpected_fetch_once(_client: S3Client, **_kwargs: bool) -> str:
+        pytest.fail("Client creation failure must prevent S3 operations.")
+
+    async def unexpected_sleep(_delay: float) -> None:
+        pytest.fail("Client creation failure must not trigger polling retry.")
+
+    monkeypatch.setattr(s3_module, "_create_s3_client", fail_creation)
+    monkeypatch.setattr(s3_module.asyncio, "sleep", unexpected_sleep)
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        aws_profile="example-profile",
+        clock=lambda: NOW,
+    )
+    monkeypatch.setattr(provider, "_run_fetch_once", unexpected_fetch_once)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        asyncio.run(getattr(provider, method_name)())
+
+    assert exc_info.value is failure
+    assert profiles == ["example-profile"]
+
+
 def test_fetch_creates_s3_client_once_before_polling(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

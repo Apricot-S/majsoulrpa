@@ -370,6 +370,7 @@ Sniffer の各段は異なるデータ完全性を守るため、ファイル数
   - [x] Subject headerが1つの場合だけ件名を照合し、重複時に先頭の件名だけでコードを取得・削除対象にする問題を修正した。欠落・重複とheader名の大文字小文字によらない拒否をコード取得・削除条件の両経路で確認した。
   - [x] VerificationEmailの全fieldをreprから除外し、repr / strと通常ログへの送信元・宛先・コードの漏洩を修正した。synthetic MIMEで非漏洩とコード取得・削除条件判定の維持を確認した。
 - [ ] `yostar_email/s3.py`: boto3 遅延 import、候補順、polling 条件、任意削除の対象制約、client lifecycle を確認する。
+  - [x] client生成失敗をfetch / fetch_nowaitが元の例外のまま伝播し、一度だけ生成を試み、S3操作・polling再試行へ進まないことを回帰テストで確認した。AWS profileの生成関数への配送も確認し、実装は維持した。
   - [x] poll_interval=Trueを1秒として受理する問題を修正し、booleanをValueErrorで拒否する。既存の不正待機間隔テストへTrue / Falseを追加した。
   - [x] 未着によるpolling待機中のキャンセルでCancelledErrorを伝播し、追加のS3アクセスを行わないことをEventで同期した回帰テストで確認した。指定した待機間隔の使用も確認し、実装は維持した。
   - [x] 削除なしの有効code取得後に古い候補を読み続ける処理を終了するよう修正した。不要な読取失敗で取得済みcodeを返せなくなる経路を回帰テストし、既存の候補順テストの読取期待も更新した。削除ありでは全対象の確認を継続する。
