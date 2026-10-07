@@ -150,19 +150,20 @@ def test_fetch_rejects_undefined_clock_offset_before_s3_access(
     assert client.delete_calls == []
 
 
+class RollbackTimezone(tzinfo):
+    def utcoffset(self, dt: datetime | None) -> timedelta | None:
+        if dt is None:
+            return None
+        return timedelta(hours=2 - dt.fold)
+
+    def dst(self, _dt: datetime | None) -> timedelta:
+        return timedelta(0)
+
+    def tzname(self, _dt: datetime | None) -> str:
+        return "Synthetic"
+
+
 def test_fetch_excludes_expired_email_across_clock_rollback() -> None:
-    class RollbackTimezone(tzinfo):
-        def utcoffset(self, dt: datetime | None) -> timedelta | None:
-            if dt is None:
-                return None
-            return timedelta(hours=2 - dt.fold)
-
-        def dst(self, _dt: datetime | None) -> timedelta:
-            return timedelta(0)
-
-        def tzname(self, _dt: datetime | None) -> str:
-            return "Synthetic"
-
     zone = RollbackTimezone()
     current_time = NOW.replace(hour=2, minute=55, tzinfo=zone, fold=1)
     expired_at = NOW.replace(hour=2, minute=50, tzinfo=zone, fold=0)
@@ -183,6 +184,37 @@ def test_fetch_excludes_expired_email_across_clock_rollback() -> None:
 
     assert asyncio.run(provider.fetch_nowait()) == "012345"
     assert [call["Key"] for call in client.get_calls] == ["mail/valid"]
+
+
+def test_fetch_selects_latest_email_by_utc_across_clock_rollback() -> None:
+    zone = RollbackTimezone()
+    current_time = NOW.replace(hour=2, minute=10, tzinfo=zone, fold=1)
+    older_at = NOW.replace(hour=2, minute=55, tzinfo=zone, fold=0)
+    newer_at = NOW.replace(hour=2, minute=5, tzinfo=zone, fold=1)
+    client = S3ClientFake(
+        [
+            {"Key": "mail/older", "LastModified": older_at},
+            {"Key": "mail/newer", "LastModified": newer_at},
+        ],
+        {
+            "mail/older": _message(),
+            "mail/newer": _message(
+                subject="【Yostar】メールアドレスの認証コードは　654321"
+            ),
+        },
+    )
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: current_time,
+    )
+
+    assert asyncio.run(provider.fetch_nowait()) == "654321"
+    assert [call["Key"] for call in client.get_calls] == [
+        "mail/newer",
+        "mail/older",
+    ]
 
 
 @pytest.mark.parametrize(

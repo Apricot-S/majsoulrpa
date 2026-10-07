@@ -177,7 +177,7 @@ def _list_email_candidates(
             )
     return sorted(
         candidates,
-        key=lambda candidate: candidate.received_at,
+        key=lambda candidate: candidate.received_at.astimezone(UTC),
         reverse=True,
     )
 
