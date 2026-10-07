@@ -83,6 +83,40 @@ class DelayedS3ClientFake(S3ClientFake):
         return super().list_objects_v2(**kwargs)
 
 
+def test_fetch_uses_injected_falsey_clock(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FalseyClock:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def __bool__(self) -> bool:
+            return False
+
+        def __call__(self) -> datetime:
+            self.calls += 1
+            return NOW
+
+    def unexpected_default_clock() -> datetime:
+        pytest.fail("An injected clock must not be replaced.")
+
+    monkeypatch.setattr(s3_module, "utc_now", unexpected_default_clock)
+    clock = FalseyClock()
+    client = S3ClientFake(
+        [{"Key": "mail/valid", "LastModified": NOW}],
+        {"mail/valid": _message()},
+    )
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=clock,
+    )
+
+    assert asyncio.run(provider.fetch_nowait()) == "012345"
+    assert clock.calls == 1
+
+
 @pytest.mark.parametrize(
     "tokens",
     [

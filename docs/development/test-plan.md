@@ -1460,6 +1460,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 - [x] メール本文の読み取り成功・失敗の両経路でresponse Bodyを閉じ、読み取り失敗は元の例外を伝播する
 
+### S3 injected clock
+
+- [x] falseyなclockを既定clockへ置き換えず、注入した時刻で有効メールを取得する
+
 ### S3 listing pagination
 
 - [x] 継続tokenの欠落・型不正・空文字・再出現をValueErrorで拒否し、追加取得・メール読取・削除へ進まない

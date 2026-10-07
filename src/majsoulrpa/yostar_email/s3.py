@@ -42,7 +42,7 @@ class S3VerificationCodeProvider:
         aws_profile: str | None = None,
         poll_interval: float = 5.0,
         client: S3Client | None = None,
-        clock: Clock | None = None,
+        clock: Clock = utc_now,
     ) -> None:
         max_poll_interval = VERIFICATION_EMAIL_EXPIRATION.total_seconds()
         if (
@@ -61,7 +61,7 @@ class S3VerificationCodeProvider:
         self._aws_profile = aws_profile
         self._poll_interval = poll_interval
         self._client = client
-        self._clock = clock or utc_now
+        self._clock = clock
 
     async def fetch(self, *, delete_read_emails: bool = False) -> str:
         """Poll S3 and optionally delete matching emails read."""
