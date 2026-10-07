@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from email import policy
+from email.errors import HeaderParseError
+from email.header import decode_header
 from email.parser import BytesParser
 from email.utils import getaddresses
 from typing import Self
@@ -51,7 +53,24 @@ class VerificationEmail:
         )
 
         subjects = message.get_all("Subject", [])
-        subject = subjects[0] if len(subjects) == 1 else None
+        subject = (
+            subjects[0]
+            if len(subjects) == 1 and not subjects[0].defects
+            else None
+        )
+        if subject is not None:
+            raw_subject = next(
+                value
+                for name, value in message.raw_items()
+                if name.casefold() == "subject"
+            )
+            try:
+                for fragment, charset in decode_header(raw_subject):
+                    if isinstance(fragment, bytes):
+                        fragment.decode(charset or "ascii")
+            except (HeaderParseError, LookupError, UnicodeError):
+                subject = None
+
         match = YOSTAR_EMAIL_SUBJECT_PATTERN.fullmatch(subject or "")
         verification_code = None if match is None else match.group("code")
 

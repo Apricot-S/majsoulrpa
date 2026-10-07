@@ -30,6 +30,8 @@ S3実装に加え、継承しない独自実装を型付きconsumerへ渡すテ�
   コードは先頭のゼロを保持した ASCII 数字6桁とする。
   `Subject` headerは1つだけ必要とし、欠落・重複したメールはコード取得にも
   任意削除の対象にも使わない。header名の大文字小文字によらず重複を判定する。
+  件名のdefectに加え、元のMIME encoded wordを宣言charsetでdecodeできることを
+  確認する。不明charsetやdecode失敗は補正された文字列で照合せず、両用途で拒否する。
 - 有効期間は受信直後から30分未満とし、30分ちょうどと未来の受信時刻を拒否する。
   MIME parser と S3 候補の絞り込みは同じ期限定数を使用する。
   `extract_verification_code()` の `received_at` と `now` はUTC offsetが定義された

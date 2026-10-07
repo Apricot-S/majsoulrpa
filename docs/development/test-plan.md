@@ -1452,6 +1452,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Message validation and retrieval
 
+- [x] 不明charsetや指定charsetでdecodeできないSubjectをMIME parserの補正結果で受理せず、コード取得と削除条件を拒否する
+
 - [x] 同じtzinfo内のUTC offset変更でも実経過時間で有効・期限切れ・未来を判定する
 
 - [x] now / received_atのtzinfo欠落とutcoffset未定義を秘密情報のないValueErrorで拒否し、異なるUTC offsetでも経過時間で期限を判定する

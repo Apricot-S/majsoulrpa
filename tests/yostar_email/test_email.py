@@ -190,6 +190,24 @@ def test_missing_subject_is_not_a_code_or_deletion_candidate() -> None:
 
 
 @pytest.mark.parametrize(
+    "charset",
+    [
+        pytest.param(b"unknown-charset", id="unknown-charset"),
+        pytest.param(b"ascii", id="bytes-invalid-for-declared-charset"),
+    ],
+)
+def test_bad_subject_encoding_cannot_supply_code_or_allow_deletion(
+    charset: bytes,
+) -> None:
+    message = _message().replace(b"=?utf-8?", b"=?" + charset + b"?", 1)
+    email = VerificationEmail.parse(message)
+
+    assert not email.matches_deletion_condition(recipient="user@example.com")
+    with pytest.raises(InvalidYostarVerificationEmailError, match="subject"):
+        email.extract_code(recipient="user@example.com")
+
+
+@pytest.mark.parametrize(
     "from_headers",
     [
         pytest.param(b"", id="missing-from"),
