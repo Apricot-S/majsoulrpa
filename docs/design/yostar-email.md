@@ -92,6 +92,11 @@ S3 providerのboto3遅延importは、欠落module名が `boto3` の場合だけ 
 S3の `get_object()` が返す本文ストリームはproviderが読み取り後に閉じる。
 読み取り失敗時もcloseを試み、読み取りやcloseの失敗を握りつぶさない。
 
+S3一覧は継続tokenを使って全pageを取得し、全候補から最新の有効メールを選ぶ。
+未完了一覧の継続tokenが欠落・型不正・空文字・再出現した場合は、不正なレスポンス値
+として `ValueError` で失敗する。
+tokenの再出現はcycleも含めて拒否し、同じpageの再取得を繰り返さない。
+
 内部の `VerificationEmail` は送信元・宛先・コードを照合用に保持するが、全fieldを
 dataclassのreprから除外する。`repr()` / `str()` と通常ログの `%r` / `%s` に
 メール情報を含めない。本文はこのobjectへ保持しない。

@@ -210,6 +210,7 @@ def _list_objects(
 ) -> list[Any]:
     objects: list[Any] = []
     continuation_token: str | None = None
+    seen_tokens: set[str] = set()
     while True:
         if continuation_token is None:
             response = client.list_objects_v2(
@@ -226,9 +227,13 @@ def _list_objects(
         if not response.get("IsTruncated", False):
             return objects
         continuation_token = response.get("NextContinuationToken")
-        if not isinstance(continuation_token, str):
-            msg = "S3 listing is truncated without a continuation token."
-            raise TypeError(msg)
+        if not isinstance(continuation_token, str) or not continuation_token:
+            msg = "S3 listing is truncated without a valid continuation token."
+            raise ValueError(msg)
+        if continuation_token in seen_tokens:
+            msg = "S3 listing returned a repeated continuation token."
+            raise ValueError(msg)
+        seen_tokens.add(continuation_token)
 
 
 def _create_s3_client(aws_profile: str | None) -> S3Client:

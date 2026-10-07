@@ -83,6 +83,108 @@ class DelayedS3ClientFake(S3ClientFake):
         return super().list_objects_v2(**kwargs)
 
 
+@pytest.mark.parametrize(
+    "tokens",
+    [
+        pytest.param([None], id="missing-token"),
+        pytest.param([123], id="non-string-token"),
+        pytest.param([""], id="empty-token"),
+        pytest.param(["synthetic-a", "synthetic-a"], id="repeated-token"),
+        pytest.param(
+            ["synthetic-a", "synthetic-b", "synthetic-a"], id="token-cycle"
+        ),
+    ],
+)
+def test_fetch_rejects_invalid_listing_continuation(
+    tokens: list[str | int | None],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = S3ClientFake([], {})
+    responses = iter(tokens)
+
+    def list_objects(**kwargs: str) -> dict[str, Any]:
+        client.list_calls.append(kwargs)
+        try:
+            token = next(responses)
+        except StopIteration:
+            pytest.fail("Invalid continuation triggered another listing.")
+        return {
+            "Contents": [],
+            "IsTruncated": True,
+            "NextContinuationToken": token,
+        }
+
+    monkeypatch.setattr(client, "list_objects_v2", list_objects)
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: NOW,
+    )
+
+    with pytest.raises(ValueError, match="continuation token"):
+        asyncio.run(provider.fetch_nowait())
+
+    assert len(client.list_calls) == len(tokens)
+    assert client.get_calls == []
+    assert client.delete_calls == []
+
+
+def test_fetch_selects_latest_email_across_listing_pages(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = S3ClientFake(
+        [],
+        {
+            "mail/older": _message(),
+            "mail/newer": _message(
+                subject="【Yostar】メールアドレスの認証コードは　654321"
+            ),
+        },
+    )
+    pages = iter(
+        [
+            {
+                "Contents": [
+                    {
+                        "Key": "mail/older",
+                        "LastModified": NOW - timedelta(minutes=1),
+                    }
+                ],
+                "IsTruncated": True,
+                "NextContinuationToken": "synthetic-next",
+            },
+            {
+                "Contents": [{"Key": "mail/newer", "LastModified": NOW}],
+                "IsTruncated": False,
+            },
+        ]
+    )
+
+    def list_objects(**kwargs: str) -> dict[str, Any]:
+        client.list_calls.append(kwargs)
+        return next(pages)
+
+    monkeypatch.setattr(client, "list_objects_v2", list_objects)
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        key_prefix="mail/",
+        client=cast("S3Client", client),
+        clock=lambda: NOW,
+    )
+
+    assert asyncio.run(provider.fetch_nowait()) == "654321"
+    assert client.list_calls == [
+        {"Bucket": "example-bucket", "Prefix": "mail/"},
+        {
+            "Bucket": "example-bucket",
+            "Prefix": "mail/",
+            "ContinuationToken": "synthetic-next",
+        },
+    ]
+
+
 def test_fetches_latest_valid_email_below_prefix() -> None:
     client = S3ClientFake(
         [

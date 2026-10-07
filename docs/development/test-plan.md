@@ -1460,6 +1460,11 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 - [x] メール本文の読み取り成功・失敗の両経路でresponse Bodyを閉じ、読み取り失敗は元の例外を伝播する
 
+### S3 listing pagination
+
+- [x] 継続tokenの欠落・型不正・空文字・再出現をValueErrorで拒否し、追加取得・メール読取・削除へ進まない
+- [x] 正常な複数pageを継続tokenで取得し、page境界を越えて最新の有効メールを選ぶ
+
 ### Message validation and retrieval
 
 - [x] Subjectのbase64 encoded wordに含まれる不正文字を補正して受理せず、コード取得と削除条件を拒否する
