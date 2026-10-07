@@ -1466,6 +1466,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### S3 response body lifecycle
 
+- [x] 削除対象が期限切れメールだけの場合、削除option有効時は削除後に未着例外を返し、無効時は読取・削除しない
+
 - [x] 有効codeがあっても削除の最初・途中で失敗した場合は元の例外を伝播し、後続削除・polling再試行をしない
 
 - [x] Body close失敗を伝播し、read失敗と重なっても原因を例外contextへ保持する。closeは一度で、失敗後にメールを削除しない

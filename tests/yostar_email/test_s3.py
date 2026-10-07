@@ -662,6 +662,33 @@ def test_fetch_deletes_read_matching_emails_when_requested() -> None:
     ]
 
 
+@pytest.mark.parametrize("delete_read_emails", [False, True])
+def test_fetch_reports_missing_code_when_only_expired_email_exists(
+    *,
+    delete_read_emails: bool,
+) -> None:
+    client = S3ClientFake(
+        [{"Key": "mail/expired", "LastModified": NOW - timedelta(hours=1)}],
+        {"mail/expired": _message()},
+    )
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: NOW,
+    )
+
+    with pytest.raises(VerificationEmailNotFoundError):
+        asyncio.run(
+            provider.fetch_nowait(delete_read_emails=delete_read_emails)
+        )
+
+    expected_keys = ["mail/expired"] if delete_read_emails else []
+    assert [call["Key"] for call in client.get_calls] == expected_keys
+    assert [call["Key"] for call in client.delete_calls] == expected_keys
+    assert len(client.list_calls) == 1
+
+
 def test_fetch_fails_when_no_valid_email_exists() -> None:
     client = S3ClientFake([], {})
     provider = S3VerificationCodeProvider(
