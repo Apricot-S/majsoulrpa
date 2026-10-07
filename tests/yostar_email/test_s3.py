@@ -397,6 +397,33 @@ def test_fetch_without_deletion_stops_after_valid_code() -> None:
     assert client.delete_calls == []
 
 
+@pytest.mark.parametrize("missing_field", ["Key", "LastModified"])
+def test_fetch_excludes_listing_entry_with_missing_candidate_field(
+    missing_field: str,
+) -> None:
+    incomplete: dict[str, Any] = {
+        "Key": "mail/incomplete",
+        "LastModified": NOW,
+    }
+    del incomplete[missing_field]
+    client = S3ClientFake(
+        [incomplete, {"Key": "mail/valid", "LastModified": NOW}],
+        {"mail/valid": _message()},
+    )
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: NOW,
+    )
+
+    assert (
+        asyncio.run(provider.fetch_nowait(delete_read_emails=True)) == "012345"
+    )
+    assert [call["Key"] for call in client.get_calls] == ["mail/valid"]
+    assert [call["Key"] for call in client.delete_calls] == ["mail/valid"]
+
+
 def test_fetches_latest_valid_email_below_prefix() -> None:
     client = S3ClientFake(
         [

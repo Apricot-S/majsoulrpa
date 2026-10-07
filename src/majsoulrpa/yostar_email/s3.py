@@ -174,9 +174,9 @@ def _list_email_candidates(
         received_at = item.get("LastModified")
         key = item.get("Key")
         if (
-            isinstance(received_at, datetime)
+            received_at is not None
             and received_at.utcoffset() is not None
-            and isinstance(key, str)
+            and key is not None
             and key.startswith(key_prefix)
         ):
             candidates.append(

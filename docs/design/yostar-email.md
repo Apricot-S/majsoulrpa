@@ -110,6 +110,8 @@ S3一覧は継続tokenを使って全pageを取得し、全候補から最新の
 候補順は受信日時をUTCへ変換して比較し、時刻の巻き戻りでも実時刻の新しい候補を優先する。
 `LastModified` はUTC offsetが定義されたdatetimeを要求する。tzinfo欠落・offset未定義の
 一覧項目は候補から除外し、本文を読まず、任意削除の対象にも選ばない。
+`Key` / `LastModified` の値の型はObjectTypeDefの契約を信頼する。任意fieldの欠落は
+候補から除外し、型の再検証は行わない。
 一覧APIへの `Prefix` 指定に加え、返されたkeyが指定prefixで始まることを候補側でも
 確認する。prefix外のkeyは読取・削除しない。空prefixはbucket全体を対象とする。
 任意削除の失敗は、有効なコードを取得済みでも伝播し、後続の削除やpolling再試行を
