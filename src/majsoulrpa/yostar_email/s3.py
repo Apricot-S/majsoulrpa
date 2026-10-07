@@ -197,11 +197,7 @@ def _is_current(received_at: datetime, *, now: datetime) -> bool:
 def _read_object(client: S3Client, *, bucket_name: str, key: str) -> bytes:
     response = client.get_object(Bucket=bucket_name, Key=key)
     with closing(response["Body"]) as stream:
-        body = stream.read()
-    if not isinstance(body, bytes):
-        msg = "S3 verification email body is not bytes."
-        raise TypeError(msg)
-    return body
+        return stream.read()
 
 
 def _delete_objects(

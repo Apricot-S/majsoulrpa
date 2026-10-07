@@ -94,6 +94,7 @@ S3 providerのboto3遅延importは、欠落module名が `boto3` の場合だけ 
 不明なimport失敗は元の例外をそのまま伝播し、boto3未導入とは報告しない。
 
 S3の `get_object()` が返す本文ストリームはproviderが読み取り後に閉じる。
+`read()` のbytes返却契約を信頼し、戻り値の実行時型検証は行わない。
 読み取り失敗時もcloseを試み、読み取りやcloseの失敗を握りつぶさない。
 両方が失敗した場合はclose例外を伝播し、read例外をその `__context__` に保持する。
 

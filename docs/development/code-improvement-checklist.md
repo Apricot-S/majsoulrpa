@@ -370,6 +370,7 @@ Sniffer の各段は異なるデータ完全性を守るため、ファイル数
   - [x] Subject headerが1つの場合だけ件名を照合し、重複時に先頭の件名だけでコードを取得・削除対象にする問題を修正した。欠落・重複とheader名の大文字小文字によらない拒否をコード取得・削除条件の両経路で確認した。
   - [x] VerificationEmailの全fieldをreprから除外し、repr / strと通常ログへの送信元・宛先・コードの漏洩を修正した。synthetic MIMEで非漏洩とコード取得・削除条件判定の維持を確認した。
 - [ ] `yostar_email/s3.py`: boto3 遅延 import、候補順、polling 条件、任意削除の対象制約、client lifecycle を確認する。
+  - [x] Body.readのbytes返却契約を信頼し、冗長な型検証と一時変数を除去した。closing内で直接返却し、read / closeの成功・失敗4経路を既存テストで確認した。
   - [x] ObjectTypeDefの型契約に従いKey / LastModifiedの冗長なisinstanceをNone判定へ整理した。欠落・UTC offset未定義・prefix外の除外は維持し、field欠落時の読取・削除防止と有効候補の取得を回帰テストで確認した。
   - [x] _list_objectsの戻り値・蓄積listをAnyからtypes-boto3のObjectTypeDefへ変更し、候補選択まで型情報を保持する。TYPE_CHECKING内のimportで実行時依存を増やさず、既存pytestとtyで確認した。
   - [x] IsTruncatedはboto3の型契約を信頼し、実行時の型検証と専用テストを削除した。正常なpage継続・終了は既存の一覧取得テストで確認する。
