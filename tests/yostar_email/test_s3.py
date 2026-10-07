@@ -385,6 +385,46 @@ def test_fetches_latest_valid_email_below_prefix() -> None:
 
 
 @pytest.mark.parametrize(
+    "outside_key",
+    [
+        pytest.param("mail-other/message", id="similar-prefix"),
+        pytest.param("other/mail/message", id="prefix-in-middle"),
+    ],
+)
+@pytest.mark.parametrize("delete_read_emails", [False, True])
+def test_fetch_excludes_keys_outside_selected_prefix(
+    *,
+    outside_key: str,
+    delete_read_emails: bool,
+) -> None:
+    client = S3ClientFake(
+        [
+            {"Key": outside_key, "LastModified": NOW},
+            {"Key": "mail/valid", "LastModified": NOW - timedelta(minutes=1)},
+        ],
+        {"mail/valid": _message()},
+    )
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        key_prefix="mail/",
+        client=cast("S3Client", client),
+        clock=lambda: NOW,
+    )
+
+    assert (
+        asyncio.run(
+            provider.fetch_nowait(delete_read_emails=delete_read_emails)
+        )
+        == "012345"
+    )
+    assert [call["Key"] for call in client.get_calls] == ["mail/valid"]
+    assert [call["Key"] for call in client.delete_calls] == (
+        ["mail/valid"] if delete_read_emails else []
+    )
+
+
+@pytest.mark.parametrize(
     "read_failure",
     [
         pytest.param(None, id="read-success"),

@@ -171,6 +171,7 @@ def _list_email_candidates(
             isinstance(received_at, datetime)
             and received_at.utcoffset() is not None
             and isinstance(key, str)
+            and key.startswith(key_prefix)
         ):
             candidates.append(
                 _S3EmailCandidate(key=key, received_at=received_at)

@@ -104,6 +104,8 @@ S3一覧は継続tokenを使って全pageを取得し、全候補から最新の
 候補順は受信日時をUTCへ変換して比較し、時刻の巻き戻りでも実時刻の新しい候補を優先する。
 `LastModified` はUTC offsetが定義されたdatetimeを要求する。tzinfo欠落・offset未定義の
 一覧項目は候補から除外し、本文を読まず、任意削除の対象にも選ばない。
+一覧APIへの `Prefix` 指定に加え、返されたkeyが指定prefixで始まることを候補側でも
+確認する。prefix外のkeyは読取・削除しない。空prefixはbucket全体を対象とする。
 未完了一覧の継続tokenが欠落・型不正・空文字・再出現した場合は、不正なレスポンス値
 として `ValueError` で失敗する。
 tokenの再出現はcycleも含めて拒否し、同じpageの再取得を繰り返さない。
