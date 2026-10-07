@@ -89,6 +89,9 @@ S3 providerのboto3遅延importは、欠落module名が `boto3` の場合だけ 
 導入案内へ変換し、元の例外を原因として保持する。内部依存の不足や欠落module名が
 不明なimport失敗は元の例外をそのまま伝播し、boto3未導入とは報告しない。
 
+S3の `get_object()` が返す本文ストリームはproviderが読み取り後に閉じる。
+読み取り失敗時もcloseを試み、読み取りやcloseの失敗を握りつぶさない。
+
 内部の `VerificationEmail` は送信元・宛先・コードを照合用に保持するが、全fieldを
 dataclassのreprから除外する。`repr()` / `str()` と通常ログの `%r` / `%s` に
 メール情報を含めない。本文はこのobjectへ保持しない。

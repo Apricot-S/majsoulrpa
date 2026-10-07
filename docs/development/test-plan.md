@@ -1456,6 +1456,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 - [x] polling intervalは有限の正数を要求し、ゼロ・負数・NaN・正負の無限大をprovider構築時に拒否する
 
+### S3 response body lifecycle
+
+- [x] メール本文の読み取り成功・失敗の両経路でresponse Bodyを閉じ、読み取り失敗は元の例外を伝播する
+
 ### Message validation and retrieval
 
 - [x] Subjectのbase64 encoded wordに含まれる不正文字を補正して受理せず、コード取得と削除条件を拒否する

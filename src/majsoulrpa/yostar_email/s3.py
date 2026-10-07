@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import importlib
 import math
+from contextlib import closing
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any
@@ -184,7 +185,8 @@ def _is_current(received_at: datetime, *, now: datetime) -> bool:
 
 def _read_object(client: S3Client, *, bucket_name: str, key: str) -> bytes:
     response = client.get_object(Bucket=bucket_name, Key=key)
-    body = response["Body"].read()
+    with closing(response["Body"]) as stream:
+        body = stream.read()
     if not isinstance(body, bytes):
         msg = "S3 verification email body is not bytes."
         raise TypeError(msg)

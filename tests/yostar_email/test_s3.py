@@ -119,6 +119,52 @@ def test_fetches_latest_valid_email_below_prefix() -> None:
     assert "user@example.com" not in repr(provider)
 
 
+@pytest.mark.parametrize(
+    "read_failure",
+    [
+        pytest.param(None, id="read-success"),
+        pytest.param(
+            RuntimeError("Synthetic read failure"), id="read-failure"
+        ),
+    ],
+)
+def test_fetch_closes_response_body_after_read(
+    read_failure: RuntimeError | None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body = BytesIO(_message())
+    client = S3ClientFake([{"Key": "mail/valid", "LastModified": NOW}], {})
+
+    def get_object(**kwargs: str) -> dict[str, BytesIO]:
+        client.get_calls.append(kwargs)
+        return {"Body": body}
+
+    monkeypatch.setattr(client, "get_object", get_object)
+    if read_failure is not None:
+
+        def fail_read(_size: int = -1) -> bytes:
+            raise read_failure
+
+        monkeypatch.setattr(body, "read", fail_read)
+
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: NOW,
+    )
+    if read_failure is None:
+        assert asyncio.run(provider.fetch_nowait()) == "012345"
+    else:
+        with pytest.raises(RuntimeError) as exc_info:
+            asyncio.run(provider.fetch_nowait())
+        assert exc_info.value is read_failure
+
+    assert body.closed
+    assert len(client.get_calls) == 1
+    assert client.delete_calls == []
+
+
 def test_fetch_deletes_read_matching_emails_when_requested() -> None:
     client = S3ClientFake(
         [
