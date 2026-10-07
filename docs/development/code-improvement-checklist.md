@@ -370,6 +370,7 @@ Sniffer の各段は異なるデータ完全性を守るため、ファイル数
   - [x] Subject headerが1つの場合だけ件名を照合し、重複時に先頭の件名だけでコードを取得・削除対象にする問題を修正した。欠落・重複とheader名の大文字小文字によらない拒否をコード取得・削除条件の両経路で確認した。
   - [x] VerificationEmailの全fieldをreprから除外し、repr / strと通常ログへの送信元・宛先・コードの漏洩を修正した。synthetic MIMEで非漏洩とコード取得・削除条件判定の維持を確認した。
 - [ ] `yostar_email/s3.py`: boto3 遅延 import、候補順、polling 条件、任意削除の対象制約、client lifecycle を確認する。
+  - [x] _list_objectsの戻り値・蓄積listをAnyからtypes-boto3のObjectTypeDefへ変更し、候補選択まで型情報を保持する。TYPE_CHECKING内のimportで実行時依存を増やさず、既存pytestとtyで確認した。
   - [x] IsTruncatedはboto3の型契約を信頼し、実行時の型検証と専用テストを削除した。正常なpage継続・終了は既存の一覧取得テストで確認する。
   - [x] falseyな注入S3 clientもfetch / fetch_nowaitでそのまま使用し、内部clientを生成しないことを回帰テストで確認した。注入先での一覧・本文取得と削除なしの動作も確認し、既存のNone判定を維持した。
   - [x] client生成失敗をfetch / fetch_nowaitが元の例外のまま伝播し、一度だけ生成を試み、S3操作・polling再試行へ進まないことを回帰テストで確認した。AWS profileの生成関数への配送も確認し、実装は維持した。

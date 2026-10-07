@@ -6,7 +6,7 @@ import math
 from contextlib import closing
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from majsoulrpa._clock import Clock, utc_now
 from majsoulrpa.yostar_email.constants import VERIFICATION_EMAIL_EXPIRATION
@@ -18,6 +18,7 @@ from majsoulrpa.yostar_email.errors import (
 
 if TYPE_CHECKING:
     from types_boto3_s3.client import S3Client
+    from types_boto3_s3.type_defs import ObjectTypeDef
 
 
 class VerificationEmailNotFoundError(YostarVerificationEmailError):
@@ -217,8 +218,8 @@ def _list_objects(
     client: S3Client,
     bucket_name: str,
     key_prefix: str,
-) -> list[Any]:
-    objects: list[Any] = []
+) -> list[ObjectTypeDef]:
+    objects: list[ObjectTypeDef] = []
     continuation_token: str | None = None
     seen_tokens: set[str] = set()
 

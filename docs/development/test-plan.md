@@ -1488,6 +1488,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### S3 listing pagination
 
+- [x] 一覧項目の型をtypes-boto3のObjectTypeDefで表し、型stubを実行時importせず既存のpage取得と候補選択を維持する
+
 - [x] 削除なしでは最新の有効code取得後に古い候補を読まず終了する。削除ありでは対象メールの確認を継続する
 
 - [x] prefix外の一覧キーは読取・削除せず、prefix内の有効メールだけを取得する（削除optionの有無とも確認）
