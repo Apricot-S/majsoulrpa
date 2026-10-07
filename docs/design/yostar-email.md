@@ -92,6 +92,7 @@ S3 providerのboto3遅延importは、欠落module名が `boto3` の場合だけ 
 
 S3の `get_object()` が返す本文ストリームはproviderが読み取り後に閉じる。
 読み取り失敗時もcloseを試み、読み取りやcloseの失敗を握りつぶさない。
+両方が失敗した場合はclose例外を伝播し、read例外をその `__context__` に保持する。
 
 S3 providerの `clock` はデフォルト引数へ `utc_now` を直接指定する。
 省略時はこの関数を使い、注入されたcallableは真偽値によらずそのまま保持する。

@@ -1458,6 +1458,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### S3 response body lifecycle
 
+- [x] Body close失敗を伝播し、read失敗と重なっても原因を例外contextへ保持する。closeは一度で、失敗後にメールを削除しない
+
 - [x] メール本文の読み取り成功・失敗の両経路でresponse Bodyを閉じ、読み取り失敗は元の例外を伝播する
 
 ### S3 injected clock

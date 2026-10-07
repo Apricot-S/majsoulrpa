@@ -393,11 +393,32 @@ def test_fetches_latest_valid_email_below_prefix() -> None:
         ),
     ],
 )
-def test_fetch_closes_response_body_after_read(
+@pytest.mark.parametrize(
+    "close_failure",
+    [
+        pytest.param(None, id="close-success"),
+        pytest.param(
+            RuntimeError("Synthetic close failure"), id="close-failure"
+        ),
+    ],
+)
+def test_fetch_closes_response_body_and_preserves_failures(
     read_failure: RuntimeError | None,
+    close_failure: RuntimeError | None,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     body = BytesIO(_message())
+    original_close = body.close
+    close_calls = 0
+
+    def close_body() -> None:
+        nonlocal close_calls
+        close_calls += 1
+        original_close()
+        if close_failure is not None:
+            raise close_failure
+
+    monkeypatch.setattr(body, "close", close_body)
     client = S3ClientFake([{"Key": "mail/valid", "LastModified": NOW}], {})
 
     def get_object(**kwargs: str) -> dict[str, BytesIO]:
@@ -418,14 +439,20 @@ def test_fetch_closes_response_body_after_read(
         client=cast("S3Client", client),
         clock=lambda: NOW,
     )
-    if read_failure is None:
+    expected_failure = (
+        close_failure if close_failure is not None else read_failure
+    )
+    if expected_failure is None:
         assert asyncio.run(provider.fetch_nowait()) == "012345"
     else:
         with pytest.raises(RuntimeError) as exc_info:
             asyncio.run(provider.fetch_nowait())
-        assert exc_info.value is read_failure
+        assert exc_info.value is expected_failure
+        if read_failure is not None and close_failure is not None:
+            assert exc_info.value.__context__ is read_failure
 
     assert body.closed
+    assert close_calls == 1
     assert len(client.get_calls) == 1
     assert client.delete_calls == []
 
