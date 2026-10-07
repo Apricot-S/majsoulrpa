@@ -169,7 +169,7 @@ def _list_email_candidates(
         key = item.get("Key")
         if (
             isinstance(received_at, datetime)
-            and received_at.tzinfo is not None
+            and received_at.utcoffset() is not None
             and isinstance(key, str)
         ):
             candidates.append(

@@ -1468,6 +1468,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### S3 elapsed-time validation
 
+- [x] LastModifiedのtzinfo欠落・UTC offset未定義を候補から除外し、読取・削除せず有効な候補を取得する
+
 - [x] 時刻巻き戻りで壁時計上の順序が逆転しても、UTCで最新の有効メールを選択する
 
 - [x] 同じtzinfo内の時刻の巻き戻りでも実経過時間で期限切れメールを除外し、有効なメールを取得する

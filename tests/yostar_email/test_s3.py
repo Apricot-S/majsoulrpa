@@ -117,20 +117,21 @@ def test_fetch_uses_injected_falsey_clock(
     assert clock.calls == 1
 
 
+class UndefinedOffsetTimezone(tzinfo):
+    def utcoffset(self, _dt: datetime | None) -> None:
+        return None
+
+    def dst(self, _dt: datetime | None) -> None:
+        return None
+
+    def tzname(self, _dt: datetime | None) -> None:
+        return None
+
+
 @pytest.mark.parametrize("timestamp_kind", ["naive", "undefined-offset"])
 def test_fetch_rejects_undefined_clock_offset_before_s3_access(
     timestamp_kind: str,
 ) -> None:
-    class UndefinedOffsetTimezone(tzinfo):
-        def utcoffset(self, _dt: datetime | None) -> None:
-            return None
-
-        def dst(self, _dt: datetime | None) -> None:
-            return None
-
-        def tzname(self, _dt: datetime | None) -> None:
-            return None
-
     timestamp = NOW.replace(
         tzinfo=None if timestamp_kind == "naive" else UndefinedOffsetTimezone()
     )
@@ -148,6 +149,34 @@ def test_fetch_rejects_undefined_clock_offset_before_s3_access(
     assert client.list_calls == []
     assert client.get_calls == []
     assert client.delete_calls == []
+
+
+@pytest.mark.parametrize("timestamp_kind", ["naive", "undefined-offset"])
+def test_fetch_excludes_candidate_with_undefined_timestamp_offset(
+    timestamp_kind: str,
+) -> None:
+    timestamp = NOW.replace(
+        tzinfo=None if timestamp_kind == "naive" else UndefinedOffsetTimezone()
+    )
+    client = S3ClientFake(
+        [
+            {"Key": "mail/invalid-date", "LastModified": timestamp},
+            {"Key": "mail/valid", "LastModified": NOW},
+        ],
+        {"mail/valid": _message()},
+    )
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: NOW,
+    )
+
+    assert (
+        asyncio.run(provider.fetch_nowait(delete_read_emails=True)) == "012345"
+    )
+    assert [call["Key"] for call in client.get_calls] == ["mail/valid"]
+    assert [call["Key"] for call in client.delete_calls] == ["mail/valid"]
 
 
 class RollbackTimezone(tzinfo):
