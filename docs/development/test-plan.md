@@ -1445,6 +1445,11 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] Protocolを継承しない独自providerをVerificationCodeProviderとして受け取り、fetch / fetch_nowaitの戻り値を保持できる
 - [x] 同じ差し替え経路で削除optionの省略時Falseと明示Trueを両APIへ渡せる
 
+### S3 optional dependency failure
+
+- [x] boto3自体のModuleNotFoundErrorだけextraの導入案内へ変換し、元の原因を保持する
+- [x] boto3内部の依存不足や欠落module名不明のModuleNotFoundErrorは同じ例外を伝播する
+
 ### Message validation and retrieval
 
 - [x] 同じtzinfo内のUTC offset変更でも実経過時間で有効・期限切れ・未来を判定する

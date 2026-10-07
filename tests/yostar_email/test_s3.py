@@ -301,10 +301,42 @@ def test_fetch_rejects_nonpositive_poll_interval() -> None:
 def test_missing_boto3_names_required_extra(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    failure = ModuleNotFoundError("Synthetic missing dependency", name="boto3")
+
     def missing_import(_name: str) -> None:
-        raise ModuleNotFoundError
+        raise failure
 
     monkeypatch.setattr(s3_module.importlib, "import_module", missing_import)
 
-    with pytest.raises(ModuleNotFoundError, match="'s3' optional dependency"):
+    with pytest.raises(
+        ModuleNotFoundError, match="'s3' optional dependency"
+    ) as exc_info:
         s3_module._create_s3_client(None)
+
+    assert exc_info.value.__cause__ is failure
+
+
+@pytest.mark.parametrize(
+    "missing_name",
+    [
+        pytest.param("botocore", id="transitive-dependency"),
+        pytest.param(None, id="unknown-missing-module"),
+    ],
+)
+def test_boto3_import_preserves_unrelated_module_failure(
+    missing_name: str | None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    failure = ModuleNotFoundError(
+        "Synthetic dependency failure", name=missing_name
+    )
+
+    def fail_import(_name: str) -> None:
+        raise failure
+
+    monkeypatch.setattr(s3_module.importlib, "import_module", fail_import)
+
+    with pytest.raises(ModuleNotFoundError) as exc_info:
+        s3_module._create_s3_client(None)
+
+    assert exc_info.value is failure

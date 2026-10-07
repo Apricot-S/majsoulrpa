@@ -224,6 +224,8 @@ def _create_s3_client(aws_profile: str | None) -> S3Client:
     try:
         boto3 = importlib.import_module("boto3")
     except ModuleNotFoundError as error:
+        if error.name != "boto3":
+            raise
         msg = (
             "S3VerificationCodeProvider requires the 's3' optional "
             "dependency. Install it with: pip install 'majsoulrpa[s3]'"
