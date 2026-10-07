@@ -146,6 +146,9 @@ class S3VerificationCodeProvider:
             except InvalidYostarVerificationEmailError:
                 continue
 
+            if not delete_read_emails:
+                return verification_code
+
         _delete_objects(
             client,
             bucket_name=self._bucket_name,

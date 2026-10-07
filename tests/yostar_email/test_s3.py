@@ -240,10 +240,7 @@ def test_fetch_selects_latest_email_by_utc_across_clock_rollback() -> None:
     )
 
     assert asyncio.run(provider.fetch_nowait()) == "654321"
-    assert [call["Key"] for call in client.get_calls] == [
-        "mail/newer",
-        "mail/older",
-    ]
+    assert [call["Key"] for call in client.get_calls] == ["mail/newer"]
 
 
 @pytest.mark.parametrize(
@@ -346,6 +343,26 @@ def test_fetch_selects_latest_email_across_listing_pages(
             "ContinuationToken": "synthetic-next",
         },
     ]
+
+
+def test_fetch_without_deletion_stops_after_valid_code() -> None:
+    client = S3ClientFake(
+        [
+            {"Key": "mail/newest", "LastModified": NOW},
+            {"Key": "mail/older", "LastModified": NOW - timedelta(minutes=1)},
+        ],
+        {"mail/newest": _message()},
+    )
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: NOW,
+    )
+
+    assert asyncio.run(provider.fetch_nowait()) == "012345"
+    assert [call["Key"] for call in client.get_calls] == ["mail/newest"]
+    assert client.delete_calls == []
 
 
 def test_fetches_latest_valid_email_below_prefix() -> None:

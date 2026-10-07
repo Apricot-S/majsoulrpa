@@ -1480,6 +1480,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### S3 listing pagination
 
+- [x] 削除なしでは最新の有効code取得後に古い候補を読まず終了する。削除ありでは対象メールの確認を継続する
+
 - [x] prefix外の一覧キーは読取・削除せず、prefix内の有効メールだけを取得する（削除optionの有無とも確認）
 
 - [x] 継続tokenの欠落・型不正・空文字・再出現をValueErrorで拒否し、追加取得・メール読取・削除へ進まない
