@@ -29,6 +29,7 @@ class VerificationEmail:
     def parse(cls, message_bytes: bytes) -> Self:
         """Parse the MIME headers used for verification emails."""
         message = BytesParser(policy=policy.default).parsebytes(message_bytes)
+        has_structure_defects = any(part.defects for part in message.walk())
 
         sender_headers = message.get_all("From", [])
         valid_sender_headers = (
@@ -55,7 +56,11 @@ class VerificationEmail:
         subjects = message.get_all("Subject", [])
         subject = (
             subjects[0]
-            if len(subjects) == 1 and not subjects[0].defects
+            if (
+                not has_structure_defects
+                and len(subjects) == 1
+                and not subjects[0].defects
+            )
             else None
         )
         if subject is not None:

@@ -1452,6 +1452,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Message validation and retrieval
 
+- [x] MIME構造defect（header/body区切り不正、multipart境界欠落）をコード取得と削除条件の両経路で拒否し、正常なmultipartは受理する
+
 - [x] 不明charsetや指定charsetでdecodeできないSubjectをMIME parserの補正結果で受理せず、コード取得と削除条件を拒否する
 
 - [x] 同じtzinfo内のUTC offset変更でも実経過時間で有効・期限切れ・未来を判定する

@@ -18,6 +18,8 @@ S3実装に加え、継承しない独自実装を型付きconsumerへ渡すテ�
 
 `yostar_email/constants.py` は JP 向けのメール照合条件を保持する。
 
+- MIME parserがメール本体または各partに構造上のdefectを報告した場合は、件名を
+  コード取得・任意削除に使わない。正常なmultipartメールは受理する。
 - 送信元は既存実装の `YOSTAR_EMAIL_ADDRESS` と完全一致させる。
   `From` は1 headerで、parserが構文上のdefectを報告せず、送信元が1つの場合だけ
   コード取得に使う。正常な表示名は許容する。任意削除は既存方針どおり宛先と件名で

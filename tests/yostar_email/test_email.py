@@ -208,6 +208,49 @@ def test_bad_subject_encoding_cannot_supply_code_or_allow_deletion(
 
 
 @pytest.mark.parametrize(
+    ("original", "replacement"),
+    [
+        pytest.param(
+            b"\n\n",
+            b"\nSynthetic malformed header line\n\n",
+            id="missing-header-body-separator",
+        ),
+        pytest.param(
+            b'Content-Type: text/plain; charset="utf-8"',
+            b'Content-Type: multipart/mixed; boundary="synthetic-boundary"',
+            id="missing-multipart-boundary",
+        ),
+    ],
+)
+def test_malformed_mime_structure_cannot_supply_code_or_allow_deletion(
+    original: bytes,
+    replacement: bytes,
+) -> None:
+    email = VerificationEmail.parse(
+        _message().replace(original, replacement, 1)
+    )
+
+    assert not email.matches_deletion_condition(recipient="user@example.com")
+    with pytest.raises(InvalidYostarVerificationEmailError):
+        email.extract_code(recipient="user@example.com")
+
+
+def test_well_formed_multipart_email_supplies_code_and_allows_deletion() -> (
+    None
+):
+    message = EmailMessage()
+    message["From"] = "info@passport.yostar.co.jp"
+    message["To"] = "user@example.com"
+    message["Subject"] = "【Yostar】メールアドレスの認証コードは　012345"
+    message.set_content("Synthetic text body.")
+    message.add_alternative("<p>Synthetic HTML body.</p>", subtype="html")
+    email = VerificationEmail.parse(message.as_bytes())
+
+    assert email.extract_code(recipient="user@example.com") == "012345"
+    assert email.matches_deletion_condition(recipient="user@example.com")
+
+
+@pytest.mark.parametrize(
     "from_headers",
     [
         pytest.param(b"", id="missing-from"),
