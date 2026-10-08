@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import importlib
-import math
 from contextlib import asynccontextmanager, closing
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -79,7 +78,6 @@ class S3VerificationCodeProvider:
         max_poll_interval = VERIFICATION_EMAIL_EXPIRATION.total_seconds()
         if (
             isinstance(poll_interval, bool)
-            or not math.isfinite(poll_interval)
             or not 0.0 < poll_interval < max_poll_interval
         ):
             msg = (

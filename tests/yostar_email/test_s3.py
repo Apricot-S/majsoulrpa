@@ -1226,6 +1226,7 @@ def test_fetch_creates_s3_client_once_before_polling(
         pytest.param(float("-inf"), id="negative-infinity"),
         pytest.param(1800.0, id="at-expiration"),
         pytest.param(1800.001, id="above-expiration"),
+        pytest.param(10**400, id="integer-outside-float-range"),
     ],
 )
 def test_provider_rejects_invalid_poll_interval(poll_interval: float) -> None:

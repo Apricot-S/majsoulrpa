@@ -1456,6 +1456,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### S3 polling interval
 
+- [x] 極端に大きい整数の待機間隔もOverflowErrorではなくValueErrorで拒否する
+
 - [x] booleanのpoll_intervalを数値へ流用せずprovider構築時に拒否する
 
 - [x] メール未着のpolling待機中にキャンセルするとCancelledErrorを伝播し、追加の一覧取得・読取・削除をしない
