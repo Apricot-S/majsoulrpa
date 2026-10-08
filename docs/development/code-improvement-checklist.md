@@ -369,7 +369,8 @@ Sniffer の各段は異なるデータ完全性を守るため、ファイル数
   - [x] To headerの重複時に複数headerをまとめて宛先として受理する問題を修正した。欠落・重複をコード取得・削除条件の両経路で拒否し、単一To内の複数宛先は維持する。header名の大文字小文字によらない拒否も回帰テストで確認した。
   - [x] Subject headerが1つの場合だけ件名を照合し、重複時に先頭の件名だけでコードを取得・削除対象にする問題を修正した。欠落・重複とheader名の大文字小文字によらない拒否をコード取得・削除条件の両経路で確認した。
   - [x] VerificationEmailの全fieldをreprから除外し、repr / strと通常ログへの送信元・宛先・コードの漏洩を修正した。synthetic MIMEで非漏洩とコード取得・削除条件判定の維持を確認した。
-- [ ] `yostar_email/s3.py`: boto3 遅延 import、候補順、polling 条件、任意削除の対象制約、client lifecycle を確認する。
+- [x] `yostar_email/s3.py`: boto3 遅延 import、候補順、polling 条件、任意削除の対象制約、client lifecycle を確認する。
+  - [x] 実装・関連テスト・設計資料の最終照合を完了した。現在の確認範囲で追加の実装変更は不要と判断し、yostar_emailの関連pytestとRuff・format・tyを再確認した。
   - [x] poll_intervalの重複するisfinite検証を除去し、正数・有効期限未満の比較でNaN・無限大も拒否する。極端に大きい整数でOverflowErrorが出る経路をValueErrorへ修正し、既存の不正値テストへ追加した。
   - [x] closeとメール取得のshield・キャンセル待機処理を_await_operationへ共通化し、処理側のCancelledError保持と呼び出し側の再キャンセル耐性を一か所へ整理した。既存の失敗・キャンセル・解放テストで動作を維持した。
   - [x] thread終了待ち中の再キャンセルで内部生成clientを解放し損ねる問題を修正した。終了待ちをshield付きhelperへまとめ、close中も終了を待つ。生成・処理のキャンセルテストを再キャンセルの有無へ拡張して確認した。
