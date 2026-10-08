@@ -1490,6 +1490,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### S3 listing pagination
 
+- [x] 2page目の取得失敗で、先のpageに有効候補があっても元の例外を伝播し、本文読取・削除・polling再試行をしない
+
 - [x] ObjectTypeDefのKey / LastModified欠落項目を候補から除外し、読取・削除せず有効項目の取得を継続する
 
 - [x] 一覧項目の型をtypes-boto3のObjectTypeDefで表し、型stubを実行時importせず既存のpage取得と候補選択を維持する

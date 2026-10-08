@@ -377,6 +377,44 @@ def test_fetch_selects_latest_email_across_listing_pages(
     ]
 
 
+def test_fetch_rejects_partial_listing_after_later_page_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = S3ClientFake([], {"mail/valid": _message()})
+    failure = RuntimeError("Synthetic second page failure")
+
+    def list_objects(**kwargs: str) -> dict[str, Any]:
+        client.list_calls.append(kwargs)
+        if len(client.list_calls) == 1:
+            return {
+                "Contents": [{"Key": "mail/valid", "LastModified": NOW}],
+                "IsTruncated": True,
+                "NextContinuationToken": "synthetic-next",
+            }
+        raise failure
+
+    async def unexpected_sleep(_delay: float) -> None:
+        pytest.fail("Listing failure must not trigger polling retry.")
+
+    monkeypatch.setattr(client, "list_objects_v2", list_objects)
+    monkeypatch.setattr(s3_module.asyncio, "sleep", unexpected_sleep)
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: NOW,
+    )
+
+    with pytest.raises(RuntimeError) as exc_info:
+        asyncio.run(provider.fetch(delete_read_emails=True))
+
+    assert exc_info.value is failure
+    assert len(client.list_calls) == 2
+    assert client.list_calls[1]["ContinuationToken"] == "synthetic-next"
+    assert client.get_calls == []
+    assert client.delete_calls == []
+
+
 def test_fetch_without_deletion_stops_after_valid_code() -> None:
     client = S3ClientFake(
         [
