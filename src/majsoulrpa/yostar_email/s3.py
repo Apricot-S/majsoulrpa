@@ -103,29 +103,30 @@ class S3VerificationCodeProvider:
             delete_read_emails=delete_read_emails,
         )
 
+    def _current_time(self) -> datetime:
+        now = self._clock()
+        if now.utcoffset() is None:
+            msg = "Clock timestamps must include timezone information."
+            raise ValueError(msg)
+        return now
+
     def _fetch_once(
         self,
         client: S3Client,
         *,
         delete_read_emails: bool,
     ) -> str:
-        now = self._clock()
-        if now.utcoffset() is None:
-            msg = "Clock timestamps must include timezone information."
-            raise ValueError(msg)
+        self._current_time()
 
         candidates = _list_email_candidates(
             client,
             bucket_name=self._bucket_name,
             key_prefix=self._key_prefix,
         )
-        verification_code: str | None = None
+        verification: tuple[str, datetime] | None = None
         keys_to_delete: list[str] = []
         for candidate in candidates:
-            current_time = self._clock()
-            if current_time.utcoffset() is None:
-                msg = "Clock timestamps must include timezone information."
-                raise ValueError(msg)
+            current_time = self._current_time()
             is_current = _is_current(candidate.received_at, now=current_time)
             if not delete_read_emails and not is_current:
                 continue
@@ -143,33 +144,33 @@ class S3VerificationCodeProvider:
             ):
                 keys_to_delete.append(candidate.key)
 
-            if verification_code is not None or not is_current:
+            if verification is not None or not is_current:
                 continue
 
-            current_time = self._clock()
-            if current_time.utcoffset() is None:
-                msg = "Clock timestamps must include timezone information."
-                raise ValueError(msg)
+            current_time = self._current_time()
             if not _is_current(candidate.received_at, now=current_time):
                 continue
 
             try:
-                verification_code = email.extract_code(
-                    recipient=self._email_address,
+                verification = (
+                    email.extract_code(recipient=self._email_address),
+                    candidate.received_at,
                 )
             except InvalidYostarVerificationEmailError:
                 continue
 
             if not delete_read_emails:
-                return verification_code
+                return verification[0]
 
         _delete_objects(
             client,
             bucket_name=self._bucket_name,
             keys=keys_to_delete,
         )
-        if verification_code is not None:
-            return verification_code
+        if verification is not None and _is_current(
+            verification[1], now=self._current_time()
+        ):
+            return verification[0]
         msg = "No current Yostar verification email was found in S3."
         raise VerificationEmailNotFoundError(msg)
 

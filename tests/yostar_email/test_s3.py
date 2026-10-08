@@ -479,6 +479,35 @@ def test_fetch_skips_email_expiring_during_listing(
     assert client.delete_calls == []
 
 
+def test_fetch_rejects_code_expiring_during_deletion(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current_time = NOW
+    client = S3ClientFake(
+        [{"Key": "mail/valid", "LastModified": NOW}],
+        {"mail/valid": _message()},
+    )
+    original_delete = client.delete_object
+
+    def delayed_delete(**kwargs: str) -> None:
+        nonlocal current_time
+        current_time = NOW + timedelta(minutes=30)
+        original_delete(**kwargs)
+
+    monkeypatch.setattr(client, "delete_object", delayed_delete)
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: current_time,
+    )
+
+    with pytest.raises(VerificationEmailNotFoundError):
+        asyncio.run(provider.fetch_nowait(delete_read_emails=True))
+
+    assert [call["Key"] for call in client.delete_calls] == ["mail/valid"]
+
+
 def test_fetch_without_deletion_stops_after_valid_code() -> None:
     client = S3ClientFake(
         [
