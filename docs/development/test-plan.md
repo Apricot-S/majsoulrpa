@@ -153,7 +153,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `get_nowait()` は未読 message がなければ `None` を返す
 - [x] 差し戻した message は通常の未読 message より先に取得する
 - [x] 一括差し戻しは列の内部順序を維持して未読列の前へ戻す
-- [x] 単一put_backは既存の差し戻し列より前へ戻し、再読取と再差し戻しでも元の位置を維持する
+- [x] 単一prependは既存の差し戻し列より前へ戻し、再読取と再差し戻しでも元の位置を維持する
 - [x] Homeの月間チケット走査は差し戻し済みの後続messageが残っても元の順序を維持する
 - [x] MatchのUI待機は保留通知と進行messageをまとめて未読列の前へ戻し、通知とstep整列の内部順序を維持する
 - [x] 件数上限を越えた message を黙って破棄しない
@@ -794,9 +794,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] Liqi は入力の進行を示すmessageを受信するまで同じ牌領域のclickを繰り返す
 - [x] Dapai の再試行中に既知common messageをlog・処理してclickを継続する
 - [x] Liqi の再試行中に既知common messageをlog・処理してclickを継続する
-- [x] Dapai の再試行で先読みした inputOperation / ActionPrototype を1回だけput_backする
-- [x] Liqi の再試行で先読みした inputOperation / ActionPrototype を1回だけput_backする
-- [x] Dapai の再試行でinputChiPengGangを終了条件にした場合も、messageを1回だけput_backする
+- [x] Dapai の再試行で先読みした inputOperation / ActionPrototype を1回だけprependする
+- [x] Liqi の再試行で先読みした inputOperation / ActionPrototype を1回だけprependする
+- [x] Dapai の再試行でinputChiPengGangを終了条件にした場合も、messageを1回だけprependする
 - [ ] Dapai / Liqi の再試行中に未知messageを捨てたり成功扱いしたりしない
 
 ### MatchScreen 立直操作 API
@@ -805,7 +805,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 立直ボタンがまだ描画されていない場合は、呼び出し側 timeout まで検出を再試行する
 - [x] 立直ボタンをクリックしてから候補表示を0.4秒待ち、`LiqiOperation` の tile / moqie に対応する牌領域をクリックする
 - [x] 牌クリックは Dapai と同じ入力進行messageの待機・再試行処理を使う
-- [x] 立直ボタン後の候補表示待ち中に `ActionPrototype` を先読みした場合は、牌領域をクリックせず1回だけput_backする
+- [x] 立直ボタン後の候補表示待ち中に `ActionPrototype` を先読みした場合は、牌領域をクリックせず1回だけprependする
 - [x] `operate()` は指定した自家の通常立直またはダブル立直の `DapaiEvent` までmessageをreduceし、更新後のMatchStateを返す
 - [x] 自家の `DapaiEvent` の tile / moqie が指定と異なる場合や、立直宣言を伴わない場合は不整合にする
 - [x] 上位actionを確認できない立直ボタン検出失敗を成功扱いしない
@@ -819,7 +819,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] チーボタンと組合せを選択した後、手牌のスライド完了を1.5秒待ってからAPIを返す
 - [x] `operate()` は指定した自家の `ChiEvent` までmessageをreduceし、更新後のMatchStateを返す
 - [x] 自家の `ChiEvent` が指定した from_seat / tile / consumed と異なる場合は不整合にする
-- [x] チーボタン待機中に上位の `ActionChiPengGang` を先読みした場合は1回だけput_backする
+- [x] チーボタン待機中に上位の `ActionChiPengGang` を先読みした場合は1回だけprependする
 - [x] 別playerの `PengEvent` にpreemptされた場合はoperation失敗にせず、更新後のMatchStateを返す
 - [x] 他家だけの `HuleEvent` が先に成立した場合はチー操作をpreemptする
 - [x] 複数候補の表示待ち中に上位actionを受信した場合は、組合せ領域をクリックせず通常pipelineへ戻す
@@ -834,7 +834,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] ポンボタンと組合せを選択した後、手牌のスライド完了を1.5秒待ってからAPIを返す
 - [x] `operate()` は指定した自家の `PengEvent` までmessageをreduceし、更新後のMatchStateを返す
 - [x] 自家の `PengEvent` が指定した from_seat / tile / consumed と異なる場合は不整合にする
-- [ ] ポンボタン待機中に上位の `ActionHule` を先読みした場合は1回だけput_backする
+- [ ] ポンボタン待機中に上位の `ActionHule` を先読みした場合は1回だけprependする
 - [x] 他家だけの `HuleEvent` が先に成立した場合はポン操作をpreemptする
 - [ ] 複数候補の表示待ち中に上位actionを受信した場合は、組合せ領域をクリックせず通常pipelineへ戻す
 - [x] 上位actionを確認できないポンボタン検出失敗を成功扱いしない
@@ -847,7 +847,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 槓ボタンをクリックした後、手牌のスライド完了を1.5秒待ってからAPIを返す
 - [x] `operate()` は指定した自家の `DaminggangEvent` までmessageをreduceし、更新後のMatchStateを返す
 - [x] 自家の `DaminggangEvent` が指定した from_seat / tile / consumed と異なる場合は不整合にする
-- [x] 槓ボタン待機中に `ActionPrototype` を先読みした場合は1回だけput_backし、ボタンをクリックしない
+- [x] 槓ボタン待機中に `ActionPrototype` を先読みした場合は1回だけprependし、ボタンをクリックしない
 - [x] 上位actionを確認できない槓ボタン検出失敗を成功扱いしない
 - [x] 他家のロンが先に成立した場合は大明槓操作をpreemptする
 - [x] 自家を含む `HuleEvent` はチー・ポン・大明槓操作のpreemptとして扱わない
@@ -863,7 +863,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `operate()` は指定した自家の `AngangEvent` までmessageをreduceし、更新後のMatchStateを返す
 - [x] 赤なし対局の黒5四枚は、赤あり表現へ正規化された `AngangEvent` と牌種で照合する
 - [x] 自家の `AngangEvent` が指定した consumed と異なる場合は不整合にする
-- [x] 槓ボタンまたは複数候補の表示待ち中に `ActionPrototype` を先読みした場合は1回だけput_backし、次の領域をクリックしない
+- [x] 槓ボタンまたは複数候補の表示待ち中に `ActionPrototype` を先読みした場合は1回だけprependし、次の領域をクリックしない
 - [x] 上位actionを確認できない槓ボタン検出失敗を成功扱いしない
 
 ### MatchScreen 加槓操作 API
@@ -876,7 +876,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 槓ボタンまたは組合せをクリックした後、手牌のスライド完了を1.5秒待ってからAPIを返す
 - [x] `operate()` は指定した自家の `JiagangEvent` までmessageをreduceし、更新後のMatchStateを返す
 - [x] 自家の `JiagangEvent` が指定した added と異なる場合は不整合にする
-- [x] 槓ボタンまたは複数候補の表示待ち中に `ActionPrototype` を先読みした場合は1回だけput_backし、次の領域をクリックしない
+- [x] 槓ボタンまたは複数候補の表示待ち中に `ActionPrototype` を先読みした場合は1回だけprependし、次の領域をクリックしない
 - [x] 上位actionを確認できない槓ボタン検出失敗を成功扱いしない
 
 ### MatchScreen 北抜き操作 API
@@ -886,7 +886,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 北抜きボタンをクリックした後、手牌のスライド完了を1.5秒待ってから API を返す
 - [x] `operate()` は自家の `BabeiEvent` まで message を reduce し、更新後の `MatchState` を返す
 - [x] `BabeiEvent.moqie` は雀魂の自動選択に任せ、`BabeiOperation` との照合条件にしない
-- [x] 北抜きボタン待機中に `ActionPrototype` を先読みした場合は1回だけ put_back し、ボタンをクリックしない
+- [x] 北抜きボタン待機中に `ActionPrototype` を先読みした場合は1回だけ prepend し、ボタンをクリックしない
 - [x] 上位 action を確認できない北抜きボタン検出失敗を成功扱いしない
 
 ### MatchScreen 流局操作 API
@@ -896,7 +896,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 流局ボタンのクリック後に手牌スライド待機を追加しない
 - [x] `operate()` は自家の九種九牌 `LiujuEvent` まで message を reduce し、更新後の `MatchState` を返す
 - [x] 九種九牌以外の `LiujuEvent` を `LiujuOperation` の完了として扱わない
-- [x] 流局ボタン待機中に `ActionPrototype` を先読みした場合は1回だけ put_back し、ボタンをクリックしない
+- [x] 流局ボタン待機中に `ActionPrototype` を先読みした場合は1回だけ prepend し、ボタンをクリックしない
 - [x] 上位 action を確認できない流局ボタン検出失敗を成功扱いしない
 
 ### MatchScreen 自摸和操作 API
@@ -937,7 +937,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] スキップbuttonは検出後に1回だけclickし、推定座標を連打しない
 - [x] チーの選択・スキップ中に別playerのポン・大明槓・ロンが成立してもoperation失敗にしない
 - [x] ポン・大明槓の選択・スキップ中に別playerのロンが成立してもoperation失敗にしない
-- [x] 上位actionの ActionChiPengGang / ActionHule を先読みした場合は1回だけput_backして通常pipelineで処理する
+- [x] 上位actionの ActionChiPengGang / ActionHule を先読みした場合は1回だけprependして通常pipelineで処理する
 - [x] 上位actionを確認できないbutton検出失敗を黙ってスキップ成功にしない
 - [x] ロンのスキップはダブロン・トリロンでも自家の選択まで待たれ、別playerのActionHuleによるpreempt成功扱いをしない
 - [x] publicなスキップ表現は field のない `SkipOperation` とし、他の候補と同じ `operate()` APIへ渡す
@@ -1166,7 +1166,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] host / guest / tournament の実通信ログから fresh entry marker と順序を確認する
 - [ ] marker が reload / 途中復帰では fresh evidence として現れないことを確認する
 - [ ] 各 entry 経路で bootstrap 中に現れる state 非関連 API 名だけを allowlist として固定する
-- [ ] Room / tournament が消費した marker を Screen 遷移直前に一度だけ put_back する
+- [ ] Room / tournament が消費した marker を Screen 遷移直前に一度だけ prepend する
 - [ ] direct / put-back marker、authGame、live ActionNewRound で同じ fresh state を初期化できる
 - [ ] Login / reload からは recovery entry evidence、authGame、syncGame replay で初期化できる
 - [ ] authGame と action source の到着順に依存しない
@@ -1199,7 +1199,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] Login を挟む復帰も同じ recovery bootstrap から新しい MatchScreen を復元する
 - [ ] reload 後の再検出、bootstrap、timeout、cancellation 失敗を成功扱いにしない
 - [ ] callback が active 中に source を読まない場合の queue overflow を隠さない
-- [ ] 友人戦の対局終了後に先読みした `.lq.Lobby.fetchRoom` response を 1 回だけ put_back し、
+- [ ] 友人戦の対局終了後に先読みした `.lq.Lobby.fetchRoom` response を 1 回だけ prepend し、
       新しい `RoomScreen` が完全 snapshot として消費できる
 - [ ] 自動テストでは synthetic decoded message と synthetic nested protobuf だけを使う
 
@@ -1357,8 +1357,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] queueのcapacity / max_payload_bytesはint型注釈を前提にboolと0以下を拒否する。
 - [x] get / get_nowaitとも複数の差し戻しを優先し、その順序と未読・新着messageの到着順を保持する。
 - [x] queue.getの空待機中 / enqueue直後のキャンセルは伝播し、messageとbyte容量を消費しない。キャンセル後も受信・容量解放を継続できる。
-- [x] queueはReq/Resの両payloadの合計byteを計上する。単体上限ちょうどを受理し1 byte超過を拒否、Noticeとの混在とget / put_back後も正しく加算・解放する。
-- [x] queueの件数 / byte上限はenqueue・put_back共通で適用し、overflow時に既存messageと容量を保持する。取り出し後は容量を再利用できる。
+- [x] queueはReq/Resの両payloadの合計byteを計上する。単体上限ちょうどを受理し1 byte超過を拒否、Noticeとの混在とget / prepend後も正しく加算・解放する。
+- [x] queueの件数 / byte上限はenqueue・prepend共通で適用し、overflow時に既存messageと容量を保持する。取り出し後は容量を再利用できる。
 - [x] 注入したsynthetic descriptorのNotice / service methodを指定型でdecodeし、標準decoderとのAPI対応表を共有しない。
 - [x] decoderはNotice / RequestのAPI名不一致と、Notice / Request / Response欄に別種別の有効envelopeが入った場合をPublicationEnvelopeMismatchErrorで拒否する。
 - [x] Notice / Request / Responseの不正本文は原因のDecodeErrorを保持してLiqiBodyDecodeErrorにし、有効な空本文は既定値へdecodeする。

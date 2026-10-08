@@ -84,14 +84,14 @@ class _MessagesByClickBrowser(BrowserControllerSpy):
             self._messages.enqueue(message)
 
 
-class _PutBackTrackingQueue(SnifferMessageQueue):
+class _PrependTrackingQueue(SnifferMessageQueue):
     def __init__(self) -> None:
         super().__init__(capacity=10, max_payload_bytes=1024)
-        self.put_back_count = 0
+        self.prepend_count = 0
 
-    def put_back(self, message: DecodedSnifferMessage) -> None:
-        self.put_back_count += 1
-        super().put_back(message)
+    def prepend(self, message: DecodedSnifferMessage) -> None:
+        self.prepend_count += 1
+        super().prepend(message)
 
 
 class _MessageOnScreenshotBrowser(BrowserControllerSpy):
@@ -450,7 +450,7 @@ def test_operate_accepts_opponent_daminggang_preemption_after_click(
 def test_operate_does_not_click_combination_after_peng_preemption(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    messages = _PutBackTrackingQueue()
+    messages = _PrependTrackingQueue()
     for message in (
         _auth_game(),
         _live_new_round_action(
@@ -521,7 +521,7 @@ def test_operate_does_not_click_combination_after_peng_preemption(
     state = asyncio.run(screen.operate(operation))
 
     assert isinstance(state.round.events[-1], PengEvent)
-    assert messages.put_back_count == 1
+    assert messages.prepend_count == 1
     assert len(browser.clicked_points) == 1
 
 
@@ -571,7 +571,7 @@ def test_operate_puts_back_preemption_while_waiting_for_chi_button(
     preempting_action: DecodedSnifferMessage,
     expected_event_type: type[PengEvent | DaminggangEvent | HuleEvent],
 ) -> None:
-    messages = _PutBackTrackingQueue()
+    messages = _PrependTrackingQueue()
     for message in (
         _auth_game(),
         _live_new_round_action(
@@ -632,7 +632,7 @@ def test_operate_puts_back_preemption_while_waiting_for_chi_button(
     state = asyncio.run(operate_with_deadline())
 
     assert isinstance(state.round.events[-1], expected_event_type)
-    assert messages.put_back_count == 1
+    assert messages.prepend_count == 1
     assert browser.clicked_points == []
 
 

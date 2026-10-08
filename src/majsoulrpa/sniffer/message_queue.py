@@ -14,7 +14,7 @@ class SnifferMessageTooLargeError(RuntimeError):
 
 
 class SnifferMessageQueue:
-    """Bounded queue of all decoded messages with explicit put-back."""
+    """Bounded queue of decoded messages with explicit prefix restoration."""
 
     def __init__(
         self,
@@ -31,20 +31,20 @@ class SnifferMessageQueue:
         self._capacity = capacity
         self._max_payload_bytes = max_payload_bytes
         self._messages: asyncio.Queue[DecodedSnifferMessage] = asyncio.Queue()
-        self._put_back_messages: deque[DecodedSnifferMessage] = deque()
+        self._prepend_messages: deque[DecodedSnifferMessage] = deque()
         self._retained_payload_bytes = 0
 
     async def get(self) -> DecodedSnifferMessage:
-        if self._put_back_messages:
-            message = self._put_back_messages.popleft()
+        if self._prepend_messages:
+            message = self._prepend_messages.popleft()
         else:
             message = await self._messages.get()
         self._retained_payload_bytes -= _payload_size(message)
         return message
 
     def get_nowait(self) -> DecodedSnifferMessage | None:
-        if self._put_back_messages:
-            message = self._put_back_messages.popleft()
+        if self._prepend_messages:
+            message = self._prepend_messages.popleft()
         elif self._messages.empty():
             return None
         else:
@@ -56,14 +56,14 @@ class SnifferMessageQueue:
         self._retain((message,))
         self._messages.put_nowait(message)
 
-    def put_back(self, message: DecodedSnifferMessage) -> None:
+    def prepend(self, message: DecodedSnifferMessage) -> None:
         self._retain((message,))
-        self._put_back_messages.appendleft(message)
+        self._prepend_messages.appendleft(message)
 
-    def put_back_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+    def prepend_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
         snapshot = tuple(messages)
         self._retain(snapshot)
-        self._put_back_messages.extendleft(reversed(snapshot))
+        self._prepend_messages.extendleft(reversed(snapshot))
 
     def _retain(self, messages: Sequence[DecodedSnifferMessage]) -> None:
         payload_sizes = [_payload_size(message) for message in messages]
@@ -73,7 +73,7 @@ class SnifferMessageQueue:
             raise SnifferMessageTooLargeError(msg)
         if (
             self._messages.qsize()
-            + len(self._put_back_messages)
+            + len(self._prepend_messages)
             + len(messages)
             > self._capacity
             or self._retained_payload_bytes + payload_bytes

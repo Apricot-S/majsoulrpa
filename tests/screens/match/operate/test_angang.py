@@ -54,14 +54,14 @@ class _MessagesByClickBrowser(BrowserControllerSpy):
             self._messages.enqueue(message)
 
 
-class _PutBackTrackingQueue(SnifferMessageQueue):
+class _PrependTrackingQueue(SnifferMessageQueue):
     def __init__(self) -> None:
         super().__init__(capacity=10, max_payload_bytes=1024)
-        self.put_back_count = 0
+        self.prepend_count = 0
 
-    def put_back(self, message: DecodedSnifferMessage) -> None:
-        self.put_back_count += 1
-        super().put_back(message)
+    def prepend(self, message: DecodedSnifferMessage) -> None:
+        self.prepend_count += 1
+        super().prepend(message)
 
 
 class _MessageOnScreenshotBrowser(BrowserControllerSpy):
@@ -383,7 +383,7 @@ def test_operate_rejects_angang_event_for_different_candidate(
 def test_operate_puts_back_progress_while_waiting_for_gang_button(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    messages = _PutBackTrackingQueue()
+    messages = _PrependTrackingQueue()
     for message in _angang_message_sequence(
         ["1z|1z|1z|1z"],
         [*("1z" for _ in range(4)), *("2m" for _ in range(10))],
@@ -410,14 +410,14 @@ def test_operate_puts_back_progress_while_waiting_for_gang_button(
     result = asyncio.run(screen.operate(operation))
 
     assert isinstance(result.round.events[-1], AngangEvent)
-    assert messages.put_back_count == 1
+    assert messages.prepend_count == 1
     assert browser.clicked_points == []
 
 
 def test_operate_puts_back_progress_before_selecting_angang_candidate(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    messages = _PutBackTrackingQueue()
+    messages = _PrependTrackingQueue()
     for message in _angang_message_sequence(
         ["4p|4p|4p|4p", "1m|1m|1m|1m"],
         [
@@ -449,7 +449,7 @@ def test_operate_puts_back_progress_before_selecting_angang_candidate(
     result = asyncio.run(screen.operate(operation))
 
     assert isinstance(result.round.events[-1], AngangEvent)
-    assert messages.put_back_count == 1
+    assert messages.prepend_count == 1
     assert len(browser.clicked_points) == 1
 
 

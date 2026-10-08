@@ -61,10 +61,10 @@ class _OperationMessageSource:
             return None
         return self._queued.popleft()
 
-    def put_back(self, message: DecodedSnifferMessage) -> None:
+    def prepend(self, message: DecodedSnifferMessage) -> None:
         self._queued.appendleft(message)
 
-    def put_back_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+    def prepend_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
         self._queued.extendleft(reversed(messages))
 
     def enqueue(self, message: DecodedSnifferMessage) -> None:

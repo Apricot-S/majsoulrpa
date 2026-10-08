@@ -316,7 +316,7 @@ class HomeScreen(Screen):
                     break
         finally:
             if messages:
-                self._put_back_sniffer_messages(messages)
+                self._prepend_sniffer_messages(messages)
 
         if not has_month_ticket:
             return
@@ -542,7 +542,7 @@ class HomeScreen(Screen):
             message.response,
         )
         if failure_reason is None:
-            self._put_back_sniffer_message(message)
+            self._prepend_sniffer_message(message)
             _logger.info("Joined a friendly room successfully.")
             await asyncio.sleep(1.0)
             self._mark_stale()

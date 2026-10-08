@@ -142,7 +142,7 @@ immutable snapshot を返し、network request や click は行わない。状�
 API は別の高レベル API として 1 つずつ追加する。
 
 Room / tournament が確定済みの fresh entry marker を消費した場合は、Screen 遷移直前に decoded
-message 自体を一度だけ `put_back()` する。`ScreenContext` に Match entry hint は追加しない。
+message 自体を一度だけ `prepend()` する。`ScreenContext` に Match entry hint は追加しない。
 
 Match 中も generic `Screen.reload()` を使う。reload 後は current instance を stale にし、callback
 利用者が user data を return して runtime の Screen 検出へ戻す。cookie により直接 Match へ戻る

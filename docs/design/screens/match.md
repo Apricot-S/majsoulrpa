@@ -673,7 +673,7 @@ message を通常どおり log・reduce し、自家の
 クリックする。operation message がUI描画より先に届くため、ボタンを検出できるか、後続の
 `ActionPrototype` によって選択権の消滅を確認するまで検出を繰り返す。ボタンをクリックした後は
 立直打牌候補の表示を0.4秒待ち、もう一度queueを確認してから `tile` / `moqie` に対応する牌領域を
-クリックする。待機中に後続actionを先読みした場合は、そのmessageを1回だけ `put_back()` し、
+クリックする。待機中に後続actionを先読みした場合は、そのmessageを1回だけ `prepend()` し、
 古くなった牌領域をクリックしない。
 
 牌領域の決定とクリック再試行は `DapaiOperation` と共通にする。自家の `DapaiEvent` が指定した
@@ -705,8 +705,8 @@ WebSocket message がUI描画より先に届くことがあり、候補を生成
 log・処理するが、その受信を理由に直ちに再clickしない。各clickから0.5秒を次のclickまでの最小間隔とし、
 その間もmessageの処理を続ける。v1-developの再試行helperは、操作またはstate進行の境界となる
 `.lq.FastTest.inputOperation`、`.lq.FastTest.inputChiPengGang`、`.lq.ActionPrototype` だけを先読みの
-終了条件とし、取得したmessageをqueueへ `put_back()` して後続の通常pipelineに一度だけ処理させて
-いた。今回も同じ所有権規則を使い、Dapai / Liqi の進行確認に関係するmessageだけを `put_back()`
+終了条件とし、取得したmessageをqueueへ `prepend()` して後続の通常pipelineに一度だけ処理させて
+いた。今回も同じ所有権規則を使い、Dapai / Liqi の進行確認に関係するmessageだけを `prepend()`
 する。未知messageを成功扱いで捨てたり、state eventを再試行loop内だけで消費したりしない。
 
 #### 手牌クリック領域の根拠
@@ -834,7 +834,7 @@ offへの復帰を完了してからAPIを返す。onのまま処理を中断す
 優先される。このため、チーの選択・スキップ中に別playerのポン・大明槓・ロンが成立した場合、
 およびポン・大明槓の選択・スキップ中にロンが成立した場合は、要求したoperationの失敗として
 扱わない。対応する `ActionChiPengGang` または `ActionHule` を先読みした場合はqueueへ
-`put_back()` し、通常のevent decode・reduceでauthoritative stateを進める。上位actionを確認できない
+`prepend()` し、通常のevent decode・reduceでauthoritative stateを進める。上位actionを確認できない
 ままbuttonが見つからない、または消えた場合まで黙って成功扱いにはしない。
 
 ロンのスキップは上位actionによってpreemptされない。ダブロン・トリロンが可能な状況でも、雀魂は
@@ -1425,7 +1425,7 @@ callback を開始するには次の情報が必要である。
 fresh entry marker は実通信ログで確定する。v1-develop では `.lq.NotifyRoomGameStart` が候補だが、
 友人戦の host / guest と tournament のすべてで一度だけ観測され、reload / 途中復帰では観測されない
 ことを確認してから固定する。marker を Room / tournament 側が先に消費する場合は、Screen を stale
-にして callback から戻る handoff point で、その decoded message を一度だけ `put_back()` する。
+にして callback から戻る handoff point で、その decoded message を一度だけ `prepend()` する。
 Match 側が marker を直接受信した場合と同じ bootstrap 処理を使う。
 
 marker から派生する `MatchEntryHint` は `ScreenContext` に追加しない。hint を生成するにも同じ marker
@@ -1441,7 +1441,7 @@ marker から派生する `MatchEntryHint` は `ScreenContext` に追加しな�
 bootstrapper は一時的に次を保持する。
 
 - authGame 由来の metadata
-- direct または `put_back()` された fresh entry marker 由来の candidate match ID
+- direct または `prepend()` された fresh entry marker 由来の candidate match ID
 - metadata より先に到着した normalized event または restore event batch
 - fresh / recovery の entry evidence
 
@@ -1581,12 +1581,12 @@ gap、decode error は状態を推測せず runtime 全体の失敗として伝�
 Room / tournament / Home への遷移が完了するまでは、必要な Match API を同じ instance で処理できる
 よう直ちに stale にしない。
 
-次の Screen に属する message を先読みした場合は 1 回だけ `put_back()` し、画面遷移を確認して
+次の Screen に属する message を先読みした場合は 1 回だけ `prepend()` し、画面遷移を確認して
 から stale にする。terminal 後に新しい match の auth/action を観測しても、同じ instance を
 暗黙に別試合へ転用しない。
 
 友人戦の対局終了後に `.lq.Lobby.fetchRoom` response を観測した場合は、Room へ戻るための
-authoritative な完全 snapshot として 1 回だけ `put_back()` する。runtime が新しく検出した
+authoritative な完全 snapshot として 1 回だけ `prepend()` する。runtime が新しく検出した
 `RoomScreen` はこの response から instance-local store を初期化する。以前の RoomScreen instance
 や terminal snapshot は引き継がない。
 

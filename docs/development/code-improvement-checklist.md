@@ -188,8 +188,9 @@
 - [x] `screens/__init__.py`: 共通基底・context・検出spec・共通例外のみのexportを維持する。標準Screenは各moduleからimportする設計を明記し、公開API設計の古いimport例を修正した。export一覧と具体Screenの非読込は既存package testで確認する。
 - [x] `screens/errors.py`: 例外階層と組込み例外との多重継承を維持する。画像は属性だけに保持し、明示保存まで書き出さず、str・repr・args・生成ファイル名へ含めない。mkdir/write失敗はそのまま伝播する。created_atはaware datetimeを生成時にUTCへ正規化し、環境依存のファイル名になるnaive/offset未定義日時をValueErrorで拒否する。互換性の変更は公開API設計へ記録した。message/screenshotは主要入力、created_atは任意の時刻指定としてキーワード専用を維持し、Noneは実行時clockの利用を表す。
 - [ ] `screens/base.py`: `ScreenContext` の依存、検出 contract、stale guard、API log、Sniffer helper の責務集中を確認する。
-  - [x] 単一put_backも先頭復元へ統一し、複数messageの復元はprotectedな一括helperへ委譲する。Home/Matchの複数復元ループを移行し、通知の内部順序とstep整列を維持する。末尾追加の旧契約からの移行はSniffer設計へ記録した。
-  - [x] 名前待機helperは一括差し戻しで読み取った列を未読列の前へ戻し、差し戻し済み未読messageがあっても順序を維持する。標準queueは全件の予算確認後に追加し、上限違反で部分追加しない。独自sourceにput_back_manyの実装が必要となる影響はSniffer設計へ記録した。
+  - [x] 先頭への復元を明示するためsourceの差し戻しAPIをprepend/prepend_manyに改名し、protected helperと復元option・全呼び出し・fake・設計資料を揃える。旧名は維持せず、独自sourceの移行方法をSniffer設計へ記録する。名前だけの新規テストは追加しない。
+  - [x] 単一prependも先頭復元へ統一し、複数messageの復元はprotectedな一括helperへ委譲する。Home/Matchの複数復元ループを移行し、通知の内部順序とstep整列を維持する。末尾追加の旧契約からの移行はSniffer設計へ記録した。
+  - [x] 名前待機helperは一括差し戻しで読み取った列を未読列の前へ戻し、差し戻し済み未読messageがあっても順序を維持する。標準queueは全件の予算確認後に追加し、上限違反で部分追加しない。独自sourceにprepend_manyの実装が必要となる影響はSniffer設計へ記録した。
   - [x] Sniffer名前待機helperの差し戻し失敗は意図的に最初の例外で打ち切る。後続messageだけを戻すと欠落した列をqueueに残すため、復旧せず例外を伝播してRPAを終了する。
   - [x] `goto_log()`は空文字・ASCII英数字と`-`/`_`以外を遷移前にscreenshot付き不正引数例外で拒否し、入力値を例外・通常ログへ含めない。基本・視点指定・匿名化形式に対して構造や実在は検証しない。URLのpercent-encodeは維持し、通常のIDのURLは変えない。以前受理した不正文字の拒否は公開API設計へ記録した。
   - [x] `ScreenContext.request_stop`はstatelessな無処理関数を直接デフォルトにし、falsey callableを置き換えずawaitする。停止処理の失敗・cancellationは元の例外を伝播する。明示的な`None`指定の廃止は公開API設計へ記録した。その他の確認観点は未完了。
@@ -311,8 +312,8 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] capacity / max_payload_bytesはint型注釈を前提にboolと0以下を拒否する。Trueを上限1として受理していた箇所を修正し、既存の入力検証テストへboolean・負数を追加した。
   - [x] get / get_nowaitとも差し戻し順を優先し、未読・新着messageの到着順も保持することを確認した。既存の差し戻しテスト2件を混在ケースへ統合し、実装は維持した。
   - [x] getの空待機中とenqueue直後・再開前のキャンセルを確認した。CancelledErrorを伝播し、未読messageとbyte上限を保持し、取り出し後は容量を再利用できる。実装は維持した。
-  - [x] Req/Resは両payloadの合計byteで単体上限を判定することをenqueue / put_backで確認した。Noticeとの混在、getによる容量解放、put_backによる再計上も確認し、実装は維持した。
-  - [x] enqueue / put_backに保持したmessageが両経路の件数・byte上限へ算入されることを確認した。overflow後も既存messageを保持し、取り出し後に容量を再利用できることを既存テストの統合・拡張で確認した。実装は維持した。
+  - [x] Req/Resは両payloadの合計byteで単体上限を判定することをenqueue / prependで確認した。Noticeとの混在、getによる容量解放、prependによる再計上も確認し、実装は維持した。
+  - [x] enqueue / prependに保持したmessageが両経路の件数・byte上限へ算入されることを確認した。overflow後も既存messageを保持し、取り出し後に容量を再利用できることを既存テストの統合・拡張で確認した。実装は維持した。
 - [x] `sniffer/worker.py`: capture -> envelope -> correlation -> publication の順序と、stop 時 pending request の失敗を確認する。
   - [x] connection closeは対象のpendingだけを解放し、他connectionの同番号ReqResは対応できる。再closeと閉じた側の遅延Response拒否も既存テストへ統合し、実装は維持した。
   - [x] Request保留中のcapture待機をrunのキャンセルで中断し、続くstopが未完了を報告・解放することを確認した。再stopの成功とpublish未呼び出しも既存の停止テストへ統合し、実装は維持した。

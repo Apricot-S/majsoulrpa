@@ -72,18 +72,18 @@ class LoginScreen(Screen):
         assert message is None or isinstance(message, DecodedNotice)
         return message
 
-    def put_back_sniffer_message(self, message: DecodedNotice) -> None:
-        self._put_back_sniffer_message(message)
+    def prepend_sniffer_message(self, message: DecodedNotice) -> None:
+        self._prepend_sniffer_message(message)
 
     async def wait_for_sniffer_message(
         self,
         names: set[str],
         *,
-        put_back_messages: bool = False,
+        prepend_messages: bool = False,
     ) -> DecodedNotice:
         message = await self._wait_for_sniffer_message(
             names,
-            put_back_messages=put_back_messages,
+            prepend_messages=prepend_messages,
         )
         assert isinstance(message, DecodedNotice)
         return message
@@ -192,7 +192,7 @@ class TemplateMatchResultSpy:
 class SnifferMessageSourceSpy:
     def __init__(self, *messages: DecodedSnifferMessage) -> None:
         self.messages = list(messages)
-        self.put_back_messages: list[DecodedSnifferMessage] = []
+        self.prepend_messages: list[DecodedSnifferMessage] = []
 
     async def get(self) -> DecodedSnifferMessage:
         if not self.messages:
@@ -207,11 +207,11 @@ class SnifferMessageSourceSpy:
             return None
         return self.messages.pop(0)
 
-    def put_back(self, message: DecodedSnifferMessage) -> None:
-        self.put_back_messages.insert(0, message)
+    def prepend(self, message: DecodedSnifferMessage) -> None:
+        self.prepend_messages.insert(0, message)
 
-    def put_back_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
-        self.put_back_messages[0:0] = messages
+    def prepend_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        self.prepend_messages[0:0] = messages
 
 
 def _notice(name: str) -> DecodedNotice:
@@ -413,9 +413,9 @@ def test_screen_gets_and_puts_back_messages_through_context() -> None:
     assert screen.get_sniffer_message_nowait() is second
     assert screen.get_sniffer_message_nowait() is None
 
-    screen.put_back_sniffer_message(first)
+    screen.prepend_sniffer_message(first)
 
-    assert source.put_back_messages == [first]
+    assert source.prepend_messages == [first]
 
 
 def test_screen_waits_for_any_selected_message_and_discards_others() -> None:
@@ -434,10 +434,10 @@ def test_screen_waits_for_any_selected_message_and_discards_others() -> None:
     )
 
     assert actual is expected
-    assert source.put_back_messages == []
+    assert source.prepend_messages == []
 
 
-def test_screen_can_put_back_all_read_messages_in_original_order() -> None:
+def test_screen_can_prepend_all_read_messages_in_original_order() -> None:
     first = _notice(".lq.UnrelatedFirst")
     second = _notice(".lq.UnrelatedSecond")
     expected = _notice(".lq.Target")
@@ -452,21 +452,21 @@ def test_screen_can_put_back_all_read_messages_in_original_order() -> None:
     actual = asyncio.run(
         screen.wait_for_sniffer_message(
             {".lq.Target"},
-            put_back_messages=True,
+            prepend_messages=True,
         ),
     )
 
     assert actual is expected
-    assert source.put_back_messages == [first, second, expected]
+    assert source.prepend_messages == [first, second, expected]
 
 
-def test_screen_restores_prefix_before_existing_put_back_messages() -> None:
+def test_screen_restores_prefix_before_existing_prepend_messages() -> None:
     first = _notice(".lq.First")
     second = _notice(".lq.Second")
     remaining = _notice(".lq.Remaining")
     new = _notice(".lq.New")
     source = SnifferMessageQueue(capacity=4, max_payload_bytes=1024)
-    source.put_back_many([first, second, remaining])
+    source.prepend_many([first, second, remaining])
     source.enqueue(new)
     screen = LoginScreen(
         context=ScreenContext(
@@ -478,7 +478,7 @@ def test_screen_restores_prefix_before_existing_put_back_messages() -> None:
     actual = asyncio.run(
         screen.wait_for_sniffer_message(
             {second.raw.name},
-            put_back_messages=True,
+            prepend_messages=True,
         )
     )
 
@@ -487,7 +487,7 @@ def test_screen_restores_prefix_before_existing_put_back_messages() -> None:
         asyncio.run(
             screen.wait_for_sniffer_message(
                 {first.raw.name},
-                put_back_messages=True,
+                prepend_messages=True,
             )
         )
         is first
@@ -513,7 +513,7 @@ def test_screen_propagates_batch_restoration_overflow() -> None:
             return message
 
     source = ArrivingMessageQueue(capacity=2, max_payload_bytes=1024)
-    source.put_back_many([first, remaining])
+    source.prepend_many([first, remaining])
     screen = LoginScreen(
         context=ScreenContext(
             browser=BrowserControllerSpy(),
@@ -525,7 +525,7 @@ def test_screen_propagates_batch_restoration_overflow() -> None:
         asyncio.run(
             screen.wait_for_sniffer_message(
                 {first.raw.name},
-                put_back_messages=True,
+                prepend_messages=True,
             )
         )
 
@@ -547,7 +547,7 @@ def test_screen_restores_unmatched_messages_when_wait_is_cancelled() -> None:
         task = asyncio.create_task(
             screen.wait_for_sniffer_message(
                 {".lq.Target"},
-                put_back_messages=True,
+                prepend_messages=True,
             ),
         )
         await asyncio.sleep(0)
@@ -555,7 +555,7 @@ def test_screen_restores_unmatched_messages_when_wait_is_cancelled() -> None:
         with pytest.raises(asyncio.CancelledError):
             await task
 
-        assert source.put_back_messages == [unrelated]
+        assert source.prepend_messages == [unrelated]
 
     asyncio.run(exercise())
 

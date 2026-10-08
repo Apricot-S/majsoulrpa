@@ -260,11 +260,11 @@ runtime error にする。
 初期 snapshot を RoomScreen へ引き渡すため、`HomeScreen.create_room()` / `join_room()` は成功した
 `createRoom` / `joinRoom` の完全な decoded Req/Res を source に残す。現行 `join_room()` は成功
 message を消費するため、RoomScreen 実装時に response dict だけでなく元の decoded message を
-保持し、成功確認後に 1 回だけ `put_back()` する。失敗 response は RoomScreen へ渡さない。
+保持し、成功確認後に 1 回だけ `prepend()` する。失敗 response は RoomScreen へ渡さない。
 
 対局終了後に同じ友人戦へ戻る場合、新しい `RoomScreen` は `.lq.Lobby.fetchRoom` response の完全
 snapshot から instance-local store を初期化する。`MatchScreen` がこの message を画面遷移の確認中に
-先読みした場合は、次の Screen に属する decoded message として 1 回だけ `put_back()` する。
+先読みした場合は、次の Screen に属する decoded message として 1 回だけ `prepend()` する。
 `fetchRoom` は対局から Room への再入場 evidence であり、Room 内の reload recovery や active 中の
 callback 早期 return を補完する evidence として扱わない。
 

@@ -46,7 +46,7 @@ from tests.screens.match._support import (
 
 
 @pytest.mark.parametrize("with_deferred_notifications", [False, True])
-def test_ui_progress_is_restored_before_remaining_put_back_messages(
+def test_ui_progress_is_restored_before_remaining_prepend_messages(
     *,
     with_deferred_notifications: bool,
 ) -> None:
@@ -61,13 +61,13 @@ def test_ui_progress_is_restored_before_remaining_put_back_messages(
     progress = _live_deal_action(step=1, seat=1, tile="1m", left_tile_count=60)
     remaining = _notice(".lq.Remaining")
     queue = _message_queue()
-    queue.put_back_many([*notifications, progress, remaining])
+    queue.prepend_many([*notifications, progress, remaining])
     screen = _screen(BrowserControllerSpy(b"synthetic"), queue)
     deferred: list[DecodedSnifferMessage] = []
 
     assert (
         asyncio.run(
-            screen._put_back_pending_action_while_waiting_for_ui(
+            screen._prepend_pending_action_while_waiting_for_ui(
                 deferred_game_end_notifications=deferred
                 if with_deferred_notifications
                 else None,
@@ -494,20 +494,20 @@ def test_hule_confirmation_puts_back_early_game_end_notification(
         _match_result_confirmation(),
     )
     screen = _screen(browser, messages)
-    put_back_names: list[str] = []
-    original_put_back = screen._put_back_sniffer_messages
+    prepend_names: list[str] = []
+    original_prepend = screen._prepend_sniffer_messages
 
-    def record_put_back(messages: Sequence[DecodedSnifferMessage]) -> None:
-        put_back_names.extend(message.raw.name for message in messages)
-        original_put_back(messages)
+    def record_prepend(messages: Sequence[DecodedSnifferMessage]) -> None:
+        prepend_names.extend(message.raw.name for message in messages)
+        original_prepend(messages)
 
     async def skip_sleep(delay: float) -> None:
         _ = delay
 
     monkeypatch.setattr(
         screen,
-        "_put_back_sniffer_messages",
-        record_put_back,
+        "_prepend_sniffer_messages",
+        record_prepend,
     )
     monkeypatch.setattr(asyncio, "sleep", skip_sleep)
     asyncio.run(screen.before_callback())
@@ -516,7 +516,7 @@ def test_hule_confirmation_puts_back_early_game_end_notification(
     state = asyncio.run(screen.wait_for_state_change(terminal))
 
     assert state is None
-    assert put_back_names == [game_end_notification]
+    assert prepend_names == [game_end_notification]
     assert len(browser.clicked_points) == 3
 
 

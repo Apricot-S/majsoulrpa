@@ -410,16 +410,19 @@ client runtime の内部message queueは、API名で選別せず、受信してd
 `deque`を使う。`get()` / `get_nowait()`は差し戻しを優先し、取得したmessageをqueueから
 消費する。複数messageは一括差し戻しで列の内部順序を保つ。
 
-単一の `put_back(message)` は既存の差し戻し列と通常未読列より前へ追加する。
-`put_back_many(messages)` は渡された列の内部順序を維持して、既存の差し戻し列と
+単一の `prepend(message)` は既存の差し戻し列と通常未読列より前へ追加する。
+`prepend_many(messages)` は渡された列の内部順序を維持して、既存の差し戻し列と
 通常未読列より前へ追加する。標準queueは全件の件数・byte予算を検証してから変更し、
 上限違反時には一部だけ追加したりbyte計数を変更したりしない。
 
-両メソッドは「読んだmessageを未読列の前へ戻す」という同じ契約なので名前を維持する。
+先頭へ追加することを名前から読めるよう、旧 `put_back()` / `put_back_many()` は
+`prepend()` / `prepend_many()` に改名する。旧名のaliasは残さず、独自sourceも新名へ
+変更する。Screenのprotected helperは `_prepend_sniffer_message()` /
+`_prepend_sniffer_messages()`、名前待機helperの復元optionは `prepend_messages` とする。
 従来の単一差し戻しは末尾追加であり、戻した順に再取得する契約だったが、差し戻し済み
-未読messageが残る場合に元の位置を復元できなかったため廃止する。`put_back(A)`、
-`put_back(B)` の連続呼び出しは `B -> A` になる。`A -> B` の列を復元する利用者は
-`put_back_many([A, B])` を使う。Homeの月間チケットとMatchの保留通知・報酬走査・
+未読messageが残る場合に元の位置を復元できなかったため廃止する。`prepend(A)`、
+`prepend(B)` の連続呼び出しは `B -> A` になる。`A -> B` の列を復元する利用者は
+`prepend_many([A, B])` を使う。Homeの月間チケットとMatchの保留通知・報酬走査・
 step整列も一括復元へ移行する。独自sourceの単一差し戻しも先頭追加に合わせる。
 
 未処理messageの件数とraw payload bytes合計には上限を設ける。上限到達時は古いmessageを
@@ -449,10 +452,10 @@ Screen基底の名前待機helperは複数API名を受け付ける。呼び出�
 queueが優先され、同じmessageを再取得し続けるためである。cancellationや例外でも退避済み
 messageを復元する。
 
-名前待機helperの復元には `put_back_many()` を使う。従来の単一差し戻しの繰り返しでは、
+名前待機helperの復元には `prepend_many()` を使う。従来の単一差し戻しの繰り返しでは、
 差し戻し済み未読列が残る場合に復元列がその後ろへ追加され、順序が変わっていた。
 `ScreenContext` へ独自message sourceを注入する場合は、既存の `get()`、`get_nowait()`、
-`put_back()` に加え、`put_back_many(Sequence[DecodedSnifferMessage])` を実装する。
+`prepend()` に加え、`prepend_many(Sequence[DecodedSnifferMessage])` を実装する。
 wire schemaと取得するeventは変更しない。
 
 差し戻しが失敗した場合は、最初の例外をそのまま伝播してRPAを終了する。

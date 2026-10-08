@@ -360,7 +360,7 @@ class MatchScreen(Screen):
                     )
             finally:
                 if deferred_game_end_notifications:
-                    self._put_back_sniffer_messages(
+                    self._prepend_sniffer_messages(
                         deferred_game_end_notifications
                     )
             return await self._wait_for_round_transition()
@@ -470,7 +470,7 @@ class MatchScreen(Screen):
         inconsistent_message: str,
     ) -> None:
         try:
-            if await self._put_back_reordered_live_actions(message):
+            if await self._prepend_reordered_live_actions(message):
                 return
             self._apply_match_message(message)
         except MatchMetadataUnsupportedError as error:
@@ -721,7 +721,7 @@ class MatchScreen(Screen):
                     break
 
                 if message.raw.name in _DAPAI_CLICK_PROGRESS_MESSAGE_NAMES:
-                    self._put_back_sniffer_message(message)
+                    self._prepend_sniffer_message(message)
                     return
 
                 await self._apply_match_message_with_screen_errors(
@@ -804,7 +804,7 @@ class MatchScreen(Screen):
             # A higher-priority action can remove the candidate UI
             # while it is opening. Recheck the queue before clicking a
             # position that may already belong to a different screen.
-            if await self._put_back_pending_action_while_waiting_for_ui():
+            if await self._prepend_pending_action_while_waiting_for_ui():
                 return
             await self.click_region(selection_region)
         await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
@@ -939,7 +939,7 @@ class MatchScreen(Screen):
         # Another player's winning action can remove the candidate UI
         # during its opening animation, so do not click a stale
         # position.
-        if await self._put_back_pending_action_while_waiting_for_ui():
+        if await self._prepend_pending_action_while_waiting_for_ui():
             return
 
         if len(operations) == _MAX_ANGANG_JIAGANG_CANDIDATE_COUNT:
@@ -969,7 +969,7 @@ class MatchScreen(Screen):
         # arrives.
         # Wait until it can be clicked or the opportunity disappears.
         while True:
-            if await self._put_back_pending_action_while_waiting_for_ui():
+            if await self._prepend_pending_action_while_waiting_for_ui():
                 return
             if await self.click_template_if_present(self.LIQI_BUTTON_TEMPLATE):
                 break
@@ -980,7 +980,7 @@ class MatchScreen(Screen):
         await asyncio.sleep(OPERATION_OPTION_DISPLAY_DELAY_SECONDS)
         # The opportunity can disappear while discard candidates are
         # opening. Check authoritative messages before clicking a tile.
-        if await self._put_back_pending_action_while_waiting_for_ui():
+        if await self._prepend_pending_action_while_waiting_for_ui():
             return
 
         is_dealer_first_discard = (
@@ -1139,7 +1139,7 @@ class MatchScreen(Screen):
             while True:
                 message = await self._get_sniffer_message()
                 if message.raw.name in _NO_CALL_SKIP_COMPLETION_MESSAGE_NAMES:
-                    self._put_back_sniffer_message(message)
+                    self._prepend_sniffer_message(message)
                     return
                 await self._apply_match_message_with_screen_errors(
                     message,
@@ -1155,7 +1155,7 @@ class MatchScreen(Screen):
     async def _click_skip_button_or_detect_progress(self) -> None:
         while True:
             observed_message_names: set[str] = set()
-            if await self._put_back_pending_action_while_waiting_for_ui(
+            if await self._prepend_pending_action_while_waiting_for_ui(
                 observed_message_names=observed_message_names
             ):
                 return
@@ -1180,7 +1180,7 @@ class MatchScreen(Screen):
         # event is verified later by the normal operation pipeline.
         while True:
             observed_message_names: set[str] = set()
-            if await self._put_back_pending_action_while_waiting_for_ui(
+            if await self._prepend_pending_action_while_waiting_for_ui(
                 observed_message_names=observed_message_names
             ):
                 return False
@@ -1193,7 +1193,7 @@ class MatchScreen(Screen):
                 OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
             )
 
-    async def _put_back_pending_action_while_waiting_for_ui(
+    async def _prepend_pending_action_while_waiting_for_ui(
         self,
         *,
         additional_progress_message_names: frozenset[str] = frozenset(),
@@ -1233,12 +1233,12 @@ class MatchScreen(Screen):
                 or message.raw.name in additional_progress_message_names
             ):
                 if deferred_game_end_notifications is not None:
-                    self._put_back_sniffer_messages(
+                    self._prepend_sniffer_messages(
                         [*deferred_game_end_notifications, message],
                     )
                     deferred_game_end_notifications.clear()
                 else:
-                    self._put_back_sniffer_message(message)
+                    self._prepend_sniffer_message(message)
                 return True
             await self._apply_match_message_with_screen_errors(
                 message,
@@ -1326,7 +1326,7 @@ class MatchScreen(Screen):
         while True:
             if await self.click_template_if_present(template):
                 return True
-            if await self._put_back_pending_action_while_waiting_for_ui(
+            if await self._prepend_pending_action_while_waiting_for_ui(
                 deferred_game_end_notifications=(
                     deferred_game_end_notifications
                 ),
@@ -1377,7 +1377,7 @@ class MatchScreen(Screen):
         self,
         observed_message_names: set[str],
     ) -> bool:
-        return await self._put_back_pending_action_while_waiting_for_ui(
+        return await self._prepend_pending_action_while_waiting_for_ui(
             additional_progress_message_names=_MATCH_EXIT_MESSAGE_NAMES,
             observed_message_names=observed_message_names,
         )
@@ -1393,12 +1393,12 @@ class MatchScreen(Screen):
         return True
 
     async def _consume_pending_activity_reward(self) -> bool:
-        messages_to_put_back: list[DecodedSnifferMessage] = []
+        messages_to_prepend: list[DecodedSnifferMessage] = []
         activity_reward_observed = False
         try:
             while (message := self._get_sniffer_message_nowait()) is not None:
                 if message.raw.name != _ACTIVITY_REWARD_NOTIFICATION_NAME:
-                    messages_to_put_back.append(message)
+                    messages_to_prepend.append(message)
                     continue
                 await self._apply_match_message_with_screen_errors(
                     message,
@@ -1411,8 +1411,8 @@ class MatchScreen(Screen):
             # Only the reward notification requires Match-owned UI work.
             # Preserve every other message for the next Screen in its
             # original order.
-            if messages_to_put_back:
-                self._put_back_sniffer_messages(messages_to_put_back)
+            if messages_to_prepend:
+                self._prepend_sniffer_messages(messages_to_prepend)
         return activity_reward_observed
 
     async def _advance_event_reward_presentation(self) -> None:
@@ -1456,7 +1456,7 @@ class MatchScreen(Screen):
         self._mark_stale()
         return None
 
-    async def _put_back_reordered_live_actions(
+    async def _prepend_reordered_live_actions(
         self,
         message: DecodedSnifferMessage,
     ) -> bool:
@@ -1505,7 +1505,7 @@ class MatchScreen(Screen):
                     )
                 max_step = max(buffered_messages)
                 if len(buffered_messages) == max_step - expected_step + 1:
-                    self._put_back_sniffer_messages(
+                    self._prepend_sniffer_messages(
                         [
                             buffered_messages[step]
                             for step in range(expected_step, max_step + 1)

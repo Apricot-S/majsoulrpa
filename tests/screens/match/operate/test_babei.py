@@ -50,14 +50,14 @@ class _MessagesOnClickBrowser(BrowserControllerSpy):
             self._messages.enqueue(message)
 
 
-class _PutBackTrackingQueue(SnifferMessageQueue):
+class _PrependTrackingQueue(SnifferMessageQueue):
     def __init__(self) -> None:
         super().__init__(capacity=10, max_payload_bytes=4096)
-        self.put_back_count = 0
+        self.prepend_count = 0
 
-    def put_back(self, message: DecodedSnifferMessage) -> None:
-        self.put_back_count += 1
-        super().put_back(message)
+    def prepend(self, message: DecodedSnifferMessage) -> None:
+        self.prepend_count += 1
+        super().prepend(message)
 
 
 class _MessageOnScreenshotBrowser(BrowserControllerSpy):
@@ -254,7 +254,7 @@ def test_operate_accepts_automatically_selected_hand_babei(
 def test_operate_puts_back_progress_while_waiting_for_babei_button(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    messages = _PutBackTrackingQueue()
+    messages = _PrependTrackingQueue()
     initial_messages = _babei_messages()
     while (message := initial_messages.get_nowait()) is not None:
         messages.enqueue(message)
@@ -278,7 +278,7 @@ def test_operate_puts_back_progress_while_waiting_for_babei_button(
     result = asyncio.run(screen.operate(operation))
 
     assert isinstance(result.round.events[-1], BabeiEvent)
-    assert messages.put_back_count == 1
+    assert messages.prepend_count == 1
     assert browser.clicked_points == []
 
 

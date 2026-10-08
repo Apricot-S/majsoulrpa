@@ -74,8 +74,8 @@ class TemplateMatcher(Protocol):
 class SnifferMessageSource(Protocol):
     async def get(self) -> DecodedSnifferMessage: ...
     def get_nowait(self) -> DecodedSnifferMessage | None: ...
-    def put_back(self, message: DecodedSnifferMessage) -> None: ...
-    def put_back_many(
+    def prepend(self, message: DecodedSnifferMessage) -> None: ...
+    def prepend_many(
         self, messages: Sequence[DecodedSnifferMessage]
     ) -> None: ...
 
@@ -252,43 +252,40 @@ class Screen(ABC):
     def _get_sniffer_message_nowait(self) -> DecodedSnifferMessage | None:
         return self.context.sniffer_messages.get_nowait()
 
-    def _put_back_sniffer_message(
+    def _prepend_sniffer_message(
         self,
         message: DecodedSnifferMessage,
     ) -> None:
-        self.context.sniffer_messages.put_back(message)
+        self.context.sniffer_messages.prepend(message)
 
-    def _put_back_sniffer_messages(
+    def _prepend_sniffer_messages(
         self,
         messages: Sequence[DecodedSnifferMessage],
     ) -> None:
-        self.context.sniffer_messages.put_back_many(messages)
+        self.context.sniffer_messages.prepend_many(messages)
 
     async def _wait_for_sniffer_message(
         self,
         names: Collection[str],
         *,
-        put_back_messages: bool = False,
+        prepend_messages: bool = False,
     ) -> DecodedSnifferMessage:
         selected_names = frozenset(names)
         if not selected_names:
             msg = "Sniffer message names must not be empty."
             raise ValueError(msg)
 
-        messages_to_put_back: list[DecodedSnifferMessage] = []
+        messages_to_prepend: list[DecodedSnifferMessage] = []
         try:
             while True:
                 message = await self._get_sniffer_message()
-                if put_back_messages:
-                    messages_to_put_back.append(message)
+                if prepend_messages:
+                    messages_to_prepend.append(message)
                 if message.raw.name in selected_names:
                     return message
         finally:
-            # Restore the entire prefix before unread messages.
-            # Propagate failures immediately; never recover with an
-            # incomplete queue.
-            if messages_to_put_back:
-                self._put_back_sniffer_messages(messages_to_put_back)
+            if messages_to_prepend:
+                self._prepend_sniffer_messages(messages_to_prepend)
 
     @property
     def context(self) -> ScreenContext:

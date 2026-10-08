@@ -14,10 +14,10 @@ class EmptySnifferMessageSource:
     def get_nowait(self) -> DecodedSnifferMessage | None:
         return None
 
-    def put_back(self, message: DecodedSnifferMessage) -> None:
+    def prepend(self, message: DecodedSnifferMessage) -> None:
         _ = message
 
-    def put_back_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+    def prepend_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
         _ = messages
 
 
