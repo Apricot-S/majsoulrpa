@@ -654,6 +654,47 @@ def test_fetch_propagates_deletion_failure_without_retry(
     ]
 
 
+def test_fetch_does_not_delete_collected_candidates_after_later_read_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    keys = ["mail/newest", "mail/failing", "mail/oldest"]
+    client = S3ClientFake(
+        [
+            {"Key": key, "LastModified": NOW - timedelta(minutes=index)}
+            for index, key in enumerate(keys)
+        ],
+        {"mail/newest": _message()},
+    )
+    failure = RuntimeError("Synthetic later read failure")
+    original_get = client.get_object
+
+    def get_object(**kwargs: str) -> dict[str, BytesIO]:
+        if kwargs["Key"] == "mail/failing":
+            client.get_calls.append(kwargs)
+            raise failure
+        return original_get(**kwargs)
+
+    async def unexpected_sleep(_delay: float) -> None:
+        pytest.fail("Read failure must not trigger polling retry.")
+
+    monkeypatch.setattr(client, "get_object", get_object)
+    monkeypatch.setattr(s3_module.asyncio, "sleep", unexpected_sleep)
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: NOW,
+    )
+
+    with pytest.raises(RuntimeError) as exc_info:
+        asyncio.run(provider.fetch(delete_read_emails=True))
+
+    assert exc_info.value is failure
+    assert len(client.list_calls) == 1
+    assert [call["Key"] for call in client.get_calls] == keys[:2]
+    assert client.delete_calls == []
+
+
 def test_fetch_deletes_read_matching_emails_when_requested() -> None:
     client = S3ClientFake(
         [
