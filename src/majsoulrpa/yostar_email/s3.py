@@ -128,9 +128,9 @@ class S3VerificationCodeProvider:
         verification: tuple[str, datetime] | None = None
         keys_to_delete: list[str] = []
         for candidate in candidates:
-            current_time = self._current_time()
-            is_current = _is_current(candidate.received_at, now=current_time)
-            if not delete_read_emails and not is_current:
+            if not delete_read_emails and not _is_current(
+                candidate.received_at, now=self._current_time()
+            ):
                 continue
 
             email = VerificationEmail.parse(
@@ -146,7 +146,7 @@ class S3VerificationCodeProvider:
             ):
                 keys_to_delete.append(candidate.key)
 
-            if verification is not None or not is_current:
+            if verification is not None:
                 continue
 
             current_time = self._current_time()
