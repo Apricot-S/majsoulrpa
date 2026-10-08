@@ -189,6 +189,7 @@
 - [x] `screens/errors.py`: 例外階層と組込み例外との多重継承を維持する。画像は属性だけに保持し、明示保存まで書き出さず、str・repr・args・生成ファイル名へ含めない。mkdir/write失敗はそのまま伝播する。created_atはaware datetimeを生成時にUTCへ正規化し、環境依存のファイル名になるnaive/offset未定義日時をValueErrorで拒否する。互換性の変更は公開API設計へ記録した。message/screenshotは主要入力、created_atは任意の時刻指定としてキーワード専用を維持し、Noneは実行時clockの利用を表す。
 - [ ] `screens/base.py`: `ScreenContext` の依存、検出 contract、stale guard、API log、Sniffer helper の責務集中を確認する。
   - [x] `ScreenContext.request_stop`はstatelessな無処理関数を直接デフォルトにし、falsey callableを置き換えずawaitする。停止処理の失敗・cancellationは元の例外を伝播する。明示的な`None`指定の廃止は公開API設計へ記録した。その他の確認観点は未完了。
+  - [x] `ScreenContext`のbrowser/sourceは役割が異なる主要依存として位置指定を維持する。request_stop・viewport幅/高さ・rng・account_stateは設定/注入点であり、特に同型の幅と高さを取り違えないためキーワード専用にする。第3引数以降の位置指定を廃止する影響と移行方法を公開API設計へ記録した。
 - [ ] `screens/login.py`: 認証 sequence、request-scoped HTTP wait、stale 化の時点、email/code/token 非漏洩を確認する。
 - [ ] `screens/home.py`: 前処理 loop と各高レベル遷移を区別し、巨大な条件分岐・重複 template 操作・message 先読みを確認する。
 

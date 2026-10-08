@@ -183,6 +183,12 @@ UTC へ正規化する。timezone なし・offset 未定義の日時は `ValueEr
 従来の明示的な `request_stop=None` はサポートせず、既定動作には引数を省略する。
 リポジトリ内に明示的な `None` 指定はなく、通常の runtime 配線への影響はない。
 
+`ScreenContext(browser, sniffer_messages, *, request_stop=..., viewport_width=...,
+viewport_height=..., rng=..., account_state=...)` の主要依存2つは位置指定も許可する。
+設定・注入用引数は名前で役割を識別し、同じ整数型の幅と高さなどの取り違えを防ぐため、
+キーワード専用とする。従来の第3引数以降の位置指定は `TypeError` になるので、
+各引数名を付ける必要がある。リポジトリ内の既存呼び出しはキーワード指定を使用している。
+
 操作 API は、その画面で意味があるものだけに限定します。
 
 callback が return すると、runtime は現在の Screen instance を破棄し、画面検出からやり直す。
