@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable, Collection, Coroutine
 from contextvars import ContextVar
@@ -8,15 +9,21 @@ from functools import wraps
 from logging import getLogger
 from random import Random
 from typing import Concatenate, Protocol
+from urllib.parse import quote
 
 from majsoulrpa.constants import BASE_VIEWPORT_WIDTH, DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.presentation import Region
-from majsoulrpa.screens.errors import ScreenDetectionError, ScreenStaleError
+from majsoulrpa.screens.errors import (
+    ScreenDetectionError,
+    ScreenInvalidArgumentError,
+    ScreenStaleError,
+)
 from majsoulrpa.sniffer.events import DecodedNotice, DecodedSnifferMessage
 
 SCREEN_ACTION_INTERVAL_SECONDS = 0.5
 TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
 LOG_URL_PREFIX = "https://game.mahjongsoul.com/?paipu="
+LOG_ID_PATTERN = re.compile(r"[A-Za-z0-9_-]+", re.ASCII)
 
 _screen_api_logger = getLogger("majsoulrpa.screens.api")
 _screen_api_depth: ContextVar[int] = ContextVar(
@@ -390,7 +397,12 @@ class Screen(ABC):
     @_screen_api
     @_requires_active
     async def goto_log(self, log_id: str) -> None:
-        await self.context.browser.goto_url(f"{LOG_URL_PREFIX}{log_id}")
+        if LOG_ID_PATTERN.fullmatch(log_id) is None:
+            screenshot = await self.context.browser.screenshot()
+            msg = "Log ID must contain only ASCII letters, digits, '-' or '_'."
+            raise ScreenInvalidArgumentError(msg, screenshot)
+        url = f"{LOG_URL_PREFIX}{quote(log_id, safe='')}"
+        await self.context.browser.goto_url(url)
 
     @_screen_api
     @_requires_active

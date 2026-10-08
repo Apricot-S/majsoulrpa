@@ -165,6 +165,14 @@ class Screen:
 
 ## 操作 API
 
+`Screen.goto_log(log_id)` は、空文字またはASCII英数字・`-`・`_` 以外を含むIDを
+遷移前に screenshot 付き `ScreenInvalidArgumentError` で拒否する。例外messageや
+通常ログに入力値を含めない。基本形式・視点指定・匿名化形式を扱うため、桁数、
+ハイフン位置、日付、UUID、suffixの構造やIDの実在は検証せず、匿名化解除もしない。
+受理したID全体を単一の `paipu` query parameter の値として percent-encode してから
+雀魂の牌譜URLへ移動する。既存のASCII英数字・`-`・`_` からなるIDのURLは変わらない。
+従来受理した空文字・特殊文字を含む入力は、入力ミスを早期に示すため拒否する。
+
 共通例外の `ScreenError` は screenshot bytes を属性に保持し、`str` / `repr` /
 `args` へ画像を含めない。画像は `save_screenshot(path)` の明示呼び出しでだけ保存する。
 保存時の I/O 失敗は伝播する。保存画像には個人情報が含まれ得るため、コミットせず、

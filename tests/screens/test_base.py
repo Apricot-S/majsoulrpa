@@ -24,6 +24,7 @@ from majsoulrpa.screens.base import TemplateMatchResult
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
     ScreenDetectionTimeoutError,
+    ScreenInvalidArgumentError,
     ScreenStaleError,
 )
 from majsoulrpa.sniffer.events import (
@@ -1127,16 +1128,78 @@ def test_screen_becomes_stale_after_reload() -> None:
     assert browser.events == ["reload", "screenshot"]
 
 
-def test_screen_can_go_to_log_url() -> None:
+@pytest.mark.parametrize(
+    "log_id",
+    [
+        "synthetic-log-id",
+        "260101-00000000-0000-0000-0000-000000000000",
+        "260101-00000000-0000-0000-0000-000000000000_a123456789",
+        "abcdef-ghijklmn-opqr-stuv-wxyz-abcdefghijkl_a123456789_2",
+        "X",
+    ],
+    ids=[
+        "synthetic",
+        "basic",
+        "viewpoint",
+        "obfuscated",
+        "no-structure-check",
+    ],
+)
+def test_screen_can_go_to_log_url(log_id: str) -> None:
     browser = BrowserControllerSpy()
     screen = LoginScreen(context=ScreenContext(browser=browser))
 
-    asyncio.run(screen.goto_log("synthetic-log-id"))
+    asyncio.run(screen.goto_log(log_id))
 
     assert browser.visited_urls == [
-        "https://game.mahjongsoul.com/?paipu=synthetic-log-id",
+        f"https://game.mahjongsoul.com/?paipu={log_id}",
     ]
     assert browser.events == ["goto_url"]
+
+
+@pytest.mark.parametrize(
+    "log_id",
+    [
+        "",
+        "synthetic&other=value",
+        "synthetic#fragment",
+        "synthetic space",
+        "synthetic+value",
+        "synthetic%20value",
+        "synthetic/part",
+        "synthetic日本語",
+    ],
+    ids=[
+        "empty",
+        "query",
+        "fragment",
+        "space",
+        "plus",
+        "percent",
+        "slash",
+        "non-ascii",
+    ],
+)
+def test_screen_rejects_invalid_log_id_without_navigation_or_disclosure(
+    log_id: str,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    browser = BrowserControllerSpy()
+    screen = LoginScreen(context=ScreenContext(browser=browser))
+
+    with (
+        caplog.at_level(logging.INFO, logger="majsoulrpa.screens.api"),
+        pytest.raises(ScreenInvalidArgumentError, match="Log ID") as caught,
+    ):
+        asyncio.run(screen.goto_log(log_id))
+
+    assert browser.visited_urls == []
+    assert caught.value.screenshot == browser.screenshot_bytes
+    assert browser.events == ["screenshot"]
+    if log_id:
+        assert log_id not in str(caught.value)
+        assert log_id not in repr(caught.value)
+        assert log_id not in caplog.text
 
 
 def test_runtime_calls_screen_before_callback() -> None:

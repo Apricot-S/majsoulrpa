@@ -74,6 +74,8 @@
 - [x] Screen から browser reload を利用者向け API として実行できる
 - [x] reload が正常完了したら現在の Screen instance を stale にする
 - [x] Screen から指定した牌譜 ID の URL へ移動できる
+- [x] goto_logは空文字・ASCII英数字とハイフン/underscore以外を拒否し、遷移せず、例外・ログに入力値を含めない
+- [x] goto_logは基本形式・視点指定・匿名化形式のsynthetic IDを受け入れ、桁数や構造は制限しない
 - [x] Screen から RPAApp の実行ループ停止を利用者向け API として要求できる
 - [x] Screen から browser host の終了を利用者向け API として要求できる
 - [x] Screen 検出エラーに screenshot bytes を添付できる
