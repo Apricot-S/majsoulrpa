@@ -38,39 +38,24 @@ from tests.screens.match._support import (
     _live_discard_action,
     _live_new_round_action,
 )
+from tests.screens.match.operate._support import (
+    _MessagesByClickBrowser as _BaseMessagesByClickBrowser,
+)
+from tests.screens.match.operate._support import _MessagesOnClickBrowser
 
 
-class _MessagesOnClickBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        messages: SnifferMessageQueue,
-        *messages_on_click: DecodedSnifferMessage,
-    ) -> None:
-        super().__init__(b"synthetic-screenshot")
-        self._messages = messages
-        self._messages_on_click = messages_on_click
-
-    async def click(
-        self,
-        x: float,
-        y: float,
-        *,
-        warp: bool = False,
-    ) -> None:
-        await super().click(x, y, warp=warp)
-        for message in self._messages_on_click:
-            self._messages.enqueue(message)
-
-
-class _MessagesByClickBrowser(BrowserControllerSpy):
+class _MessagesByClickBrowser(_BaseMessagesByClickBrowser):
     def __init__(
         self,
         messages: SnifferMessageQueue,
         *messages_by_click: tuple[DecodedSnifferMessage, ...],
     ) -> None:
-        super().__init__(b"synthetic-screenshot")
-        self._messages = messages
-        self._messages_by_click = list(messages_by_click)
+        super().__init__(
+            b"synthetic-screenshot",
+            messages,
+            *messages_by_click,
+            allow_extra_clicks=True,
+        )
         self.clicked_at: list[float] = []
 
     async def click(
@@ -82,10 +67,6 @@ class _MessagesByClickBrowser(BrowserControllerSpy):
     ) -> None:
         self.clicked_at.append(asyncio.get_running_loop().time())
         await super().click(x, y, warp=warp)
-        if not self._messages_by_click:
-            return
-        for message in self._messages_by_click.pop(0):
-            self._messages.enqueue(message)
 
 
 def test_operate_discards_dealers_presented_fourteenth_tile(
@@ -102,6 +83,7 @@ def test_operate_discards_dealers_presented_fourteenth_tile(
         ),
     )
     browser = _MessagesOnClickBrowser(
+        b"synthetic-screenshot",
         messages,
         _live_discard_action(
             step=1,
@@ -185,6 +167,7 @@ def test_operate_waits_only_until_discard_ui_is_ready(
         ),
     )
     browser = _MessagesOnClickBrowser(
+        b"synthetic-screenshot",
         messages,
         _live_discard_action(
             step=3,
@@ -254,6 +237,7 @@ def test_operate_distinguishes_hand_and_drawn_tile(
         ),
     )
     browser = _MessagesOnClickBrowser(
+        b"synthetic-screenshot",
         messages,
         _live_discard_action(
             step=3,
@@ -404,6 +388,7 @@ def test_operate_rejects_unexpected_state_event(
         ),
     )
     browser = _MessagesOnClickBrowser(
+        b"synthetic-screenshot",
         messages,
         _live_discard_action(
             step=1,
@@ -488,6 +473,7 @@ def test_operate_puts_back_input_progress_and_logs_only_outer_screen_api(
         ),
     )
     browser = _MessagesOnClickBrowser(
+        b"synthetic-screenshot",
         messages,
         _request_response(input_name, {}),
         _live_discard_action(

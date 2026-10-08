@@ -8,7 +8,6 @@ import majsoulrpa.screens.match.screen as match_screen_module
 from majsoulrpa.assets.protocol import liqi_pb2
 from majsoulrpa.assets.templates.match import BABEI_TEMPLATE_PATH
 from majsoulrpa.screens.match import BabeiEvent, BabeiOperation, MatchScreen
-from majsoulrpa.sniffer.events import DecodedSnifferMessage
 from majsoulrpa.sniffer.message_queue import SnifferMessageQueue
 from tests.screens._support import (
     BrowserControllerSpy,
@@ -25,59 +24,11 @@ from tests.screens.match._support import (
     _live_discard_action,
     _live_new_round_action,
 )
-
-
-class _MessagesOnClickBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        screenshot: bytes,
-        messages: SnifferMessageQueue,
-        *messages_on_click: DecodedSnifferMessage,
-    ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._messages_on_click = messages_on_click
-
-    async def click(
-        self,
-        x: float,
-        y: float,
-        *,
-        warp: bool = False,
-    ) -> None:
-        await super().click(x, y, warp=warp)
-        for message in self._messages_on_click:
-            self._messages.enqueue(message)
-
-
-class _PrependTrackingQueue(SnifferMessageQueue):
-    def __init__(self) -> None:
-        super().__init__(capacity=10, max_payload_bytes=4096)
-        self.prepend_count = 0
-
-    def prepend(self, message: DecodedSnifferMessage) -> None:
-        self.prepend_count += 1
-        super().prepend(message)
-
-
-class _MessageOnScreenshotBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        screenshot: bytes,
-        messages: SnifferMessageQueue,
-        message_on_screenshot: DecodedSnifferMessage,
-    ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._message_on_screenshot: DecodedSnifferMessage | None = (
-            message_on_screenshot
-        )
-
-    async def screenshot(self) -> bytes:
-        if self._message_on_screenshot is not None:
-            self._messages.enqueue(self._message_on_screenshot)
-            self._message_on_screenshot = None
-        return await super().screenshot()
+from tests.screens.match.operate._support import (
+    _MessageOnScreenshotBrowser,
+    _MessagesOnClickBrowser,
+    _PrependTrackingQueue,
+)
 
 
 def _babei_messages() -> SnifferMessageQueue:
@@ -254,7 +205,7 @@ def test_operate_accepts_automatically_selected_hand_babei(
 def test_operate_puts_back_progress_while_waiting_for_babei_button(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    messages = _PrependTrackingQueue()
+    messages = _PrependTrackingQueue(max_payload_bytes=4096)
     initial_messages = _babei_messages()
     while (message := initial_messages.get_nowait()) is not None:
         messages.enqueue(message)

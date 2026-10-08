@@ -31,59 +31,11 @@ from tests.screens.match._support import (
     _live_hule_action,
     _live_new_round_action,
 )
-
-
-class _MessagesOnClickBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        screenshot: bytes,
-        messages: SnifferMessageQueue,
-        *messages_on_click: DecodedSnifferMessage,
-    ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._messages_on_click = messages_on_click
-
-    async def click(
-        self,
-        x: float,
-        y: float,
-        *,
-        warp: bool = False,
-    ) -> None:
-        await super().click(x, y, warp=warp)
-        for message in self._messages_on_click:
-            self._messages.enqueue(message)
-
-
-class _PrependTrackingQueue(SnifferMessageQueue):
-    def __init__(self) -> None:
-        super().__init__(capacity=10, max_payload_bytes=1024)
-        self.prepend_count = 0
-
-    def prepend(self, message: DecodedSnifferMessage) -> None:
-        self.prepend_count += 1
-        super().prepend(message)
-
-
-class _MessageOnScreenshotBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        screenshot: bytes,
-        messages: SnifferMessageQueue,
-        message_on_screenshot: DecodedSnifferMessage,
-    ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._message_on_screenshot: DecodedSnifferMessage | None = (
-            message_on_screenshot
-        )
-
-    async def screenshot(self) -> bytes:
-        if self._message_on_screenshot is not None:
-            self._messages.enqueue(self._message_on_screenshot)
-            self._message_on_screenshot = None
-        return await super().screenshot()
+from tests.screens.match.operate._support import (
+    _MessageOnScreenshotBrowser,
+    _MessagesOnClickBrowser,
+    _PrependTrackingQueue,
+)
 
 
 def _daminggang_messages(

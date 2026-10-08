@@ -18,7 +18,6 @@ from majsoulrpa.screens.match import (
     PengEvent,
 )
 from majsoulrpa.sniffer.events import DecodedSnifferMessage
-from majsoulrpa.sniffer.message_queue import SnifferMessageQueue
 from tests.screens._support import (
     BrowserControllerSpy,
     ScreenContext,
@@ -36,82 +35,12 @@ from tests.screens.match._support import (
     _live_new_round_action,
     _live_peng_action,
 )
-
-
-class _MessagesOnClickBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        screenshot: bytes,
-        messages: SnifferMessageQueue,
-        *messages_on_click: DecodedSnifferMessage,
-    ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._messages_on_click = messages_on_click
-
-    async def click(
-        self,
-        x: float,
-        y: float,
-        *,
-        warp: bool = False,
-    ) -> None:
-        await super().click(x, y, warp=warp)
-        for message in self._messages_on_click:
-            self._messages.enqueue(message)
-
-
-class _MessagesByClickBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        screenshot: bytes,
-        messages: SnifferMessageQueue,
-        *messages_by_click: tuple[DecodedSnifferMessage, ...],
-    ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._messages_by_click = list(messages_by_click)
-
-    async def click(
-        self,
-        x: float,
-        y: float,
-        *,
-        warp: bool = False,
-    ) -> None:
-        await super().click(x, y, warp=warp)
-        for message in self._messages_by_click.pop(0):
-            self._messages.enqueue(message)
-
-
-class _PrependTrackingQueue(SnifferMessageQueue):
-    def __init__(self) -> None:
-        super().__init__(capacity=10, max_payload_bytes=1024)
-        self.prepend_count = 0
-
-    def prepend(self, message: DecodedSnifferMessage) -> None:
-        self.prepend_count += 1
-        super().prepend(message)
-
-
-class _MessageOnScreenshotBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        screenshot: bytes,
-        messages: SnifferMessageQueue,
-        message_on_screenshot: DecodedSnifferMessage,
-    ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._message_on_screenshot: DecodedSnifferMessage | None = (
-            message_on_screenshot
-        )
-
-    async def screenshot(self) -> bytes:
-        if self._message_on_screenshot is not None:
-            self._messages.enqueue(self._message_on_screenshot)
-            self._message_on_screenshot = None
-        return await super().screenshot()
+from tests.screens.match.operate._support import (
+    _MessageOnScreenshotBrowser,
+    _MessagesByClickBrowser,
+    _MessagesOnClickBrowser,
+    _PrependTrackingQueue,
+)
 
 
 @pytest.mark.parametrize(
@@ -267,6 +196,7 @@ def test_operate_selects_requested_chi_from_multiple_candidates(
                 froms=[0, 0, 3],
             ),
         ),
+        allow_extra_clicks=False,
     )
     screen = MatchScreen(
         context=ScreenContext(

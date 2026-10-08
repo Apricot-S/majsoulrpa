@@ -14,7 +14,6 @@ from majsoulrpa.screens.match import (
     MatchScreen,
     validate_tile,
 )
-from majsoulrpa.sniffer.events import DecodedSnifferMessage
 from majsoulrpa.sniffer.message_queue import SnifferMessageQueue
 from tests.screens._support import (
     BrowserControllerSpy,
@@ -30,31 +29,7 @@ from tests.screens.match._support import (
     _live_discard_action,
     _live_new_round_action,
 )
-
-
-class _MessagesByClickBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        screenshot: bytes,
-        messages: SnifferMessageQueue,
-        *messages_by_click: tuple[DecodedSnifferMessage, ...],
-    ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._messages_by_click = list(messages_by_click)
-
-    async def click(
-        self,
-        x: float,
-        y: float,
-        *,
-        warp: bool = False,
-    ) -> None:
-        await super().click(x, y, warp=warp)
-        if not self._messages_by_click:
-            return
-        for message in self._messages_by_click.pop(0):
-            self._messages.enqueue(message)
+from tests.screens.match.operate._support import _MessagesByClickBrowser
 
 
 def _liqi_messages(candidate: str) -> SnifferMessageQueue:
@@ -147,6 +122,7 @@ def test_operate_selects_liqi_discard(
                 wliqi=wliqi,
             ),
         ),
+        allow_extra_clicks=True,
     )
     screen = _screen(browser, messages)
     sleep_delays: list[float] = []
@@ -201,6 +177,7 @@ def test_operate_retries_liqi_button_detection(
                 liqi=True,
             ),
         ),
+        allow_extra_clicks=True,
     )
     browser.screenshot_queue = [
         _synthetic_blank_screenshot(),
@@ -243,6 +220,7 @@ def test_operate_does_not_click_liqi_tile_after_action_arrives(
                 liqi=True,
             ),
         ),
+        allow_extra_clicks=True,
     )
     screen = _screen(browser, messages)
 
@@ -295,6 +273,7 @@ def test_operate_rejects_mismatched_liqi_discard(
                 liqi=actual_liqi,
             ),
         ),
+        allow_extra_clicks=True,
     )
     screen = _screen(browser, messages)
 
@@ -316,6 +295,7 @@ def test_operate_does_not_succeed_without_liqi_button(
     browser = _MessagesByClickBrowser(
         _synthetic_blank_screenshot(),
         messages,
+        allow_extra_clicks=True,
     )
     screen = _screen(browser, messages)
     monkeypatch.setattr(
@@ -359,6 +339,7 @@ def test_operate_retries_liqi_tile_click_until_input_progress(
                 liqi=True,
             ),
         ),
+        allow_extra_clicks=True,
     )
     screen = _screen(browser, messages)
     monkeypatch.setattr(
