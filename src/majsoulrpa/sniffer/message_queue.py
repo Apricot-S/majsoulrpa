@@ -14,7 +14,7 @@ class SnifferMessageTooLargeError(RuntimeError):
 
 
 class SnifferMessageQueue:
-    """Bounded queue of decoded messages with explicit prefix restoration."""
+    """Bounded message queue with explicit prefix restoration."""
 
     def __init__(
         self,
