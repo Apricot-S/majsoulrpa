@@ -114,7 +114,7 @@ def test_fetch_uses_injected_falsey_clock(
     )
 
     assert asyncio.run(provider.fetch_nowait()) == "012345"
-    assert clock.calls == 1
+    assert clock.calls == 2
 
 
 @pytest.mark.parametrize("method_name", ["fetch", "fetch_nowait"])
@@ -413,6 +413,43 @@ def test_fetch_rejects_partial_listing_after_later_page_failure(
     assert client.list_calls[1]["ContinuationToken"] == "synthetic-next"
     assert client.get_calls == []
     assert client.delete_calls == []
+
+
+@pytest.mark.parametrize("delete_read_emails", [False, True])
+def test_fetch_rejects_email_expiring_during_body_read(
+    *,
+    delete_read_emails: bool,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current_time = NOW
+    client = S3ClientFake(
+        [{"Key": "mail/valid", "LastModified": NOW}],
+        {"mail/valid": _message()},
+    )
+    original_get = client.get_object
+
+    def delayed_get(**kwargs: str) -> dict[str, BytesIO]:
+        nonlocal current_time
+        current_time = NOW + timedelta(minutes=30)
+        return original_get(**kwargs)
+
+    monkeypatch.setattr(client, "get_object", delayed_get)
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client),
+        clock=lambda: current_time,
+    )
+
+    with pytest.raises(VerificationEmailNotFoundError):
+        asyncio.run(
+            provider.fetch_nowait(delete_read_emails=delete_read_emails)
+        )
+
+    assert [call["Key"] for call in client.get_calls] == ["mail/valid"]
+    assert [call["Key"] for call in client.delete_calls] == (
+        ["mail/valid"] if delete_read_emails else []
+    )
 
 
 def test_fetch_without_deletion_stops_after_valid_code() -> None:

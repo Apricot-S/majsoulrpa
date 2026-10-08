@@ -142,6 +142,13 @@ class S3VerificationCodeProvider:
             if verification_code is not None or not is_current:
                 continue
 
+            current_time = self._clock()
+            if current_time.utcoffset() is None:
+                msg = "Clock timestamps must include timezone information."
+                raise ValueError(msg)
+            if not _is_current(candidate.received_at, now=current_time):
+                continue
+
             try:
                 verification_code = email.extract_code(
                     recipient=self._email_address,
