@@ -1466,6 +1466,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### S3 response body lifecycle
 
+- [x] 内部生成clientはfetch / fetch_nowaitの成功・失敗で一度だけcloseし、注入clientはcloseしない
+- [x] 非同期キャンセル時は進行中のthread処理完了後に内部clientを解放し、生成中のキャンセルでも取得したclientを解放する
+- [x] 内部clientのclose失敗は伝播し、処理失敗と重なる場合も例外contextへ保持する
+
 - [x] 削除ありで有効code取得後の本文取得が失敗した場合、元の例外を伝播し、後続読取・削除・polling再試行をしない
 
 - [x] 削除対象が期限切れメールだけの場合、削除option有効時は削除後に未着例外を返し、無効時は読取・削除しない

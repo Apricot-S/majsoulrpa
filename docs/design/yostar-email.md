@@ -98,6 +98,14 @@ S3の `get_object()` が返す本文ストリームはproviderが読み取り後
 読み取り失敗時もcloseを試み、読み取りやcloseの失敗を握りつぶさない。
 両方が失敗した場合はclose例外を伝播し、read例外をその `__context__` に保持する。
 
+内部生成S3 clientは1回のfetch / fetch_nowaitが所有し、成功・失敗・キャンセル時に
+closeする。fetchのpolling中は同じclientを使用する。注入clientは利用者所有であり、
+providerはcloseしない。clientのclose失敗は伝播し、処理失敗も例外contextに保持する。
+
+同期SDK呼び出しはキャンセルでthreadを停止できないため、生成・処理中のキャンセルは
+進行中のthreadが終了するまで待ってから内部clientをcloseする。途中のS3操作は
+継続し得る。終了を待たずにclientをcloseして実行中の処理と競合させない。
+
 S3 providerの `clock` はデフォルト引数へ `utc_now` を直接指定する。
 省略時はこの関数を使い、注入されたcallableは真偽値によらずそのまま保持する。
 `None` は受け付ける型に含めない。

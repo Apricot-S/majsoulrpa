@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import importlib
 import math
-from contextlib import closing
+from contextlib import asynccontextmanager, closing
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
@@ -17,6 +17,8 @@ from majsoulrpa.yostar_email.errors import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
     from types_boto3_s3.client import S3Client
     from types_boto3_s3.type_defs import ObjectTypeDef
 
@@ -70,28 +72,45 @@ class S3VerificationCodeProvider:
 
     async def fetch(self, *, delete_read_emails: bool = False) -> str:
         """Poll S3 and optionally delete matching emails read."""
-        client = await self._resolve_client()
-        while True:
-            try:
-                return await self._run_fetch_once(
-                    client,
-                    delete_read_emails=delete_read_emails,
-                )
-            except VerificationEmailNotFoundError:
-                await asyncio.sleep(self._poll_interval)
+        async with self._client_scope() as client:
+            while True:
+                try:
+                    return await self._run_fetch_once(
+                        client,
+                        delete_read_emails=delete_read_emails,
+                    )
+                except VerificationEmailNotFoundError:
+                    await asyncio.sleep(self._poll_interval)
 
     async def fetch_nowait(self, *, delete_read_emails: bool = False) -> str:
         """Check S3 once and optionally delete matching emails read."""
+        async with self._client_scope() as client:
+            return await self._run_fetch_once(
+                client,
+                delete_read_emails=delete_read_emails,
+            )
+
+    @asynccontextmanager
+    async def _client_scope(self) -> AsyncIterator[S3Client]:
         client = await self._resolve_client()
-        return await self._run_fetch_once(
-            client,
-            delete_read_emails=delete_read_emails,
-        )
+        try:
+            yield client
+        finally:
+            if self._client is None:
+                await asyncio.to_thread(client.close)
 
     async def _resolve_client(self) -> S3Client:
         if self._client is not None:
             return self._client
-        return await asyncio.to_thread(_create_s3_client, self._aws_profile)
+        creation = asyncio.create_task(
+            asyncio.to_thread(_create_s3_client, self._aws_profile)
+        )
+        try:
+            return await asyncio.shield(creation)
+        except asyncio.CancelledError:
+            client = await creation
+            await asyncio.to_thread(client.close)
+            raise
 
     async def _run_fetch_once(
         self,
@@ -99,11 +118,20 @@ class S3VerificationCodeProvider:
         *,
         delete_read_emails: bool,
     ) -> str:
-        return await asyncio.to_thread(
-            self._fetch_once,
-            client,
-            delete_read_emails=delete_read_emails,
+        operation = asyncio.create_task(
+            asyncio.to_thread(
+                self._fetch_once,
+                client,
+                delete_read_emails=delete_read_emails,
+            )
         )
+        try:
+            return await asyncio.shield(operation)
+        except asyncio.CancelledError:
+            if operation.cancelled():
+                return operation.result()
+            await operation
+            raise
 
     def _current_time(self) -> datetime:
         now = self._clock()

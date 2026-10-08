@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import threading
 from datetime import UTC, datetime, timedelta, tzinfo
 from email.message import EmailMessage
 from io import BytesIO
@@ -53,6 +54,10 @@ class S3ClientFake:
         self.list_calls: list[dict[str, str]] = []
         self.get_calls: list[dict[str, str]] = []
         self.delete_calls: list[dict[str, str]] = []
+        self.close_calls = 0
+
+    def close(self) -> None:
+        self.close_calls += 1
 
     def list_objects_v2(self, **kwargs: str) -> dict[str, Any]:
         self.list_calls.append(kwargs)
@@ -1027,6 +1032,146 @@ def test_client_creation_failure_is_propagated_without_retry(
 
     assert exc_info.value is failure
     assert profiles == ["example-profile"]
+
+
+@pytest.mark.parametrize("method_name", ["fetch", "fetch_nowait"])
+@pytest.mark.parametrize("inject_client", [False, True])
+@pytest.mark.parametrize("fail_listing", [False, True])
+def test_client_ownership_controls_cleanup(
+    *,
+    method_name: str,
+    inject_client: bool,
+    fail_listing: bool,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = S3ClientFake(
+        [{"Key": "mail/valid", "LastModified": NOW}],
+        {"mail/valid": _message()},
+    )
+    failure = RuntimeError("Synthetic listing failure")
+
+    def create_client(_profile: str | None) -> S3Client:
+        return cast("S3Client", client)
+
+    def failed_listing(**_kwargs: str) -> dict[str, Any]:
+        raise failure
+
+    monkeypatch.setattr(s3_module, "_create_s3_client", create_client)
+    if fail_listing:
+        monkeypatch.setattr(client, "list_objects_v2", failed_listing)
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        client=cast("S3Client", client) if inject_client else None,
+        clock=lambda: NOW,
+    )
+
+    if fail_listing:
+        with pytest.raises(RuntimeError) as exc_info:
+            asyncio.run(getattr(provider, method_name)())
+        assert exc_info.value is failure
+    else:
+        assert asyncio.run(getattr(provider, method_name)()) == "012345"
+    assert client.close_calls == (0 if inject_client else 1)
+
+
+@pytest.mark.parametrize("phase", ["creation", "operation"])
+def test_owned_client_is_closed_after_cancelled_thread_finishes(
+    phase: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = S3ClientFake(
+        [{"Key": "mail/valid", "LastModified": NOW}],
+        {"mail/valid": _message()},
+    )
+    release = threading.Event()
+
+    async def scenario() -> None:
+        started = asyncio.Event()
+        loop = asyncio.get_running_loop()
+        original_list = client.list_objects_v2
+
+        def wait_for_release() -> None:
+            loop.call_soon_threadsafe(started.set)
+            if not release.wait(10):
+                msg = "Synthetic thread was not released."
+                raise RuntimeError(msg)
+
+        def create_client(_profile: str | None) -> S3Client:
+            if phase == "creation":
+                wait_for_release()
+            return cast("S3Client", client)
+
+        def list_objects(**kwargs: str) -> dict[str, Any]:
+            wait_for_release()
+            return original_list(**kwargs)
+
+        monkeypatch.setattr(s3_module, "_create_s3_client", create_client)
+        if phase == "operation":
+            monkeypatch.setattr(client, "list_objects_v2", list_objects)
+        provider = S3VerificationCodeProvider(
+            email_address="user@example.com",
+            bucket_name="example-bucket",
+            clock=lambda: NOW,
+        )
+        async with asyncio.TaskGroup() as group:
+            task = group.create_task(provider.fetch_nowait())
+            try:
+                async with asyncio.timeout(10):
+                    await started.wait()
+                task.cancel()
+                await asyncio.sleep(0)
+                assert client.close_calls == 0
+                assert not task.done()
+            finally:
+                release.set()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+
+    asyncio.run(scenario())
+    assert client.close_calls == 1
+
+
+@pytest.mark.parametrize("fail_listing", [False, True])
+def test_owned_client_close_failure_preserves_operation_failure(
+    *,
+    fail_listing: bool,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = S3ClientFake(
+        [{"Key": "mail/valid", "LastModified": NOW}],
+        {"mail/valid": _message()},
+    )
+    close_failure = RuntimeError("Synthetic client close failure")
+    listing_failure = RuntimeError("Synthetic listing failure")
+
+    def create_client(_profile: str | None) -> S3Client:
+        return cast("S3Client", client)
+
+    def close_client() -> None:
+        client.close_calls += 1
+        raise close_failure
+
+    def failed_listing(**_kwargs: str) -> dict[str, Any]:
+        raise listing_failure
+
+    monkeypatch.setattr(s3_module, "_create_s3_client", create_client)
+    monkeypatch.setattr(client, "close", close_client)
+    if fail_listing:
+        monkeypatch.setattr(client, "list_objects_v2", failed_listing)
+    provider = S3VerificationCodeProvider(
+        email_address="user@example.com",
+        bucket_name="example-bucket",
+        clock=lambda: NOW,
+    )
+
+    with pytest.raises(RuntimeError) as exc_info:
+        asyncio.run(provider.fetch_nowait())
+
+    assert exc_info.value is close_failure
+    if fail_listing:
+        assert close_failure.__context__ is listing_failure
+    assert client.close_calls == 1
 
 
 def test_fetch_creates_s3_client_once_before_polling(
