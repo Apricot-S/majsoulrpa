@@ -27,7 +27,8 @@ callback から複数処理を呼び出す形にします。
 ```python
 from majsoulrpa import RPAApp
 from majsoulrpa.config import AppConfig
-from majsoulrpa.screens import HomeScreen, LoginScreen
+from majsoulrpa.screens.home import HomeScreen
+from majsoulrpa.screens.login import LoginScreen
 
 
 app = RPAApp()
@@ -127,6 +128,11 @@ browser host を起動する CLI では、client からの接続先として `--
 
 ## Presentation / Screen
 
+`majsoulrpa.screens` は `Screen`、`ScreenContext`、`ScreenDetectionSpec` と
+共通 Screen 例外だけを export する。標準 Screen は `screens.login`、`screens.home`、
+`screens.room`、`screens.match` から import する。共通 API の import 時に具体的な
+Screen や画像照合の optional dependency を読み込まないため、この境界を維持する。
+
 公開名は `Presentation` より短い `Screen` とします。画面の検出条件と、その画面で
 安全に実行できる操作を同じ class で表現します。
 
@@ -158,6 +164,18 @@ class Screen:
 詳細は [テンプレート照合設計メモ](screens/template-matching.md) を参照します。
 
 ## 操作 API
+
+共通例外の `ScreenError` は screenshot bytes を属性に保持し、`str` / `repr` /
+`args` へ画像を含めない。画像は `save_screenshot(path)` の明示呼び出しでだけ保存する。
+保存時の I/O 失敗は伝播する。保存画像には個人情報が含まれ得るため、コミットせず、
+調査後に削除する。
+
+`created_at` は省略時（`None` 指定を含む）に現在の UTC 時刻を取得する。
+指定時は UTC offset が定義された timezone-aware な datetime に限定し、生成時に
+UTC へ正規化する。timezone なし・offset 未定義の日時は `ValueError` にする。
+従来は実行環境のローカル時刻として扱われていたが、生成ファイル名が環境により
+変わるため拒否する。明示的な日時を渡す利用者は timezone を付ける必要がある。
+既存の aware datetime、例外階層、画像内容、明示ファイルパスの保存動作は維持する。
 
 `ScreenContext` の `request_stop` は引数なしの async callable を受け取り、
 `Screen.stop_rpa()` から await する。callable の真偽値は評価せず、停止処理の

@@ -78,6 +78,11 @@
 - [x] Screen から browser host の終了を利用者向け API として要求できる
 - [x] Screen 検出エラーに screenshot bytes を添付できる
 - [x] Screen 検出エラーの screenshot を file path または directory path へ保存できる
+- [x] ScreenErrorはtzinfo欠落・UTC offset未定義のcreated_atを生成時にValueErrorで拒否する
+- [x] ScreenErrorは異なるUTC offsetのcreated_atからUTCの保存ファイル名を作る
+- [x] ScreenErrorのcreated_at省略時はUTC clockから保存ファイル名を作る
+- [x] ScreenErrorのstr・repr・argsと生成ファイル名にscreenshot bytesを含めず、明示保存まで画像を書き出さない
+- [x] ScreenErrorの画像保存失敗を元の例外のまま伝播する
 - [x] Screen 検出 timeout エラーは `TimeoutError` としても捕捉できる
 - [x] Screen API の不正引数は `ScreenInvalidArgumentError` として表す
 - [x] Screen API の不正引数エラーは `ValueError` としても捕捉できる

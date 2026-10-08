@@ -1,6 +1,8 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
+from majsoulrpa._clock import utc_now
+
 
 class ScreenError(RuntimeError):
     def __init__(
@@ -12,7 +14,14 @@ class ScreenError(RuntimeError):
     ) -> None:
         super().__init__(message)
         self._screenshot = screenshot
-        self._created_at = created_at or datetime.now(UTC)
+        if created_at is None:
+            created_at = utc_now()
+        if created_at.utcoffset() is None:
+            msg = (
+                "created_at must be timezone-aware with a defined UTC offset."
+            )
+            raise ValueError(msg)
+        self._created_at = created_at.astimezone(UTC)
 
     @property
     def screenshot(self) -> bytes:
@@ -26,9 +35,7 @@ class ScreenError(RuntimeError):
 
     def _resolve_screenshot_path(self, path: Path) -> Path:
         if path.is_dir() or path.suffix == "":
-            timestamp = self._created_at.astimezone(UTC).strftime(
-                "%Y%m%dT%H%M%SZ",
-            )
+            timestamp = self._created_at.strftime("%Y%m%dT%H%M%SZ")
             return path / f"{timestamp}-{type(self).__name__}.png"
         return path
 
