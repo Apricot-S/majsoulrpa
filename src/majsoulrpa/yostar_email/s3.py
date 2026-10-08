@@ -35,6 +35,25 @@ class _S3EmailCandidate:
     received_at: datetime
 
 
+async def _finish_task[T](task: asyncio.Task[T]) -> T:
+    """Finish cleanup work despite additional cancellation requests."""
+    while True:
+        try:
+            return await asyncio.shield(task)
+        except asyncio.CancelledError:
+            if task.done():
+                return task.result()
+
+
+async def _close_client(client: S3Client) -> None:
+    closing_task = asyncio.create_task(asyncio.to_thread(client.close))
+    try:
+        await asyncio.shield(closing_task)
+    except asyncio.CancelledError:
+        await _finish_task(closing_task)
+        raise
+
+
 class S3VerificationCodeProvider:
     """Fetch Yostar verification emails stored as S3 objects."""
 
@@ -97,7 +116,7 @@ class S3VerificationCodeProvider:
             yield client
         finally:
             if self._client is None:
-                await asyncio.to_thread(client.close)
+                await _close_client(client)
 
     async def _resolve_client(self) -> S3Client:
         if self._client is not None:
@@ -108,8 +127,8 @@ class S3VerificationCodeProvider:
         try:
             return await asyncio.shield(creation)
         except asyncio.CancelledError:
-            client = await creation
-            await asyncio.to_thread(client.close)
+            client = await _finish_task(creation)
+            await _close_client(client)
             raise
 
     async def _run_fetch_once(
@@ -130,7 +149,7 @@ class S3VerificationCodeProvider:
         except asyncio.CancelledError:
             if operation.cancelled():
                 return operation.result()
-            await operation
+            await _finish_task(operation)
             raise
 
     def _current_time(self) -> datetime:

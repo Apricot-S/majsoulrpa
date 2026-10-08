@@ -1466,6 +1466,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### S3 response body lifecycle
 
+- [x] 生成・処理の終了待ち中に再キャンセルされても、thread完了後に内部clientをcloseする
+
 - [x] 内部生成clientはfetch / fetch_nowaitの成功・失敗で一度だけcloseし、注入clientはcloseしない
 - [x] 非同期キャンセル時は進行中のthread処理完了後に内部clientを解放し、生成中のキャンセルでも取得したclientを解放する
 - [x] 内部clientのclose失敗は伝播し、処理失敗と重なる場合も例外contextへ保持する

@@ -1076,8 +1076,11 @@ def test_client_ownership_controls_cleanup(
 
 
 @pytest.mark.parametrize("phase", ["creation", "operation"])
+@pytest.mark.parametrize("repeat_cancel", [False, True])
 def test_owned_client_is_closed_after_cancelled_thread_finishes(
+    *,
     phase: str,
+    repeat_cancel: bool,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client = S3ClientFake(
@@ -1085,6 +1088,13 @@ def test_owned_client_is_closed_after_cancelled_thread_finishes(
         {"mail/valid": _message()},
     )
     release = threading.Event()
+    original_close = client.close
+
+    def checked_close() -> None:
+        assert release.is_set(), "Client closed before its thread finished."
+        original_close()
+
+    monkeypatch.setattr(client, "close", checked_close)
 
     async def scenario() -> None:
         started = asyncio.Event()
@@ -1121,6 +1131,9 @@ def test_owned_client_is_closed_after_cancelled_thread_finishes(
                     await started.wait()
                 task.cancel()
                 await asyncio.sleep(0)
+                if repeat_cancel:
+                    task.cancel()
+                    await asyncio.sleep(0)
                 assert client.close_calls == 0
                 assert not task.done()
             finally:
