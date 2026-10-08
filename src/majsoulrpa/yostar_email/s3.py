@@ -16,7 +16,7 @@ from majsoulrpa.yostar_email.errors import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncGenerator
 
     from types_boto3_s3.client import S3Client
     from types_boto3_s3.type_defs import ObjectTypeDef
@@ -116,7 +116,7 @@ class S3VerificationCodeProvider:
             )
 
     @asynccontextmanager
-    async def _client_scope(self) -> AsyncIterator[S3Client]:
+    async def _client_scope(self) -> AsyncGenerator[S3Client, None]:
         client = await self._resolve_client()
         try:
             yield client
