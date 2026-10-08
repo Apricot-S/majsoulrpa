@@ -2,7 +2,13 @@ import asyncio
 import json
 import re
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable, Callable, Collection, Coroutine
+from collections.abc import (
+    Awaitable,
+    Callable,
+    Collection,
+    Coroutine,
+    Sequence,
+)
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from functools import wraps
@@ -69,6 +75,9 @@ class SnifferMessageSource(Protocol):
     async def get(self) -> DecodedSnifferMessage: ...
     def get_nowait(self) -> DecodedSnifferMessage | None: ...
     def put_back(self, message: DecodedSnifferMessage) -> None: ...
+    def put_back_many(
+        self, messages: Sequence[DecodedSnifferMessage]
+    ) -> None: ...
 
 
 class AccountState(Protocol):
@@ -269,12 +278,13 @@ class Screen(ABC):
                 if message.raw.name in selected_names:
                     return message
         finally:
-            # Stop on the first put-back failure: restoring later
-            # messages would leave a sequence with gaps. Propagate the
-            # failure to stop the RPA rather than attempting recovery
-            # with an incomplete queue.
-            for message in messages_to_put_back:
-                self._put_back_sniffer_message(message)
+            # Restore the entire prefix before unread messages.
+            # Propagate failures immediately; never recover with an
+            # incomplete queue.
+            if messages_to_put_back:
+                self.context.sniffer_messages.put_back_many(
+                    messages_to_put_back
+                )
 
     @property
     def context(self) -> ScreenContext:

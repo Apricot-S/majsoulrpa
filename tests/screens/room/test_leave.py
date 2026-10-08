@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from collections import deque
+from collections.abc import Sequence
 from dataclasses import replace
 from inspect import signature
 
@@ -62,6 +63,9 @@ class _OperationMessageSource:
 
     def put_back(self, message: DecodedSnifferMessage) -> None:
         self._queued.appendleft(message)
+
+    def put_back_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        self._queued.extendleft(reversed(messages))
 
     def enqueue(self, message: DecodedSnifferMessage) -> None:
         self._queued.append(message)

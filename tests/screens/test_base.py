@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 import logging
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from random import Random
 from typing import Any, override
@@ -34,6 +34,10 @@ from majsoulrpa.sniffer.events import (
     Direction,
     RawNotice,
     RawRequestResponse,
+)
+from majsoulrpa.sniffer.message_queue import (
+    SnifferMessageQueue,
+    SnifferMessageQueueOverflowError,
 )
 from majsoulrpa.types import Callback
 from tests.sniffer.fakes import EMPTY_SNIFFER_MESSAGES
@@ -205,6 +209,9 @@ class SnifferMessageSourceSpy:
 
     def put_back(self, message: DecodedSnifferMessage) -> None:
         self.put_back_messages.append(message)
+
+    def put_back_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        self.put_back_messages[0:0] = messages
 
 
 def _notice(name: str) -> DecodedNotice:
@@ -451,6 +458,82 @@ def test_screen_can_put_back_all_read_messages_in_original_order() -> None:
 
     assert actual is expected
     assert source.put_back_messages == [first, second, expected]
+
+
+def test_screen_restores_prefix_before_existing_put_back_messages() -> None:
+    first = _notice(".lq.First")
+    second = _notice(".lq.Second")
+    remaining = _notice(".lq.Remaining")
+    new = _notice(".lq.New")
+    source = SnifferMessageQueue(capacity=4, max_payload_bytes=1024)
+    for message in (first, second, remaining):
+        source.put_back(message)
+    source.enqueue(new)
+    screen = LoginScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(),
+            sniffer_messages=source,
+        )
+    )
+
+    actual = asyncio.run(
+        screen.wait_for_sniffer_message(
+            {second.raw.name},
+            put_back_messages=True,
+        )
+    )
+
+    assert actual is second
+    assert (
+        asyncio.run(
+            screen.wait_for_sniffer_message(
+                {first.raw.name},
+                put_back_messages=True,
+            )
+        )
+        is first
+    )
+    assert [source.get_nowait() for _ in range(4)] == [
+        first,
+        second,
+        remaining,
+        new,
+    ]
+
+
+def test_screen_propagates_batch_restoration_overflow() -> None:
+    first = _notice(".lq.First")
+    remaining = _notice(".lq.Remaining")
+    new = _notice(".lq.New")
+
+    class ArrivingMessageQueue(SnifferMessageQueue):
+        @override
+        async def get(self) -> DecodedSnifferMessage:
+            message = await super().get()
+            self.enqueue(new)
+            return message
+
+    source = ArrivingMessageQueue(capacity=2, max_payload_bytes=1024)
+    source.put_back(first)
+    source.put_back(remaining)
+    screen = LoginScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(),
+            sniffer_messages=source,
+        )
+    )
+
+    with pytest.raises(SnifferMessageQueueOverflowError):
+        asyncio.run(
+            screen.wait_for_sniffer_message(
+                {first.raw.name},
+                put_back_messages=True,
+            )
+        )
+
+    assert source.get_nowait() is remaining
+    assert source.get_nowait() is new
+    assert source.get_nowait() is None
 
 
 def test_screen_restores_unmatched_messages_when_wait_is_cancelled() -> None:

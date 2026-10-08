@@ -410,6 +410,11 @@ client runtime の内部message queueは、API名で選別せず、受信してd
 `deque`を使う。`get()` / `get_nowait()`は差し戻しを優先し、取得したmessageをqueueから
 消費する。複数messageを差し戻した場合は差し戻した順序を保つ。
 
+単一の `put_back(message)` は従来どおり差し戻し列の末尾へ追加する。
+`put_back_many(messages)` は渡された列の内部順序を維持して、既存の差し戻し列と
+通常未読列より前へ追加する。標準queueは全件の件数・byte予算を検証してから変更し、
+上限違反時には一部だけ追加したりbyte計数を変更したりしない。
+
 未処理messageの件数とraw payload bytes合計には上限を設ける。上限到達時は古いmessageを
 暗黙にevictせず、Sniffer runtimeの致命的errorにする。通常はframework処理がqueueを
 継続的に消費するため、長時間運転でも処理済みmessageは残らない。
@@ -436,6 +441,12 @@ Screen基底の名前待機helperは複数API名を受け付ける。呼び出�
 対象が見つかるまで一時退避し、元の順序でまとめて戻す。即時に1件ずつ戻すと差し戻し
 queueが優先され、同じmessageを再取得し続けるためである。cancellationや例外でも退避済み
 messageを復元する。
+
+名前待機helperの復元には `put_back_many()` を使う。従来の単一差し戻しの繰り返しでは、
+差し戻し済み未読列が残る場合に復元列がその後ろへ追加され、順序が変わっていた。
+`ScreenContext` へ独自message sourceを注入する場合は、既存の `get()`、`get_nowait()`、
+`put_back()` に加え、`put_back_many(Sequence[DecodedSnifferMessage])` を実装する。
+既存queueの単一差し戻し契約、wire schema、取得するeventは変更しない。
 
 差し戻しが失敗した場合は、最初の例外をそのまま伝播してRPAを終了する。
 後続messageだけを戻すと欠落したmessage列をqueueに残すため、意図的に差し戻しを

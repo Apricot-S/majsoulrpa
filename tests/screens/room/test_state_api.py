@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from inspect import Parameter, signature
 
@@ -56,6 +57,9 @@ class _WaitingMessageSource:
     def put_back(self, message: DecodedSnifferMessage) -> None:
         _ = message
 
+    def put_back_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        _ = messages
+
 
 class _FailingMessageSource:
     async def get(self) -> DecodedSnifferMessage:
@@ -68,6 +72,9 @@ class _FailingMessageSource:
     def put_back(self, message: DecodedSnifferMessage) -> None:
         _ = message
 
+    def put_back_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        _ = messages
+
 
 class _TimeoutFailingMessageSource:
     async def get(self) -> DecodedSnifferMessage:
@@ -79,6 +86,9 @@ class _TimeoutFailingMessageSource:
 
     def put_back(self, message: DecodedSnifferMessage) -> None:
         _ = message
+
+    def put_back_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        _ = messages
 
 
 class _QueuedThenWaitingMessageSource:
@@ -102,6 +112,9 @@ class _QueuedThenWaitingMessageSource:
 
     def put_back(self, message: DecodedSnifferMessage) -> None:
         _ = message
+
+    def put_back_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        _ = messages
 
 
 class _UpdateThenBlockingMessageSource:
@@ -130,6 +143,9 @@ class _UpdateThenBlockingMessageSource:
 
     def put_back(self, message: DecodedSnifferMessage) -> None:
         _ = message
+
+    def put_back_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        _ = messages
 
 
 def _room(*, room_id: int = 12345) -> dict[str, JsonValue]:

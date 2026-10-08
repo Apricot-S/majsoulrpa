@@ -100,6 +100,74 @@ def test_mixed_payload_budget_is_released_and_restored_on_put_back() -> None:
     asyncio.run(exercise())
 
 
+@pytest.mark.parametrize("retrieval", ["get", "get_nowait"])
+def test_batch_put_back_prepends_in_original_order(retrieval: str) -> None:
+    async def exercise() -> None:
+        first = _notice(".lq.First", 1)
+        second = _notice(".lq.Second", 2)
+        remaining = _notice(".lq.Remaining", 3)
+        new = _notice(".lq.New", 4)
+        queue = _queue(capacity=4)
+        queue.put_back(remaining)
+        queue.enqueue(new)
+
+        queue.put_back_many([first, second])
+
+        for expected in (first, second, remaining, new):
+            actual = (
+                await queue.get() if retrieval == "get" else queue.get_nowait()
+            )
+            assert actual is expected
+        queue.put_back_many([first, second, remaining, new])
+        assert queue.get_nowait() is first
+
+    asyncio.run(exercise())
+
+
+@pytest.mark.parametrize(
+    ("capacity", "max_bytes", "oversized"),
+    [(2, 1024, False), (4, 22, False), (4, 22, True)],
+    ids=["count-budget", "total-byte-budget", "individual-byte-budget"],
+)
+def test_failed_batch_put_back_preserves_queue_and_budget(
+    capacity: int,
+    max_bytes: int,
+    *,
+    oversized: bool,
+) -> None:
+    first = _notice(".lq.First", 1)
+    second = _notice(".lq.Second", 2)
+    queue = SnifferMessageQueue(capacity=capacity, max_payload_bytes=max_bytes)
+    queue.put_back(first)
+    queue.enqueue(second)
+    candidate = _notice(".lq.Candidate", 3)
+    if oversized:
+        candidate = DecodedNotice(
+            raw=RawNotice(
+                direction=Direction.INBOUND,
+                name=".lq.TooLarge",
+                payload=b"x" * 23,
+                observed_at=first.raw.observed_at,
+            ),
+            message={},
+        )
+    error_type = (
+        SnifferMessageTooLargeError
+        if oversized
+        else SnifferMessageQueueOverflowError
+    )
+
+    with pytest.raises(error_type):
+        queue.put_back_many([first, candidate])
+
+    assert queue.get_nowait() is first
+    assert queue.get_nowait() is second
+    assert queue.get_nowait() is None
+    queue.put_back_many([first, second])
+    assert queue.get_nowait() is first
+    assert queue.get_nowait() is second
+
+
 def test_queue_retains_all_messages_in_arrival_order() -> None:
     async def exercise() -> None:
         queue = _queue()

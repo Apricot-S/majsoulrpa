@@ -1,5 +1,6 @@
 import asyncio
 from collections import deque
+from collections.abc import Sequence
 
 from majsoulrpa.sniffer.events import DecodedSnifferMessage, RawNotice
 
@@ -52,21 +53,29 @@ class SnifferMessageQueue:
         return message
 
     def enqueue(self, message: DecodedSnifferMessage) -> None:
-        self._retain(message)
+        self._retain((message,))
         self._messages.put_nowait(message)
 
     def put_back(self, message: DecodedSnifferMessage) -> None:
-        self._retain(message)
+        self._retain((message,))
         self._put_back_messages.append(message)
 
-    def _retain(self, message: DecodedSnifferMessage) -> None:
-        payload_bytes = _payload_size(message)
-        if payload_bytes > self._max_payload_bytes:
+    def put_back_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        snapshot = tuple(messages)
+        self._retain(snapshot)
+        self._put_back_messages.extendleft(reversed(snapshot))
+
+    def _retain(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        payload_sizes = [_payload_size(message) for message in messages]
+        payload_bytes = sum(payload_sizes)
+        if any(size > self._max_payload_bytes for size in payload_sizes):
             msg = "Sniffer message exceeds the queue byte budget."
             raise SnifferMessageTooLargeError(msg)
         if (
-            self._messages.qsize() + len(self._put_back_messages)
-            >= self._capacity
+            self._messages.qsize()
+            + len(self._put_back_messages)
+            + len(messages)
+            > self._capacity
             or self._retained_payload_bytes + payload_bytes
             > self._max_payload_bytes
         ):

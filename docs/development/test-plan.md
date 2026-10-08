@@ -1383,6 +1383,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] Screen helperは複数のAPI名のいずれかが来るまで待機できる
 - [x] Screen helperは読んだmessageの破棄と全差し戻しを選択できる
 - [x] 差し戻す場合は対象messageを含めて元の順序を保つ
+- [x] 実queueに差し戻し済み未読messageがある場合も、名前待機helperの正常終了後に読み取った列を元の位置へ戻す
+- [x] batch差し戻しは内部順序を維持して未読列の前へ追加し、get/get_nowaitの双方で取得できる
+- [x] batch差し戻しの件数・byte上限・単一payload上限の失敗はqueueとbyte計数を変更せず伝播する
+- [x] 名前待機helperはbatch差し戻しの上限失敗を握りつぶさず、残った未読列を変更しない
 - [x] 待機のcancellationでも退避中messageを差し戻す
 - [x] 空のAPI名集合を拒否する
 - [x] Screen共通helperがdecode済みmessageをraw payload bytes抜きでログ用に整形する

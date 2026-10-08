@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Sequence
 
 from majsoulrpa.sniffer.events import DecodedSnifferMessage
 
@@ -15,6 +16,9 @@ class EmptySnifferMessageSource:
 
     def put_back(self, message: DecodedSnifferMessage) -> None:
         _ = message
+
+    def put_back_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        _ = messages
 
 
 EMPTY_SNIFFER_MESSAGES = EmptySnifferMessageSource()
