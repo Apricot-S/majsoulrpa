@@ -27,7 +27,6 @@ from majsoulrpa.screens.errors import (
 )
 from majsoulrpa.screens.home import (
     JOIN_ROOM_API_NAME,
-    ROOM_ID_PATTERN,
     HomeScreen,
     JoinRoomFailureReason,
 )
@@ -53,11 +52,6 @@ def test_join_room_failure_reason_has_expected_members() -> None:
     assert JoinRoomFailureReason.ROOM_FULL.value == 1101
     assert JoinRoomFailureReason.MATCH_ALREADY_STARTED.value == 1109
     assert JoinRoomFailureReason.UNRECOGNIZED_ERROR_CODE.value == -1
-
-
-def test_room_id_pattern_matches_exactly_five_digits() -> None:
-    assert ROOM_ID_PATTERN.pattern == r"\d{5}"
-    assert ROOM_ID_PATTERN.fullmatch("12345") is not None
 
 
 def test_join_room_accepts_exactly_five_digits(
@@ -593,22 +587,43 @@ def test_join_room_raises_if_confirm_button_is_missing(
     assert exc_info.value.screenshot == missing_confirm_screenshot
 
 
-@pytest.mark.parametrize("room_id", ["", "1234", "123456", "12a45"])
+@pytest.mark.parametrize(
+    "room_id",
+    [
+        "",
+        "1234",
+        "123456",
+        "12a45",
+        "\uff11\uff12\uff13\uff14\uff15",
+        "\u0661\u0662\u0663\u0664\u0665",
+    ],
+    ids=["empty", "short", "long", "letter", "full-width", "arabic-indic"],
+)
 def test_join_room_rejects_room_id_not_matching_five_digits(
     room_id: str,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     screenshot = _synthetic_blank_screenshot()
-    screen = HomeScreen(
-        context=ScreenContext(browser=BrowserControllerSpy(screenshot)),
-    )
+    browser = BrowserControllerSpy(screenshot)
+    screen = HomeScreen(context=ScreenContext(browser=browser))
 
-    with pytest.raises(
-        ScreenInvalidArgumentError,
-        match="Room ID must be exactly 5 digits",
-    ) as exc_info:
+    with (
+        caplog.at_level(logging.INFO),
+        pytest.raises(
+            ScreenInvalidArgumentError,
+            match="Room ID must be exactly 5",
+        ) as exc_info,
+    ):
         asyncio.run(screen.join_room(room_id))
 
     assert exc_info.value.screenshot == screenshot
+    assert browser.clicked_points == []
+    assert browser.events == ["screenshot"]
+    assert not screen._stale
+    if room_id:
+        assert room_id not in str(exc_info.value)
+        assert room_id not in repr(exc_info.value)
+        assert room_id not in caplog.text
 
 
 def test_join_room_rejects_stale_home_screen() -> None:

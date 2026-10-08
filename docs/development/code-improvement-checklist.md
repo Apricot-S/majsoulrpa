@@ -194,6 +194,7 @@
   - [x] `ScreenContext`のbrowser/sourceは役割が異なる主要依存として位置指定を維持する。request_stop・viewport幅/高さ・rng・account_stateは設定/注入点であり、特に同型の幅と高さを取り違えないためキーワード専用にする。第3引数以降の位置指定を廃止する影響と移行方法を公開API設計へ記録した。
 - [ ] `screens/login.py`: 認証 sequence、request-scoped HTTP wait、stale 化の時点、email/code/token 非漏洩を確認する。
 - [ ] `screens/home.py`: 前処理 loop と各高レベル遷移を区別し、巨大な条件分岐・重複 template 操作・message 先読みを確認する。
+  - [x] `join_room()`のID検証をASCII数字5桁へ限定する。Unicode数字を受理して画面操作へ進んでいた問題を修正し、画面操作前の拒否・active維持・入力値の例外/log非表示を回帰テストする。regexの表記だけを固定するテストは削除し、APIの振る舞いで確認する。その他のHome確認観点は未完了。
 
 ### `screens/room/`
 

@@ -365,7 +365,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ## Phase 6.8: HomeScreen 友人戦の部屋参加
 
-- [x] room ID の形式を `re.compile(r"\d{5}")` の完全一致で判定する
+- [x] room ID はASCII数字5桁の完全一致で判定し、全角・Arabic-Indic数字を画面操作前に拒否する
 - [x] 形式が一致する room ID は暫定 no-op で `None` を返す
 - [x] 形式が一致しない room ID は screenshot 付き不正引数エラーにする
 - [x] `HomeScreen.join_room()` を高レベル API のログ記録と stale 保護の対象にする

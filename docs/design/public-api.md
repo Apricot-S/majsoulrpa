@@ -165,6 +165,12 @@ class Screen:
 
 ## 操作 API
 
+`HomeScreen.join_room(room_id)` の部屋IDはASCII数字5桁の文字列とする。
+全角・Arabic-Indic数字などのUnicode数字は、画面操作前に screenshot 付き
+`ScreenInvalidArgumentError` で拒否し、Screenはactiveのまま維持する。入力値は
+例外message・通常ログへ含めず、自動的な数字の変換は行わない。従来の `\d` による
+Unicode数字の受理を廃止するが、ASCII数字5桁のIDと入室処理は変わらない。
+
 `Screen.goto_log(log_id)` は、空文字またはASCII英数字・`-`・`_` 以外を含むIDを
 遷移前に screenshot 付き `ScreenInvalidArgumentError` で拒否する。例外messageや
 通常ログに入力値を含めない。基本形式・視点指定・匿名化形式を扱うため、桁数、

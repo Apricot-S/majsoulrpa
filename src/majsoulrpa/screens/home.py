@@ -77,7 +77,7 @@ TOURNAMENT_ID_PATTERN = re.compile(r"\d{6}")
 FETCH_CUSTOMIZED_CONTEST_API_NAME = (
     ".lq.Lobby.fetchCustomizedContestByContestId"
 )
-ROOM_ID_PATTERN = re.compile(r"\d{5}")
+ROOM_ID_PATTERN = re.compile(r"[0-9]{5}", re.ASCII)
 JOIN_ROOM_API_NAME = ".lq.Lobby.joinRoom"
 
 _logger = getLogger(__name__)
@@ -513,7 +513,7 @@ class HomeScreen(Screen):
         room_id: str,
     ) -> JoinRoomFailureReason | None:
         if ROOM_ID_PATTERN.fullmatch(room_id) is None:
-            msg = "Room ID must be exactly 5 digits."
+            msg = "Room ID must be exactly 5 ASCII digits."
             screenshot = await self.screenshot()
             raise ScreenInvalidArgumentError(msg, screenshot)
 
