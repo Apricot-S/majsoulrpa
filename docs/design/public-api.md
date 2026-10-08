@@ -165,6 +165,12 @@ class Screen:
 
 ## 操作 API
 
+`HomeScreen.enter_tournament(tournament_id)` の大会IDはASCII数字6桁の文字列とする。
+Unicode数字は画面操作前に screenshot 付き `ScreenInvalidArgumentError` で拒否し、
+Screenはactiveのまま維持する。入力値は例外message・通常ログへ含めず、数字の自動変換は
+行わない。従来の `\d` によるUnicode数字の受理を廃止するが、ASCII数字6桁のIDと
+大会入場処理は変わらない。
+
 `HomeScreen.join_room(room_id)` の部屋IDはASCII数字5桁の文字列とする。
 全角・Arabic-Indic数字などのUnicode数字は、画面操作前に screenshot 付き
 `ScreenInvalidArgumentError` で拒否し、Screenはactiveのまま維持する。入力値は

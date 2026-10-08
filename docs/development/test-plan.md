@@ -399,7 +399,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 ## Phase 6.9: HomeScreen 大会ロビー参加
 
 - [x] `EnterTournamentFailureReason` が既知コードと framework fallback を表す
-- [x] tournament ID の形式を `re.compile(r"\d{6}")` の完全一致で判定する
+- [x] tournament IDはASCII数字6桁に限定し、全角・Arabic-Indic数字を画面操作前に拒否する
 - [x] 形式が一致しない tournament ID は screenshot 付き不正引数エラーにする
 - [x] `HomeScreen.enter_tournament()` を高レベル API のログ記録と stale 保護の対象にする
 - [x] 形式が一致する tournament ID では `tournament-match` をクリックする

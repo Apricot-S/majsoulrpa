@@ -73,7 +73,7 @@ from majsoulrpa.sniffer.events import DecodedRequestResponse
 
 MONTH_TICKET_API_NAME = ".lq.Lobby.payMonthTicket"
 JADE_WAIT_TIMEOUT_SECONDS = 5.0
-TOURNAMENT_ID_PATTERN = re.compile(r"\d{6}")
+TOURNAMENT_ID_PATTERN = re.compile(r"[0-9]{6}", re.ASCII)
 FETCH_CUSTOMIZED_CONTEST_API_NAME = (
     ".lq.Lobby.fetchCustomizedContestByContestId"
 )
@@ -352,7 +352,7 @@ class HomeScreen(Screen):
         tournament_id: str,
     ) -> EnterTournamentFailureReason | None:
         if TOURNAMENT_ID_PATTERN.fullmatch(tournament_id) is None:
-            msg = "Tournament ID must be exactly 6 digits."
+            msg = "Tournament ID must be exactly 6 ASCII digits."
             screenshot = await self.screenshot()
             raise ScreenInvalidArgumentError(msg, screenshot)
 
