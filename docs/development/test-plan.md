@@ -1355,6 +1355,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Client decode / hook
 
+- [x] synthetic descriptor を pool に登録後、名前で取得して注入し、types-protobuf 導入時も ty と Notice / service method の既存テストが通る。
+
 - [x] 接続失敗は元の例外を伝播し、readyを通知せず受信・decode・observer・queueへ進まずsubscriberを停止する。
 - [x] 実decoder・queueを使うReqRes配送でRequest / Responseの本文・raw bytes・観測時刻を取り違えず、observerとqueueへ同一eventを渡す。
 - [x] 実decoder・queueを使ったruntime経路でsynthetic Notice本文をdecodeし、raw bytes・観測情報を保持した同一eventをobserver→queueへ渡す。

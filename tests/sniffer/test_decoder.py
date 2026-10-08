@@ -4,9 +4,8 @@ import uuid
 
 import pytest
 from google.protobuf.descriptor_pb2 import (
-    # These classes are generated dynamically by protobuf.
-    FieldDescriptorProto,  # ty: ignore[unresolved-import]
-    FileDescriptorProto,  # ty: ignore[unresolved-import]
+    FieldDescriptorProto,
+    FileDescriptorProto,
 )
 from google.protobuf.descriptor_pool import DescriptorPool
 from google.protobuf.message import DecodeError
@@ -161,9 +160,9 @@ def test_decoder_uses_injected_descriptor_without_sharing_api_map(
         output_type=".synthetic.Response",
     )
     standard = SnifferMessageDecoder()
-    # Protobuf selects the pool implementation dynamically.
-    pool = DescriptorPool()  # ty: ignore[possibly-missing-implicit-call]
-    custom = SnifferMessageDecoder(pool.Add(schema))
+    pool = DescriptorPool()
+    pool.Add(schema)
+    custom = SnifferMessageDecoder(pool.FindFileByName(schema.name))
     if kind == "notice":
         publication = _notice_publication(
             api_name=".synthetic.Notice", body=b""

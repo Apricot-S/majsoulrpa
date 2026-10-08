@@ -66,6 +66,7 @@ test = [
 typing = [
     "ty>=0.0.85",
     "types-boto3[s3]>=1.43.46,<2",
+    "types-protobuf>=7.35.1.20260906,<8",
 ]
 docs = [
     "sphinx>=9.1.0",
