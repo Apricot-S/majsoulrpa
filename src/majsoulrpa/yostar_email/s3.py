@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+from contextlib import asynccontextmanager, closing
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
 
 from majsoulrpa._clock import Clock, utc_now
 from majsoulrpa.yostar_email.constants import VERIFICATION_EMAIL_EXPIRATION
@@ -15,17 +16,49 @@ from majsoulrpa.yostar_email.errors import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
     from types_boto3_s3.client import S3Client
+    from types_boto3_s3.type_defs import ObjectTypeDef
 
 
 class VerificationEmailNotFoundError(YostarVerificationEmailError):
-    """No current valid verification email was found."""
+    """No valid email found; retry may find a new arrival."""
 
 
 @dataclass(frozen=True, slots=True)
 class _S3EmailCandidate:
+    """A candidate whose received_at is normalized to UTC."""
+
     key: str
     received_at: datetime
+
+
+async def _finish_task[T](task: asyncio.Task[T]) -> T:
+    """Finish cleanup work despite additional cancellation requests."""
+    while True:
+        try:
+            return await asyncio.shield(task)
+        except asyncio.CancelledError:
+            if task.done():
+                return task.result()
+
+
+async def _await_operation[T](task: asyncio.Task[T]) -> T:
+    """Wait for an operation before propagating caller cancellation."""
+    try:
+        return await asyncio.shield(task)
+    except asyncio.CancelledError:
+        if task.cancelled():
+            return task.result()
+        await _finish_task(task)
+        raise
+
+
+async def _close_client(client: S3Client) -> None:
+    await _await_operation(
+        asyncio.create_task(asyncio.to_thread(client.close))
+    )
 
 
 class S3VerificationCodeProvider:
@@ -40,10 +73,19 @@ class S3VerificationCodeProvider:
         aws_profile: str | None = None,
         poll_interval: float = 5.0,
         client: S3Client | None = None,
-        clock: Clock | None = None,
+        clock: Clock = utc_now,
     ) -> None:
-        if poll_interval <= 0.0:
-            msg = "poll_interval must be greater than zero."
+        max_poll_interval = VERIFICATION_EMAIL_EXPIRATION.total_seconds()
+        if (
+            isinstance(poll_interval, bool)
+            or not 0.0 < poll_interval < max_poll_interval
+        ):
+            msg = (
+                "poll_interval must be a finite number, excluding bool, "
+                "greater than zero, and less "
+                f"than the verification email lifetime ({max_poll_interval:g} "
+                "seconds)."
+            )
             raise ValueError(msg)
         self._email_address = email_address
         self._bucket_name = bucket_name
@@ -51,32 +93,49 @@ class S3VerificationCodeProvider:
         self._aws_profile = aws_profile
         self._poll_interval = poll_interval
         self._client = client
-        self._clock = clock or utc_now
+        self._clock = clock
 
     async def fetch(self, *, delete_read_emails: bool = False) -> str:
         """Poll S3 and optionally delete matching emails read."""
-        client = await self._resolve_client()
-        while True:
-            try:
-                return await self._run_fetch_once(
-                    client,
-                    delete_read_emails=delete_read_emails,
-                )
-            except VerificationEmailNotFoundError:
-                await asyncio.sleep(self._poll_interval)
+        async with self._client_scope() as client:
+            while True:
+                try:
+                    return await self._run_fetch_once(
+                        client,
+                        delete_read_emails=delete_read_emails,
+                    )
+                except VerificationEmailNotFoundError:
+                    await asyncio.sleep(self._poll_interval)
 
     async def fetch_nowait(self, *, delete_read_emails: bool = False) -> str:
         """Check S3 once and optionally delete matching emails read."""
+        async with self._client_scope() as client:
+            return await self._run_fetch_once(
+                client,
+                delete_read_emails=delete_read_emails,
+            )
+
+    @asynccontextmanager
+    async def _client_scope(self) -> AsyncGenerator[S3Client, None]:
         client = await self._resolve_client()
-        return await self._run_fetch_once(
-            client,
-            delete_read_emails=delete_read_emails,
-        )
+        try:
+            yield client
+        finally:
+            if self._client is None:
+                await _close_client(client)
 
     async def _resolve_client(self) -> S3Client:
         if self._client is not None:
             return self._client
-        return await asyncio.to_thread(_create_s3_client, self._aws_profile)
+        creation = asyncio.create_task(
+            asyncio.to_thread(_create_s3_client, self._aws_profile)
+        )
+        try:
+            return await asyncio.shield(creation)
+        except asyncio.CancelledError:
+            client = await _finish_task(creation)
+            await _close_client(client)
+            raise
 
     async def _run_fetch_once(
         self,
@@ -84,11 +143,21 @@ class S3VerificationCodeProvider:
         *,
         delete_read_emails: bool,
     ) -> str:
-        return await asyncio.to_thread(
-            self._fetch_once,
-            client,
-            delete_read_emails=delete_read_emails,
+        operation = asyncio.create_task(
+            asyncio.to_thread(
+                self._fetch_once,
+                client,
+                delete_read_emails=delete_read_emails,
+            )
         )
+        return await _await_operation(operation)
+
+    def _current_time(self) -> datetime:
+        now = self._clock()
+        if now.utcoffset() is None:
+            msg = "Clock timestamps must include timezone information."
+            raise ValueError(msg)
+        return now.astimezone(UTC)
 
     def _fetch_once(
         self,
@@ -96,17 +165,19 @@ class S3VerificationCodeProvider:
         *,
         delete_read_emails: bool,
     ) -> str:
-        now = self._clock()
+        self._current_time()
+
         candidates = _list_email_candidates(
             client,
             bucket_name=self._bucket_name,
             key_prefix=self._key_prefix,
         )
-        verification_code: str | None = None
+        verification: tuple[str, datetime] | None = None
         keys_to_delete: list[str] = []
         for candidate in candidates:
-            is_current = _is_current(candidate.received_at, now=now)
-            if not delete_read_emails and not is_current:
+            if not delete_read_emails and not _is_current(
+                candidate.received_at, now=self._current_time()
+            ):
                 continue
 
             email = VerificationEmail.parse(
@@ -122,23 +193,33 @@ class S3VerificationCodeProvider:
             ):
                 keys_to_delete.append(candidate.key)
 
-            if verification_code is not None or not is_current:
+            if verification is not None:
+                continue
+
+            current_time = self._current_time()
+            if not _is_current(candidate.received_at, now=current_time):
                 continue
 
             try:
-                verification_code = email.extract_code(
-                    recipient=self._email_address,
-                )
+                code = email.extract_code(recipient=self._email_address)
             except InvalidYostarVerificationEmailError:
                 continue
+
+            if not delete_read_emails:
+                return code
+
+            verification = (code, candidate.received_at)
 
         _delete_objects(
             client,
             bucket_name=self._bucket_name,
             keys=keys_to_delete,
         )
-        if verification_code is not None:
-            return verification_code
+        if verification is not None:
+            code, received_at = verification
+            if _is_current(received_at, now=self._current_time()):
+                return code
+
         msg = "No current Yostar verification email was found in S3."
         raise VerificationEmailNotFoundError(msg)
 
@@ -154,12 +235,15 @@ def _list_email_candidates(
         received_at = item.get("LastModified")
         key = item.get("Key")
         if (
-            isinstance(received_at, datetime)
-            and received_at.tzinfo is not None
-            and isinstance(key, str)
+            received_at is not None
+            and received_at.utcoffset() is not None
+            and key is not None
+            and key.startswith(key_prefix)
         ):
             candidates.append(
-                _S3EmailCandidate(key=key, received_at=received_at)
+                _S3EmailCandidate(
+                    key=key, received_at=received_at.astimezone(UTC)
+                )
             )
     return sorted(
         candidates,
@@ -169,17 +253,15 @@ def _list_email_candidates(
 
 
 def _is_current(received_at: datetime, *, now: datetime) -> bool:
+    """Check validity using timestamps already normalized to UTC."""
     age = now - received_at
     return timedelta(0) <= age < VERIFICATION_EMAIL_EXPIRATION
 
 
 def _read_object(client: S3Client, *, bucket_name: str, key: str) -> bytes:
     response = client.get_object(Bucket=bucket_name, Key=key)
-    body = response["Body"].read()
-    if not isinstance(body, bytes):
-        msg = "S3 verification email body is not bytes."
-        raise TypeError(msg)
-    return body
+    with closing(response["Body"]) as stream:
+        return stream.read()
 
 
 def _delete_objects(
@@ -196,9 +278,11 @@ def _list_objects(
     client: S3Client,
     bucket_name: str,
     key_prefix: str,
-) -> list[Any]:
-    objects: list[Any] = []
+) -> list[ObjectTypeDef]:
+    objects: list[ObjectTypeDef] = []
     continuation_token: str | None = None
+    seen_tokens: set[str] = set()
+
     while True:
         if continuation_token is None:
             response = client.list_objects_v2(
@@ -211,19 +295,29 @@ def _list_objects(
                 Prefix=key_prefix,
                 ContinuationToken=continuation_token,
             )
+
         objects.extend(response.get("Contents", []))
         if not response.get("IsTruncated", False):
             return objects
+
         continuation_token = response.get("NextContinuationToken")
-        if not isinstance(continuation_token, str):
-            msg = "S3 listing is truncated without a continuation token."
-            raise TypeError(msg)
+        if not isinstance(continuation_token, str) or not continuation_token:
+            msg = "S3 listing is truncated without a valid continuation token."
+            raise ValueError(msg)
+
+        if continuation_token in seen_tokens:
+            msg = "S3 listing returned a repeated continuation token."
+            raise ValueError(msg)
+
+        seen_tokens.add(continuation_token)
 
 
 def _create_s3_client(aws_profile: str | None) -> S3Client:
     try:
         boto3 = importlib.import_module("boto3")
     except ModuleNotFoundError as error:
+        if error.name != "boto3":
+            raise
         msg = (
             "S3VerificationCodeProvider requires the 's3' optional "
             "dependency. Install it with: pip install 'majsoulrpa[s3]'"

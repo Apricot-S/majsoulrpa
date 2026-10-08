@@ -1,6 +1,6 @@
 [project]
 name = "majsoulrpa"
-version = "0.1.0.dev6"
+version = "0.1.0.dev7"
 description = "A Robotic Process Automation (RPA) framework for Mahjong Soul (雀魂)"
 authors = [
     { name = "Apricot S." },
@@ -64,7 +64,7 @@ test = [
     "pytest>=9.1.1,<10",
 ]
 typing = [
-    "ty>=0.0.64",
+    "ty>=0.0.85",
     "types-boto3[s3]>=1.43.46,<2",
 ]
 docs = [

@@ -1429,6 +1429,124 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ## Optional integration: Yostar verification email
 
+### Package import boundary
+
+- [x] package の公開 export が parser、provider Protocol、メール例外だけであり、定義元と同一 object である
+- [x] AWS SDK と型 stub を import できない新規 process でも package を import でき、S3 module を読み込まない
+
+### Error classification and retry boundary
+
+- [x] 不正メールとメール未着を共通のメール例外で捕捉でき、未着を不正メールと区別できる
+- [x] 不正メールの例外 str / repr に送信元・宛先・コード・本文を含めず、未着の例外にメールアドレス・bucket・prefixを含めない
+- [x] polling はメール未着だけを再試行し、他のメール例外・外部処理失敗・キャンセルは元の例外を一度で伝播する
+
+### Provider substitution
+
+- [x] Protocolを継承しない独自providerをVerificationCodeProviderとして受け取り、fetch / fetch_nowaitの戻り値を保持できる
+- [x] 同じ差し替え経路で削除optionの省略時Falseと明示Trueを両APIへ渡せる
+
+### S3 optional dependency failure
+
+- [x] falseyな注入clientをfetch / fetch_nowaitとも置き換えず、内部clientを生成しない
+
+- [x] client生成失敗はfetch / fetch_nowaitとも元の例外を一度で伝播し、S3操作・polling再試行へ進まない
+
+- [x] boto3自体のModuleNotFoundErrorだけextraの導入案内へ変換し、元の原因を保持する
+- [x] boto3内部の依存不足や欠落module名不明のModuleNotFoundErrorは同じ例外を伝播する
+
+### S3 polling interval
+
+- [x] 極端に大きい整数の待機間隔もOverflowErrorではなくValueErrorで拒否する
+
+- [x] booleanのpoll_intervalを数値へ流用せずprovider構築時に拒否する
+
+- [x] メール未着のpolling待機中にキャンセルするとCancelledErrorを伝播し、追加の一覧取得・読取・削除をしない
+
+- [x] polling intervalの30分ちょうど・超過を拒否し、上限直前を受理する。上限は認証メールの期限定数から取得する
+
+- [x] polling intervalは有限の正数を要求し、ゼロ・負数・NaN・正負の無限大をprovider構築時に拒否する
+
+### S3 response body lifecycle
+
+- [x] 生成・処理の終了待ち中に再キャンセルされても、thread完了後に内部clientをcloseする
+
+- [x] 内部生成clientはfetch / fetch_nowaitの成功・失敗で一度だけcloseし、注入clientはcloseしない
+- [x] 非同期キャンセル時は進行中のthread処理完了後に内部clientを解放し、生成中のキャンセルでも取得したclientを解放する
+- [x] 内部clientのclose失敗は伝播し、処理失敗と重なる場合も例外contextへ保持する
+
+- [x] 削除ありで有効code取得後の本文取得が失敗した場合、元の例外を伝播し、後続読取・削除・polling再試行をしない
+
+- [x] 削除対象が期限切れメールだけの場合、削除option有効時は削除後に未着例外を返し、無効時は読取・削除しない
+
+- [x] 有効codeがあっても削除の最初・途中で失敗した場合は元の例外を伝播し、後続削除・polling再試行をしない
+
+- [x] Body close失敗を伝播し、read失敗と重なっても原因を例外contextへ保持する。closeは一度で、失敗後にメールを削除しない
+
+- [x] メール本文の読み取り成功・失敗の両経路でresponse Bodyを閉じ、読み取り失敗は元の例外を伝播する
+
+### S3 injected clock
+
+- [x] clockがtzinfo欠落・UTC offset未定義の日時を返した場合はValueErrorで拒否し、S3アクセスしない
+
+- [x] falseyなclockを既定clockへ置き換えず、注入した時刻で有効メールを取得する
+
+### S3 elapsed-time validation
+
+- [x] clockと候補日時を入口でUTCへ正規化し、時刻巻き戻り・異なるoffsetの候補順と期限判定を維持する
+
+- [x] 削除中に取得済みcodeが期限へ達した場合、削除完了後にcodeを返さず未着例外を返す
+
+- [x] 一覧取得中に期限へ達したメールを、削除なしでは本文取得前に除外する
+
+- [x] 本文取得中に有効期限へ達したメールからcodeを返さず、削除optionに従って処理後に未着例外を返す
+
+- [x] LastModifiedのtzinfo欠落・UTC offset未定義を候補から除外し、読取・削除せず有効な候補を取得する
+
+- [x] 時刻巻き戻りで壁時計上の順序が逆転しても、UTCで最新の有効メールを選択する
+
+- [x] 同じtzinfo内の時刻の巻き戻りでも実経過時間で期限切れメールを除外し、有効なメールを取得する
+
+### S3 listing pagination
+
+- [x] 2page目の取得失敗で、先のpageに有効候補があっても元の例外を伝播し、本文読取・削除・polling再試行をしない
+
+- [x] ObjectTypeDefのKey / LastModified欠落項目を候補から除外し、読取・削除せず有効項目の取得を継続する
+
+- [x] 一覧項目の型をtypes-boto3のObjectTypeDefで表し、型stubを実行時importせず既存のpage取得と候補選択を維持する
+
+- [x] 削除なしでは最新の有効code取得後に古い候補を読まず終了する。削除ありでは対象メールの確認を継続する
+
+- [x] prefix外の一覧キーは読取・削除せず、prefix内の有効メールだけを取得する（削除optionの有無とも確認）
+
+- [x] 継続tokenの欠落・型不正・空文字・再出現をValueErrorで拒否し、追加取得・メール読取・削除へ進まない
+- [x] 正常な複数pageを継続tokenで取得し、page境界を越えて最新の有効メールを選ぶ
+
+### Message validation and retrieval
+
+- [x] Subjectのbase64 encoded wordに含まれる不正文字を補正して受理せず、コード取得と削除条件を拒否する
+- [x] 有効期限はMIME Dateではなくreceived_atで判定し、Dateの欠落・不正・未来の値に左右されない
+
+- [x] MIME構造defect（header/body区切り不正、multipart境界欠落）をコード取得と削除条件の両経路で拒否し、正常なmultipartは受理する
+
+- [x] 不明charsetや指定charsetでdecodeできないSubjectをMIME parserの補正結果で受理せず、コード取得と削除条件を拒否する
+
+- [x] 同じtzinfo内のUTC offset変更でも実経過時間で有効・期限切れ・未来を判定する
+
+- [x] now / received_atのtzinfo欠落とutcoffset未定義を秘密情報のないValueErrorで拒否し、異なるUTC offsetでも経過時間で期限を判定する
+
+- [x] 構文不正なToをparserの補正結果で受理せず、コード取得と削除対象への選択を拒否する
+
+- [x] Fromの欠落・重複・複数送信元・構文不正をコード取得で拒否し、正常な表示名付き送信元は受理する。削除条件は宛先・件名の判定を維持する
+
+- [x] To headerの欠落・重複ではコード取得と削除条件を拒否し、単一To内の複数宛先は受理する
+
+- [x] Subjectが欠落・重複したメールはコード取得と削除条件の両方で拒否し、重複判定はheader名の大文字小文字によらない
+
+- [x] VerificationEmailのrepr / strと通常ログへ送信元・宛先・認証コード・本文を含めず、コード取得と削除条件判定は維持する
+
+- [x] 件名のコードは ASCII 6桁だけを受理し、全角・Arabic-Indic数字、桁数違い、全角空白の変更、前後の追加文字を拒否する
+- [x] メールの有効期間は受信直後から30分未満とし、直前・境界・未来の受信日時を区別する
+
 - [x] `AppConfig` で `yostar_email` 設定を省略できる
 - [x] `yostar_email` でメールアドレスだけを設定し、S3 設定を省略できる
 - [x] TOML の `[yostar_email.s3]` から bucket、prefix、AWS profile を読める

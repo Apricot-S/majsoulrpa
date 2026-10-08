@@ -350,12 +350,62 @@ Sniffer の各段は異なるデータ完全性を守るため、ファイル数
 
 ## `yostar_email/`
 
-- [ ] `yostar_email/__init__.py`: optional integration の公開 surface と boto3 非依存 import を確認する。
-- [ ] `yostar_email/constants.py`: sender、subject、期限などの値と調査根拠を確認する。
-- [ ] `yostar_email/errors.py`: 利用者が再試行可否を判断でき、secret を message に含めない例外階層を確認する。
-- [ ] `yostar_email/provider.py`: `VerificationCodeProvider` が実際の公開差し替え点として最小であることを確認する。
-- [ ] `yostar_email/email.py`: MIME sender/recipient/subject/date の strict validation と code/email/body 非漏洩を確認する。
-- [ ] `yostar_email/s3.py`: boto3 遅延 import、候補順、polling 条件、任意削除の対象制約、client lifecycle を確認する。
+- [x] `yostar_email/__init__.py`: optional integration の公開 surface と boto3 非依存 import を確認する。
+  - [x] parser、provider Protocol、メール例外の4 exportが定義元と同一objectであることを確認した。新規processでboto3 / botocore / S3型stubのimportを禁止してもpackageを利用でき、S3 moduleを読み込まない回帰テストを追加した。既存実装を維持した。
+- [x] `yostar_email/constants.py`: sender、subject、期限などの値と調査根拠を確認する。
+  - [x] 件名のcodeをASCII 6桁に限定し、LoginScreenの入力条件へ揃えた。Unicode数字・桁数・空白・前後文字の拒否と期限境界をsynthetic MIMEで確認した。送信元・件名の既存値と30分の受理期間を維持した。有効期限30分は認証メール本文の記載に基づく（2026-10-06ユーザー補足）。送信元・件名の調査根拠の未記録と期限の根拠を[設計資料](../design/yostar-email.md)へ明記した。
+- [x] `yostar_email/errors.py`: 利用者が再試行可否を判断でき、secret を message に含めない例外階層を確認する。
+  - [x] 不正メールと未着を共通baseで捕捉でき、型で区別できる既存階層を維持した。例外docstringと[設計資料](../design/yostar-email.md)へ再試行条件を明記し、未着以外の例外・キャンセルの一度だけの伝播とstr / reprへのメール情報・S3設定の非漏洩を回帰テストで確認した。
+- [x] `yostar_email/provider.py`: `VerificationCodeProvider` が実際の公開差し替え点として最小であることを確認する。
+  - [x] 2つのasync methodと削除optionだけのProtocolを維持した。継承しない独自providerを型付きconsumerへ渡し、両APIの戻り値と削除optionの省略・明示指定をpytest / tyで確認した。docstringと[設計資料](../design/yostar-email.md)へ構造的な差し替え方法と責務を明記した。
+- [x] `yostar_email/email.py`: MIME sender/recipient/subject と受信日時の strict validation、code/email/body 非漏洩を確認する。
+  - [x] 最終確認でSubjectの不正base64文字を無視して受理する問題を修正し、厳密なbase64検証を追加した。日時はMIME Dateではなくreceived_atを使用する設計を明記し、Dateの欠落・不正・未来の値に左右されない有効・期限切れを確認した。現行の確認範囲を完了した。
+  - [x] MIME構造defectを無視して件名からコードを取得・削除対象にする問題を修正した。全partの構造defectを確認し、header/body区切り不正・multipart境界欠落の拒否と正常なmultipartの受理をコード取得・削除条件の両経路で確認した。
+  - [x] 不正charsetの件名がparserの補正で受理される問題を修正した。Subjectのdefectを確認し、raw headerのencoded wordを宣言charsetで検証する。不明charsetと指定charsetでdecodeできないbytesをコード取得・削除条件の両経路で拒否する回帰テストを追加した。
+  - [x] 同じtzinfo内でUTC offsetが変わると壁時計の差で期限を誤判定する問題を修正し、UTCへ変換して実経過時間を求める。synthetic timezoneでoffset変更時の有効・期限切れ・未来の3経路を回帰テストした。
+  - [x] now / received_atのtzinfo存在だけで日時を受理する問題を修正し、utcoffsetが未定義なら減算前にValueErrorで拒否する。両引数のtzinfo欠落・offset未定義、例外への情報非漏洩、異なる固定UTC offsetでの有効・期限切れを確認した。
+  - [x] 構文不正なToをparserの補正結果で受理する問題を修正した。単一headerかつdefectなしを要求し、閉じ括弧欠落をコード取得・削除条件の両経路で拒否する回帰テストを追加した。
+  - [x] 構文不正なFromをparserの補正結果で受理する問題を修正した。Fromは1 headerかつdefectなしを要求し、欠落・重複・複数送信元・閉じ括弧欠落の拒否と正常な表示名付き送信元の受理を確認した。削除条件は宛先・件名による既存判定を維持する。
+  - [x] To headerの重複時に複数headerをまとめて宛先として受理する問題を修正した。欠落・重複をコード取得・削除条件の両経路で拒否し、単一To内の複数宛先は維持する。header名の大文字小文字によらない拒否も回帰テストで確認した。
+  - [x] Subject headerが1つの場合だけ件名を照合し、重複時に先頭の件名だけでコードを取得・削除対象にする問題を修正した。欠落・重複とheader名の大文字小文字によらない拒否をコード取得・削除条件の両経路で確認した。
+  - [x] VerificationEmailの全fieldをreprから除外し、repr / strと通常ログへの送信元・宛先・コードの漏洩を修正した。synthetic MIMEで非漏洩とコード取得・削除条件判定の維持を確認した。
+- [x] `yostar_email/s3.py`: boto3 遅延 import、候補順、polling 条件、任意削除の対象制約、client lifecycle を確認する。
+  - [x] 実装・関連テスト・設計資料の最終照合を完了した。現在の確認範囲で追加の実装変更は不要と判断し、yostar_emailの関連pytestとRuff・format・tyを再確認した。
+  - [x] poll_intervalの重複するisfinite検証を除去し、正数・有効期限未満の比較でNaN・無限大も拒否する。極端に大きい整数でOverflowErrorが出る経路をValueErrorへ修正し、既存の不正値テストへ追加した。
+  - [x] closeとメール取得のshield・キャンセル待機処理を_await_operationへ共通化し、処理側のCancelledError保持と呼び出し側の再キャンセル耐性を一か所へ整理した。既存の失敗・キャンセル・解放テストで動作を維持した。
+  - [x] thread終了待ち中の再キャンセルで内部生成clientを解放し損ねる問題を修正した。終了待ちをshield付きhelperへまとめ、close中も終了を待つ。生成・処理のキャンセルテストを再キャンセルの有無へ拡張して確認した。
+  - [x] 内部生成clientが解放されない問題を修正し、取得呼び出しの成功・失敗・キャンセルでcloseする。注入clientは利用者所有としてcloseしない。生成・処理中のキャンセルはthread終了を待って解放し、close失敗と処理失敗の原因も保持する。所有・失敗・キャンセルの回帰テストを追加した。
+  - [x] 取得したcode・受信日時のtuple添字参照を名前付き変数へ展開し、削除後の期限判定と返却の関係を明確にした。削除なしではcodeを直接返し、tupleは削除後の再検証に必要な場合だけ保持する。
+  - [x] 読取前の期限判定を削除なしの候補除外へ限定し、削除ありでは不要なclock取得とis_current状態を除去した。コード取得前・削除後の期限検証は維持し、既存の取得中・削除中の期限境界テストで確認した。
+  - [x] clock取得と候補生成の入口で日時をUTCへ正規化し、並び替え・期限判定ごとの変換重複を整理した。内部候補・期限helperのUTC前提を明記し、既存の時刻巻き戻り・期限境界テストで動作を維持した。
+  - [x] 任意削除中に取得済みcodeが期限切れになる経路を修正した。codeと受信日時を保持し、削除後の返却前に期限を再検証する。clock取得・offset検証の重複を_current_timeへ整理し、先頭の検証も維持した。
+  - [x] 取得前の期限判定を各候補の処理時点のclockへ変更した。一覧取得中に期限へ達した候補を削除なしでは読まず除外する回帰テストを追加し、先頭のclock検証・本文取得後の再検証は維持した。
+  - [x] 本文取得中の時間経過で期限切れになったメールをcodeとして返す問題を修正した。取得後のclockで期限を再検証し、削除optionの有無とも未着例外を返す回帰テストを追加した。期限切れメールの任意削除は既存条件を維持する。
+  - [x] 削除ありで有効code・削除候補を取得した後の本文取得失敗でも、元の例外を伝播し、後続読取・削除・polling再試行をしないことを回帰テストで確認した。実装は維持した。
+  - [x] 2page目の取得失敗で、先のpageに有効候補があっても部分一覧を使わず元の例外を伝播することを確認した。本文取得・削除・polling再試行へ進まない回帰テストを追加し、実装は維持した。
+  - [x] 期限切れメールしかない場合に、削除option有効時は対象を削除しても取得成功とせず未着例外を返すことを確認した。削除なしでは読取も行わない回帰テストを追加し、実装は維持した。
+  - [x] Body.readのbytes返却契約を信頼し、冗長な型検証と一時変数を除去した。closing内で直接返却し、read / closeの成功・失敗4経路を既存テストで確認した。
+  - [x] ObjectTypeDefの型契約に従いKey / LastModifiedの冗長なisinstanceをNone判定へ整理した。欠落・UTC offset未定義・prefix外の除外は維持し、field欠落時の読取・削除防止と有効候補の取得を回帰テストで確認した。
+  - [x] _list_objectsの戻り値・蓄積listをAnyからtypes-boto3のObjectTypeDefへ変更し、候補選択まで型情報を保持する。TYPE_CHECKING内のimportで実行時依存を増やさず、既存pytestとtyで確認した。
+  - [x] IsTruncatedはboto3の型契約を信頼し、実行時の型検証と専用テストを削除した。正常なpage継続・終了は既存の一覧取得テストで確認する。
+  - [x] falseyな注入S3 clientもfetch / fetch_nowaitでそのまま使用し、内部clientを生成しないことを回帰テストで確認した。注入先での一覧・本文取得と削除なしの動作も確認し、既存のNone判定を維持した。
+  - [x] client生成失敗をfetch / fetch_nowaitが元の例外のまま伝播し、一度だけ生成を試み、S3操作・polling再試行へ進まないことを回帰テストで確認した。AWS profileの生成関数への配送も確認し、実装は維持した。
+  - [x] poll_interval=Trueを1秒として受理する問題を修正し、booleanをValueErrorで拒否する。既存の不正待機間隔テストへTrue / Falseを追加した。
+  - [x] 未着によるpolling待機中のキャンセルでCancelledErrorを伝播し、追加のS3アクセスを行わないことをEventで同期した回帰テストで確認した。指定した待機間隔の使用も確認し、実装は維持した。
+  - [x] 削除なしの有効code取得後に古い候補を読み続ける処理を終了するよう修正した。不要な読取失敗で取得済みcodeを返せなくなる経路を回帰テストし、既存の候補順テストの読取期待も更新した。削除ありでは全対象の確認を継続する。
+  - [x] 削除の最初・途中の失敗で、有効code取得済みでも成功として返さず元の例外を伝播することを確認した。後続削除とpolling再試行をしない回帰テストを追加し、実装は維持した。
+  - [x] 一覧APIへのPrefix指定に加えて候補keyのstartswithを確認し、prefix外を読取・削除の候補から除外する。類似prefix・key途中のprefixを削除optionの有無とも拒否し、prefix内の有効メールだけを取得する回帰テストを追加した。
+  - [x] 本文のread / close成功・失敗を既存テストの4組合せへ統合した。close失敗を元の例外のまま伝播し、read失敗との同時発生ではread例外をcontextへ保持する。closeは一度で、失敗後に削除しないことを確認し、実装は維持した。
+  - [x] LastModifiedのUTC offset未定義を日時候補として受理する問題を修正した。既存のtzinfo欠落の除外と同じく候補から外し、削除option有効時も読取・削除せず、有効なメールの取得を継続することを確認した。
+  - [x] 候補順をUTC日時で比較し、時刻巻き戻りで古いメールを先に選ぶ問題を修正した。両候補が有効な状況で実時刻の新しいメールを優先する回帰テストを追加し、synthetic timezoneを既存の期限判定テストと共用した。
+  - [x] 注入clockのtzinfo欠落・UTC offset未定義をValueErrorで拒否する。空一覧でもメール未着として扱わず、一覧取得・本文読取・削除を呼ばない回帰テストを追加した。
+  - [x] S3候補の期限判定をUTCの実経過時間へ変更し、同じtzinfo内の時刻巻き戻りで期限切れメールを有効と誤判定する問題を修正した。期限切れ候補を読まず、有効なメールだけを取得する回帰テストを追加した。
+  - [x] falseyな注入clockが既定clockへ置き換わる問題を修正した。clockのデフォルトへutc_nowを直接指定し、注入値をそのまま保持する。注入clockの時刻でメールを取得し、既定clockを呼ばない回帰テストを追加した。
+  - [x] 一覧の空・再出現した継続tokenで取得を繰り返す問題を修正した。欠落・型不正・空文字・同token再出現・cycleを不正なレスポンス値としてValueErrorで拒否し、追加取得・読取・削除を行わない。正常な複数pageの継続token配送と全pageからの最新メール選択も確認した。
+  - [x] get_objectのBodyが読み取り後に閉じられない問題を修正し、closingで解放する。読み取り成功・失敗の両経路でストリームのcloseと元の読み取り例外の伝播をprovider経由の回帰テストで確認した。
+  - [x] poll_intervalを認証メールの有効期限未満へ制限した。上限はVERIFICATION_EMAIL_EXPIRATIONから取得し、30分ちょうど・超過の拒否と上限直前の受理を回帰テストで確認した。
+  - [x] poll_intervalのNaN・正の無限大を受理する問題を修正し、有限の正数を要求する。既存のゼロ拒否テストを負数・NaN・正負の無限大へ拡張し、provider構築時の失敗を確認した。
+  - [x] boto3内部の依存不足までextra未導入として誤報告する問題を修正した。欠落module名がboto3の場合だけ導入案内へ変換し、元の原因を保持する。内部依存不足・欠落名不明は同じ例外を伝播する回帰テストを追加した。
 
 ## `assets/`
 
