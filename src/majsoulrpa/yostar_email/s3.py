@@ -45,13 +45,21 @@ async def _finish_task[T](task: asyncio.Task[T]) -> T:
                 return task.result()
 
 
-async def _close_client(client: S3Client) -> None:
-    closing_task = asyncio.create_task(asyncio.to_thread(client.close))
+async def _await_operation[T](task: asyncio.Task[T]) -> T:
+    """Wait for an operation before propagating caller cancellation."""
     try:
-        await asyncio.shield(closing_task)
+        return await asyncio.shield(task)
     except asyncio.CancelledError:
-        await _finish_task(closing_task)
+        if task.cancelled():
+            return task.result()
+        await _finish_task(task)
         raise
+
+
+async def _close_client(client: S3Client) -> None:
+    await _await_operation(
+        asyncio.create_task(asyncio.to_thread(client.close))
+    )
 
 
 class S3VerificationCodeProvider:
@@ -144,13 +152,7 @@ class S3VerificationCodeProvider:
                 delete_read_emails=delete_read_emails,
             )
         )
-        try:
-            return await asyncio.shield(operation)
-        except asyncio.CancelledError:
-            if operation.cancelled():
-                return operation.result()
-            await _finish_task(operation)
-            raise
+        return await _await_operation(operation)
 
     def _current_time(self) -> datetime:
         now = self._clock()
