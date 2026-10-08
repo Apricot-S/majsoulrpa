@@ -122,7 +122,11 @@ class S3VerificationCodeProvider:
         verification_code: str | None = None
         keys_to_delete: list[str] = []
         for candidate in candidates:
-            is_current = _is_current(candidate.received_at, now=now)
+            current_time = self._clock()
+            if current_time.utcoffset() is None:
+                msg = "Clock timestamps must include timezone information."
+                raise ValueError(msg)
+            is_current = _is_current(candidate.received_at, now=current_time)
             if not delete_read_emails and not is_current:
                 continue
 

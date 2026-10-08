@@ -1484,6 +1484,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### S3 elapsed-time validation
 
+- [x] 一覧取得中に期限へ達したメールを、削除なしでは本文取得前に除外する
+
 - [x] 本文取得中に有効期限へ達したメールからcodeを返さず、削除optionに従って処理後に未着例外を返す
 
 - [x] LastModifiedのtzinfo欠落・UTC offset未定義を候補から除外し、読取・削除せず有効な候補を取得する
