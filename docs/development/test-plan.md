@@ -1484,6 +1484,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### S3 elapsed-time validation
 
+- [x] clockと候補日時を入口でUTCへ正規化し、時刻巻き戻り・異なるoffsetの候補順と期限判定を維持する
+
 - [x] 削除中に取得済みcodeが期限へ達した場合、削除完了後にcodeを返さず未着例外を返す
 
 - [x] 一覧取得中に期限へ達したメールを、削除なしでは本文取得前に除外する

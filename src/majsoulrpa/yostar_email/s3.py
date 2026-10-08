@@ -27,6 +27,8 @@ class VerificationEmailNotFoundError(YostarVerificationEmailError):
 
 @dataclass(frozen=True, slots=True)
 class _S3EmailCandidate:
+    """A candidate whose received_at is normalized to UTC."""
+
     key: str
     received_at: datetime
 
@@ -108,7 +110,7 @@ class S3VerificationCodeProvider:
         if now.utcoffset() is None:
             msg = "Clock timestamps must include timezone information."
             raise ValueError(msg)
-        return now
+        return now.astimezone(UTC)
 
     def _fetch_once(
         self,
@@ -192,17 +194,20 @@ def _list_email_candidates(
             and key.startswith(key_prefix)
         ):
             candidates.append(
-                _S3EmailCandidate(key=key, received_at=received_at)
+                _S3EmailCandidate(
+                    key=key, received_at=received_at.astimezone(UTC)
+                )
             )
     return sorted(
         candidates,
-        key=lambda candidate: candidate.received_at.astimezone(UTC),
+        key=lambda candidate: candidate.received_at,
         reverse=True,
     )
 
 
 def _is_current(received_at: datetime, *, now: datetime) -> bool:
-    age = now.astimezone(UTC) - received_at.astimezone(UTC)
+    """Check validity using timestamps already normalized to UTC."""
+    age = now - received_at
     return timedelta(0) <= age < VERIFICATION_EMAIL_EXPIRATION
 
 
