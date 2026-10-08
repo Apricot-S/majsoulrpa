@@ -154,25 +154,25 @@ class S3VerificationCodeProvider:
                 continue
 
             try:
-                verification = (
-                    email.extract_code(recipient=self._email_address),
-                    candidate.received_at,
-                )
+                code = email.extract_code(recipient=self._email_address)
             except InvalidYostarVerificationEmailError:
                 continue
 
             if not delete_read_emails:
-                return verification[0]
+                return code
+
+            verification = (code, candidate.received_at)
 
         _delete_objects(
             client,
             bucket_name=self._bucket_name,
             keys=keys_to_delete,
         )
-        if verification is not None and _is_current(
-            verification[1], now=self._current_time()
-        ):
-            return verification[0]
+        if verification is not None:
+            code, received_at = verification
+            if _is_current(received_at, now=self._current_time()):
+                return code
+
         msg = "No current Yostar verification email was found in S3."
         raise VerificationEmailNotFoundError(msg)
 
