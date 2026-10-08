@@ -408,12 +408,19 @@ Screen instance 間で必要な最新 snapshot だけは context 経由の小さ
 client runtime の内部message queueは、API名で選別せず、受信してdecodeできたmessageを
 すべて到着順に保持する。通常の未読messageにはasync queue、読み取った後の差し戻しには
 `deque`を使う。`get()` / `get_nowait()`は差し戻しを優先し、取得したmessageをqueueから
-消費する。複数messageを差し戻した場合は差し戻した順序を保つ。
+消費する。複数messageは一括差し戻しで列の内部順序を保つ。
 
-単一の `put_back(message)` は従来どおり差し戻し列の末尾へ追加する。
+単一の `put_back(message)` は既存の差し戻し列と通常未読列より前へ追加する。
 `put_back_many(messages)` は渡された列の内部順序を維持して、既存の差し戻し列と
 通常未読列より前へ追加する。標準queueは全件の件数・byte予算を検証してから変更し、
 上限違反時には一部だけ追加したりbyte計数を変更したりしない。
+
+両メソッドは「読んだmessageを未読列の前へ戻す」という同じ契約なので名前を維持する。
+従来の単一差し戻しは末尾追加であり、戻した順に再取得する契約だったが、差し戻し済み
+未読messageが残る場合に元の位置を復元できなかったため廃止する。`put_back(A)`、
+`put_back(B)` の連続呼び出しは `B -> A` になる。`A -> B` の列を復元する利用者は
+`put_back_many([A, B])` を使う。Homeの月間チケットとMatchの保留通知・報酬走査・
+step整列も一括復元へ移行する。独自sourceの単一差し戻しも先頭追加に合わせる。
 
 未処理messageの件数とraw payload bytes合計には上限を設ける。上限到達時は古いmessageを
 暗黙にevictせず、Sniffer runtimeの致命的errorにする。通常はframework処理がqueueを
@@ -446,7 +453,7 @@ messageを復元する。
 差し戻し済み未読列が残る場合に復元列がその後ろへ追加され、順序が変わっていた。
 `ScreenContext` へ独自message sourceを注入する場合は、既存の `get()`、`get_nowait()`、
 `put_back()` に加え、`put_back_many(Sequence[DecodedSnifferMessage])` を実装する。
-既存queueの単一差し戻し契約、wire schema、取得するeventは変更しない。
+wire schemaと取得するeventは変更しない。
 
 差し戻しが失敗した場合は、最初の例外をそのまま伝播してRPAを終了する。
 後続messageだけを戻すと欠落したmessage列をqueueに残すため、意図的に差し戻しを

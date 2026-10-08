@@ -258,6 +258,12 @@ class Screen(ABC):
     ) -> None:
         self.context.sniffer_messages.put_back(message)
 
+    def _put_back_sniffer_messages(
+        self,
+        messages: Sequence[DecodedSnifferMessage],
+    ) -> None:
+        self.context.sniffer_messages.put_back_many(messages)
+
     async def _wait_for_sniffer_message(
         self,
         names: Collection[str],
@@ -282,9 +288,7 @@ class Screen(ABC):
             # Propagate failures immediately; never recover with an
             # incomplete queue.
             if messages_to_put_back:
-                self.context.sniffer_messages.put_back_many(
-                    messages_to_put_back
-                )
+                self._put_back_sniffer_messages(messages_to_put_back)
 
     @property
     def context(self) -> ScreenContext:

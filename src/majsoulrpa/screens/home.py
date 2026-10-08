@@ -315,8 +315,8 @@ class HomeScreen(Screen):
                     has_month_ticket = True
                     break
         finally:
-            for message in messages:
-                self._put_back_sniffer_message(message)
+            if messages:
+                self._put_back_sniffer_messages(messages)
 
         if not has_month_ticket:
             return

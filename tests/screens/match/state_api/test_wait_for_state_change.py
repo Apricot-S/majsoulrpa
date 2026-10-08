@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections.abc import Sequence
 from random import Random
 from types import SimpleNamespace
 
@@ -27,6 +28,7 @@ from tests.screens._support import (
     BrowserControllerSpy,
     ScreenContext,
     _message_queue,
+    _notice,
     _request_response,
     _synthetic_blank_screenshot,
     _synthetic_template_screenshot,
@@ -41,6 +43,42 @@ from tests.screens.match._support import (
     _live_new_round_action,
     _live_no_tile_action,
 )
+
+
+@pytest.mark.parametrize("with_deferred_notifications", [False, True])
+def test_ui_progress_is_restored_before_remaining_put_back_messages(
+    *,
+    with_deferred_notifications: bool,
+) -> None:
+    notifications = (
+        [
+            _notice(".lq.NotifyGameEndResult"),
+            _notice(".lq.NotifyGameEndResult"),
+        ]
+        if with_deferred_notifications
+        else []
+    )
+    progress = _live_deal_action(step=1, seat=1, tile="1m", left_tile_count=60)
+    remaining = _notice(".lq.Remaining")
+    queue = _message_queue()
+    queue.put_back_many([*notifications, progress, remaining])
+    screen = _screen(BrowserControllerSpy(b"synthetic"), queue)
+    deferred: list[DecodedSnifferMessage] = []
+
+    assert (
+        asyncio.run(
+            screen._put_back_pending_action_while_waiting_for_ui(
+                deferred_game_end_notifications=deferred
+                if with_deferred_notifications
+                else None,
+            )
+        )
+        is True
+    )
+
+    for expected in [*notifications, progress, remaining]:
+        assert queue.get_nowait() is expected
+    assert deferred == []
 
 
 def test_wait_for_state_change_returns_terminal_state_before_capture() -> None:
@@ -457,18 +495,18 @@ def test_hule_confirmation_puts_back_early_game_end_notification(
     )
     screen = _screen(browser, messages)
     put_back_names: list[str] = []
-    original_put_back = screen._put_back_sniffer_message
+    original_put_back = screen._put_back_sniffer_messages
 
-    def record_put_back(message: DecodedSnifferMessage) -> None:
-        put_back_names.append(message.raw.name)
-        original_put_back(message)
+    def record_put_back(messages: Sequence[DecodedSnifferMessage]) -> None:
+        put_back_names.extend(message.raw.name for message in messages)
+        original_put_back(messages)
 
     async def skip_sleep(delay: float) -> None:
         _ = delay
 
     monkeypatch.setattr(
         screen,
-        "_put_back_sniffer_message",
+        "_put_back_sniffer_messages",
         record_put_back,
     )
     monkeypatch.setattr(asyncio, "sleep", skip_sleep)

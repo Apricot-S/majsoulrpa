@@ -144,7 +144,10 @@ def test_home_before_callback_retries_and_clicks_jade_for_month_ticket(
     assert queue.get_nowait() is None
 
 
-def test_month_ticket_check_puts_back_all_messages() -> None:
+@pytest.mark.parametrize("initial_source", ["enqueue", "put_back_many"])
+def test_month_ticket_check_puts_back_all_messages(
+    initial_source: str,
+) -> None:
     jade = _synthetic_template_screenshot(
         template_path=JADE_TEMPLATE_PATH,
         settings_path=JADE_SETTINGS_PATH,
@@ -152,7 +155,14 @@ def test_month_ticket_check_puts_back_all_messages() -> None:
     queue = _message_queue(
         ".lq.Unrelated",
         ".lq.Lobby.payMonthTicket",
+        ".lq.AfterMonthTicket",
     )
+    if initial_source == "put_back_many":
+        queued = [queue.get_nowait() for _ in range(3)]
+        assert all(message is not None for message in queued)
+        queue.put_back_many(
+            [message for message in queued if message is not None]
+        )
     screen = HomeScreen(
         context=ScreenContext(
             browser=BrowserControllerSpy(jade),
@@ -169,6 +179,9 @@ def test_month_ticket_check_puts_back_all_messages() -> None:
     assert second is not None
     assert first.raw.name == ".lq.Unrelated"
     assert second.raw.name == ".lq.Lobby.payMonthTicket"
+    third = queue.get_nowait()
+    assert third is not None
+    assert third.raw.name == ".lq.AfterMonthTicket"
 
 
 def test_home_before_callback_raises_if_jade_is_not_found_in_time(

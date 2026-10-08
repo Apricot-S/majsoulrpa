@@ -152,7 +152,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `get()` は次の message が来るまで待機して消費する
 - [x] `get_nowait()` は未読 message がなければ `None` を返す
 - [x] 差し戻した message は通常の未読 message より先に取得する
-- [x] 複数の差し戻しは差し戻した順序を保つ
+- [x] 一括差し戻しは列の内部順序を維持して未読列の前へ戻す
+- [x] 単一put_backは既存の差し戻し列より前へ戻し、再読取と再差し戻しでも元の位置を維持する
+- [x] Homeの月間チケット走査は差し戻し済みの後続messageが残っても元の順序を維持する
+- [x] MatchのUI待機は保留通知と進行messageをまとめて未読列の前へ戻し、通知とstep整列の内部順序を維持する
 - [x] 件数上限を越えた message を黙って破棄しない
 - [x] raw payload bytes 合計の上限超過を黙って破棄しない
 - [x] 単一 message が byte 上限を越える場合は明示的に拒否する

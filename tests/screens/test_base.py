@@ -208,7 +208,7 @@ class SnifferMessageSourceSpy:
         return self.messages.pop(0)
 
     def put_back(self, message: DecodedSnifferMessage) -> None:
-        self.put_back_messages.append(message)
+        self.put_back_messages.insert(0, message)
 
     def put_back_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
         self.put_back_messages[0:0] = messages
@@ -466,8 +466,7 @@ def test_screen_restores_prefix_before_existing_put_back_messages() -> None:
     remaining = _notice(".lq.Remaining")
     new = _notice(".lq.New")
     source = SnifferMessageQueue(capacity=4, max_payload_bytes=1024)
-    for message in (first, second, remaining):
-        source.put_back(message)
+    source.put_back_many([first, second, remaining])
     source.enqueue(new)
     screen = LoginScreen(
         context=ScreenContext(
@@ -514,8 +513,7 @@ def test_screen_propagates_batch_restoration_overflow() -> None:
             return message
 
     source = ArrivingMessageQueue(capacity=2, max_payload_bytes=1024)
-    source.put_back(first)
-    source.put_back(remaining)
+    source.put_back_many([first, remaining])
     screen = LoginScreen(
         context=ScreenContext(
             browser=BrowserControllerSpy(),

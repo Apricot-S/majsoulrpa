@@ -233,7 +233,7 @@ def test_cancelled_get_preserves_message_and_byte_budget(timing: str) -> None:
 
 
 @pytest.mark.parametrize("retrieval", ["get", "get_nowait"])
-def test_put_back_order_precedes_unread_and_new_messages(
+def test_batch_put_back_precedes_unread_and_new_messages(
     retrieval: str,
 ) -> None:
     async def exercise() -> None:
@@ -248,9 +248,8 @@ def test_put_back_order_precedes_unread_and_new_messages(
 
         assert await queue.get() is first
         assert await queue.get() is second
-        queue.put_back(first)
         queue.enqueue(fourth)
-        queue.put_back(second)
+        queue.put_back_many([first, second])
 
         for expected in (first, second, third, fourth):
             actual = (
@@ -260,6 +259,21 @@ def test_put_back_order_precedes_unread_and_new_messages(
         assert queue.get_nowait() is None
 
     asyncio.run(exercise())
+
+
+def test_single_put_back_restores_before_existing_put_back_messages() -> None:
+    first = _notice(".lq.First", 1)
+    second = _notice(".lq.Second", 2)
+    third = _notice(".lq.Third", 3)
+    queue = _queue()
+    queue.put_back_many([first, second, third])
+    assert queue.get_nowait() is first
+
+    queue.put_back(first)
+
+    assert queue.get_nowait() is first
+    assert queue.get_nowait() is second
+    assert queue.get_nowait() is third
 
 
 @pytest.mark.parametrize(

@@ -58,7 +58,7 @@ class SnifferMessageQueue:
 
     def put_back(self, message: DecodedSnifferMessage) -> None:
         self._retain((message,))
-        self._put_back_messages.append(message)
+        self._put_back_messages.appendleft(message)
 
     def put_back_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
         snapshot = tuple(messages)

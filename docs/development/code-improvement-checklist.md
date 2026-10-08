@@ -188,6 +188,7 @@
 - [x] `screens/__init__.py`: 共通基底・context・検出spec・共通例外のみのexportを維持する。標準Screenは各moduleからimportする設計を明記し、公開API設計の古いimport例を修正した。export一覧と具体Screenの非読込は既存package testで確認する。
 - [x] `screens/errors.py`: 例外階層と組込み例外との多重継承を維持する。画像は属性だけに保持し、明示保存まで書き出さず、str・repr・args・生成ファイル名へ含めない。mkdir/write失敗はそのまま伝播する。created_atはaware datetimeを生成時にUTCへ正規化し、環境依存のファイル名になるnaive/offset未定義日時をValueErrorで拒否する。互換性の変更は公開API設計へ記録した。message/screenshotは主要入力、created_atは任意の時刻指定としてキーワード専用を維持し、Noneは実行時clockの利用を表す。
 - [ ] `screens/base.py`: `ScreenContext` の依存、検出 contract、stale guard、API log、Sniffer helper の責務集中を確認する。
+  - [x] 単一put_backも先頭復元へ統一し、複数messageの復元はprotectedな一括helperへ委譲する。Home/Matchの複数復元ループを移行し、通知の内部順序とstep整列を維持する。末尾追加の旧契約からの移行はSniffer設計へ記録した。
   - [x] 名前待機helperは一括差し戻しで読み取った列を未読列の前へ戻し、差し戻し済み未読messageがあっても順序を維持する。標準queueは全件の予算確認後に追加し、上限違反で部分追加しない。独自sourceにput_back_manyの実装が必要となる影響はSniffer設計へ記録した。
   - [x] Sniffer名前待機helperの差し戻し失敗は意図的に最初の例外で打ち切る。後続messageだけを戻すと欠落した列をqueueに残すため、復旧せず例外を伝播してRPAを終了する。
   - [x] `goto_log()`は空文字・ASCII英数字と`-`/`_`以外を遷移前にscreenshot付き不正引数例外で拒否し、入力値を例外・通常ログへ含めない。基本・視点指定・匿名化形式に対して構造や実在は検証しない。URLのpercent-encodeは維持し、通常のIDのURLは変えない。以前受理した不正文字の拒否は公開API設計へ記録した。

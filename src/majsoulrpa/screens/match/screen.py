@@ -359,8 +359,10 @@ class MatchScreen(Screen):
                         ),
                     )
             finally:
-                for notification in deferred_game_end_notifications:
-                    self._put_back_sniffer_message(notification)
+                if deferred_game_end_notifications:
+                    self._put_back_sniffer_messages(
+                        deferred_game_end_notifications
+                    )
             return await self._wait_for_round_transition()
 
         while True:
@@ -1231,10 +1233,12 @@ class MatchScreen(Screen):
                 or message.raw.name in additional_progress_message_names
             ):
                 if deferred_game_end_notifications is not None:
-                    for notification in deferred_game_end_notifications:
-                        self._put_back_sniffer_message(notification)
+                    self._put_back_sniffer_messages(
+                        [*deferred_game_end_notifications, message],
+                    )
                     deferred_game_end_notifications.clear()
-                self._put_back_sniffer_message(message)
+                else:
+                    self._put_back_sniffer_message(message)
                 return True
             await self._apply_match_message_with_screen_errors(
                 message,
@@ -1407,8 +1411,8 @@ class MatchScreen(Screen):
             # Only the reward notification requires Match-owned UI work.
             # Preserve every other message for the next Screen in its
             # original order.
-            for message in messages_to_put_back:
-                self._put_back_sniffer_message(message)
+            if messages_to_put_back:
+                self._put_back_sniffer_messages(messages_to_put_back)
         return activity_reward_observed
 
     async def _advance_event_reward_presentation(self) -> None:
@@ -1501,8 +1505,12 @@ class MatchScreen(Screen):
                     )
                 max_step = max(buffered_messages)
                 if len(buffered_messages) == max_step - expected_step + 1:
-                    for step in range(expected_step, max_step + 1):
-                        self._put_back_sniffer_message(buffered_messages[step])
+                    self._put_back_sniffer_messages(
+                        [
+                            buffered_messages[step]
+                            for step in range(expected_step, max_step + 1)
+                        ]
+                    )
                     return True
 
             next_message = await self._get_sniffer_message()
