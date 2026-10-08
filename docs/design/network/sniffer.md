@@ -437,6 +437,11 @@ Screen基底の名前待機helperは複数API名を受け付ける。呼び出�
 queueが優先され、同じmessageを再取得し続けるためである。cancellationや例外でも退避済み
 messageを復元する。
 
+差し戻しが失敗した場合は、最初の例外をそのまま伝播してRPAを終了する。
+後続messageだけを戻すと欠落したmessage列をqueueに残すため、意図的に差し戻しを
+継続せず、再試行や不完全なqueueでの復旧も行わない。待機自体の例外・cancellationが
+重なった場合はPythonの例外contextで保持される。
+
 利用者向けraw / decoded hookは初期APIへ追加しない。framework利用者はScreen経由で
 decode済みmessageと対応するraw bytesを取得できるため、それでは不足する具体的な
 ユースケースが確認できた時点で再設計する。

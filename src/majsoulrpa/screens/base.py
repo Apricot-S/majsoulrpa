@@ -269,6 +269,10 @@ class Screen(ABC):
                 if message.raw.name in selected_names:
                     return message
         finally:
+            # Stop on the first put-back failure: restoring later
+            # messages would leave a sequence with gaps. Propagate the
+            # failure to stop the RPA rather than attempting recovery
+            # with an incomplete queue.
             for message in messages_to_put_back:
                 self._put_back_sniffer_message(message)
 
