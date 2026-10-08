@@ -133,6 +133,13 @@ browser host を起動する CLI では、client からの接続先として `--
 `screens.room`、`screens.match` から import する。共通 API の import 時に具体的な
 Screen や画像照合の optional dependency を読み込まないため、この境界を維持する。
 
+`Screen(context)` と標準の派生Screen、および
+`ScreenshotScreenDetector(screenshot, context)` は `ScreenContext` を必須入力とする。
+Screenは生成時から必要な依存を持ち、contextを後から設定する未配線状態は提供しない。
+以前のcontext省略・`None`指定はサポートしない。直接生成する利用者と独自detectorは
+contextを渡す必要があるが、標準controller runtimeは以前から必ず渡している。
+検出条件の参照はclass methodで行うため、contextなしのScreen instanceは不要である。
+
 公開名は `Presentation` より短い `Screen` とします。画面の検出条件と、その画面で
 安全に実行できる操作を同じ class で表現します。
 

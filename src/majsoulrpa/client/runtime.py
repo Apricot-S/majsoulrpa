@@ -36,7 +36,7 @@ class ScreenshotScreenDetector:
     def __init__(
         self,
         screenshot: ScreenshotProvider,
-        context: ScreenContext | None = None,
+        context: ScreenContext,
     ) -> None:
         self._screenshot = screenshot
         self._context = context

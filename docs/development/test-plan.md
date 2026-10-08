@@ -103,7 +103,7 @@
 - [x] ScreenContextの停止callableを省略すると無処理で完了する
 - [x] ScreenContextの停止callableの失敗・cancellationをそのまま伝播する
 - [x] 検出された Screen に ScreenContext を注入できる
-- [x] ScreenContext 未設定の Screen 操作は例外になる
+- [x] Screenと検出器は必須contextを受け取り、検出されたScreenで同じcontextを使って操作できる
 - [x] `Screen` の高レベル API 呼び出しを Screen 名と API 名だけで info log に出す
 - [x] `LoginScreen` で追加された高レベル API 呼び出しを info log に出す
 - [x] 高レベル API の引数、戻り値、user data を log に出さない

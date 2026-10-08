@@ -189,7 +189,7 @@
 - [x] `screens/errors.py`: 例外階層と組込み例外との多重継承を維持する。画像は属性だけに保持し、明示保存まで書き出さず、str・repr・args・生成ファイル名へ含めない。mkdir/write失敗はそのまま伝播する。created_atはaware datetimeを生成時にUTCへ正規化し、環境依存のファイル名になるnaive/offset未定義日時をValueErrorで拒否する。互換性の変更は公開API設計へ記録した。message/screenshotは主要入力、created_atは任意の時刻指定としてキーワード専用を維持し、Noneは実行時clockの利用を表す。
 - [x] `screens/base.py`: 依存はbrowser操作・message source・account参照・停止要求に限定し、runtimeや具体queueへ逆依存しない。検出spec、stale guard、API log、region/template/Sniffer helperは共通Screen拡張点として維持し、行数だけを理由に分割しない。追加の実装修正は不要と判断した。
   - [x] reload成功後だけstaleになり、失敗/cancellationは伝播してactiveを維持する。API logはScreen/API名だけを記録し、finallyで深度を戻す。既存関連88テストとsynthetic browserで失敗/cancellation後のログ深度復元を確認した。
-  - [x] Screenのcontext=Noneは未配線、rng=Noneはstatefulな既定乱数源への委譲を表すため維持する。account state・停止callable・検出predicateのstatelessな既定値は共有できる。region/value/template等の主要入力は位置指定、warp/clear/message/復元optionは操作policyや同型値の識別のためキーワード指定を維持する。
+  - [x] Screenと派生Screen・ScreenshotScreenDetectorのcontextは必須にする。未指定の利用はテストのみで、実runtimeは常に渡し、後から配線する経路もなかったためNoneと未設定チェックを削除する。テストはfake contextを注入し、検出Screenで同じcontextを使って操作することを確認する。rng=Noneはstatefulな既定乱数源への委譲なので維持する。account state・停止callable・検出predicateのstatelessな既定値は共有できる。region/value/template等の主要入力は位置指定、warp/clear/message/復元optionは操作policyや同型値の識別のためキーワード指定を維持する。
   - [x] 先頭への復元を明示するためsourceの差し戻しAPIをprepend/prepend_manyに改名し、protected helperと復元option・全呼び出し・fake・設計資料を揃える。旧名は維持せず、独自sourceの移行方法をSniffer設計へ記録する。名前だけの新規テストは追加しない。
   - [x] 単一prependも先頭復元へ統一し、複数messageの復元はprotectedな一括helperへ委譲する。Home/Matchの複数復元ループを移行し、通知の内部順序とstep整列を維持する。末尾追加の旧契約からの移行はSniffer設計へ記録した。
   - [x] 名前待機helperは一括差し戻しで読み取った列を未読列の前へ戻し、差し戻し済み未読messageがあっても順序を維持する。標準queueは全件の予算確認後に追加し、上限違反で部分追加しない。独自sourceにprepend_manyの実装が必要となる影響はSniffer設計へ記録した。

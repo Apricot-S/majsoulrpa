@@ -100,7 +100,7 @@ class LoginScreen(Screen):
         settings_path=MAINTENANCE_OK_SETTINGS_PATH,
     )
 
-    def __init__(self, context: ScreenContext | None = None) -> None:
+    def __init__(self, context: ScreenContext) -> None:
         super().__init__(context=context)
         self._email_address_entered_at: float | None = None
 

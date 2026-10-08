@@ -89,7 +89,7 @@ class RoomScreen(Screen):
         settings_path=CANCEL_SETTINGS_PATH,
     )
 
-    def __init__(self, context: ScreenContext | None = None) -> None:
+    def __init__(self, context: ScreenContext) -> None:
         super().__init__(context=context)
         self._room_state_store = RoomStateStore()
         self._room_state_initialized = False

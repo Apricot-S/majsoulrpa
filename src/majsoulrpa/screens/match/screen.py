@@ -263,7 +263,7 @@ class MatchScreen(Screen):
         settings_path=MATCH_RESULT_CONFIRM_SETTINGS_PATH,
     )
 
-    def __init__(self, context: ScreenContext | None = None) -> None:
+    def __init__(self, context: ScreenContext) -> None:
         super().__init__(context=context)
         self._metadata: MatchMetadata | None = None
         self._start_match_event: StartMatchEvent | None = None

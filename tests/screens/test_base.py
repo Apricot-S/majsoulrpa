@@ -326,7 +326,10 @@ def test_screen_detector_detects_screen_from_fake_screenshot() -> None:
     async def screenshot() -> bytes:
         return login_screenshot
 
-    detector = ScreenshotScreenDetector(screenshot)
+    detector = ScreenshotScreenDetector(
+        screenshot,
+        ScreenContext(browser=BrowserControllerSpy()),
+    )
 
     screen = asyncio.run(detector.detect((FakeLoginScreen,)))
 
@@ -352,20 +355,16 @@ def test_screen_detector_injects_context_into_detected_screen() -> None:
     async def screenshot() -> bytes:
         return login_screenshot
 
-    context = ScreenContext(browser=BrowserControllerSpy())
+    browser = BrowserControllerSpy()
+    context = ScreenContext(browser=browser)
     detector = ScreenshotScreenDetector(screenshot, context=context)
 
     screen = asyncio.run(detector.detect((FakeLoginScreen,)))
 
     assert isinstance(screen, FakeLoginScreen)
     assert screen.context is context
-
-
-def test_screen_context_is_required_before_screen_operation() -> None:
-    screen = LoginScreen()
-
-    with pytest.raises(RuntimeError, match="ScreenContext"):
-        _ = screen.context
+    assert asyncio.run(screen.screenshot()) == browser.screenshot_bytes
+    assert browser.events == ["screenshot"]
 
 
 def test_screen_context_requires_sniffer_message_source() -> None:
@@ -638,7 +637,9 @@ def test_false_screen_detection_does_not_call_callback() -> None:
         _ = config
         return RPARuntime(
             callbacks,
-            ScreenshotScreenDetector(screenshot),
+            ScreenshotScreenDetector(
+                screenshot, ScreenContext(browser=BrowserControllerSpy())
+            ),
             should_stop=lambda: True,
         )
 
@@ -683,7 +684,9 @@ def test_screen_detection_exception_is_not_hidden() -> None:
         _ = config
         return RPARuntime(
             callbacks,
-            ScreenshotScreenDetector(screenshot),
+            ScreenshotScreenDetector(
+                screenshot, ScreenContext(browser=BrowserControllerSpy())
+            ),
             should_stop=lambda: True,
         )
 
@@ -739,7 +742,9 @@ def test_multiple_matching_screens_use_registration_order() -> None:
         _ = config
         return RPARuntime(
             callbacks,
-            ScreenshotScreenDetector(screenshot),
+            ScreenshotScreenDetector(
+                screenshot, ScreenContext(browser=BrowserControllerSpy())
+            ),
             should_stop=lambda: True,
         )
 
@@ -1315,7 +1320,9 @@ def test_runtime_calls_screen_before_callback() -> None:
         _ = config
         return RPARuntime(
             callbacks,
-            ScreenshotScreenDetector(screenshot),
+            ScreenshotScreenDetector(
+                screenshot, ScreenContext(browser=BrowserControllerSpy())
+            ),
             should_stop=lambda: True,
         )
 
