@@ -188,6 +188,7 @@
 - [ ] `screens/__init__.py`: 標準 Screen と共通例外の public export が設計資料と一致することを確認する。
 - [ ] `screens/errors.py`: 例外階層、`TimeoutError` / `ValueError` との多重継承、screenshot 保持・保存時の情報漏洩を確認する。
 - [ ] `screens/base.py`: `ScreenContext` の依存、検出 contract、stale guard、API log、Sniffer helper の責務集中を確認する。
+  - [x] `ScreenContext.request_stop`はstatelessな無処理関数を直接デフォルトにし、falsey callableを置き換えずawaitする。停止処理の失敗・cancellationは元の例外を伝播する。明示的な`None`指定の廃止は公開API設計へ記録した。その他の確認観点は未完了。
 - [ ] `screens/login.py`: 認証 sequence、request-scoped HTTP wait、stale 化の時点、email/code/token 非漏洩を確認する。
 - [ ] `screens/home.py`: 前処理 loop と各高レベル遷移を区別し、巨大な条件分岐・重複 template 操作・message 先読みを確認する。
 

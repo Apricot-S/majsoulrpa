@@ -954,6 +954,57 @@ def test_screen_context_requests_stop() -> None:
     assert requested is True
 
 
+def test_screen_context_awaits_falsey_stop_requester() -> None:
+    class StopRequesterSpy:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def __bool__(self) -> bool:
+            return False
+
+        async def __call__(self) -> None:
+            self.calls += 1
+
+    requester = StopRequesterSpy()
+    context = ScreenContext(
+        browser=BrowserControllerSpy(), request_stop=requester
+    )
+
+    asyncio.run(context.request_stop())
+
+    assert requester.calls == 1
+
+
+def test_screen_context_default_stop_request_is_noop() -> None:
+    browser = BrowserControllerSpy()
+    context = ScreenContext(browser=browser)
+
+    asyncio.run(context.request_stop())
+
+    assert browser.events == []
+
+
+@pytest.mark.parametrize(
+    "error",
+    [RuntimeError("synthetic stop failure"), asyncio.CancelledError()],
+    ids=["failure", "cancellation"],
+)
+def test_screen_context_propagates_stop_request_error(
+    error: BaseException,
+) -> None:
+    async def request_stop() -> None:
+        raise error
+
+    context = ScreenContext(
+        browser=BrowserControllerSpy(), request_stop=request_stop
+    )
+
+    with pytest.raises(type(error)) as caught:
+        asyncio.run(context.request_stop())
+
+    assert caught.value is error
+
+
 def test_screen_can_request_rpa_stop() -> None:
     requested = False
 

@@ -159,6 +159,12 @@ class Screen:
 
 ## 操作 API
 
+`ScreenContext` の `request_stop` は引数なしの async callable を受け取り、
+`Screen.stop_rpa()` から await する。callable の真偽値は評価せず、停止処理の
+例外と cancellation はそのまま伝播する。省略時は stateless な無処理の関数を使う。
+従来の明示的な `request_stop=None` はサポートせず、既定動作には引数を省略する。
+リポジトリ内に明示的な `None` 指定はなく、通常の runtime 配線への影響はない。
+
 操作 API は、その画面で意味があるものだけに限定します。
 
 callback が return すると、runtime は現在の Screen instance を破棄し、画面検出からやり直す。

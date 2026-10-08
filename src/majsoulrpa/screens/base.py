@@ -157,7 +157,7 @@ class ScreenContext:
         self,
         browser: BrowserController,
         sniffer_messages: SnifferMessageSource,
-        request_stop: StopRequester | None = None,
+        request_stop: StopRequester = _ignore_stop_request,
         viewport_width: int = BASE_VIEWPORT_WIDTH,
         viewport_height: int = DEFAULT_VIEWPORT_HEIGHT,
         rng: Random | None = None,
@@ -165,7 +165,7 @@ class ScreenContext:
     ) -> None:
         self._browser = browser
         self._sniffer_messages = sniffer_messages
-        self._request_stop = request_stop or _ignore_stop_request
+        self._request_stop = request_stop
         self._viewport_width = viewport_width
         self._viewport_height = viewport_height
         self._rng = rng

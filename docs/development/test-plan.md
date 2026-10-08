@@ -82,6 +82,9 @@
 - [x] Screen API の不正引数は `ScreenInvalidArgumentError` として表す
 - [x] Screen API の不正引数エラーは `ValueError` としても捕捉できる
 - [x] ScreenContext から stop 要求を出せる
+- [x] ScreenContextはfalseyな停止callableも保持してawaitする
+- [x] ScreenContextの停止callableを省略すると無処理で完了する
+- [x] ScreenContextの停止callableの失敗・cancellationをそのまま伝播する
 - [x] 検出された Screen に ScreenContext を注入できる
 - [x] ScreenContext 未設定の Screen 操作は例外になる
 - [x] `Screen` の高レベル API 呼び出しを Screen 名と API 名だけで info log に出す
