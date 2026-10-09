@@ -1434,6 +1434,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] 対象messageがあればjade templateを最大5秒間繰り返し検出する
 - [x] jadeを検出したらクリックして0.5秒待機する
 - [x] 5秒以内にjadeを検出できなければscreenshot付き検出エラーにする
+- [x] 月間チケットの5秒期限だけを検出エラーへ変換し、browser側のTimeoutErrorは元の例外を伝播する
 - [ ] 告知・報酬クリックとHome画面確認が完了した後にqueueをすべて読み捨てる
 - [x] 自動テストではsynthetic messageとsynthetic screenshotだけを使う
 

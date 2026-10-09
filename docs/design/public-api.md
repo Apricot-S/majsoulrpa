@@ -172,6 +172,10 @@ class Screen:
 
 ## 操作 API
 
+Homeの月間チケット処理は、jade検出の内部5秒期限が満了した場合だけ
+screenshot付き `ScreenDetectionError` にする。browser処理自体の `TimeoutError` は
+変換せず伝播する。従来の一律な期限エラーへの変換を修正し、失敗の原因を区別する。
+
 `HomeScreen.enter_tournament(tournament_id)` の大会IDはASCII数字6桁の文字列とする。
 Unicode数字は画面操作前に screenshot 付き `ScreenInvalidArgumentError` で拒否し、
 Screenはactiveのまま維持する。入力値は例外message・通常ログへ含めず、数字の自動変換は

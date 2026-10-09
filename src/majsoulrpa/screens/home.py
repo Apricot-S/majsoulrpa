@@ -321,10 +321,13 @@ class HomeScreen(Screen):
         if not has_month_ticket:
             return
 
+        timeout = asyncio.timeout(JADE_WAIT_TIMEOUT_SECONDS)
         try:
-            async with asyncio.timeout(JADE_WAIT_TIMEOUT_SECONDS):
+            async with timeout:
                 await self.wait_and_click_template(self.JADE_TEMPLATE)
         except TimeoutError as error:
+            if not timeout.expired():
+                raise
             screenshot = await self.context.browser.screenshot()
             msg = "jade was not found within 5 seconds."
             raise ScreenDetectionError(msg, screenshot) from error

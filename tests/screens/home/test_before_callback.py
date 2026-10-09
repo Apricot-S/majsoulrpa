@@ -184,6 +184,36 @@ def test_month_ticket_check_puts_back_all_messages(
     assert third.raw.name == ".lq.AfterMonthTicket"
 
 
+def test_month_ticket_propagates_browser_timeout() -> None:
+    failure = TimeoutError("synthetic browser timeout")
+
+    class TimingOutBrowser(BrowserControllerSpy):
+        requests = 0
+
+        async def screenshot(self) -> bytes:
+            self.requests += 1
+            if self.requests == 1:
+                raise failure
+            return await super().screenshot()
+
+    browser = TimingOutBrowser(_synthetic_blank_screenshot())
+    queue = _message_queue(".lq.Lobby.payMonthTicket")
+    screen = HomeScreen(ScreenContext(browser=browser, sniffer_messages=queue))
+
+    with pytest.raises(
+        TimeoutError, match="synthetic browser timeout"
+    ) as caught:
+        asyncio.run(screen._process_month_ticket())
+
+    assert caught.value is failure
+    assert browser.requests == 1
+    assert browser.clicked_points == []
+    assert not screen._stale
+    message = queue.get_nowait()
+    assert message is not None
+    assert message.raw.name == ".lq.Lobby.payMonthTicket"
+
+
 def test_home_before_callback_raises_if_jade_is_not_found_in_time(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
