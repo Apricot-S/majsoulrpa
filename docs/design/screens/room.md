@@ -350,6 +350,9 @@ slot を占める人間または AI の account ID を保持する。現時点�
 ホスト交代との race で古い権限を使って click しない。
 
 空 payload の `NotifyRoomKickOut` は受信した client 自身の kick として `KICKED` にする。
+プレイヤー更新・ready・対局開始・kickのRoom通知はすべて `INBOUND` を必要とする。
+`OUTBOUND` の通知は初期化前・active・terminalのいずれでも状態変更前に不整合として拒否する。
+従来の対局開始/kickでの方向確認漏れを修正し、通常のサーバー通知による遷移は維持する。
 待機中の Room API は terminal state を検知して呼び出し側の timeout より先に失敗する。
 外部ホストが対局を開始した場合も `NotifyRoomGameStart` で `MATCH_STARTED` にし、その後の
 Room 操作を禁止する。

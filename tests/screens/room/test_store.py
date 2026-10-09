@@ -291,6 +291,27 @@ def test_store_requires_leave_request_to_be_outbound() -> None:
         cache.apply(message, 100002)
 
 
+@pytest.mark.parametrize(
+    "name", [".lq.NotifyRoomGameStart", ".lq.NotifyRoomKickOut"]
+)
+@pytest.mark.parametrize("state", ["uninitialized", "active", "terminal"])
+def test_store_rejects_outbound_terminal_notices_without_state_change(
+    name: str,
+    state: str,
+) -> None:
+    store = RoomStateStore()
+    if state != "uninitialized":
+        store.apply(_create_room_message({"room": _room()}), 100002)
+    if state == "terminal":
+        store.apply(_notice(".lq.NotifyRoomKickOut"), 100002)
+    previous = store.state
+
+    with pytest.raises(RoomStateTransitionError, match="inbound notice"):
+        store.apply(_notice(name, direction=Direction.OUTBOUND), 100002)
+
+    assert store.state is previous
+
+
 def test_store_marks_kick_notice_as_terminal() -> None:
     cache = RoomStateStore()
     initial = cache.apply(

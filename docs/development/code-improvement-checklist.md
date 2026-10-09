@@ -197,7 +197,7 @@
   - [x] `goto_log()`は空文字・ASCII英数字と`-`/`_`以外を遷移前にscreenshot付き不正引数例外で拒否し、入力値を例外・通常ログへ含めない。基本・視点指定・匿名化形式に対して構造や実在は検証しない。URLのpercent-encodeは維持し、通常のIDのURLは変えない。以前受理した不正文字の拒否は公開API設計へ記録した。
   - [x] `ScreenContext.request_stop`はstatelessな無処理関数を直接デフォルトにし、falsey callableを置き換えずawaitする。停止処理の失敗・cancellationは元の例外を伝播する。明示的な`None`指定の廃止は公開API設計へ記録した。
   - [x] `ScreenContext`のbrowser/sourceは役割が異なる主要依存として位置指定を維持する。request_stop・viewport幅/高さ・rng・account_stateは設定/注入点であり、特に同型の幅と高さを取り違えないためキーワード専用にする。第3引数以降の位置指定を廃止する影響と移行方法を公開API設計へ記録した。
-- [ ] `screens/login.py`: 認証 sequence、request-scoped HTTP wait、stale 化の時点、email/code/token 非漏洩を確認する。
+- [x] `screens/login.py`: メール送信の再入力間隔・認証コード入力順・ASCII6桁検証・メンテナンス判定・720p同意領域を維持する。HTTP待機はbrowser側のrequest-scoped操作へ委譲し、raw tokenはScreenへ持ち込まない。遷移完了後だけstale化し、正常ログはAPI名だけにする。追加の実装修正は不要と判断した。
   - [x] メール検証のValidationErrorを処理し終えてから診断画像を取得する。診断失敗/cancellationの例外contextに検証入力が残る問題を修正し、traceback・通常ログの非漏洩と元の診断例外の伝播をsynthetic emailで確認した。
 - [x] `screens/home.py`: 前処理は告知/報酬の画像判定と既処理検出を維持し、高レベル遷移は画面操作・操作別失敗理由・stale化を区別する。共通のresponse走査とerror.code抽出だけを共有し、状態遷移やtemplate操作は無理に統合しない。入力型は型チェックを信頼する。追加の実装修正は不要と判断した。
   - [x] 入室と大会入場の目的Req/Res走査を共通化する。関連51テストで後続messageを残す停止位置・不整合例外・入室成功時のmessage引き渡しを維持する。選択messageのログ方針は操作ごとに明示し、公開APIは変更しない。
@@ -208,10 +208,11 @@
 
 ### `screens/room/`
 
-- [ ] `screens/room/__init__.py`: state・error・Screen の export と lazy import の必要性を確認する。
+- [x] `screens/room/__init__.py`: state/errorの通常exportとRoomScreenのlazy exportを維持する。具体Screenを読むまで画像照合を読み込まない価値があり、一覧と遅延importは既存package testで確認する。新しいwrapperは追加しない。
 - [ ] `screens/room/state.py`: frozen snapshot、derived host state、active / terminal status の表現を確認する。
 - [ ] `screens/room/_decode.py`: synthetic mapping の strict decode、field error、正値・重複・人数制約の分担を確認する。
 - [ ] `screens/room/store.py`: instance-local state、snapshot/update/terminal 遷移、message 履歴を保持しないことを確認する。
+  - [x] プレイヤー更新と同様、対局開始/kick通知もINBOUNDだけを受理する。方向不整合を状態更新前に拒否し、初期化前/active/terminalのsnapshotを変更しないことをsynthetic messageで確認した。
 - [ ] `screens/room/errors.py`: operation と reason Enum、未知 server code、例外 message の個人情報非表示を確認する。
 - [ ] `screens/room/screen.py`: source drain、操作 lock、Req/Res と notice の相関、terminal 後 stale、画面消失待機を確認する。
 

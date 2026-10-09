@@ -464,6 +464,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Room state store / SnifferMessageSource
 
+- [x] Roomの対局開始/kick通知もINBOUNDだけ受理し、OUTBOUNDでは初期/active/terminal状態を変更せず不整合例外を伝播する
+
 - [x] 成功した `.lq.Lobby.createRoom` response から host の初期 snapshot を作る
 - [x] 成功した `.lq.Lobby.joinRoom` response から guest の初期 snapshot を作る
 - [x] 成功した `.lq.Lobby.fetchRoom` response から対局終了後の Room snapshot を作る
