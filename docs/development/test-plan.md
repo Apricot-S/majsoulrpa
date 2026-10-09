@@ -397,6 +397,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] response に `error` がなければ成功を info log に出して stale にする
 - [x] 成功時の info log に room ID を含めない
 - [x] joinRoom response の `error` 抽出と構造確認を private helper に分離する
+- [x] Homeのresponse error.code抽出を共通化し、入室/大会入場の成功・不正構造・未知codeの既存失敗モデルを維持する
 - [x] `error` が dict でないか `code` がなければ message 不整合エラーにする
 - [x] joinRoom の既知 error code を `JoinRoomFailureReason` へ変換する
 - [x] 未対応 error code を framework 側の `UNRECOGNIZED_ERROR_CODE` へ変換する

@@ -446,26 +446,12 @@ class HomeScreen(Screen):
         self,
         response: dict[str, JsonValue],
     ) -> EnterTournamentFailureReason | None:
-        if "error" not in response:
+        code = await self._get_response_error_code(
+            response,
+            "fetchCustomizedContestByContestId",
+        )
+        if code is None:
             return None
-
-        error = response["error"]
-        if not isinstance(error, dict) or "code" not in error:
-            msg = (
-                "fetchCustomizedContestByContestId error must be a dict "
-                "containing code."
-            )
-            screenshot = await self.screenshot()
-            raise ScreenInconsistentMessageError(msg, screenshot)
-
-        code = error["code"]
-        if isinstance(code, bool) or not isinstance(code, int):
-            msg = (
-                "fetchCustomizedContestByContestId error code must be an "
-                "integer."
-            )
-            screenshot = await self.screenshot()
-            raise ScreenInconsistentMessageError(msg, screenshot)
 
         try:
             return EnterTournamentFailureReason(code)
@@ -476,6 +462,28 @@ class HomeScreen(Screen):
                 code,
             )
             return EnterTournamentFailureReason.UNRECOGNIZED_ERROR_CODE
+
+    async def _get_response_error_code(
+        self,
+        response: dict[str, JsonValue],
+        api_name: str,
+    ) -> int | None:
+        if "error" not in response:
+            return None
+
+        error = response["error"]
+        if not isinstance(error, dict) or "code" not in error:
+            msg = f"{api_name} error must be a dict containing code."
+            screenshot = await self.screenshot()
+            raise ScreenInconsistentMessageError(msg, screenshot)
+
+        code = error["code"]
+        if isinstance(code, bool) or not isinstance(code, int):
+            msg = f"{api_name} error code must be an integer."
+            screenshot = await self.screenshot()
+            raise ScreenInconsistentMessageError(msg, screenshot)
+
+        return code
 
     @_screen_api
     @_requires_active
@@ -592,20 +600,9 @@ class HomeScreen(Screen):
         self,
         response: dict[str, JsonValue],
     ) -> JoinRoomFailureReason | None:
-        if "error" not in response:
+        code = await self._get_response_error_code(response, "joinRoom")
+        if code is None:
             return None
-
-        error = response["error"]
-        if not isinstance(error, dict) or "code" not in error:
-            msg = "joinRoom error must be a dict containing code."
-            screenshot = await self.screenshot()
-            raise ScreenInconsistentMessageError(msg, screenshot)
-
-        code = error["code"]
-        if isinstance(code, bool) or not isinstance(code, int):
-            msg = "joinRoom error code must be an integer."
-            screenshot = await self.screenshot()
-            raise ScreenInconsistentMessageError(msg, screenshot)
 
         try:
             return JoinRoomFailureReason(code)
