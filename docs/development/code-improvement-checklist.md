@@ -198,12 +198,13 @@
   - [x] `ScreenContext.request_stop`はstatelessな無処理関数を直接デフォルトにし、falsey callableを置き換えずawaitする。停止処理の失敗・cancellationは元の例外を伝播する。明示的な`None`指定の廃止は公開API設計へ記録した。
   - [x] `ScreenContext`のbrowser/sourceは役割が異なる主要依存として位置指定を維持する。request_stop・viewport幅/高さ・rng・account_stateは設定/注入点であり、特に同型の幅と高さを取り違えないためキーワード専用にする。第3引数以降の位置指定を廃止する影響と移行方法を公開API設計へ記録した。
 - [ ] `screens/login.py`: 認証 sequence、request-scoped HTTP wait、stale 化の時点、email/code/token 非漏洩を確認する。
-- [ ] `screens/home.py`: 前処理 loop と各高レベル遷移を区別し、巨大な条件分岐・重複 template 操作・message 先読みを確認する。
+  - [x] メール検証のValidationErrorを処理し終えてから診断画像を取得する。診断失敗/cancellationの例外contextに検証入力が残る問題を修正し、traceback・通常ログの非漏洩と元の診断例外の伝播をsynthetic emailで確認した。
+- [x] `screens/home.py`: 前処理は告知/報酬の画像判定と既処理検出を維持し、高レベル遷移は画面操作・操作別失敗理由・stale化を区別する。共通のresponse走査とerror.code抽出だけを共有し、状態遷移やtemplate操作は無理に統合しない。入力型は型チェックを信頼する。追加の実装修正は不要と判断した。
   - [x] 入室と大会入場の目的Req/Res走査を共通化する。関連51テストで後続messageを残す停止位置・不整合例外・入室成功時のmessage引き渡しを維持する。選択messageのログ方針は操作ごとに明示し、公開APIは変更しない。
   - [x] 入室と大会入場のresponse error.code抽出・外部JSON構造検証だけをprivate helperへ共通化する。操作別Enumへの変換と未知codeのログは分離したまま維持し、既存51テストで成功・不正構造・拒否・画面復旧等の振る舞いを確認した。公開APIと例外messageは変更しない。
   - [x] 月間チケットのjade検出期限は自身のasyncio.timeoutがexpiredの場合だけ検出エラーへ変換する。browser由来のTimeoutErrorを誤変換せず元の例外を伝播し、診断画像の再取得も行わないことを回帰テストした。
   - [x] `enter_tournament()`のIDもASCII数字6桁へ限定する。Unicode数字を画面操作前に拒否し、active維持と入力値の例外/log非表示を回帰テストする。regexの表記だけを固定するテストは削除した。
-  - [x] `join_room()`のID検証をASCII数字5桁へ限定する。Unicode数字を受理して画面操作へ進んでいた問題を修正し、画面操作前の拒否・active維持・入力値の例外/log非表示を回帰テストする。regexの表記だけを固定するテストは削除し、APIの振る舞いで確認する。その他のHome確認観点は未完了。
+  - [x] `join_room()`のID検証をASCII数字5桁へ限定する。Unicode数字を受理して画面操作へ進んでいた問題を修正し、画面操作前の拒否・active維持・入力値の例外/log非表示を回帰テストする。regexの表記だけを固定するテストは削除し、APIの振る舞いで確認する。
 
 ### `screens/room/`
 

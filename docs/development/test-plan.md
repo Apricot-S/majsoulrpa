@@ -187,6 +187,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ## Phase 6: Login API ひとつ目
 
+- [x] 不正メールの検証後に診断screenshotが失敗/cancelされても、元の診断例外を伝播し、検証入力を例外context・traceback・通常ログへ残さない
+
 最初に実装する高レベル API は、実装直前に 1 つ選びます。
 まず `LoginScreen.enter_email_address()` には入らず、画面到達判定のための
 テンプレート照合を実装します。
