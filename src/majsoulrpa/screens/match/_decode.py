@@ -1,77 +1,50 @@
 from collections.abc import Mapping
-from typing import cast
 
 from pydantic import JsonValue
 
+from majsoulrpa.screens._json_fields import (
+    get_bool,
+    get_dict_list,
+    get_int,
+    get_int_list,
+    get_optional_dict,
+    get_str,
+    get_str_list,
+)
+
 
 def _get_int(data: Mapping[str, JsonValue], name: str) -> int:
-    value = data.get(_field_key(name))
-    if isinstance(value, bool) or not isinstance(value, int):
-        msg = f"{name} must be an int."
-        raise TypeError(msg)
-    return value
+    return get_int(data, _field_key(name), label=name)
 
 
 def _get_str(data: Mapping[str, JsonValue], name: str) -> str:
-    value = data.get(_field_key(name))
-    if not isinstance(value, str):
-        msg = f"{name} must be a string."
-        raise TypeError(msg)
-    return value
+    return get_str(data, _field_key(name), label=name)
 
 
 def _get_bool(data: Mapping[str, JsonValue], name: str) -> bool:
-    value = data.get(_field_key(name))
-    if not isinstance(value, bool):
-        msg = f"{name} must be a bool."
-        raise TypeError(msg)
-    return value
+    return get_bool(data, _field_key(name), label=name)
 
 
 def _get_str_list(data: Mapping[str, JsonValue], name: str) -> list[str]:
-    value = data.get(_field_key(name))
-    if not isinstance(value, list) or not all(
-        isinstance(item, str) for item in value
-    ):
-        msg = f"{name} must be a list of strings."
-        raise TypeError(msg)
-    return cast("list[str]", value)
+    return get_str_list(data, _field_key(name), label=name)
 
 
 def _get_int_list(data: Mapping[str, JsonValue], name: str) -> list[int]:
-    value = data.get(_field_key(name))
-    if not isinstance(value, list) or not all(
-        isinstance(item, int) and not isinstance(item, bool) for item in value
-    ):
-        msg = f"{name} must be a list of ints."
-        raise TypeError(msg)
-    return cast("list[int]", value)
+    return get_int_list(data, _field_key(name), label=name)
 
 
 def _get_dict_list(
     data: Mapping[str, JsonValue],
     name: str,
 ) -> list[dict[str, JsonValue]]:
-    value = data.get(_field_key(name))
-    if not isinstance(value, list) or not all(
-        isinstance(item, dict) for item in value
-    ):
-        msg = f"{name} must be a list of objects."
-        raise TypeError(msg)
-    return cast("list[dict[str, JsonValue]]", value)
+    return get_dict_list(data, _field_key(name), label=name)
 
 
 def _get_optional_dict(
     data: Mapping[str, JsonValue],
     name: str,
 ) -> dict[str, JsonValue] | None:
-    value = data.get(_field_key(name))
-    if value is None:
-        return None
-    if not isinstance(value, dict):
-        msg = f"{name} must be an object or None."
-        raise TypeError(msg)
-    return value
+    return get_optional_dict(data, _field_key(name), label=name)
 
 
 def _field_key(name: str) -> str:

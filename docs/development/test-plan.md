@@ -1,5 +1,12 @@
 # 初回テストリスト
 
+## 共通JSON field取得
+
+- [x] 取得キーと診断名を分離し、正しいscalar/list/objectをidentityを保って返す
+- [x] 必須field欠落・null・型不正とinteger内のboolを拒否し、入力値を例外へ含めない
+- [x] optional objectだけは欠落/nullをNoneとして扱い、不正値は拒否する
+- [x] RoomStateDecodeError・MatchMetadataDecodeError・MatchActionDecodeErrorの境界を維持し、Room正値/人数/readyとMatchのdomain規則を共通helperへ移さない
+
 ## operate テスト補助の共通化
 
 - [x] screenshot 時の message 投入を共通化し、1 回だけ投入する既存動作を維持する

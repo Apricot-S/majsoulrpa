@@ -1,8 +1,15 @@
 from dataclasses import dataclass
-from typing import cast
 
 from pydantic import JsonValue
 
+from majsoulrpa.screens._json_fields import (
+    JsonFieldDecodeError,
+    get_dict,
+    get_dict_list,
+    get_int,
+    get_int_list,
+    get_str,
+)
 from majsoulrpa.screens.match.state import (
     MatchOrigin,
     MatchPlayer,
@@ -34,6 +41,16 @@ class MatchMetadata:
 
 
 def decode_match_metadata(
+    message: DecodedRequestResponse,
+    self_account_id: int,
+) -> MatchMetadata:
+    try:
+        return _decode_match_metadata(message, self_account_id)
+    except JsonFieldDecodeError as error:
+        raise MatchMetadataDecodeError(str(error)) from error
+
+
+def _decode_match_metadata(
     message: DecodedRequestResponse,
     self_account_id: int,
 ) -> MatchMetadata:
@@ -205,47 +222,23 @@ def _get_dict(
     value: dict[str, JsonValue],
     name: str,
 ) -> dict[str, JsonValue]:
-    result = value.get(name)
-    if not isinstance(result, dict):
-        msg = f"authGame {name} must be an object."
-        raise MatchMetadataDecodeError(msg)
-    return result
+    return get_dict(value, name, label=f"authGame {name}")
 
 
 def _get_dict_list(
     value: dict[str, JsonValue],
     name: str,
 ) -> list[dict[str, JsonValue]]:
-    result = value.get(name)
-    if not isinstance(result, list) or not all(
-        isinstance(item, dict) for item in result
-    ):
-        msg = f"authGame {name} must be a list of objects."
-        raise MatchMetadataDecodeError(msg)
-    return cast("list[dict[str, JsonValue]]", result)
+    return get_dict_list(value, name, label=f"authGame {name}")
 
 
 def _get_int(value: dict[str, JsonValue], name: str) -> int:
-    result = value.get(name)
-    if isinstance(result, bool) or not isinstance(result, int):
-        msg = f"authGame {name} must be an int."
-        raise MatchMetadataDecodeError(msg)
-    return result
+    return get_int(value, name, label=f"authGame {name}")
 
 
 def _get_int_list(value: dict[str, JsonValue], name: str) -> list[int]:
-    result = value.get(name)
-    if not isinstance(result, list) or not all(
-        isinstance(item, int) and not isinstance(item, bool) for item in result
-    ):
-        msg = f"authGame {name} must be a list of ints."
-        raise MatchMetadataDecodeError(msg)
-    return cast("list[int]", result)
+    return get_int_list(value, name, label=f"authGame {name}")
 
 
 def _get_str(value: dict[str, JsonValue], name: str) -> str:
-    result = value.get(name)
-    if not isinstance(result, str):
-        msg = f"authGame {name} must be a string."
-        raise MatchMetadataDecodeError(msg)
-    return result
+    return get_str(value, name, label=f"authGame {name}")

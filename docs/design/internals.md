@@ -52,6 +52,21 @@ MajsoulRPA は、過剰な抽象化や定型的な「クリーンアーキテク
 終了処理で失敗した場合も、失敗を見えない形にしません。複数の失敗が起きる
 可能性がある箇所では、どの失敗を主例外として扱うかをテストで固定します。
 
+## JSON fieldの取得境界
+
+Room/Matchで共通する外部JSONのscalar・object・list取得は
+`screens/_json_fields.py` に置く。取得キーと診断用field名を分け、入力値を保持・表示
+しない `JsonFieldDecodeError`（`TypeError` の派生）を送出する。整数にbooleanを流用せず、
+必須fieldの欠落/nullは拒否する。optional objectだけは欠落/nullを許容する。
+Match eventのqualified field名は既存adapterでキーへ変換し、metadataは実キーと
+`authGame`の診断名を渡す。Roomの整数型不正の診断文言は共通の `int` 表記へ揃える。
+
+Roomのdecode入口は `RoomStateDecodeError`、Match metadataの入口は
+`MatchMetadataDecodeError` に変換して共通例外をcauseに保持する。Match actionの入口は
+従来の `TypeError` / `ValueError` の変換で `MatchActionDecodeError` を維持する。
+Roomの正値・人数・ready整合性とMatchのseat・牌・対局種別は共通helperへ移さない。
+公開のScreen例外とwire schemaは変えず、Python APIの引数型の再検証も追加しない。
+
 ## Presentation 検出
 
 Presentation 検出は、画面状態を「できるだけ決定的に」扱います。
