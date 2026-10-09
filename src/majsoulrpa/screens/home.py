@@ -391,9 +391,12 @@ class HomeScreen(Screen):
         # exchanged.
         await asyncio.sleep(0.5)
 
-        response = await self._get_enter_tournament_response()
+        message = await self._get_response_message(
+            FETCH_CUSTOMIZED_CONTEST_API_NAME,
+            log_matched_message=True,
+        )
         failure_reason = await self._get_enter_tournament_failure_reason(
-            response,
+            message.response,
         )
         if failure_reason is None:
             _logger.info("Entered a tournament successfully.")
@@ -422,25 +425,32 @@ class HomeScreen(Screen):
         self._require_match_buttons(screenshot)
         return failure_reason
 
-    async def _get_enter_tournament_response(self) -> dict[str, JsonValue]:
-        enter_tournament_message = None
+    async def _get_response_message(
+        self,
+        api_name: str,
+        *,
+        log_matched_message: bool,
+    ) -> DecodedRequestResponse:
+        selected_message = None
         while (message := self._get_sniffer_message_nowait()) is not None:
-            _logger.info(_format_sniffer_message_for_log(message))
-            if message.raw.name == FETCH_CUSTOMIZED_CONTEST_API_NAME:
-                enter_tournament_message = message
+            if message.raw.name != api_name or log_matched_message:
+                _logger.info(_format_sniffer_message_for_log(message))
+            if message.raw.name == api_name:
+                selected_message = message
                 break
 
-        if enter_tournament_message is None:
-            msg = f"{FETCH_CUSTOMIZED_CONTEST_API_NAME} message was not found."
+        if selected_message is None:
+            msg = f"{api_name} message was not found."
             screenshot = await self.screenshot()
             raise ScreenInconsistentMessageError(msg, screenshot)
 
-        if not isinstance(enter_tournament_message, DecodedRequestResponse):
-            msg = "fetchCustomizedContestByContestId response was not found."
+        if not isinstance(selected_message, DecodedRequestResponse):
+            method_name = api_name.rsplit(".", 1)[-1]
+            msg = f"{method_name} response was not found."
             screenshot = await self.screenshot()
             raise ScreenInconsistentMessageError(msg, screenshot)
 
-        return enter_tournament_message.response
+        return selected_message
 
     async def _get_enter_tournament_failure_reason(
         self,
@@ -548,7 +558,10 @@ class HomeScreen(Screen):
         # Wait for `.lq.Lobby.joinRoom` to be exchanged.
         await asyncio.sleep(0.5)
 
-        message = await self._get_join_room_message()
+        message = await self._get_response_message(
+            JOIN_ROOM_API_NAME,
+            log_matched_message=False,
+        )
         failure_reason = await self._get_join_room_failure_reason(
             message.response,
         )
@@ -575,26 +588,6 @@ class HomeScreen(Screen):
         screenshot = await self.context.browser.screenshot()
         self._require_match_buttons(screenshot)
         return failure_reason
-
-    async def _get_join_room_message(self) -> DecodedRequestResponse:
-        join_room_message = None
-        while (message := self._get_sniffer_message_nowait()) is not None:
-            if message.raw.name == JOIN_ROOM_API_NAME:
-                join_room_message = message
-                break
-            _logger.info(_format_sniffer_message_for_log(message))
-
-        if join_room_message is None:
-            msg = f"{JOIN_ROOM_API_NAME} message was not found."
-            screenshot = await self.screenshot()
-            raise ScreenInconsistentMessageError(msg, screenshot)
-
-        if not isinstance(join_room_message, DecodedRequestResponse):
-            msg = "joinRoom response was not found."
-            screenshot = await self.screenshot()
-            raise ScreenInconsistentMessageError(msg, screenshot)
-
-        return join_room_message
 
     async def _get_join_room_failure_reason(
         self,
