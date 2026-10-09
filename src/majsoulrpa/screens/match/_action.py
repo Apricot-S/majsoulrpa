@@ -8,7 +8,8 @@ from google.protobuf.message_factory import GetMessageClass
 from pydantic import JsonValue
 
 from majsoulrpa.assets.protocol import liqi_pb2
-from majsoulrpa.screens.match._decode import _get_int
+from majsoulrpa.screens._decode_errors import ScreenDecodeError
+from majsoulrpa.screens._json_fields import get_int
 from majsoulrpa.screens.match.event import (
     AngangEvent,
     BabeiEvent,
@@ -43,15 +44,11 @@ _ACTION_MESSAGE_TYPE_MAP = {
 type _EventDecoder = Callable[[int, Mapping[str, JsonValue]], MatchEvent]
 
 
-class MatchActionDecodeError(ValueError):
-    pass
-
-
 def _decode_chi_peng_gang_event(
     action_step: int,
     data: Mapping[str, JsonValue],
 ) -> MatchEvent:
-    match _get_int(data, "ActionChiPengGang.type"):
+    match get_int(data, "type"):
         case 0:
             return ChiEvent.from_dict(action_step, data)
         case 1:
@@ -67,7 +64,7 @@ def _decode_angang_jiagang_event(
     action_step: int,
     data: Mapping[str, JsonValue],
 ) -> MatchEvent:
-    match _get_int(data, "ActionAnGangAddGang.type"):
+    match get_int(data, "type"):
         case 2:
             return JiagangEvent.from_dict(action_step, data)
         case 3:
@@ -100,10 +97,10 @@ def decode_live_action(
 ]:
     if message.raw.direction is not Direction.INBOUND:
         msg = "A live action must be an inbound Notice."
-        raise MatchActionDecodeError(msg)
+        raise ScreenDecodeError(msg)
     if message.raw.name != ACTION_PROTOTYPE_NAME:
         msg = "A live action must use .lq.ActionPrototype."
-        raise MatchActionDecodeError(msg)
+        raise ScreenDecodeError(msg)
     event, operation, decoded_action = _decode_action(
         message.message,
         obfuscated=True,
@@ -139,36 +136,36 @@ def _decode_action(
     encoded_data = action.get("data")
     if isinstance(step, bool) or not isinstance(step, int) or step < 0:
         msg = "Action step must be a nonnegative int."
-        raise MatchActionDecodeError(msg)
+        raise ScreenDecodeError(msg)
     if not isinstance(name, str):
         msg = "Action name must be a string."
-        raise MatchActionDecodeError(msg)
+        raise ScreenDecodeError(msg)
     event_decoder = _EVENT_DECODERS.get(name)
     if event_decoder is None:
         msg = "Action name is not supported."
-        raise MatchActionDecodeError(msg)
+        raise ScreenDecodeError(msg)
     if not isinstance(encoded_data, str):
         msg = "Action data must be a base64 string."
-        raise MatchActionDecodeError(msg)
+        raise ScreenDecodeError(msg)
 
     try:
         data = base64.b64decode(encoded_data, validate=True)
     except (binascii.Error, ValueError) as error:
         msg = "Action data is not valid base64."
-        raise MatchActionDecodeError(msg) from error
+        raise ScreenDecodeError(msg) from error
     if obfuscated:
         data = _deobfuscate_action_data(data)
 
     message_type = _ACTION_MESSAGE_TYPE_MAP.get(f".lq.{name}")
     if message_type is None:
         msg = "Action type is absent from the protocol descriptor."
-        raise MatchActionDecodeError(msg)
+        raise ScreenDecodeError(msg)
     protobuf_message = message_type()
     try:
         protobuf_message.ParseFromString(data)
     except DecodeError as error:
         msg = "Action protobuf data is malformed."
-        raise MatchActionDecodeError(msg) from error
+        raise ScreenDecodeError(msg) from error
     decoded_data = MessageToDict(
         protobuf_message,
         always_print_fields_with_no_presence=True,
@@ -184,9 +181,11 @@ def _decode_action(
     try:
         event = event_decoder(step, decoded_data)
         operation = decode_operation_specification(decoded_data)
+    except ScreenDecodeError:
+        raise
     except (TypeError, ValueError) as error:
         msg = f"{name} fields are invalid."
-        raise MatchActionDecodeError(msg) from error
+        raise ScreenDecodeError(msg) from error
     return event, operation, decoded_action
 
 

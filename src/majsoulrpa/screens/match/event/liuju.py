@@ -5,10 +5,7 @@ from typing import Self, final
 
 from pydantic import JsonValue
 
-from majsoulrpa.screens.match._decode import (
-    _get_int,
-    _get_optional_dict,
-)
+from majsoulrpa.screens._json_fields import get_int, get_optional_dict
 from majsoulrpa.screens.match.event._base import _MatchEventBase
 from majsoulrpa.screens.match.event.liqi_success import LiqiSuccess
 from majsoulrpa.screens.match.types import Seat, validate_seat
@@ -44,7 +41,7 @@ class LiujuEvent(_MatchEventBase):
         action_step: int,
         data: Mapping[str, JsonValue],
     ) -> Self:
-        wire_type = _get_int(data, "ActionLiuJu.type")
+        wire_type = get_int(data, "type")
         match wire_type:
             case 1:
                 type_ = LiujuType.JIUZHONGJIUPAI
@@ -58,7 +55,7 @@ class LiujuEvent(_MatchEventBase):
                 msg = f"ActionLiuJu.type is not supported: {wire_type}."
                 raise ValueError(msg)
 
-        wire_seat = _get_int(data, "ActionLiuJu.seat")
+        wire_seat = get_int(data, "seat")
         if type_ is LiujuType.JIUZHONGJIUPAI:
             seat = validate_seat(wire_seat)
         else:
@@ -67,7 +64,7 @@ class LiujuEvent(_MatchEventBase):
                 raise ValueError(msg)
             seat = None
 
-        liqi = _get_optional_dict(data, "ActionLiuJu.liqi")
+        liqi = get_optional_dict(data, "liqi")
         return cls(
             action_step=action_step,
             type=type_,

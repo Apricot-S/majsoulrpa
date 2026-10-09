@@ -55,15 +55,18 @@ MajsoulRPA は、過剰な抽象化や定型的な「クリーンアーキテク
 ## JSON fieldの取得境界
 
 Room/Matchで共通する外部JSONのscalar・object・list取得は
-`screens/_json_fields.py` に置く。取得キーと診断用field名を分け、入力値を保持・表示
-しない `JsonFieldDecodeError`（`TypeError` の派生）を送出する。整数にbooleanを流用せず、
+`screens/_json_fields.py` に置く。取得キーの `name` を診断にも使い、入力値を保持・表示
+しない `ScreenDecodeError`（`ValueError` の派生）を送出する。整数にbooleanを流用せず、
 必須fieldの欠落/nullは拒否する。optional objectだけは欠落/nullを許容する。
-Match eventのqualified field名は既存adapterでキーへ変換し、metadataは実キーと
-`authGame`の診断名を渡す。Roomの整数型不正の診断文言は共通の `int` 表記へ揃える。
+各呼び出しは実キーだけを指定し、診断用の `label` は持たない。画面の文脈はScreen境界の
+例外とcauseで示し、field helperはキーと期待する型を示す。
 
-Roomのdecode入口は `RoomStateDecodeError`、Match metadataの入口は
-`MatchMetadataDecodeError` に変換して共通例外をcauseに保持する。Match actionの入口は
-従来の `TypeError` / `ValueError` の変換で `MatchActionDecodeError` を維持する。
+field・Room・Match metadata/actionのdecode整合性違反は内部の `ScreenDecodeError` に
+統一する。旧画面別decode例外と、それらへの変換wrapperは削除し、aliasを残さない。
+Screenは共通decode例外をscreenshot付き `ScreenInconsistentMessageError` に変換する。
+Room状態遷移と対象外のMatch種別は既存の専用例外を維持する。Match actionのモデル構築で
+発生する `TypeError` / `ValueError` は共通decode例外へ変換するが、既に共通例外なら
+そのまま伝播する。browser失敗やcancellationをdecode例外へ変換しない。
 Roomの正値・人数・ready整合性とMatchのseat・牌・対局種別は共通helperへ移さない。
 公開のScreen例外とwire schemaは変えず、Python APIの引数型の再検証も追加しない。
 

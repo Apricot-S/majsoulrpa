@@ -1629,7 +1629,7 @@ decode、Sniffer transport、stream gap は元の infrastructure error を伝播
 
 - `screens/match/state.py`: public immutable state と invariant
 - `screens/match/types.py`: 検証済みの `Seat` / `Tile` NewType と境界 validator
-- `screens/match/_decode.py`: event と operation が共有する decoded JSON field getter
+- `screens/_json_fields.py`: Room / Match event / operation が共有する decoded JSON field getter
 - `screens/match/event/_base.py`: event 共通の action step と不変条件
 - `screens/match/event/<event>.py`: concrete event ごとの final frozen dataclass と `from_dict()`
 - `screens/match/event/__init__.py`: concrete event と明示的な `MatchEvent` union の export

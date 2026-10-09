@@ -4,11 +4,11 @@ from typing import Self, final
 
 from pydantic import JsonValue
 
-from majsoulrpa.screens.match._decode import (
-    _get_bool,
-    _get_int,
-    _get_str,
-    _get_str_list,
+from majsoulrpa.screens._json_fields import (
+    get_bool,
+    get_int,
+    get_str,
+    get_str_list,
 )
 from majsoulrpa.screens.match.event._base import _MatchEventBase
 from majsoulrpa.screens.match.types import (
@@ -43,13 +43,12 @@ class DapaiEvent(_MatchEventBase):
     ) -> Self:
         return cls(
             action_step=action_step,
-            seat=validate_seat(_get_int(data, "ActionDiscardTile.seat")),
-            tile=validate_tile(_get_str(data, "ActionDiscardTile.tile")),
-            moqie=_get_bool(data, "ActionDiscardTile.moqie"),
-            liqi=_get_bool(data, "ActionDiscardTile.is_liqi"),
-            wliqi=_get_bool(data, "ActionDiscardTile.is_wliqi"),
+            seat=validate_seat(get_int(data, "seat")),
+            tile=validate_tile(get_str(data, "tile")),
+            moqie=get_bool(data, "moqie"),
+            liqi=get_bool(data, "is_liqi"),
+            wliqi=get_bool(data, "is_wliqi"),
             dora_indicators=tuple(
-                validate_tile(tile)
-                for tile in _get_str_list(data, "ActionDiscardTile.doras")
+                validate_tile(tile) for tile in get_str_list(data, "doras")
             ),
         )

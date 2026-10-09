@@ -2,10 +2,14 @@
 
 ## 共通JSON field取得
 
-- [x] 取得キーと診断名を分離し、正しいscalar/list/objectをidentityを保って返す
+- [x] field取得・Room/Matchのdecode整合性違反はScreenDecodeErrorへ統一し、Screenでscreenshot付き不整合例外へ変換する
+- [x] 画面別field wrapperを削除し、取得と診断に同じnameを使い、labelを削除する
+- [x] 対象外の対局種別・Room状態遷移・browser失敗・cancellationの分類を維持する
+
+- [x] 正しいscalar/list/objectをidentityを保って返す
 - [x] 必須field欠落・null・型不正とinteger内のboolを拒否し、入力値を例外へ含めない
 - [x] optional objectだけは欠落/nullをNoneとして扱い、不正値は拒否する
-- [x] RoomStateDecodeError・MatchMetadataDecodeError・MatchActionDecodeErrorの境界を維持し、Room正値/人数/readyとMatchのdomain規則を共通helperへ移さない
+- [x] Room正値/人数/readyとMatchのdomain規則は各画面に残し、decode失敗は共通ScreenDecodeErrorに統一する
 
 ## operate テスト補助の共通化
 

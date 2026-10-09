@@ -4,6 +4,7 @@ import pytest
 from pydantic import JsonValue
 
 from majsoulrpa.assets.protocol import liqi_pb2
+from majsoulrpa.screens._decode_errors import ScreenDecodeError
 from majsoulrpa.screens.match import (
     AngangEvent,
     BabeiEvent,
@@ -22,7 +23,6 @@ from majsoulrpa.screens.match import (
     validate_tile,
 )
 from majsoulrpa.screens.match._action import (
-    MatchActionDecodeError,
     decode_live_action,
     decode_restore_action,
 )
@@ -469,7 +469,7 @@ def test_action_chi_peng_gang_rejects_unimplemented_type() -> None:
         froms=[1, 1, 0],
     ).SerializeToString()
 
-    with pytest.raises(MatchActionDecodeError):
+    with pytest.raises(ScreenDecodeError):
         decode_restore_action(
             {
                 "step": 3,
@@ -546,5 +546,5 @@ def test_live_and_restore_action_jiagang_decode_to_same_event() -> None:
 def test_restore_action_rejects_invalid_action(
     action: dict[str, JsonValue],
 ) -> None:
-    with pytest.raises(MatchActionDecodeError):
+    with pytest.raises(ScreenDecodeError):
         decode_restore_action(action)

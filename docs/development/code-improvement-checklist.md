@@ -185,7 +185,8 @@
 
 ## `screens/` 共通
 
-- [x] `screens/_json_fields.py`: 外部JSONのscalar/list/object取得をRoom/Matchで共有する。取得キーと診断名を分離し、入力値を出さず、必須fieldとoptional objectの欠落規則を維持する。画面のdecode入口で既存domain例外へ変換し、正値/人数/seat等は各画面に残す。
+- [x] `screens/_json_fields.py`: 外部JSONのscalar/list/object取得をRoom/Matchで共有する。取得キーのnameを診断にも使い、field wrapperを削除する。入力値を出さず、必須fieldとoptional objectの欠落規則を維持する。内部ScreenDecodeErrorへdecode失敗を統一し、正値/人数/seat等は各画面に残す。
+- [x] `screens/_decode_errors.py`: 内部ScreenDecodeErrorだけを定義する。Screen側で画像付き不整合例外へ変換し、対象外種別・状態遷移・browser/cancellationは統合しない。
 
 - [x] `screens/__init__.py`: 共通基底・context・検出spec・共通例外のみのexportを維持する。標準Screenは各moduleからimportする設計を明記し、公開API設計の古いimport例を修正した。export一覧と具体Screenの非読込は既存package testで確認する。
 - [x] `screens/errors.py`: 例外階層と組込み例外との多重継承を維持する。画像は属性だけに保持し、明示保存まで書き出さず、str・repr・args・生成ファイル名へ含めない。mkdir/write失敗はそのまま伝播する。created_atはaware datetimeを生成時にUTCへ正規化し、環境依存のファイル名になるnaive/offset未定義日時をValueErrorで拒否する。互換性の変更は公開API設計へ記録した。message/screenshotは主要入力、created_atは任意の時刻指定としてキーワード専用を維持し、Noneは実行時clockの利用を表す。
@@ -223,7 +224,7 @@
 - [ ] `screens/match/__init__.py`: public state/event/operation 型の export、lazy export の要否、union の網羅性を確認する。
 - [ ] `screens/match/types.py`: `Seat` / `Tile` の型と runtime validator が全入口で一貫して使われることを確認する。
 - [ ] `screens/match/_common.py`: tile 正規化・並び順・鳴き条件の共通化が domain invariant に限られることを確認する。
-- [ ] `screens/match/_decode.py`: JSON field helper が strict で、欠落や型不正を default 値へ変換しないことを確認する。
+- [x] `screens/match/_decode.py`: field wrapperだけのmoduleは削除し、event/operationで共通JSON helperを直接使う。取得キーのnameを診断にも使い、欠落や型不正を既定値へ変換しない。
 - [ ] `screens/match/_metadata.py`: human / robot / seat / rank decode と match metadata の不変条件を確認する。
 - [ ] `screens/match/_action.py`: live / restore adapter、deobfuscation、API 名と action 名の対応、未知 action の失敗を確認する。
 - [ ] `screens/match/state.py`: immutable snapshot、四麻・三麻、round state、event 列、version の不変条件を確認する。

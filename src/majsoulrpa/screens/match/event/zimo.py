@@ -4,11 +4,11 @@ from typing import Self, final
 
 from pydantic import JsonValue
 
-from majsoulrpa.screens.match._decode import (
-    _get_int,
-    _get_optional_dict,
-    _get_str,
-    _get_str_list,
+from majsoulrpa.screens._json_fields import (
+    get_int,
+    get_optional_dict,
+    get_str,
+    get_str_list,
 )
 from majsoulrpa.screens.match.event._base import _MatchEventBase
 from majsoulrpa.screens.match.event._constants import (
@@ -48,19 +48,15 @@ class ZimoEvent(_MatchEventBase):
         action_step: int,
         data: Mapping[str, JsonValue],
     ) -> Self:
-        tile_value = _get_str(data, "ActionDealTile.tile")
-        liqi = _get_optional_dict(data, "ActionDealTile.liqi")
+        tile_value = get_str(data, "tile")
+        liqi = get_optional_dict(data, "liqi")
         return cls(
             action_step=action_step,
-            seat=validate_seat(_get_int(data, "ActionDealTile.seat")),
+            seat=validate_seat(get_int(data, "seat")),
             tile=None if tile_value == "" else validate_tile(tile_value),
-            left_tile_count=_get_int(
-                data,
-                "ActionDealTile.left_tile_count",
-            ),
+            left_tile_count=get_int(data, "left_tile_count"),
             dora_indicators=tuple(
-                validate_tile(tile)
-                for tile in _get_str_list(data, "ActionDealTile.doras")
+                validate_tile(tile) for tile in get_str_list(data, "doras")
             ),
             liqi_success=None if liqi is None else LiqiSuccess.from_dict(liqi),
         )

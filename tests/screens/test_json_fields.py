@@ -3,8 +3,8 @@ from collections.abc import Callable, Mapping
 import pytest
 from pydantic import JsonValue
 
+from majsoulrpa.screens._decode_errors import ScreenDecodeError
 from majsoulrpa.screens._json_fields import (
-    JsonFieldDecodeError,
     get_bool,
     get_dict,
     get_dict_list,
@@ -31,11 +31,11 @@ from majsoulrpa.screens._json_fields import (
         (get_optional_dict, {}),
     ],
 )
-def test_getter_uses_key_separately_from_diagnostic_name(
+def test_getter_returns_value_without_copying(
     getter: Callable[..., object],
     value: JsonValue,
 ) -> None:
-    assert getter({"key": value}, "key", label="context.field") is value
+    assert getter({"key": value}, "key") is value
 
 
 @pytest.mark.parametrize(
@@ -46,9 +46,9 @@ def test_integer_rejects_missing_null_boolean_and_text(
     data: Mapping[str, JsonValue],
 ) -> None:
     with pytest.raises(
-        JsonFieldDecodeError, match=r"^context.field must be an int\.$"
+        ScreenDecodeError, match=r"^key must be an int\.$"
     ) as caught:
-        get_int(data, "key", label="context.field")
+        get_int(data, "key")
     assert "synthetic-private-value" not in str(caught.value)
     assert "synthetic-private-value" not in repr(caught.value)
 
@@ -57,7 +57,7 @@ def test_integer_rejects_missing_null_boolean_and_text(
 def test_optional_object_allows_missing_and_null(
     data: Mapping[str, JsonValue],
 ) -> None:
-    assert get_optional_dict(data, "key", label="context.field") is None
+    assert get_optional_dict(data, "key") is None
 
 
 @pytest.mark.parametrize(
@@ -82,10 +82,8 @@ def test_required_fields_reject_missing_null_and_wrong_type(
     # get_str needs a non-string for this wrong-type case.
     if getter is get_str and data.get("key") == "synthetic-private-value":
         data = {"key": 7}
-    with pytest.raises(
-        JsonFieldDecodeError, match=r"context\.field"
-    ) as caught:
-        getter(data, "key", label="context.field")
+    with pytest.raises(ScreenDecodeError, match=r"key") as caught:
+        getter(data, "key")
     assert "synthetic-private-value" not in str(caught.value)
     assert "synthetic-private-value" not in repr(caught.value)
 
@@ -103,9 +101,7 @@ def test_typed_lists_and_optional_object_reject_invalid_values(
     getter: Callable[..., object],
     value: JsonValue,
 ) -> None:
-    with pytest.raises(
-        JsonFieldDecodeError, match=r"context\.field"
-    ) as caught:
-        getter({"key": value}, "key", label="context.field")
+    with pytest.raises(ScreenDecodeError, match=r"key") as caught:
+        getter({"key": value}, "key")
     assert "synthetic-private-value" not in str(caught.value)
     assert "synthetic-private-value" not in repr(caught.value)

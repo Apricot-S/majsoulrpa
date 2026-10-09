@@ -3,10 +3,8 @@ from dataclasses import FrozenInstanceError, replace
 import pytest
 from pydantic import JsonValue
 
-from majsoulrpa.screens.room._decode import (
-    RoomStateDecodeError,
-    decode_room_state,
-)
+from majsoulrpa.screens._decode_errors import ScreenDecodeError
+from majsoulrpa.screens.room._decode import decode_room_state
 from majsoulrpa.screens.room.state import (
     RoomPlayer,
     RoomState,
@@ -151,7 +149,7 @@ def test_decode_rejects_invalid_room_numbers(
     room = _room()
     room[field_name] = value
 
-    with pytest.raises(RoomStateDecodeError):
+    with pytest.raises(ScreenDecodeError):
         decode_room_state(room, version=1, self_account_id=100002)
 
 
@@ -159,7 +157,7 @@ def test_decode_rejects_non_list_robots() -> None:
     room = _room()
     room["robots"] = None
 
-    with pytest.raises(RoomStateDecodeError):
+    with pytest.raises(ScreenDecodeError):
         decode_room_state(room, version=1, self_account_id=100002)
 
 
@@ -180,12 +178,12 @@ def test_decode_rejects_duplicate_or_missing_owner(
     room = _room()
     room["persons"] = persons
 
-    with pytest.raises(RoomStateDecodeError):
+    with pytest.raises(ScreenDecodeError):
         decode_room_state(room, version=1, self_account_id=100002)
 
 
 def test_decode_rejects_self_account_id_outside_room() -> None:
-    with pytest.raises(RoomStateDecodeError):
+    with pytest.raises(ScreenDecodeError):
         decode_room_state(_room(), version=1, self_account_id=999999)
 
 
@@ -193,7 +191,7 @@ def test_decode_rejects_ready_account_id_outside_room() -> None:
     room = _room()
     room["ready_list"] = [999999]
 
-    with pytest.raises(RoomStateDecodeError):
+    with pytest.raises(ScreenDecodeError):
         decode_room_state(room, version=1, self_account_id=100002)
 
 
@@ -202,7 +200,7 @@ def test_decode_rejects_participant_count_over_capacity() -> None:
     room["max_player_count"] = 3
     room["robots"] = [{}, {}]
 
-    with pytest.raises(RoomStateDecodeError):
+    with pytest.raises(ScreenDecodeError):
         decode_room_state(room, version=1, self_account_id=100002)
 
 
