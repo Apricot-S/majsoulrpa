@@ -19,7 +19,7 @@ from majsoulrpa.screens import (
     ScreenInvalidArgumentError,
     ScreenStaleError,
 )
-from majsoulrpa.screens._decode_errors import ScreenDecodeError
+from majsoulrpa.screens.errors import MessageDecodeError
 from majsoulrpa.screens.room import RoomScreen, RoomStatus
 from majsoulrpa.sniffer.events import (
     DecodedNotice,
@@ -294,7 +294,7 @@ def test_room_state_update_error_logs_message_before_inconsistent_error(
         asyncio.run(screen.get_state())
 
     assert exc_info.value.screenshot == screenshot
-    assert isinstance(exc_info.value.__cause__, ScreenDecodeError)
+    assert isinstance(exc_info.value.__cause__, MessageDecodeError)
     messages_logged = [
         record.getMessage()
         for record in caplog.records
@@ -432,7 +432,7 @@ def test_malformed_initial_snapshot_becomes_inconsistent_message_error() -> (
         asyncio.run(screen.before_callback())
 
     assert exc_info.value.screenshot == screenshot
-    assert isinstance(exc_info.value.__cause__, ScreenDecodeError)
+    assert isinstance(exc_info.value.__cause__, MessageDecodeError)
 
 
 def test_before_callback_does_not_convert_sniffer_source_failure() -> None:

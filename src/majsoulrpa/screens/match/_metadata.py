@@ -2,7 +2,6 @@ from dataclasses import dataclass
 
 from pydantic import JsonValue
 
-from majsoulrpa.screens._decode_errors import ScreenDecodeError
 from majsoulrpa.screens._json_fields import (
     get_dict,
     get_dict_list,
@@ -10,6 +9,7 @@ from majsoulrpa.screens._json_fields import (
     get_int_list,
     get_str,
 )
+from majsoulrpa.screens.errors import MessageDecodeError
 from majsoulrpa.screens.match.state import (
     MatchOrigin,
     MatchPlayer,
@@ -42,18 +42,18 @@ def decode_match_metadata(
 ) -> MatchMetadata:
     if message.raw.name != AUTH_GAME_NAME:
         msg = "Match metadata must come from authGame."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     if message.raw.request_direction is not Direction.OUTBOUND:
         msg = "authGame must be an outbound request/response."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     request_account_id = get_int(message.request, "account_id")
     if request_account_id != self_account_id:
         msg = "authGame account ID must match the current account."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     match_id = get_str(message.request, "game_uuid")
     if not match_id:
         msg = "authGame game UUID must not be empty."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
 
     meta = get_dict(get_dict(message.response, "game_config"), "meta")
     room_id = get_int(meta, "room_id")
@@ -61,14 +61,14 @@ def decode_match_metadata(
     contest_uid = get_int(meta, "contest_uid")
     if room_id < 0 or mode_id < 0 or contest_uid < 0:
         msg = "authGame match origin IDs must be nonnegative."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     if room_id == 0 and contest_uid == 0:
         msg = "authGame identifies an unsupported match origin."
         raise MatchMetadataUnsupportedError(msg)
     if room_id > 0:
         if mode_id != 0 or contest_uid != 0:
             msg = "Friendly authGame metadata is inconsistent."
-            raise ScreenDecodeError(msg)
+            raise MessageDecodeError(msg)
         origin = MatchOrigin.FRIENDLY
         origin_id = room_id
     else:
@@ -78,16 +78,16 @@ def decode_match_metadata(
     seat_list = get_int_list(message.response, "seat_list")
     if len(seat_list) not in (3, 4):
         msg = "authGame seat list must contain three or four values."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     if seat_list.count(self_account_id) != 1:
         msg = "authGame seat list must contain the current account once."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     if any(value <= 0 for value in seat_list):
         msg = "authGame seat participant IDs must be positive."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     if len(seat_list) != len(set(seat_list)):
         msg = "authGame seat participant IDs must be unique."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
 
     player_values = get_dict_list(message.response, "players")
     robot_values = get_dict_list(message.response, "robots")
@@ -95,7 +95,7 @@ def decode_match_metadata(
     robots_by_id = _index_participants(robot_values, kind="robot")
     if set(humans_by_id) & set(robots_by_id):
         msg = "authGame human and robot IDs must not overlap."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
 
     # Vs AI omits robot metadata and lists its CPU seat IDs as ready
     # instead.
@@ -114,7 +114,7 @@ def decode_match_metadata(
 
     if set(seat_list) != set(humans_by_id) | set(robots_by_id):
         msg = "authGame seats must match all human and robot IDs."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
 
     seats = tuple(validate_seat(value) for value in range(len(seat_list)))
     players: list[MatchPlayer] = []
@@ -164,7 +164,7 @@ def _decode_robot_player(
     name = get_str(value, "nickname")
     if name:
         msg = "authGame robot nickname must be empty."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     return MatchPlayer(
         seat=seat,
         account_id=account_id,
@@ -184,10 +184,10 @@ def _index_participants(
         participant_id = get_int(value, "account_id")
         if participant_id <= 0:
             msg = f"authGame {kind} ID must be positive."
-            raise ScreenDecodeError(msg)
+            raise MessageDecodeError(msg)
         if participant_id in result:
             msg = f"authGame {kind} IDs must be unique."
-            raise ScreenDecodeError(msg)
+            raise MessageDecodeError(msg)
         result[participant_id] = value
     return result
 
@@ -197,8 +197,8 @@ def _decode_rank(value: dict[str, JsonValue]) -> MatchRank:
     score = get_int(value, "score")
     if rank_id <= 0:
         msg = "authGame rank ID must be positive."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     if score < 0:
         msg = "authGame rank score must be nonnegative."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     return MatchRank(id=rank_id, score=score)

@@ -26,7 +26,6 @@ from majsoulrpa.assets.templates.match import (
 )
 from majsoulrpa.presentation import Region
 from majsoulrpa.presentation.template import load_png_template_matcher
-from majsoulrpa.screens._decode_errors import ScreenDecodeError
 from majsoulrpa.screens.base import (
     Screen,
     ScreenContext,
@@ -37,6 +36,7 @@ from majsoulrpa.screens.base import (
     _screen_api,
 )
 from majsoulrpa.screens.errors import (
+    MessageDecodeError,
     ScreenInconsistentMessageError,
     ScreenInvalidArgumentError,
     ScreenInvalidOperationError,
@@ -288,7 +288,7 @@ class MatchScreen(Screen):
                 await self._initialize()
         except MatchMetadataUnsupportedError as error:
             await self._raise_unsupported_match(cause=error)
-        except ScreenDecodeError as error:
+        except MessageDecodeError as error:
             await self._raise_inconsistent_message(
                 "Match state initialization failed.",
                 cause=error,
@@ -474,7 +474,7 @@ class MatchScreen(Screen):
             self._apply_match_message(message)
         except MatchMetadataUnsupportedError as error:
             await self._raise_unsupported_match(cause=error)
-        except ScreenDecodeError as error:
+        except MessageDecodeError as error:
             await self._raise_inconsistent_message(
                 inconsistent_message,
                 cause=error,
@@ -500,7 +500,7 @@ class MatchScreen(Screen):
 
         if not isinstance(message, DecodedNotice):
             msg = "ActionPrototype must be a Notice."
-            raise ScreenDecodeError(msg)
+            raise MessageDecodeError(msg)
         event, operation, decoded_message = decode_live_action(message)
         _logger.info(_format_sniffer_message_for_log(decoded_message))
         if self._state_store.state is None:
@@ -533,15 +533,15 @@ class MatchScreen(Screen):
     def _apply_auth_game(self, message: DecodedSnifferMessage) -> None:
         if not isinstance(message, DecodedRequestResponse):
             msg = "authGame must be a request/response."
-            raise ScreenDecodeError(msg)
+            raise MessageDecodeError(msg)
         self_account_id = self.context.account_id
         if self_account_id is None:
             msg = "Match metadata requires a self account ID."
-            raise ScreenDecodeError(msg)
+            raise MessageDecodeError(msg)
         metadata = decode_match_metadata(message, self_account_id)
         if self._metadata is not None and self._metadata != metadata:
             msg = "authGame metadata must not change during initialization."
-            raise ScreenDecodeError(msg)
+            raise MessageDecodeError(msg)
         self._metadata = metadata
 
     def _apply_initialization_event(
@@ -553,25 +553,25 @@ class MatchScreen(Screen):
             case StartMatchEvent():
                 if operation is not None:
                     msg = "ActionMJStart must not contain operations."
-                    raise ScreenDecodeError(msg)
+                    raise MessageDecodeError(msg)
                 if self._start_match_event is not None:
                     msg = "ActionMJStart must not be repeated."
-                    raise ScreenDecodeError(msg)
+                    raise MessageDecodeError(msg)
                 if self._new_round_event is not None:
                     msg = "ActionMJStart must precede ActionNewRound."
-                    raise ScreenDecodeError(msg)
+                    raise MessageDecodeError(msg)
                 self._start_match_event = event
             case NewRoundEvent():
                 if self._new_round_event is not None:
                     msg = "ActionNewRound must not be repeated."
-                    raise ScreenDecodeError(msg)
+                    raise MessageDecodeError(msg)
                 expected_step = 1 if self._start_match_event is not None else 0
                 if event.action_step != expected_step:
                     msg = (
                         "ActionNewRound must be step "
                         f"{expected_step} during match initialization."
                     )
-                    raise ScreenDecodeError(msg)
+                    raise MessageDecodeError(msg)
                 self._new_round_event = event
                 self._new_round_operation_specification = operation
             case (
@@ -588,7 +588,7 @@ class MatchScreen(Screen):
                 | HuleEvent()
             ):
                 msg = f"{type(event).__name__} must follow ActionNewRound."
-                raise ScreenDecodeError(msg)
+                raise MessageDecodeError(msg)
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -606,7 +606,7 @@ class MatchScreen(Screen):
             )
         except ValueError as error:
             msg = "Initial match state is inconsistent."
-            raise ScreenDecodeError(msg) from error
+            raise MessageDecodeError(msg) from error
 
     def _apply_active_event(
         self,
@@ -615,13 +615,13 @@ class MatchScreen(Screen):
     ) -> None:
         if isinstance(event, StartMatchEvent):
             msg = "A match initialization action must not be repeated."
-            raise ScreenDecodeError(msg)
+            raise MessageDecodeError(msg)
 
         try:
             self._state_store.apply_event(event, operation)
         except ValueError as error:
             msg = f"{type(event).__name__} is inconsistent with match state."
-            raise ScreenDecodeError(msg) from error
+            raise MessageDecodeError(msg) from error
 
     async def _operate_dapai(
         self,

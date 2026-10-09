@@ -2,7 +2,7 @@ from dataclasses import replace
 
 from pydantic import JsonValue
 
-from majsoulrpa.screens._decode_errors import ScreenDecodeError
+from majsoulrpa.screens.errors import MessageDecodeError
 from majsoulrpa.screens.room._decode import decode_room_state
 from majsoulrpa.screens.room.state import RoomPlayer, RoomState, RoomStatus
 from majsoulrpa.sniffer.events import (
@@ -103,7 +103,7 @@ class RoomStateStore:
         room = response.get("room")
         if not isinstance(room, dict):
             msg = "A successful room response must contain a room object."
-            raise ScreenDecodeError(msg)
+            raise MessageDecodeError(msg)
 
         previous = self._state
         version = 1 if previous is None else previous.version + 1
@@ -201,11 +201,11 @@ class RoomStateStore:
             or account_id <= 0
         ):
             msg = "room ready account_id must be a positive integer."
-            raise ScreenDecodeError(msg)
+            raise MessageDecodeError(msg)
         ready = message.get("ready")
         if not isinstance(ready, bool):
             msg = "room ready value must be a boolean."
-            raise ScreenDecodeError(msg)
+            raise MessageDecodeError(msg)
 
         players: list[RoomPlayer] = []
         found = False
@@ -217,7 +217,7 @@ class RoomStateStore:
             players.append(replace(player, is_ready=ready))
         if not found:
             msg = "room ready account_id must identify a room player."
-            raise ScreenDecodeError(msg)
+            raise MessageDecodeError(msg)
 
         player_tuple = tuple(players)
         if player_tuple == previous.players:

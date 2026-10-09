@@ -4,6 +4,14 @@ from pathlib import Path
 from majsoulrpa._clock import utc_now
 
 
+class MessageDecodeError(ValueError):
+    """Internal failure in message decoding, validation, or conversion.
+
+    Diagnostics omit input values. Screen boundaries convert this to
+    ScreenInconsistentMessageError with a screenshot.
+    """
+
+
 class ScreenError(RuntimeError):
     def __init__(
         self,

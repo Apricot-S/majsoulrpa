@@ -1,15 +1,20 @@
 # 初回テストリスト
 
+## メッセージdecode例外の命名と配置
+
+- [x] 既存のfield・Room・MatchテストでMessageDecodeErrorとScreen境界のcauseを確認する
+- [x] 入力値を診断へ含めず、既存の例外分類を維持する
+
 ## 共通JSON field取得
 
-- [x] field取得・Room/Matchのdecode整合性違反はScreenDecodeErrorへ統一し、Screenでscreenshot付き不整合例外へ変換する
+- [x] field取得・Room/Matchのdecode整合性違反はMessageDecodeErrorへ統一し、Screenでscreenshot付き不整合例外へ変換する
 - [x] 画面別field wrapperを削除し、取得と診断に同じnameを使い、labelを削除する
 - [x] 対象外の対局種別・Room状態遷移・browser失敗・cancellationの分類を維持する
 
 - [x] 正しいscalar/list/objectをidentityを保って返す
 - [x] 必須field欠落・null・型不正とinteger内のboolを拒否し、入力値を例外へ含めない
 - [x] optional objectだけは欠落/nullをNoneとして扱い、不正値は拒否する
-- [x] Room正値/人数/readyとMatchのdomain規則は各画面に残し、decode失敗は共通ScreenDecodeErrorに統一する
+- [x] Room正値/人数/readyとMatchのdomain規則は各画面に残し、decode失敗は共通MessageDecodeErrorに統一する
 
 ## operate テスト補助の共通化
 

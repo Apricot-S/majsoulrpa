@@ -3,7 +3,6 @@ from collections.abc import Callable, Mapping
 import pytest
 from pydantic import JsonValue
 
-from majsoulrpa.screens._decode_errors import ScreenDecodeError
 from majsoulrpa.screens._json_fields import (
     get_bool,
     get_dict,
@@ -15,6 +14,7 @@ from majsoulrpa.screens._json_fields import (
     get_str,
     get_str_list,
 )
+from majsoulrpa.screens.errors import MessageDecodeError
 
 
 @pytest.mark.parametrize(
@@ -46,7 +46,7 @@ def test_integer_rejects_missing_null_boolean_and_text(
     data: Mapping[str, JsonValue],
 ) -> None:
     with pytest.raises(
-        ScreenDecodeError, match=r"^key must be an int\.$"
+        MessageDecodeError, match=r"^key must be an int\.$"
     ) as caught:
         get_int(data, "key")
     assert "synthetic-private-value" not in str(caught.value)
@@ -82,7 +82,7 @@ def test_required_fields_reject_missing_null_and_wrong_type(
     # get_str needs a non-string for this wrong-type case.
     if getter is get_str and data.get("key") == "synthetic-private-value":
         data = {"key": 7}
-    with pytest.raises(ScreenDecodeError, match=r"key") as caught:
+    with pytest.raises(MessageDecodeError, match=r"key") as caught:
         getter(data, "key")
     assert "synthetic-private-value" not in str(caught.value)
     assert "synthetic-private-value" not in repr(caught.value)
@@ -101,7 +101,7 @@ def test_typed_lists_and_optional_object_reject_invalid_values(
     getter: Callable[..., object],
     value: JsonValue,
 ) -> None:
-    with pytest.raises(ScreenDecodeError, match=r"key") as caught:
+    with pytest.raises(MessageDecodeError, match=r"key") as caught:
         getter({"key": value}, "key")
     assert "synthetic-private-value" not in str(caught.value)
     assert "synthetic-private-value" not in repr(caught.value)

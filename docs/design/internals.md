@@ -56,13 +56,14 @@ MajsoulRPA は、過剰な抽象化や定型的な「クリーンアーキテク
 
 Room/Matchで共通する外部JSONのscalar・object・list取得は
 `screens/_json_fields.py` に置く。取得キーの `name` を診断にも使い、入力値を保持・表示
-しない `ScreenDecodeError`（`ValueError` の派生）を送出する。整数にbooleanを流用せず、
+しない `MessageDecodeError`（`ValueError` の派生）を送出する。整数にbooleanを流用せず、
 必須fieldの欠落/nullは拒否する。optional objectだけは欠落/nullを許容する。
 各呼び出しは実キーだけを指定し、診断用の `label` は持たない。画面の文脈はScreen境界の
 例外とcauseで示し、field helperはキーと期待する型を示す。
 
-field・Room・Match metadata/actionのdecode整合性違反は内部の `ScreenDecodeError` に
-統一する。旧画面別decode例外と、それらへの変換wrapperは削除し、aliasを残さない。
+field・Room・Match metadata/actionのdecode整合性違反は内部の `MessageDecodeError` に
+統一する。`screens/errors.py` に置き、`ScreenError` を継承せず、公開exportには追加しない。
+旧画面別decode例外と、それらへの変換wrapperは削除し、aliasを残さない。
 Screenは共通decode例外をscreenshot付き `ScreenInconsistentMessageError` に変換する。
 Room状態遷移と対象外のMatch種別は既存の専用例外を維持する。Match actionのモデル構築で
 発生する `TypeError` / `ValueError` は共通decode例外へ変換するが、既に共通例外なら

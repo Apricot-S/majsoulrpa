@@ -3,11 +3,11 @@ from typing import cast
 
 from pydantic import JsonValue
 
-from majsoulrpa.screens._decode_errors import ScreenDecodeError
+from majsoulrpa.screens.errors import MessageDecodeError
 
 
-def _error(name: str, expected: str) -> ScreenDecodeError:
-    return ScreenDecodeError(f"{name} must be {expected}.")
+def _error(name: str, expected: str) -> MessageDecodeError:
+    return MessageDecodeError(f"{name} must be {expected}.")
 
 
 def get_int(data: Mapping[str, JsonValue], name: str) -> int:

@@ -8,8 +8,8 @@ from google.protobuf.message_factory import GetMessageClass
 from pydantic import JsonValue
 
 from majsoulrpa.assets.protocol import liqi_pb2
-from majsoulrpa.screens._decode_errors import ScreenDecodeError
 from majsoulrpa.screens._json_fields import get_int
+from majsoulrpa.screens.errors import MessageDecodeError
 from majsoulrpa.screens.match.event import (
     AngangEvent,
     BabeiEvent,
@@ -97,10 +97,10 @@ def decode_live_action(
 ]:
     if message.raw.direction is not Direction.INBOUND:
         msg = "A live action must be an inbound Notice."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     if message.raw.name != ACTION_PROTOTYPE_NAME:
         msg = "A live action must use .lq.ActionPrototype."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     event, operation, decoded_action = _decode_action(
         message.message,
         obfuscated=True,
@@ -136,36 +136,36 @@ def _decode_action(
     encoded_data = action.get("data")
     if isinstance(step, bool) or not isinstance(step, int) or step < 0:
         msg = "Action step must be a nonnegative int."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     if not isinstance(name, str):
         msg = "Action name must be a string."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     event_decoder = _EVENT_DECODERS.get(name)
     if event_decoder is None:
         msg = "Action name is not supported."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     if not isinstance(encoded_data, str):
         msg = "Action data must be a base64 string."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
 
     try:
         data = base64.b64decode(encoded_data, validate=True)
     except (binascii.Error, ValueError) as error:
         msg = "Action data is not valid base64."
-        raise ScreenDecodeError(msg) from error
+        raise MessageDecodeError(msg) from error
     if obfuscated:
         data = _deobfuscate_action_data(data)
 
     message_type = _ACTION_MESSAGE_TYPE_MAP.get(f".lq.{name}")
     if message_type is None:
         msg = "Action type is absent from the protocol descriptor."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     protobuf_message = message_type()
     try:
         protobuf_message.ParseFromString(data)
     except DecodeError as error:
         msg = "Action protobuf data is malformed."
-        raise ScreenDecodeError(msg) from error
+        raise MessageDecodeError(msg) from error
     decoded_data = MessageToDict(
         protobuf_message,
         always_print_fields_with_no_presence=True,
@@ -181,11 +181,11 @@ def _decode_action(
     try:
         event = event_decoder(step, decoded_data)
         operation = decode_operation_specification(decoded_data)
-    except ScreenDecodeError:
+    except MessageDecodeError:
         raise
     except (TypeError, ValueError) as error:
         msg = f"{name} fields are invalid."
-        raise ScreenDecodeError(msg) from error
+        raise MessageDecodeError(msg) from error
     return event, operation, decoded_action
 
 

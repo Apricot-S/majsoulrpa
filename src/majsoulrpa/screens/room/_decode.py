@@ -1,7 +1,7 @@
 from pydantic import JsonValue
 
-from majsoulrpa.screens._decode_errors import ScreenDecodeError
 from majsoulrpa.screens._json_fields import get_int, get_list, get_str
+from majsoulrpa.screens.errors import MessageDecodeError
 from majsoulrpa.screens.room.state import RoomPlayer, RoomState, RoomStatus
 
 
@@ -35,7 +35,7 @@ def decode_room_state(
     unknown_ready_ids = ready_account_ids - player_account_ids
     if unknown_ready_ids:
         msg = "room.ready_list contains an unknown account ID."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
 
     try:
         return RoomState(
@@ -48,7 +48,7 @@ def decode_room_state(
             self_account_id=self_account_id,
         )
     except ValueError as error:
-        raise ScreenDecodeError(str(error)) from error
+        raise MessageDecodeError(str(error)) from error
 
 
 def _decode_room_player(
@@ -59,7 +59,7 @@ def _decode_room_player(
 ) -> RoomPlayer:
     if not isinstance(value, dict):
         msg = "room.persons entries must be objects."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     account_id = _require_positive_int(value, "account_id")
     name = get_str(value, "nickname")
     return RoomPlayer(
@@ -74,12 +74,12 @@ def _require_positive_int(value: dict[str, JsonValue], field_name: str) -> int:
     result = get_int(value, field_name)
     if result <= 0:
         msg = f"room.{field_name} must be positive."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     return result
 
 
 def _require_positive_list_int(value: JsonValue, field_name: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
         msg = f"{field_name} entries must be positive integers."
-        raise ScreenDecodeError(msg)
+        raise MessageDecodeError(msg)
     return value
