@@ -1,5 +1,11 @@
 # 初回テストリスト
 
+## Room完全snapshotのrequest方向
+
+- [x] createRoom / joinRoom / fetchRoom / leaveRoomのINBOUND requestを、成功・失敗responseとも状態更新前に拒否する
+- [x] 初期化前・active・terminalで拒否後のsnapshot identityとversionを維持する
+- [x] 正常なOUTBOUND requestの初期化・更新・退出は既存テストで維持する
+
 ## メッセージdecode例外の命名と配置
 
 - [x] 既存のfield・Room・MatchテストでMessageDecodeErrorとScreen境界のcauseを確認する

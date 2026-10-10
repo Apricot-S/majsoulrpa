@@ -81,10 +81,13 @@ class RoomStateStore:
         message: DecodedRequestResponse,
         self_account_id: int,
     ) -> RoomState | None:
+        if (
+            message.raw.name in _FULL_SNAPSHOT_API_NAMES
+            or message.raw.name == ".lq.Lobby.leaveRoom"
+        ) and message.raw.request_direction is not Direction.OUTBOUND:
+            msg = f"{message.raw.name} must be an outbound request."
+            raise RoomStateTransitionError(msg)
         if message.raw.name == ".lq.Lobby.leaveRoom":
-            if message.raw.request_direction is not Direction.OUTBOUND:
-                msg = ".lq.Lobby.leaveRoom must be an outbound request."
-                raise RoomStateTransitionError(msg)
             if "error" in message.response:
                 return self._state
             return self._apply_terminal(RoomStatus.LEFT)

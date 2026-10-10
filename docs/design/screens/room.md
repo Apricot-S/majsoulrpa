@@ -311,7 +311,10 @@ protocol / design を更新する。
 
 click 前に source を drain し、同じ Screen の操作を並行実行しないため、click 後に得た同名
 Req/Res を今回の操作へ対応付けられる。response や notice が待機開始より先に到着しても
-bounded queue に残るため取り逃がさない。Req/Res の request direction、API 名、既知 request
+bounded queue に残るため取り逃がさない。完全snapshotの `createRoom` / `joinRoom` / `fetchRoom` と
+退出の `leaveRoom` は、responseの成功・失敗やstoreの状態によらず、状態更新前にrequestが
+`OUTBOUND` であることを検証する。方向不整合では現在のsnapshotを変更しない。
+Req/Res の request direction、API 名、既知 request
 field も確認する。必要な response または notice の片方が来ない場合は成功扱いにせず待機を
 続け、呼び出し側の timeout または cancellation に委ねる。矛盾した notice を観測した場合は
 message 不整合として失敗させる。

@@ -278,17 +278,44 @@ def test_store_keeps_waiting_state_after_rejected_leave() -> None:
     assert state.version == 1
 
 
-def test_store_requires_leave_request_to_be_outbound() -> None:
-    cache = RoomStateStore()
-    cache.apply(_create_room_message({"room": _room()}), 100002)
-    message = _request_response(".lq.Lobby.leaveRoom", {})
+@pytest.mark.parametrize(
+    "name",
+    [
+        ".lq.Lobby.createRoom",
+        ".lq.Lobby.joinRoom",
+        ".lq.Lobby.fetchRoom",
+        ".lq.Lobby.leaveRoom",
+    ],
+)
+@pytest.mark.parametrize("state", ["uninitialized", "active", "terminal"])
+@pytest.mark.parametrize(
+    "rejected", [False, True], ids=["success", "rejection"]
+)
+def test_store_rejects_inbound_room_requests_without_state_change(
+    name: str,
+    state: str,
+    *,
+    rejected: bool,
+) -> None:
+    store = RoomStateStore()
+    if state != "uninitialized":
+        store.apply(_create_room_message({"room": _room()}), 100002)
+    if state == "terminal":
+        store.apply(_notice(".lq.NotifyRoomKickOut"), 100002)
+    previous = store.state
+    response: dict[str, JsonValue] = (
+        {"error": {"code": 9999}} if rejected else {"room": _room(ready=True)}
+    )
+    message = _request_response(name, response)
     message = replace(
         message,
         raw=replace(message.raw, request_direction=Direction.INBOUND),
     )
 
-    with pytest.raises(RoomStateTransitionError):
-        cache.apply(message, 100002)
+    with pytest.raises(RoomStateTransitionError, match="outbound request"):
+        store.apply(message, 100002)
+
+    assert store.state is previous
 
 
 @pytest.mark.parametrize(
