@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+import datetime as dt
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
@@ -172,12 +172,7 @@ def _notice(
             direction=Direction.INBOUND,
             name=name,
             payload=b"synthetic-notice",
-            observed_at=datetime.datetime(
-                2026,
-                1,
-                2,
-                tzinfo=datetime.UTC,
-            ),
+            observed_at=dt.datetime(2026, 1, 2, tzinfo=dt.UTC),
         ),
         message={} if message is None else message,
     )

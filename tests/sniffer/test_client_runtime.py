@@ -1,6 +1,6 @@
 import asyncio
 import base64
-import datetime
+import datetime as dt
 import uuid
 from collections.abc import Iterable
 
@@ -130,7 +130,7 @@ def _publication(sequence: int) -> NoticePublication:
         connection_id="connection-1",
         direction=Direction.INBOUND,
         frame_sequence=sequence,
-        observed_at=datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC),
+        observed_at=dt.datetime(2026, 1, 2, tzinfo=dt.UTC),
         api_name=f".lq.Synthetic{sequence}",
         payload_base64=base64.b64encode(b"synthetic").decode("ascii"),
     )
@@ -142,7 +142,7 @@ def _message(sequence: int) -> DecodedNotice:
             direction=Direction.INBOUND,
             name=f".lq.Synthetic{sequence}",
             payload=b"synthetic",
-            observed_at=datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC),
+            observed_at=dt.datetime(2026, 1, 2, tzinfo=dt.UTC),
         ),
         message={},
     )
@@ -256,8 +256,8 @@ def test_runtime_delivers_real_decoded_exchange_without_swapping_sides() -> (
             data=ResCommon(error=Error(code=7)).SerializeToString()
         ).SerializeToString()
     )
-    request_at = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
-    response_at = request_at + datetime.timedelta(seconds=1)
+    request_at = dt.datetime(2026, 1, 2, tzinfo=dt.UTC)
+    response_at = request_at + dt.timedelta(seconds=1)
     publication = RequestResponsePublication(
         schema_version=1,
         stream_id=_publication(1).stream_id,

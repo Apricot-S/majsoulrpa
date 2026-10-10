@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+import datetime as dt
 import logging
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -220,7 +220,7 @@ def _notice(name: str) -> DecodedNotice:
             direction=Direction.INBOUND,
             name=name,
             payload=b"synthetic",
-            observed_at=datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC),
+            observed_at=dt.datetime(2026, 1, 2, tzinfo=dt.UTC),
         ),
         message={},
     )
@@ -232,12 +232,7 @@ def test_screen_formats_decoded_notice_without_raw_payload_bytes() -> None:
             direction=Direction.INBOUND,
             name=".lq.Test.notice",
             payload=b"raw-notice-payload",
-            observed_at=datetime.datetime(
-                2026,
-                1,
-                2,
-                tzinfo=datetime.UTC,
-            ),
+            observed_at=dt.datetime(2026, 1, 2, tzinfo=dt.UTC),
         ),
         message={"nested": {"value": 1}},
     )
@@ -260,23 +255,23 @@ def test_screen_formats_decoded_exchange_without_raw_payload_bytes() -> None:
             name=".lq.Test.exchange",
             request=b"raw-request-payload",
             response=b"raw-response-payload",
-            request_observed_at=datetime.datetime(
+            request_observed_at=dt.datetime(
                 2026,
                 1,
                 2,
                 3,
                 4,
                 5,
-                tzinfo=datetime.UTC,
+                tzinfo=dt.UTC,
             ),
-            response_observed_at=datetime.datetime(
+            response_observed_at=dt.datetime(
                 2026,
                 1,
                 2,
                 3,
                 4,
                 6,
-                tzinfo=datetime.UTC,
+                tzinfo=dt.UTC,
             ),
         ),
         request={"requestValue": "synthetic"},

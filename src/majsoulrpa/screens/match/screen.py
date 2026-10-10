@@ -99,7 +99,7 @@ from majsoulrpa.sniffer.events import (
 )
 
 if TYPE_CHECKING:
-    import datetime
+    import datetime as dt
 
 MATCH_INITIALIZATION_TIMEOUT_SECONDS = 5.0
 DEALER_FIRST_DISCARD_DELAY_SECONDS = 2.0
@@ -270,7 +270,7 @@ class MatchScreen(Screen):
         self._new_round_operation_specification: (
             _OperationCandidatesSpecification | None
         ) = None
-        self._operation_candidates_observed_at: datetime.datetime | None = None
+        self._operation_candidates_observed_at: dt.datetime | None = None
         self._state_store = MatchStateStore()
         self._game_end_notified = False
 

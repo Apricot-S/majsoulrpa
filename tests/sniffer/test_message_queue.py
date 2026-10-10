@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+import datetime as dt
 
 import pytest
 
@@ -23,15 +23,7 @@ def _notice(name: str, second: int) -> DecodedNotice:
             direction=Direction.INBOUND,
             name=name,
             payload=f"synthetic-{second}".encode(),
-            observed_at=datetime.datetime(
-                2026,
-                1,
-                2,
-                3,
-                4,
-                second,
-                tzinfo=datetime.UTC,
-            ),
+            observed_at=dt.datetime(2026, 1, 2, 3, 4, second, tzinfo=dt.UTC),
         ),
         message={},
     )
@@ -45,7 +37,7 @@ def _queue(*, capacity: int = 3) -> SnifferMessageQueue:
 
 
 def _exchange() -> DecodedRequestResponse:
-    observed_at = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
+    observed_at = dt.datetime(2026, 1, 2, tzinfo=dt.UTC)
     return DecodedRequestResponse(
         raw=RawRequestResponse(
             request_direction=Direction.OUTBOUND,

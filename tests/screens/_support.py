@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 from importlib.resources.abc import Traversable
 from typing import Any
 
@@ -133,12 +133,7 @@ def _notice(name: str) -> DecodedNotice:
             direction=Direction.INBOUND,
             name=name,
             payload=b"synthetic",
-            observed_at=datetime.datetime(
-                2026,
-                1,
-                2,
-                tzinfo=datetime.UTC,
-            ),
+            observed_at=dt.datetime(2026, 1, 2, tzinfo=dt.UTC),
         ),
         message={},
     )
@@ -148,7 +143,7 @@ def _request_response(
     name: str,
     response: dict[str, JsonValue],
 ) -> DecodedRequestResponse:
-    observed_at = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
+    observed_at = dt.datetime(2026, 1, 2, tzinfo=dt.UTC)
     return DecodedRequestResponse(
         raw=RawRequestResponse(
             request_direction=Direction.OUTBOUND,

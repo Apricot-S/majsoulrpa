@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+import datetime as dt
 from collections.abc import Callable
 
 import pytest
@@ -14,7 +14,7 @@ from majsoulrpa.sniffer.playwright import (
     UnsupportedWebSocketFrameError,
 )
 
-OBSERVED_AT = datetime.datetime(2026, 1, 2, 3, 4, tzinfo=datetime.UTC)
+OBSERVED_AT = dt.datetime(2026, 1, 2, 3, 4, tzinfo=dt.UTC)
 
 
 class FakeEventEmitter:

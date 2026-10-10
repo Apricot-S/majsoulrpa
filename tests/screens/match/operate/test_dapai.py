@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+import datetime as dt
 import logging
 from random import Random
 from types import SimpleNamespace
@@ -184,7 +184,7 @@ def test_operate_waits_only_until_discard_ui_is_ready(
             sniffer_messages=messages,
         ),
     )
-    now = OBSERVED_AT + datetime.timedelta(seconds=elapsed_seconds)
+    now = OBSERVED_AT + dt.timedelta(seconds=elapsed_seconds)
     monkeypatch.setattr(match_screen_module, "utc_now", lambda: now)
     sleep_delays: list[float] = []
 

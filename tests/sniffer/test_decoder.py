@@ -1,5 +1,5 @@
 import base64
-import datetime
+import datetime as dt
 import uuid
 
 import pytest
@@ -34,7 +34,7 @@ from majsoulrpa.sniffer.publication import (
 )
 
 STREAM_ID = uuid.UUID("12345678-1234-5678-1234-567812345678")
-OBSERVED_AT = datetime.datetime(2026, 1, 2, 3, 4, tzinfo=datetime.UTC)
+OBSERVED_AT = dt.datetime(2026, 1, 2, 3, 4, tzinfo=dt.UTC)
 
 
 def _encoded(payload: bytes) -> str:
