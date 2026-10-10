@@ -1,5 +1,11 @@
 # 初回テストリスト
 
+## Room decodeの共通field検証
+
+- [x] 必須field欠落を既定値へ変換せず拒否する
+- [x] ready_listの型・要素型・非正値とpersonsの非object要素を拒否し、診断へ入力値を含めない
+- [x] 型検証を共通helperへ統合し、Room固有の正値・所属・重複・人数制約を維持する
+
 ## RoomStateの不変条件と型検証境界
 
 - [x] version・room ID・self IDの非正値、負のAI数、人数超過を直接構築でも拒否する

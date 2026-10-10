@@ -162,6 +162,60 @@ def test_decode_rejects_non_list_robots() -> None:
 
 
 @pytest.mark.parametrize(
+    "field",
+    [
+        "room_id",
+        "owner_id",
+        "max_player_count",
+        "robots",
+        "ready_list",
+        "persons",
+    ],
+)
+def test_decode_rejects_missing_required_field(field: str) -> None:
+    room = _room()
+    del room[field]
+
+    with pytest.raises(MessageDecodeError):
+        decode_room_state(room, version=1, self_account_id=100002)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("ready_list", None),
+        ("ready_list", [True]),
+        ("ready_list", [1.5]),
+        ("ready_list", ["synthetic-private-value"]),
+        ("ready_list", [0]),
+        ("ready_list", [-1]),
+        ("persons", ["synthetic-private-value"]),
+    ],
+    ids=[
+        "not-list",
+        "boolean",
+        "float",
+        "string",
+        "zero",
+        "negative",
+        "not-object",
+    ],
+)
+def test_decode_rejects_invalid_list_without_exposing_values(
+    field: str,
+    value: JsonValue,
+) -> None:
+    room = _room()
+    room[field] = value
+
+    with pytest.raises(MessageDecodeError) as caught:
+        decode_room_state(room, version=1, self_account_id=100002)
+
+    assert field in str(caught.value)
+    assert "synthetic-private-value" not in str(caught.value)
+
+
+@pytest.mark.parametrize(
     "persons",
     [
         [

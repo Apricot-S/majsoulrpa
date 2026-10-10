@@ -1,6 +1,12 @@
 from pydantic import JsonValue
 
-from majsoulrpa.screens._json_fields import get_int, get_list, get_str
+from majsoulrpa.screens._json_fields import (
+    get_dict_list,
+    get_int,
+    get_int_list,
+    get_list,
+    get_str,
+)
 from majsoulrpa.screens.errors import MessageDecodeError
 from majsoulrpa.screens.room.state import RoomPlayer, RoomState, RoomStatus
 
@@ -16,13 +22,13 @@ def decode_room_state(
     max_player_count = get_int(room, "max_player_count")
     robots = get_list(room, "robots")
 
-    ready_list = get_list(room, "ready_list")
-    ready_account_ids = {
-        _require_positive_list_int(value, "room.ready_list")
-        for value in ready_list
-    }
+    ready_list = get_int_list(room, "ready_list")
+    if any(account_id <= 0 for account_id in ready_list):
+        msg = "room.ready_list entries must be positive integers."
+        raise MessageDecodeError(msg)
+    ready_account_ids = set(ready_list)
 
-    persons = get_list(room, "persons")
+    persons = get_dict_list(room, "persons")
     players = tuple(
         _decode_room_player(
             value,
@@ -52,14 +58,11 @@ def decode_room_state(
 
 
 def _decode_room_player(
-    value: JsonValue,
+    value: dict[str, JsonValue],
     *,
     owner_id: int,
     ready_account_ids: set[int],
 ) -> RoomPlayer:
-    if not isinstance(value, dict):
-        msg = "room.persons entries must be objects."
-        raise MessageDecodeError(msg)
     account_id = _require_positive_int(value, "account_id")
     name = get_str(value, "nickname")
     return RoomPlayer(
@@ -76,10 +79,3 @@ def _require_positive_int(value: dict[str, JsonValue], field_name: str) -> int:
         msg = f"room.{field_name} must be positive."
         raise MessageDecodeError(msg)
     return result
-
-
-def _require_positive_list_int(value: JsonValue, field_name: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
-        msg = f"{field_name} entries must be positive integers."
-        raise MessageDecodeError(msg)
-    return value
