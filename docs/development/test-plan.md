@@ -1,5 +1,11 @@
 # 初回テストリスト
 
+## Room ready通知の更新
+
+- [x] account_id / readyの欠落・型不正、非正値、未知プレイヤーを拒否しsnapshotを保持する
+- [x] ready設定・解除は対象だけを更新し、元snapshotを保持する。同じ通知の再受信ではversionを増やさない
+- [x] terminal後は不正な本文でも古いready通知を無視する
+
 ## Roomプレイヤー更新のdecodeとready引継ぎ
 
 - [x] 不正player_list・account_id・nickname・owner・robots・人数を拒否してsnapshotを保持する

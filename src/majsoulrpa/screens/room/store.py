@@ -2,6 +2,7 @@ from dataclasses import replace
 
 from pydantic import JsonValue
 
+from majsoulrpa.screens._json_fields import get_bool, get_int
 from majsoulrpa.screens.errors import MessageDecodeError
 from majsoulrpa.screens.room._decode import decode_room_state
 from majsoulrpa.screens.room.state import RoomPlayer, RoomState, RoomStatus
@@ -190,18 +191,11 @@ class RoomStateStore:
         if previous.status is not RoomStatus.WAITING:
             return previous
 
-        account_id = message.get("account_id")
-        if (
-            isinstance(account_id, bool)
-            or not isinstance(account_id, int)
-            or account_id <= 0
-        ):
+        account_id = get_int(message, "account_id")
+        if account_id <= 0:
             msg = "room ready account_id must be a positive integer."
             raise MessageDecodeError(msg)
-        ready = message.get("ready")
-        if not isinstance(ready, bool):
-            msg = "room ready value must be a boolean."
-            raise MessageDecodeError(msg)
+        ready = get_bool(message, "ready")
 
         players: list[RoomPlayer] = []
         found = False

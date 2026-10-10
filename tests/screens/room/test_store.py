@@ -470,17 +470,69 @@ def test_player_update_preserves_ready_only_for_existing_players() -> None:
     assert store.apply(message, 100002) is state
 
 
-def test_store_applies_ready_notice_to_target_player() -> None:
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"ready": True},
+        {"account_id": None, "ready": True},
+        {"account_id": True, "ready": True},
+        {"account_id": "100002", "ready": True},
+        {"account_id": 0, "ready": True},
+        {"account_id": -1, "ready": True},
+        {"account_id": 999999, "ready": True},
+        {"account_id": 100002},
+        {"account_id": 100002, "ready": None},
+        {"account_id": 100002, "ready": 1},
+        {"account_id": 100002, "ready": "true"},
+    ],
+    ids=[
+        "missing-id",
+        "null-id",
+        "boolean-id",
+        "string-id",
+        "zero-id",
+        "negative-id",
+        "unknown-id",
+        "missing-ready",
+        "null-ready",
+        "integer-ready",
+        "string-ready",
+    ],
+)
+def test_ready_update_rejects_invalid_data_without_state_change(
+    payload: dict[str, JsonValue],
+) -> None:
+    store = RoomStateStore()
+    initial = store.apply(_create_room_message({"room": _room()}), 100002)
+
+    with pytest.raises(MessageDecodeError):
+        store.apply(_notice(".lq.NotifyRoomPlayerReady", payload), 100002)
+
+    assert store.state is initial
+
+
+def test_ready_update_ignores_invalid_old_notice_after_terminal() -> None:
+    store = RoomStateStore()
+    store.apply(_create_room_message({"room": _room()}), 100002)
+    terminal = store.apply(_notice(".lq.NotifyRoomKickOut"), 100002)
+
+    assert (
+        store.apply(_notice(".lq.NotifyRoomPlayerReady"), 100002) is terminal
+    )
+
+
+@pytest.mark.parametrize("ready", [True, False], ids=["set", "clear"])
+def test_store_applies_ready_notice_to_target_player(*, ready: bool) -> None:
     cache = RoomStateStore()
-    cache.apply(
-        _create_room_message({"room": _room()}),
+    initial = cache.apply(
+        _create_room_message({"room": _room(ready=not ready)}),
         100002,
     )
 
     state = cache.apply(
         _notice(
             ".lq.NotifyRoomPlayerReady",
-            {"account_id": 100002, "ready": True},
+            {"account_id": 100002, "ready": ready},
         ),
         100002,
     )
@@ -488,7 +540,19 @@ def test_store_applies_ready_notice_to_target_player() -> None:
     assert state is not None
     assert state.version == 2
     assert state.players[0].is_ready is False
-    assert state.players[1].is_ready is True
+    assert state.players[1].is_ready is ready
+    assert initial is not None
+    assert initial.self_is_ready is not ready
+    assert (
+        cache.apply(
+            _notice(
+                ".lq.NotifyRoomPlayerReady",
+                {"account_id": 100002, "ready": ready},
+            ),
+            100002,
+        )
+        is state
+    )
 
 
 @pytest.mark.parametrize(
