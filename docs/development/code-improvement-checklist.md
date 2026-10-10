@@ -215,7 +215,8 @@
 - [ ] `screens/room/state.py`: frozen snapshot、derived host state、active / terminal status の表現を確認する。
   - [x] 最大人数のPython引数型再検証と対応する型違反テストを除去し、値域検証へ整理した。直接構築での正値・人数・self所属・重複ID・host人数の制約を追加テストし、外部decodeでのboolean拒否と既存のimmutable/derived/terminalテストを維持した。
 - [ ] `screens/room/_decode.py`: synthetic mapping の strict decode、field error、正値・重複・人数制約の分担を確認する。
-- [ ] `screens/room/store.py`: instance-local state、snapshot/update/terminal 遷移、message 履歴を保持しないことを確認する。
+- [x] `screens/room/store.py`: instance-local state、snapshot/update/terminal 遷移、message 履歴を保持しないことを確認する。
+  - [x] 実装・設計・関連テストの最終照合を完了した。storeが保持するのはinstance-localな最新snapshotのみで、message履歴・response・waiterは保持しない。初期化・同一/変更snapshot・別room拒否・terminal遷移/再初期化拒否と更新の原子性を確認し、現在の確認範囲で追加の実装変更は不要と判断した。
   - [x] ready通知の整数・boolean検証を共通JSON helperへ揃え、正値・所属検証はRoom側に維持した。不正入力時のsnapshot保持、設定・解除、再受信時のidentity/version維持、terminal後の古いready通知の無視を回帰テストで確認した。
   - [x] player updateの不正要素を読み飛ばす予備走査を削除し、decode済みplayerへ既存readyを引き継ぐ順序へ整理した。不正入力時のsnapshot保持、残存者・新規参加者のready、同一更新時のidentity/version維持を回帰テストで確認した。
   - [x] createRoom / joinRoom / fetchRoomの完全snapshotにもOUTBOUND requestを要求し、leaveRoomと方向検証を共通化した。成功・失敗responseと初期化前・active・terminalの組合せで、不整合の拒否とsnapshot identityの保持を確認した。
