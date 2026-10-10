@@ -226,7 +226,7 @@ def test_terminal_state_keeps_last_room_information(
     assert terminal.self_account_id == waiting.self_account_id
 
 
-@pytest.mark.parametrize("max_player_count", [2, True, 1.0])
+@pytest.mark.parametrize("max_player_count", [0, 2, 5])
 def test_room_state_rejects_invalid_max_player_count(
     max_player_count: int,
 ) -> None:
@@ -242,3 +242,63 @@ def test_room_state_rejects_invalid_max_player_count(
             ai_count=0,
             self_account_id=100001,
         )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("version", 0),
+        ("room_id", 0),
+        ("self_account_id", 0),
+        ("self_account_id", 999999),
+        ("ai_count", -1),
+        ("ai_count", 3),
+    ],
+    ids=[
+        "nonpositive-version",
+        "nonpositive-room-id",
+        "nonpositive-self-id",
+        "missing-self",
+        "negative-ai-count",
+        "over-capacity",
+    ],
+)
+def test_room_state_rejects_invalid_numbers(field: str, value: int) -> None:
+    state = decode_room_state(_room(), version=1, self_account_id=100002)
+    expected = {
+        "version": "version must be positive",
+        "room_id": "Room ID must be positive",
+        "self_account_id": (
+            "Self account ID must be positive"
+            if value == 0
+            else "Self account ID must identify a room player"
+        ),
+        "ai_count": (
+            "AI count must not be negative"
+            if value < 0
+            else "participants must not exceed the maximum"
+        ),
+    }[field]
+
+    with pytest.raises(ValueError, match=expected):
+        replace(state, **{field: value})
+
+
+@pytest.mark.parametrize("case", ["duplicate-id", "no-host", "multiple-hosts"])
+def test_room_state_rejects_invalid_player_membership(case: str) -> None:
+    state = decode_room_state(_room(), version=1, self_account_id=100002)
+    host, guest = state.players
+    if case == "duplicate-id":
+        players = (host, guest, replace(guest, name="duplicate"))
+    elif case == "no-host":
+        players = (replace(host, is_host=False), guest)
+    else:
+        players = (host, replace(guest, is_host=True))
+
+    expected = (
+        "account IDs must be unique"
+        if case == "duplicate-id"
+        else "exactly one host player"
+    )
+    with pytest.raises(ValueError, match=expected):
+        replace(state, players=players)

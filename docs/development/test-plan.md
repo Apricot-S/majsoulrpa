@@ -1,5 +1,11 @@
 # 初回テストリスト
 
+## RoomStateの不変条件と型検証境界
+
+- [x] version・room ID・self IDの非正値、負のAI数、人数超過を直接構築でも拒否する
+- [x] self不在・重複account ID・host不在/複数を拒否する
+- [x] 最大人数は1/3/4の値域を検証し、Python引数の型再検証は除去する。外部decodeのboolean拒否は維持する
+
 ## Room ready通知の更新
 
 - [x] account_id / readyの欠落・型不正、非正値、未知プレイヤーを拒否しsnapshotを保持する

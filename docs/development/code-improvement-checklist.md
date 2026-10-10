@@ -213,6 +213,7 @@
 
 - [x] `screens/room/__init__.py`: state/errorの通常exportとRoomScreenのlazy exportを維持する。具体Screenを読むまで画像照合を読み込まない価値があり、一覧と遅延importは既存package testで確認する。新しいwrapperは追加しない。
 - [ ] `screens/room/state.py`: frozen snapshot、derived host state、active / terminal status の表現を確認する。
+  - [x] 最大人数のPython引数型再検証と対応する型違反テストを除去し、値域検証へ整理した。直接構築での正値・人数・self所属・重複ID・host人数の制約を追加テストし、外部decodeでのboolean拒否と既存のimmutable/derived/terminalテストを維持した。
 - [ ] `screens/room/_decode.py`: synthetic mapping の strict decode、field error、正値・重複・人数制約の分担を確認する。
 - [ ] `screens/room/store.py`: instance-local state、snapshot/update/terminal 遷移、message 履歴を保持しないことを確認する。
   - [x] ready通知の整数・boolean検証を共通JSON helperへ揃え、正値・所属検証はRoom側に維持した。不正入力時のsnapshot保持、設定・解除、再受信時のidentity/version維持、terminal後の古いready通知の無視を回帰テストで確認した。
