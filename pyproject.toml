@@ -58,7 +58,7 @@ dev = [
     { include-group = "docs" },
 ]
 lint = [
-    "ruff>=0.16.0,<0.17",
+    "ruff>=0.17.0,<0.18",
 ]
 test = [
     "pytest>=9.1.1,<10",
