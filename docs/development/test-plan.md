@@ -1,5 +1,12 @@
 # 初回テストリスト
 
+## Roomプレイヤー更新のdecodeとready引継ぎ
+
+- [x] 不正player_list・account_id・nickname・owner・robots・人数を拒否してsnapshotを保持する
+- [x] 残ったプレイヤーのreadyを引き継ぎ、新規参加者は未readyにする。元snapshotは変更しない
+- [x] 同一更新ではsnapshot identityとversionを維持する
+- [x] 退出者のready除去とterminal後の更新無視は既存テストで維持する
+
 ## Room完全snapshotのrequest方向
 
 - [x] createRoom / joinRoom / fetchRoom / leaveRoomのINBOUND requestを、成功・失敗responseとも状態更新前に拒否する

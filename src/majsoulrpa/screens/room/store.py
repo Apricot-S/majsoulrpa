@@ -155,37 +155,30 @@ class RoomStateStore:
         if previous.status is not RoomStatus.WAITING:
             return previous
 
-        player_list = message.get("player_list")
-        updated_account_ids: set[int] = set()
-        if isinstance(player_list, list):
-            for value in player_list:
-                if not isinstance(value, dict):
-                    continue
-                account_id = value.get("account_id")
-                if isinstance(account_id, bool) or not isinstance(
-                    account_id,
-                    int,
-                ):
-                    continue
-                updated_account_ids.add(account_id)
-
-        current_account_ids = {
-            player.account_id
-            for player in previous.players
-            if player.is_ready and player.account_id in updated_account_ids
-        }
         room: dict[str, JsonValue] = {
             "room_id": previous.room_id,
             "owner_id": message.get("owner_id"),
             "max_player_count": previous.max_player_count,
-            "persons": player_list,
-            "ready_list": list(current_account_ids),
+            "persons": message.get("player_list"),
+            "ready_list": [],
             "robots": message.get("robots"),
         }
         state = decode_room_state(
             room,
             version=previous.version + 1,
             self_account_id=self_account_id,
+        )
+        ready_account_ids = {
+            player.account_id for player in previous.players if player.is_ready
+        }
+        state = replace(
+            state,
+            players=tuple(
+                replace(
+                    player, is_ready=player.account_id in ready_account_ids
+                )
+                for player in state.players
+            ),
         )
         if replace(state, version=previous.version) == previous:
             return previous

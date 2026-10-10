@@ -4,6 +4,7 @@ from dataclasses import replace
 import pytest
 from pydantic import JsonValue
 
+from majsoulrpa.screens.errors import MessageDecodeError
 from majsoulrpa.screens.room.store import (
     RoomStateStore,
     RoomStateTransitionError,
@@ -389,6 +390,84 @@ def test_store_applies_player_update_and_rederives_host() -> None:
     assert state.players[0].is_host is False
     assert state.players[1].is_host is True
     assert state.ai_count == 1
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("player_list", None),
+        ("player_list", [None]),
+        ("player_list", [{"account_id": True, "nickname": "synthetic"}]),
+        ("player_list", [{"account_id": 0, "nickname": "synthetic"}]),
+        ("player_list", [{"account_id": 100001, "nickname": None}]),
+        ("player_list", [{"account_id": 100001, "nickname": "synthetic"}]),
+        ("owner_id", 999999),
+        ("robots", None),
+        ("robots", [{}, {}, {}]),
+    ],
+    ids=[
+        "not-list",
+        "not-object",
+        "boolean-id",
+        "nonpositive-id",
+        "invalid-name",
+        "missing-self",
+        "missing-owner",
+        "invalid-robots",
+        "too-many-participants",
+    ],
+)
+def test_player_update_rejects_invalid_data_without_state_change(
+    field: str,
+    value: JsonValue,
+) -> None:
+    store = RoomStateStore()
+    initial = store.apply(
+        _create_room_message({"room": _room(ready=True)}), 100002
+    )
+    room = _room()
+    update: dict[str, JsonValue] = {
+        "owner_id": room["owner_id"],
+        "player_list": room["persons"],
+        "robots": room["robots"],
+    }
+    update[field] = value
+
+    with pytest.raises(MessageDecodeError):
+        store.apply(_notice(".lq.NotifyRoomPlayerUpdate", update), 100002)
+
+    assert store.state is initial
+
+
+def test_player_update_preserves_ready_only_for_existing_players() -> None:
+    store = RoomStateStore()
+    initial = store.apply(
+        _create_room_message({"room": _room(ready=True)}), 100002
+    )
+    update: dict[str, JsonValue] = {
+        "owner_id": 100001,
+        "player_list": [
+            {"account_id": 100001, "nickname": "host"},
+            {"account_id": 100002, "nickname": "guest"},
+            {"account_id": 100003, "nickname": "new-guest"},
+        ],
+        "robots": [],
+    }
+    message = _notice(".lq.NotifyRoomPlayerUpdate", update)
+
+    state = store.apply(message, 100002)
+
+    assert initial is not None
+    assert state is not None
+    assert state.version == initial.version + 1
+    assert [player.is_ready for player in state.players] == [
+        False,
+        True,
+        False,
+    ]
+    assert len(initial.players) == 2
+    assert initial.self_is_ready is True
+    assert store.apply(message, 100002) is state
 
 
 def test_store_applies_ready_notice_to_target_player() -> None:

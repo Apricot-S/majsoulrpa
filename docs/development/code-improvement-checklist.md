@@ -215,6 +215,7 @@
 - [ ] `screens/room/state.py`: frozen snapshot、derived host state、active / terminal status の表現を確認する。
 - [ ] `screens/room/_decode.py`: synthetic mapping の strict decode、field error、正値・重複・人数制約の分担を確認する。
 - [ ] `screens/room/store.py`: instance-local state、snapshot/update/terminal 遷移、message 履歴を保持しないことを確認する。
+  - [x] player updateの不正要素を読み飛ばす予備走査を削除し、decode済みplayerへ既存readyを引き継ぐ順序へ整理した。不正入力時のsnapshot保持、残存者・新規参加者のready、同一更新時のidentity/version維持を回帰テストで確認した。
   - [x] createRoom / joinRoom / fetchRoomの完全snapshotにもOUTBOUND requestを要求し、leaveRoomと方向検証を共通化した。成功・失敗responseと初期化前・active・terminalの組合せで、不整合の拒否とsnapshot identityの保持を確認した。
   - [x] プレイヤー更新と同様、対局開始/kick通知もINBOUNDだけを受理する。方向不整合を状態更新前に拒否し、初期化前/active/terminalのsnapshotを変更しないことをsynthetic messageで確認した。
 - [ ] `screens/room/errors.py`: operation と reason Enum、未知 server code、例外 message の個人情報非表示を確認する。
