@@ -388,7 +388,6 @@ class RoomOperationNotAllowedReason(StrEnum):
     ROOM_FULL = "room_full"
     ROOM_NOT_FULL = "room_not_full"
     GUEST_NOT_READY = "guest_not_ready"
-    ROOM_INACTIVE = "room_inactive"
 
 
 class RoomOperationNotAllowedError(ScreenInvalidOperationError):
@@ -417,7 +416,7 @@ class RoomOperationRejectedError(ScreenError):
 | 未知 code | 上記例外 + `UNRECOGNIZED_ERROR_CODE`。数値 code は属性に保持 |
 | response / notice が到着しない | API 内では待機を継続。呼び出し側の timeout / cancellation に委ねる |
 | message field の欠落・型不正・矛盾 | `ScreenInconsistentMessageError` |
-| kick 済み、対局開始済み、退出済み | `ScreenStaleError` の Room 用派生 |
+| kick 済み、対局開始済み、退出済み | `ScreenStaleError` |
 | template / 操作対象が見つからない | `ScreenDetectionError` |
 | browser / Sniffer / decode / stream gap | 元の infrastructure error を変換せず伝播 |
 | cancellation | cleanup 後にそのまま伝播 |

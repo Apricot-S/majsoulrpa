@@ -222,7 +222,8 @@
   - [x] player updateの不正要素を読み飛ばす予備走査を削除し、decode済みplayerへ既存readyを引き継ぐ順序へ整理した。不正入力時のsnapshot保持、残存者・新規参加者のready、同一更新時のidentity/version維持を回帰テストで確認した。
   - [x] createRoom / joinRoom / fetchRoomの完全snapshotにもOUTBOUND requestを要求し、leaveRoomと方向検証を共通化した。成功・失敗responseと初期化前・active・terminalの組合せで、不整合の拒否とsnapshot identityの保持を確認した。
   - [x] プレイヤー更新と同様、対局開始/kick通知もINBOUNDだけを受理する。方向不整合を状態更新前に拒否し、初期化前/active/terminalのsnapshotを変更しないことをsynthetic messageで確認した。
-- [ ] `screens/room/errors.py`: operation と reason Enum、未知 server code、例外 message の個人情報非表示を確認する。
+- [x] `screens/room/errors.py`: operation と reason Enum、未知 server code、例外 message の個人情報非表示を確認する。
+  - [x] 既存の例外階層とEnumを維持し、属性での分岐方法をdocstringへ明記した。全理由・全操作で属性保持、上位例外による捕捉、str/reprへのscreenshot内容・未知codeの非漏洩を確認した。server messageを取り込まない既存実装を維持し、設計資料の未使用ROOM_INACTIVEとRoom専用stale派生の記述を現行仕様へ揃えた。
 - [ ] `screens/room/screen.py`: source drain、操作 lock、Req/Res と notice の相関、terminal 後 stale、画面消失待機を確認する。
 
 ### `screens/match/` の基盤

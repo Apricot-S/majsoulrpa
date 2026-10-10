@@ -23,6 +23,8 @@ class RoomOperationNotAllowedReason(StrEnum):
 
 
 class RoomOperationNotAllowedError(ScreenInvalidOperationError):
+    """Precondition failure with operation and reason attributes."""
+
     def __init__(
         self,
         operation: RoomOperation,
@@ -46,6 +48,8 @@ class RoomOperationNotAllowedError(ScreenInvalidOperationError):
 
 
 class RoomOperationRejectedError(ScreenError):
+    """Server rejection with a code omitted from diagnostics."""
+
     def __init__(
         self,
         operation: RoomOperation,

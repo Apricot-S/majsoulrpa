@@ -1,5 +1,12 @@
 # 初回テストリスト
 
+## Room操作例外
+
+- [x] 事前条件違反は理由Enumと操作属性を保持し、ScreenInvalidOperationErrorとして捕捉できる
+- [x] server拒否は全操作で未知codeを属性に保持し、ScreenErrorとして捕捉できる
+- [x] 両例外のstr/reprはscreenshot内容を含めず、未知codeは表示せず属性で取得する
+- [x] 設計資料のinactive分類を現行のScreenStaleErrorへ揃える
+
 ## Room decodeの共通field検証
 
 - [x] 必須field欠落を既定値へ変換せず拒否する
