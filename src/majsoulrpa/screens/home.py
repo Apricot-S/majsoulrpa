@@ -294,7 +294,7 @@ class HomeScreen(Screen):
                     raise ScreenUnexpectedStateError(msg, screenshot)
 
                 await self._click_region(sign_in_result.region)
-                await asyncio.sleep(2.0)
+                await asyncio.sleep(3.0)
                 await self.click_template(
                     self.REWARDS_CONFIRM_TEMPLATE,
                     message="rewards-confirm was not found after sign-in.",
