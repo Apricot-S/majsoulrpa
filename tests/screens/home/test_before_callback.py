@@ -506,8 +506,8 @@ def test_home_screen_raises_when_mail_close_is_detected_twice(
 @pytest.mark.parametrize(
     ("rewards_first", "expected_sleeps"),
     [
-        (True, [1.0, 2.0, 0.5, 1.0]),
-        (False, [1.0, 1.0, 2.0, 0.5]),
+        (True, [1.0, 3.0, 0.5, 1.0]),
+        (False, [1.0, 1.0, 3.0, 0.5]),
     ],
 )
 def test_home_screen_processes_rewards_and_close_in_either_order(
@@ -583,6 +583,6 @@ def test_home_screen_raises_when_rewards_confirm_is_missing(
         asyncio.run(screen.before_callback())
 
     assert len(browser.clicked_points) == 1
-    assert sleeps == [1.0, 2.0]
+    assert sleeps == [1.0, 3.0]
     assert browser.screenshot_count == 2
     assert exc_info.value.screenshot == missing_confirm_screenshot
