@@ -1,6 +1,6 @@
 import argparse
 import asyncio
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable, Coroutine, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +12,7 @@ RunBrowserFn = Callable[[AppConfig], Coroutine[Any, Any, None]]
 
 
 def main(
-    argv: list[str] | None = None,
+    argv: Sequence[str] | None = None,
     *,
     run_browser_host: RunBrowserFn = default_run_browser_host,
 ) -> int:
