@@ -1,5 +1,10 @@
 # 初回テストリスト
 
+## RoomScreen初期化検証の同期化
+
+- [x] snapshotがqueueにあってもbefore_callback前の状態取得・操作は未初期化エラーとなりclickしない
+- [x] 初期化フラグだけを確認するhelperを同期関数にし、既存の初期化・更新・待機・操作を維持する
+
 ## RoomScreen terminal検出時のscreenshot失敗
 
 - [x] add_aiの操作前drainでkickを検出した場合、screenshot取得失敗をそのまま伝播しclickしない

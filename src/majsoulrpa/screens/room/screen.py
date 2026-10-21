@@ -127,7 +127,7 @@ class RoomScreen(Screen):
     @_requires_active
     async def get_state(self) -> RoomState:
         await self._drain_room_messages(await self._get_self_account_id())
-        await self._ensure_room_state_initialized()
+        self._ensure_room_state_initialized()
         return self._get_room_state()
 
     @_screen_api
@@ -135,7 +135,7 @@ class RoomScreen(Screen):
     async def wait_for_state_change(self, state: RoomState) -> RoomState:
         self_account_id = await self._get_self_account_id()
         await self._drain_room_messages(self_account_id)
-        await self._ensure_room_state_initialized()
+        self._ensure_room_state_initialized()
         current = self._get_room_state()
         if (
             state.room_id != current.room_id
@@ -161,7 +161,7 @@ class RoomScreen(Screen):
 
             message = await self._get_sniffer_message()
             await self._apply_room_message(message, self_account_id)
-            await self._ensure_room_state_initialized()
+            self._ensure_room_state_initialized()
 
     @_screen_api
     @_requires_active
@@ -175,7 +175,7 @@ class RoomScreen(Screen):
         while True:
             message = await self._get_sniffer_message()
             await self._apply_room_message(message, self_account_id)
-            await self._ensure_room_state_initialized()
+            self._ensure_room_state_initialized()
             state = self._get_room_state()
 
             if message.raw.name == LEAVE_API_NAME:
@@ -216,7 +216,7 @@ class RoomScreen(Screen):
         ):
             message = await self._get_sniffer_message()
             await self._apply_room_message(message, self_account_id)
-            await self._ensure_room_state_initialized()
+            self._ensure_room_state_initialized()
             await self._ensure_waiting_state()
             state = self._get_room_state()
 
@@ -249,7 +249,7 @@ class RoomScreen(Screen):
             while not (response_succeeded and game_start_succeeded):
                 message = await self._get_sniffer_message()
                 await self._apply_room_message(message, self_account_id)
-                await self._ensure_room_state_initialized()
+                self._ensure_room_state_initialized()
                 state = self._get_room_state()
 
                 if message.raw.name == START_MATCH_API_NAME:
@@ -305,7 +305,7 @@ class RoomScreen(Screen):
         ):
             message = await self._get_sniffer_message()
             await self._apply_room_message(message, self_account_id)
-            await self._ensure_room_state_initialized()
+            self._ensure_room_state_initialized()
             await self._ensure_waiting_state()
             state = self._get_room_state()
 
@@ -336,7 +336,7 @@ class RoomScreen(Screen):
     async def _prepare_room_operation(self) -> tuple[int, RoomState]:
         self_account_id = await self._get_self_account_id()
         await self._drain_room_messages(self_account_id)
-        await self._ensure_room_state_initialized()
+        self._ensure_room_state_initialized()
         await self._ensure_waiting_state()
         return self_account_id, self._get_room_state()
 
@@ -481,7 +481,7 @@ class RoomScreen(Screen):
             raise RuntimeError(msg)
         return state
 
-    async def _ensure_room_state_initialized(self) -> None:
+    def _ensure_room_state_initialized(self) -> None:
         if not self._room_state_initialized:
             msg = "RoomScreen has not been initialized."
             raise RuntimeError(msg)
