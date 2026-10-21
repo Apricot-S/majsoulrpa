@@ -3,6 +3,8 @@ from enum import StrEnum
 
 
 class RoomStatus(StrEnum):
+    """Waiting or one of the three terminal outcomes for a room."""
+
     WAITING = "waiting"
     MATCH_STARTED = "match_started"
     LEFT = "left"
@@ -11,6 +13,8 @@ class RoomStatus(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class RoomPlayer:
+    """An immutable human player in a room snapshot."""
+
     account_id: int
     name: str
     is_host: bool
@@ -24,6 +28,8 @@ class RoomPlayer:
 
 @dataclass(frozen=True, slots=True)
 class RoomState:
+    """Immutable room information retained after termination."""
+
     version: int
     status: RoomStatus
     room_id: int

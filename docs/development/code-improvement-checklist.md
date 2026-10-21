@@ -212,7 +212,8 @@
 ### `screens/room/`
 
 - [x] `screens/room/__init__.py`: state/errorの通常exportとRoomScreenのlazy exportを維持する。具体Screenを読むまで画像照合を読み込まない価値があり、一覧と遅延importは既存package testで確認する。新しいwrapperは追加しない。
-- [ ] `screens/room/state.py`: frozen snapshot、derived host state、active / terminal status の表現を確認する。
+- [x] `screens/room/state.py`: frozen snapshot、derived host state、active / terminal status の表現を確認する。
+  - [x] 最終照合を完了した。playerの変更禁止、入力listの変更からの独立、host/ready変更後の派生値と旧snapshot保持、1/3/4人の満員境界を追加確認した。terminalは最後の部屋情報を維持する既存表現を採用し、docstringへ明記した。追加の構造変更は不要と判断した。
   - [x] 最大人数のPython引数型再検証と対応する型違反テストを除去し、値域検証へ整理した。直接構築での正値・人数・self所属・重複ID・host人数の制約を追加テストし、外部decodeでのboolean拒否と既存のimmutable/derived/terminalテストを維持した。
 - [x] `screens/room/_decode.py`: synthetic mapping の strict decode、field error、正値・重複・人数制約の分担を確認する。
   - [x] ready_listの整数列・personsのobject列の型検証を共通JSON helperへ統合した。正値・ready所属はdecode、重複player ID・人数・host/self所属はRoomStateへ維持する。必須field欠落、boolean/float/string・非正値・非object要素の拒否と診断への入力値非漏洩を追加テストし、現行設計との照合を完了した。

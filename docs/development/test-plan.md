@@ -1,5 +1,11 @@
 # 初回テストリスト
 
+## RoomState最終確認
+
+- [x] RoomPlayerも変更不可で、入力mappingの変更が取得済みsnapshotへ波及しない
+- [x] host交代とready変更で派生値を再導出し、以前のsnapshotは変わらない
+- [x] 最大人数1/3/4と満員境界でparticipant_countとavailable_slotsが一致する
+
 ## Room操作例外
 
 - [x] 事前条件違反は理由Enumと操作属性を保持し、ScreenInvalidOperationErrorとして捕捉できる

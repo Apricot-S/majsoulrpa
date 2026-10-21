@@ -65,6 +65,59 @@ def test_decode_waiting_room_state() -> None:
         state.ai_count = 2  # ty: ignore[invalid-assignment]
 
 
+def test_snapshot_is_detached_from_input_and_players_are_frozen() -> None:
+    room = _room()
+    state = decode_room_state(room, version=1, self_account_id=100002)
+    for field in ("persons", "ready_list", "robots"):
+        value = room[field]
+        assert isinstance(value, list)
+        value.clear()
+
+    assert len(state.players) == 2
+    assert state.self_is_ready is True
+    assert state.ai_count == 1
+    with pytest.raises(FrozenInstanceError):
+        state.players[0].is_host = False  # ty: ignore[invalid-assignment]
+
+
+def test_replaced_snapshot_rederives_roles_and_preserves_previous() -> None:
+    previous = decode_room_state(_room(), version=1, self_account_id=100002)
+    host, guest = previous.players
+
+    current = replace(
+        previous,
+        version=2,
+        players=(
+            replace(host, is_host=False, is_ready=True),
+            replace(guest, is_host=True, is_ready=False),
+        ),
+    )
+
+    assert current.self_is_host is True
+    assert current.self_is_ready is False
+    assert current.all_guests_ready is True
+    assert previous.self_is_host is False
+    assert previous.self_is_ready is True
+    assert previous.players[0].is_host is True
+    assert previous.players[0].is_ready is False
+
+
+@pytest.mark.parametrize("capacity", [1, 3, 4])
+def test_full_room_has_no_available_slots(capacity: int) -> None:
+    state = RoomState(
+        version=1,
+        status=RoomStatus.WAITING,
+        room_id=12345,
+        max_player_count=capacity,
+        players=(RoomPlayer(100001, "host", is_host=True, is_ready=False),),
+        ai_count=capacity - 1,
+        self_account_id=100001,
+    )
+
+    assert state.participant_count == capacity
+    assert state.available_slots == 0
+
+
 def test_all_guests_ready_is_false_when_any_guest_is_not_ready() -> None:
     room = _room()
     room["persons"] = [
