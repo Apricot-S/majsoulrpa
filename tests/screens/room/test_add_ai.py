@@ -101,7 +101,7 @@ def test_add_ai_keeps_terminal_screen_stale_when_screenshot_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     messages = _OperationMessageSource(
-        queued=(_request_response(".lq.Lobby.createRoom", {"room": _room()}),),
+        queued=(_request_response(".lq.Lobby.joinRoom", {"room": _room()}),),
         waiting=(),
     )
     browser = BrowserControllerSpy(b"synthetic-screenshot")
@@ -109,7 +109,7 @@ def test_add_ai_keeps_terminal_screen_stale_when_screenshot_fails(
         context=ScreenContext(
             browser=browser,
             sniffer_messages=messages,
-            account_state=_AccountState(100001),
+            account_state=_AccountState(100002),
         ),
     )
     asyncio.run(screen.before_callback())
