@@ -87,6 +87,8 @@ class RoomState:
 terminal な `MATCH_STARTED`、`LEFT`、`KICKED` でも最後に確定できた部屋情報は snapshot に
 残す。これにより `wait_for_state_change()` の待機中に起きた遷移を利用者が判定できる。
 terminal 遷移後に同じ `RoomScreen` で別の操作はできない。
+操作の事前確認でterminalを検出した場合は、エラー添付用screenshotを取得する前にstaleを確定する。
+screenshot取得が失敗しても元の失敗を伝播し、終了済みinstanceを再利用可能な状態へ戻さない。
 
 ## 公開 API 候補
 

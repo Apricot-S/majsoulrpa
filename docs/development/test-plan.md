@@ -1,5 +1,10 @@
 # 初回テストリスト
 
+## RoomScreen terminal検出時のscreenshot失敗
+
+- [x] add_aiの操作前drainでkickを検出した場合、screenshot取得失敗をそのまま伝播しclickしない
+- [x] screenshot失敗後もterminalと確定したinstanceをstaleに保ち、次のAPIを拒否する
+
 ## RoomState最終確認
 
 - [x] RoomPlayerも変更不可で、入力mappingの変更が取得済みsnapshotへ波及しない

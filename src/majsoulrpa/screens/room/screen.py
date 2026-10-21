@@ -489,8 +489,8 @@ class RoomScreen(Screen):
     async def _ensure_waiting_state(self) -> None:
         if self._get_room_state().status is RoomStatus.WAITING:
             return
-        screenshot = await self.context.browser.screenshot()
         self._mark_stale()
+        screenshot = await self.context.browser.screenshot()
         msg = "Room is no longer active."
         raise ScreenStaleError(msg, screenshot)
 

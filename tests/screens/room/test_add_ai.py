@@ -97,6 +97,39 @@ def test_add_ai_clicks_detected_position_and_waits_for_player_update(
     assert state.ai_count == 1
 
 
+def test_add_ai_keeps_terminal_screen_stale_when_screenshot_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages = _OperationMessageSource(
+        queued=(_request_response(".lq.Lobby.createRoom", {"room": _room()}),),
+        waiting=(),
+    )
+    browser = BrowserControllerSpy(b"synthetic-screenshot")
+    screen = RoomScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=messages,
+            account_state=_AccountState(100001),
+        ),
+    )
+    asyncio.run(screen.before_callback())
+    messages.enqueue(_notice(".lq.NotifyRoomKickOut"))
+    failure = RuntimeError("synthetic screenshot failure")
+
+    async def fail_screenshot() -> bytes:
+        raise failure
+
+    with monkeypatch.context() as patch:
+        patch.setattr(browser, "screenshot", fail_screenshot)
+        with pytest.raises(RuntimeError) as caught:
+            asyncio.run(screen.add_ai())
+    assert caught.value is failure
+    assert browser.clicked_points == []
+    assert messages.get_count == 0
+    with pytest.raises(ScreenStaleError):
+        asyncio.run(screen.get_state())
+
+
 def test_add_ai_accepts_player_update_before_response() -> None:
     messages = _OperationMessageSource(
         queued=(_request_response(".lq.Lobby.createRoom", {"room": _room()}),),

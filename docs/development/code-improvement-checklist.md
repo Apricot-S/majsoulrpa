@@ -226,6 +226,7 @@
 - [x] `screens/room/errors.py`: operation と reason Enum、未知 server code、例外 message の個人情報非表示を確認する。
   - [x] 既存の例外階層とEnumを維持し、属性での分岐方法をdocstringへ明記した。全理由・全操作で属性保持、上位例外による捕捉、str/reprへのscreenshot内容・未知codeの非漏洩を確認した。server messageを取り込まない既存実装を維持し、設計資料の未使用ROOM_INACTIVEとRoom専用stale派生の記述を現行仕様へ揃えた。
 - [ ] `screens/room/screen.py`: source drain、操作 lock、Req/Res と notice の相関、terminal 後 stale、画面消失待機を確認する。
+  - [x] terminal検出時にscreenshot取得が失敗してもstale確定を失わないよう、_ensure_waiting_stateの順序を修正した。add_aiの操作前drainでkickを検出する回帰テストで、元の取得失敗の伝播・click/受信待機なし・以後のAPI拒否を確認した。実ゲーム確認待ち。
 
 ### `screens/match/` の基盤
 
