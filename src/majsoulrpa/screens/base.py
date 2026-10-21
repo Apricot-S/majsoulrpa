@@ -1,22 +1,35 @@
 import asyncio
 import json
+import re
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable, Callable, Collection, Coroutine
+from collections.abc import (
+    Awaitable,
+    Callable,
+    Collection,
+    Coroutine,
+    Sequence,
+)
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from functools import wraps
 from logging import getLogger
 from random import Random
 from typing import Concatenate, Protocol
+from urllib.parse import quote
 
 from majsoulrpa.constants import BASE_VIEWPORT_WIDTH, DEFAULT_VIEWPORT_HEIGHT
 from majsoulrpa.presentation import Region
-from majsoulrpa.screens.errors import ScreenDetectionError, ScreenStaleError
+from majsoulrpa.screens.errors import (
+    ScreenDetectionError,
+    ScreenInvalidArgumentError,
+    ScreenStaleError,
+)
 from majsoulrpa.sniffer.events import DecodedNotice, DecodedSnifferMessage
 
 SCREEN_ACTION_INTERVAL_SECONDS = 0.5
 TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS = 0.5
 LOG_URL_PREFIX = "https://game.mahjongsoul.com/?paipu="
+LOG_ID_PATTERN = re.compile(r"[A-Za-z0-9_-]+", re.ASCII)
 
 _screen_api_logger = getLogger("majsoulrpa.screens.api")
 _screen_api_depth: ContextVar[int] = ContextVar(
@@ -61,7 +74,10 @@ class TemplateMatcher(Protocol):
 class SnifferMessageSource(Protocol):
     async def get(self) -> DecodedSnifferMessage: ...
     def get_nowait(self) -> DecodedSnifferMessage | None: ...
-    def put_back(self, message: DecodedSnifferMessage) -> None: ...
+    def prepend(self, message: DecodedSnifferMessage) -> None: ...
+    def prepend_many(
+        self, messages: Sequence[DecodedSnifferMessage]
+    ) -> None: ...
 
 
 class AccountState(Protocol):
@@ -157,7 +173,8 @@ class ScreenContext:
         self,
         browser: BrowserController,
         sniffer_messages: SnifferMessageSource,
-        request_stop: StopRequester | None = None,
+        *,
+        request_stop: StopRequester = _ignore_stop_request,
         viewport_width: int = BASE_VIEWPORT_WIDTH,
         viewport_height: int = DEFAULT_VIEWPORT_HEIGHT,
         rng: Random | None = None,
@@ -165,7 +182,7 @@ class ScreenContext:
     ) -> None:
         self._browser = browser
         self._sniffer_messages = sniffer_messages
-        self._request_stop = request_stop or _ignore_stop_request
+        self._request_stop = request_stop
         self._viewport_width = viewport_width
         self._viewport_height = viewport_height
         self._rng = rng
@@ -214,7 +231,7 @@ class ScreenDetectionSpec:
 
 
 class Screen(ABC):
-    def __init__(self, context: ScreenContext | None = None) -> None:
+    def __init__(self, context: ScreenContext) -> None:
         self._context = context
         self._stale = False
 
@@ -235,40 +252,43 @@ class Screen(ABC):
     def _get_sniffer_message_nowait(self) -> DecodedSnifferMessage | None:
         return self.context.sniffer_messages.get_nowait()
 
-    def _put_back_sniffer_message(
+    def _prepend_sniffer_message(
         self,
         message: DecodedSnifferMessage,
     ) -> None:
-        self.context.sniffer_messages.put_back(message)
+        self.context.sniffer_messages.prepend(message)
+
+    def _prepend_sniffer_messages(
+        self,
+        messages: Sequence[DecodedSnifferMessage],
+    ) -> None:
+        self.context.sniffer_messages.prepend_many(messages)
 
     async def _wait_for_sniffer_message(
         self,
         names: Collection[str],
         *,
-        put_back_messages: bool = False,
+        prepend_messages: bool = False,
     ) -> DecodedSnifferMessage:
         selected_names = frozenset(names)
         if not selected_names:
             msg = "Sniffer message names must not be empty."
             raise ValueError(msg)
 
-        messages_to_put_back: list[DecodedSnifferMessage] = []
+        messages_to_prepend: list[DecodedSnifferMessage] = []
         try:
             while True:
                 message = await self._get_sniffer_message()
-                if put_back_messages:
-                    messages_to_put_back.append(message)
+                if prepend_messages:
+                    messages_to_prepend.append(message)
                 if message.raw.name in selected_names:
                     return message
         finally:
-            for message in messages_to_put_back:
-                self._put_back_sniffer_message(message)
+            if messages_to_prepend:
+                self._prepend_sniffer_messages(messages_to_prepend)
 
     @property
     def context(self) -> ScreenContext:
-        if self._context is None:
-            msg = "ScreenContext is not configured."
-            raise RuntimeError(msg)
         return self._context
 
     @_requires_active
@@ -389,7 +409,12 @@ class Screen(ABC):
     @_screen_api
     @_requires_active
     async def goto_log(self, log_id: str) -> None:
-        await self.context.browser.goto_url(f"{LOG_URL_PREFIX}{log_id}")
+        if LOG_ID_PATTERN.fullmatch(log_id) is None:
+            screenshot = await self.context.browser.screenshot()
+            msg = "Log ID must contain only ASCII letters, digits, '-' or '_'."
+            raise ScreenInvalidArgumentError(msg, screenshot)
+        url = f"{LOG_URL_PREFIX}{quote(log_id, safe='')}"
+        await self.context.browser.goto_url(url)
 
     @_screen_api
     @_requires_active

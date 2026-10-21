@@ -2,10 +2,10 @@ from collections.abc import Mapping
 
 from pydantic import JsonValue
 
-from majsoulrpa.screens.match._decode import (
-    _get_int,
-    _get_optional_dict,
-    _get_str_list,
+from majsoulrpa.screens._json_fields import (
+    get_int,
+    get_optional_dict,
+    get_str_list,
 )
 from majsoulrpa.screens.match.operation._specification import (
     _AngangOperationSpecification,
@@ -32,12 +32,12 @@ _FOUR_TILE_COMBINATION_COUNT = 4
 def decode_operation_specification(
     data: Mapping[str, JsonValue],
 ) -> _OperationCandidatesSpecification | None:
-    operation = _get_optional_dict(data, "operation")
+    operation = get_optional_dict(data, "operation")
     if operation is None:
         return None
 
-    time_fixed_ms = _get_int(operation, "OptionalOperationList.time_fixed")
-    time_add_ms = _get_int(operation, "OptionalOperationList.time_add")
+    time_fixed_ms = get_int(operation, "time_fixed")
+    time_add_ms = get_int(operation, "time_add")
     if time_fixed_ms < 0 or time_add_ms < 0:
         msg = "OptionalOperationList time must be nonnegative."
         raise ValueError(msg)
@@ -52,7 +52,7 @@ def decode_operation_specification(
         if not isinstance(item, dict):
             msg = "OptionalOperationList.operation_list items must be objects."
             raise TypeError(msg)
-        operation_type = _get_int(item, "OptionalOperation.type")
+        operation_type = get_int(item, "type")
         match operation_type:
             case 1:
                 specification = _decode_dapai_specification(item)
@@ -98,8 +98,7 @@ def _decode_dapai_specification(
 ) -> _DapaiOperationSpecification:
     return _DapaiOperationSpecification(
         forbidden_tiles=tuple(
-            validate_tile(tile)
-            for tile in _get_str_list(item, "OptionalOperation.combination")
+            validate_tile(tile) for tile in get_str_list(item, "combination")
         ),
     )
 
@@ -123,7 +122,7 @@ def _decode_peng_specification(
 def _decode_daminggang_specification(
     item: Mapping[str, JsonValue],
 ) -> _DaminggangOperationSpecification:
-    encoded_combinations = _get_str_list(item, "OptionalOperation.combination")
+    encoded_combinations = get_str_list(item, "combination")
     if not encoded_combinations:
         msg = "A daminggang operation must contain a combination."
         raise ValueError(msg)
@@ -166,8 +165,7 @@ def _decode_liqi_specification(
     item: Mapping[str, JsonValue],
 ) -> _LiqiOperationSpecification:
     candidate_tiles = tuple(
-        validate_tile(tile)
-        for tile in _get_str_list(item, "OptionalOperation.combination")
+        validate_tile(tile) for tile in get_str_list(item, "combination")
     )
     if not candidate_tiles:
         msg = "A liqi operation must contain a candidate tile."
@@ -178,7 +176,7 @@ def _decode_liqi_specification(
 def _decode_zimohu_specification(
     item: Mapping[str, JsonValue],
 ) -> _ZimohuOperationSpecification:
-    if _get_str_list(item, "OptionalOperation.combination"):
+    if get_str_list(item, "combination"):
         msg = "A zimohu operation must not contain a combination."
         raise ValueError(msg)
     return _ZimohuOperationSpecification()
@@ -187,7 +185,7 @@ def _decode_zimohu_specification(
 def _decode_rong_specification(
     item: Mapping[str, JsonValue],
 ) -> _RongOperationSpecification:
-    if _get_str_list(item, "OptionalOperation.combination"):
+    if get_str_list(item, "combination"):
         msg = "A rong operation must not contain a combination."
         raise ValueError(msg)
     return _RongOperationSpecification()
@@ -196,7 +194,7 @@ def _decode_rong_specification(
 def _decode_liuju_specification(
     item: Mapping[str, JsonValue],
 ) -> _LiujuOperationSpecification:
-    if _get_str_list(item, "OptionalOperation.combination"):
+    if get_str_list(item, "combination"):
         msg = "A liuju operation must not contain a combination."
         raise ValueError(msg)
     return _LiujuOperationSpecification()
@@ -205,7 +203,7 @@ def _decode_liuju_specification(
 def _decode_babei_specification(
     item: Mapping[str, JsonValue],
 ) -> _BabeiOperationSpecification:
-    if _get_str_list(item, "OptionalOperation.combination"):
+    if get_str_list(item, "combination"):
         msg = "A babei operation must not contain a combination."
         raise ValueError(msg)
     return _BabeiOperationSpecification()
@@ -220,7 +218,7 @@ def _decode_four_tile_combinations(
         if operation_name[0] in {"a", "e", "i", "o", "u"}
         else f"A {operation_name}"
     )
-    encoded_combinations = _get_str_list(item, "OptionalOperation.combination")
+    encoded_combinations = get_str_list(item, "combination")
     if not encoded_combinations:
         msg = f"{subject} operation must contain a combination."
         raise ValueError(msg)
@@ -246,7 +244,7 @@ def _decode_two_tile_combinations(
     item: Mapping[str, JsonValue],
     operation_name: str,
 ) -> tuple[tuple[Tile, Tile], ...]:
-    encoded_combinations = _get_str_list(item, "OptionalOperation.combination")
+    encoded_combinations = get_str_list(item, "combination")
     if not encoded_combinations:
         msg = f"A {operation_name} operation must contain a combination."
         raise ValueError(msg)

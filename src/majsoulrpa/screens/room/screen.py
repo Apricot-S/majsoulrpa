@@ -27,6 +27,7 @@ from majsoulrpa.screens.base import (
     _screen_api,
 )
 from majsoulrpa.screens.errors import (
+    MessageDecodeError,
     ScreenDetectionError,
     ScreenInconsistentMessageError,
     ScreenInvalidArgumentError,
@@ -40,7 +41,10 @@ from majsoulrpa.screens.room.errors import (
     RoomOperationRejectedError,
 )
 from majsoulrpa.screens.room.state import RoomState, RoomStatus
-from majsoulrpa.screens.room.store import RoomStateStore
+from majsoulrpa.screens.room.store import (
+    RoomStateStore,
+    RoomStateTransitionError,
+)
 from majsoulrpa.sniffer.events import (
     DecodedNotice,
     DecodedRequestResponse,
@@ -89,7 +93,7 @@ class RoomScreen(Screen):
         settings_path=CANCEL_SETTINGS_PATH,
     )
 
-    def __init__(self, context: ScreenContext | None = None) -> None:
+    def __init__(self, context: ScreenContext) -> None:
         super().__init__(context=context)
         self._room_state_store = RoomStateStore()
         self._room_state_initialized = False
@@ -502,7 +506,7 @@ class RoomScreen(Screen):
         _logger.info(_format_sniffer_message_for_log(message))
         try:
             self._room_state_store.apply(message, self_account_id)
-        except Exception as error:
+        except (MessageDecodeError, RoomStateTransitionError) as error:
             screenshot = await self.context.browser.screenshot()
             msg = "Room state message is inconsistent."
             raise ScreenInconsistentMessageError(msg, screenshot) from error

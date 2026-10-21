@@ -27,61 +27,11 @@ from tests.screens.match._support import (
     _live_angang_action,
     _live_new_round_action,
 )
-
-
-class _MessagesByClickBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        screenshot: bytes,
-        messages: SnifferMessageQueue,
-        *messages_by_click: tuple[DecodedSnifferMessage, ...],
-    ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._messages_by_click = list(messages_by_click)
-
-    async def click(
-        self,
-        x: float,
-        y: float,
-        *,
-        warp: bool = False,
-    ) -> None:
-        await super().click(x, y, warp=warp)
-        if not self._messages_by_click:
-            return
-        for message in self._messages_by_click.pop(0):
-            self._messages.enqueue(message)
-
-
-class _PutBackTrackingQueue(SnifferMessageQueue):
-    def __init__(self) -> None:
-        super().__init__(capacity=10, max_payload_bytes=1024)
-        self.put_back_count = 0
-
-    def put_back(self, message: DecodedSnifferMessage) -> None:
-        self.put_back_count += 1
-        super().put_back(message)
-
-
-class _MessageOnScreenshotBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        screenshot: bytes,
-        messages: SnifferMessageQueue,
-        message_on_screenshot: DecodedSnifferMessage,
-    ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._message_on_screenshot: DecodedSnifferMessage | None = (
-            message_on_screenshot
-        )
-
-    async def screenshot(self) -> bytes:
-        if self._message_on_screenshot is not None:
-            self._messages.enqueue(self._message_on_screenshot)
-            self._message_on_screenshot = None
-        return await super().screenshot()
+from tests.screens.match.operate._support import (
+    _MessageOnScreenshotBrowser,
+    _MessagesByClickBrowser,
+    _PrependTrackingQueue,
+)
 
 
 def _angang_message_sequence(
@@ -147,6 +97,7 @@ def test_operate_selects_only_angang_candidate(
         screenshot,
         messages,
         (_live_angang_action(step=1, seat=0, tile="1z"),),
+        allow_extra_clicks=True,
     )
     screen = _screen(browser, messages)
     sleep_delays: list[float] = []
@@ -187,6 +138,7 @@ def test_operate_retries_until_gang_button_is_drawn(
         screenshot,
         messages,
         (_live_angang_action(step=1, seat=0, tile="1z"),),
+        allow_extra_clicks=True,
     )
     browser.screenshot_queue = [_synthetic_blank_screenshot(), screenshot]
     screen = _screen(browser, messages)
@@ -238,6 +190,7 @@ def test_operate_selects_requested_angang_from_two_candidates(
                 tile=selected_tile,
             ),
         ),
+        allow_extra_clicks=True,
     )
     screen = _screen(browser, messages)
     sleep_delays: list[float] = []
@@ -324,6 +277,7 @@ def test_operate_accepts_redless_black_five_angang(
         screenshot,
         messages,
         (_live_angang_action(step=1, seat=0, tile="5s"),),
+        allow_extra_clicks=True,
     )
     screen = _screen(browser, messages)
 
@@ -360,6 +314,7 @@ def test_operate_rejects_angang_event_for_different_candidate(
         messages,
         (),
         (_live_angang_action(step=1, seat=0, tile="1m"),),
+        allow_extra_clicks=True,
     )
     screen = _screen(browser, messages)
 
@@ -383,7 +338,7 @@ def test_operate_rejects_angang_event_for_different_candidate(
 def test_operate_puts_back_progress_while_waiting_for_gang_button(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    messages = _PutBackTrackingQueue()
+    messages = _PrependTrackingQueue()
     for message in _angang_message_sequence(
         ["1z|1z|1z|1z"],
         [*("1z" for _ in range(4)), *("2m" for _ in range(10))],
@@ -410,14 +365,14 @@ def test_operate_puts_back_progress_while_waiting_for_gang_button(
     result = asyncio.run(screen.operate(operation))
 
     assert isinstance(result.round.events[-1], AngangEvent)
-    assert messages.put_back_count == 1
+    assert messages.prepend_count == 1
     assert browser.clicked_points == []
 
 
 def test_operate_puts_back_progress_before_selecting_angang_candidate(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    messages = _PutBackTrackingQueue()
+    messages = _PrependTrackingQueue()
     for message in _angang_message_sequence(
         ["4p|4p|4p|4p", "1m|1m|1m|1m"],
         [
@@ -432,6 +387,7 @@ def test_operate_puts_back_progress_before_selecting_angang_candidate(
         screenshot,
         messages,
         (_live_angang_action(step=1, seat=0, tile="4p"),),
+        allow_extra_clicks=True,
     )
     screen = _screen(browser, messages)
 
@@ -449,7 +405,7 @@ def test_operate_puts_back_progress_before_selecting_angang_candidate(
     result = asyncio.run(screen.operate(operation))
 
     assert isinstance(result.round.events[-1], AngangEvent)
-    assert messages.put_back_count == 1
+    assert messages.prepend_count == 1
     assert len(browser.clicked_points) == 1
 
 

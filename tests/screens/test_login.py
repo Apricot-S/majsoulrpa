@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import traceback
 from importlib.resources.abc import Traversable
 from random import Random
 from typing import Any
@@ -492,6 +493,37 @@ def test_login_screen_rejects_pattern_only_valid_address() -> None:
         )
 
     assert exc_info.value.screenshot == screenshot
+    assert browser.clicked_points == []
+    assert browser.input_texts == []
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [RuntimeError("synthetic screenshot failure"), asyncio.CancelledError()],
+    ids=["screenshot-failure", "cancellation"],
+)
+def test_invalid_email_screenshot_failure_does_not_disclose_validation_input(
+    failure: BaseException,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    class FailingBrowser(BrowserControllerSpy):
+        async def screenshot(self) -> bytes:
+            raise failure
+
+    email = "player@sub_domain.example.invalid"
+    browser = FailingBrowser(_synthetic_blank_screenshot())
+    screen = LoginScreen(ScreenContext(browser=browser))
+
+    with (
+        caplog.at_level(logging.INFO),
+        pytest.raises(type(failure)) as caught,
+    ):
+        asyncio.run(screen.enter_email_address(email))
+
+    assert caught.value is failure
+    assert caught.value.__context__ is None
+    assert email not in "".join(traceback.format_exception(caught.value))
+    assert email not in caplog.text
     assert browser.clicked_points == []
     assert browser.input_texts == []
 

@@ -4,12 +4,8 @@ from typing import Self, final
 
 from pydantic import JsonValue
 
+from majsoulrpa.screens._json_fields import get_int, get_int_list, get_str_list
 from majsoulrpa.screens.match._common import tile_sort_key
-from majsoulrpa.screens.match._decode import (
-    _get_int,
-    _get_int_list,
-    _get_str_list,
-)
 from majsoulrpa.screens.match.event._base import _MatchEventBase
 from majsoulrpa.screens.match.event._constants import (
     MAX_DORA_INDICATORS,
@@ -77,8 +73,7 @@ class NewRoundEvent(_MatchEventBase):
         data: Mapping[str, JsonValue],
     ) -> Self:
         tiles = tuple(
-            validate_tile(tile)
-            for tile in _get_str_list(data, "ActionNewRound.tiles")
+            validate_tile(tile) for tile in get_str_list(data, "tiles")
         )
         if len(tiles) not in _DEALT_TILE_COUNTS:
             msg = (
@@ -95,19 +90,15 @@ class NewRoundEvent(_MatchEventBase):
 
         return cls(
             action_step=action_step,
-            chang=_get_int(data, "ActionNewRound.chang"),
-            ju=validate_seat(_get_int(data, "ActionNewRound.ju")),
-            ben=_get_int(data, "ActionNewRound.ben"),
-            liqibang=_get_int(data, "ActionNewRound.liqibang"),
+            chang=get_int(data, "chang"),
+            ju=validate_seat(get_int(data, "ju")),
+            ben=get_int(data, "ben"),
+            liqibang=get_int(data, "liqibang"),
             dora_indicators=tuple(
-                validate_tile(tile)
-                for tile in _get_str_list(data, "ActionNewRound.doras")
+                validate_tile(tile) for tile in get_str_list(data, "doras")
             ),
-            left_tile_count=_get_int(
-                data,
-                "ActionNewRound.left_tile_count",
-            ),
-            scores=tuple(_get_int_list(data, "ActionNewRound.scores")),
+            left_tile_count=get_int(data, "left_tile_count"),
+            scores=tuple(get_int_list(data, "scores")),
             shoupai=shoupai,
             zimopai=zimopai,
         )

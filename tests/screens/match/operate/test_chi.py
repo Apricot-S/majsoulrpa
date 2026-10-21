@@ -18,7 +18,6 @@ from majsoulrpa.screens.match import (
     PengEvent,
 )
 from majsoulrpa.sniffer.events import DecodedSnifferMessage
-from majsoulrpa.sniffer.message_queue import SnifferMessageQueue
 from tests.screens._support import (
     BrowserControllerSpy,
     ScreenContext,
@@ -36,82 +35,12 @@ from tests.screens.match._support import (
     _live_new_round_action,
     _live_peng_action,
 )
-
-
-class _MessagesOnClickBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        screenshot: bytes,
-        messages: SnifferMessageQueue,
-        *messages_on_click: DecodedSnifferMessage,
-    ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._messages_on_click = messages_on_click
-
-    async def click(
-        self,
-        x: float,
-        y: float,
-        *,
-        warp: bool = False,
-    ) -> None:
-        await super().click(x, y, warp=warp)
-        for message in self._messages_on_click:
-            self._messages.enqueue(message)
-
-
-class _MessagesByClickBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        screenshot: bytes,
-        messages: SnifferMessageQueue,
-        *messages_by_click: tuple[DecodedSnifferMessage, ...],
-    ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._messages_by_click = list(messages_by_click)
-
-    async def click(
-        self,
-        x: float,
-        y: float,
-        *,
-        warp: bool = False,
-    ) -> None:
-        await super().click(x, y, warp=warp)
-        for message in self._messages_by_click.pop(0):
-            self._messages.enqueue(message)
-
-
-class _PutBackTrackingQueue(SnifferMessageQueue):
-    def __init__(self) -> None:
-        super().__init__(capacity=10, max_payload_bytes=1024)
-        self.put_back_count = 0
-
-    def put_back(self, message: DecodedSnifferMessage) -> None:
-        self.put_back_count += 1
-        super().put_back(message)
-
-
-class _MessageOnScreenshotBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        screenshot: bytes,
-        messages: SnifferMessageQueue,
-        message_on_screenshot: DecodedSnifferMessage,
-    ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._message_on_screenshot: DecodedSnifferMessage | None = (
-            message_on_screenshot
-        )
-
-    async def screenshot(self) -> bytes:
-        if self._message_on_screenshot is not None:
-            self._messages.enqueue(self._message_on_screenshot)
-            self._message_on_screenshot = None
-        return await super().screenshot()
+from tests.screens.match.operate._support import (
+    _MessageOnScreenshotBrowser,
+    _MessagesByClickBrowser,
+    _MessagesOnClickBrowser,
+    _PrependTrackingQueue,
+)
 
 
 @pytest.mark.parametrize(
@@ -267,6 +196,7 @@ def test_operate_selects_requested_chi_from_multiple_candidates(
                 froms=[0, 0, 3],
             ),
         ),
+        allow_extra_clicks=False,
     )
     screen = MatchScreen(
         context=ScreenContext(
@@ -450,7 +380,7 @@ def test_operate_accepts_opponent_daminggang_preemption_after_click(
 def test_operate_does_not_click_combination_after_peng_preemption(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    messages = _PutBackTrackingQueue()
+    messages = _PrependTrackingQueue()
     for message in (
         _auth_game(),
         _live_new_round_action(
@@ -521,7 +451,7 @@ def test_operate_does_not_click_combination_after_peng_preemption(
     state = asyncio.run(screen.operate(operation))
 
     assert isinstance(state.round.events[-1], PengEvent)
-    assert messages.put_back_count == 1
+    assert messages.prepend_count == 1
     assert len(browser.clicked_points) == 1
 
 
@@ -571,7 +501,7 @@ def test_operate_puts_back_preemption_while_waiting_for_chi_button(
     preempting_action: DecodedSnifferMessage,
     expected_event_type: type[PengEvent | DaminggangEvent | HuleEvent],
 ) -> None:
-    messages = _PutBackTrackingQueue()
+    messages = _PrependTrackingQueue()
     for message in (
         _auth_game(),
         _live_new_round_action(
@@ -632,7 +562,7 @@ def test_operate_puts_back_preemption_while_waiting_for_chi_button(
     state = asyncio.run(operate_with_deadline())
 
     assert isinstance(state.round.events[-1], expected_event_type)
-    assert messages.put_back_count == 1
+    assert messages.prepend_count == 1
     assert browser.clicked_points == []
 
 

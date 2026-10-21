@@ -4,7 +4,7 @@ from typing import Self, final
 
 from pydantic import JsonValue
 
-from majsoulrpa.screens.match._decode import _get_int, _get_str, _get_str_list
+from majsoulrpa.screens._json_fields import get_int, get_str, get_str_list
 from majsoulrpa.screens.match.event._base import _MatchEventBase
 from majsoulrpa.screens.match.event._constants import MAX_DORA_INDICATORS
 from majsoulrpa.screens.match.types import (
@@ -45,16 +45,15 @@ class AngangEvent(_MatchEventBase):
         action_step: int,
         data: Mapping[str, JsonValue],
     ) -> Self:
-        if _get_int(data, "ActionAnGangAddGang.type") != 3:  # noqa: PLR2004
+        if get_int(data, "type") != 3:  # noqa: PLR2004
             msg = "ActionAnGangAddGang.type must identify angang."
             raise ValueError(msg)
-        tile = validate_tile(_get_str(data, "ActionAnGangAddGang.tiles"))
+        tile = validate_tile(get_str(data, "tiles"))
         return cls(
             action_step=action_step,
-            seat=validate_seat(_get_int(data, "ActionAnGangAddGang.seat")),
+            seat=validate_seat(get_int(data, "seat")),
             consumed=_canonicalize_consumed(tile),
             dora_indicators=tuple(
-                validate_tile(dora)
-                for dora in _get_str_list(data, "ActionAnGangAddGang.doras")
+                validate_tile(dora) for dora in get_str_list(data, "doras")
             ),
         )

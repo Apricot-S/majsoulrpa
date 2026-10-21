@@ -31,59 +31,11 @@ from tests.screens.match._support import (
     _live_hule_action,
     _live_new_round_action,
 )
-
-
-class _MessagesOnClickBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        screenshot: bytes,
-        messages: SnifferMessageQueue,
-        *messages_on_click: DecodedSnifferMessage,
-    ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._messages_on_click = messages_on_click
-
-    async def click(
-        self,
-        x: float,
-        y: float,
-        *,
-        warp: bool = False,
-    ) -> None:
-        await super().click(x, y, warp=warp)
-        for message in self._messages_on_click:
-            self._messages.enqueue(message)
-
-
-class _PutBackTrackingQueue(SnifferMessageQueue):
-    def __init__(self) -> None:
-        super().__init__(capacity=10, max_payload_bytes=1024)
-        self.put_back_count = 0
-
-    def put_back(self, message: DecodedSnifferMessage) -> None:
-        self.put_back_count += 1
-        super().put_back(message)
-
-
-class _MessageOnScreenshotBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        screenshot: bytes,
-        messages: SnifferMessageQueue,
-        message_on_screenshot: DecodedSnifferMessage,
-    ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._message_on_screenshot: DecodedSnifferMessage | None = (
-            message_on_screenshot
-        )
-
-    async def screenshot(self) -> bytes:
-        if self._message_on_screenshot is not None:
-            self._messages.enqueue(self._message_on_screenshot)
-            self._message_on_screenshot = None
-        return await super().screenshot()
+from tests.screens.match.operate._support import (
+    _MessageOnScreenshotBrowser,
+    _MessagesOnClickBrowser,
+    _PrependTrackingQueue,
+)
 
 
 def _daminggang_messages(
@@ -323,7 +275,7 @@ def test_operate_puts_back_progress_while_waiting_for_gang_button(
     progress_action: DecodedSnifferMessage,
     expected_event_type: type[DaminggangEvent | HuleEvent],
 ) -> None:
-    messages = _PutBackTrackingQueue()
+    messages = _PrependTrackingQueue()
     for message in (
         _auth_game(),
         _live_new_round_action(
@@ -371,7 +323,7 @@ def test_operate_puts_back_progress_while_waiting_for_gang_button(
     result = asyncio.run(screen.operate(operation))
 
     assert isinstance(result.round.events[-1], expected_event_type)
-    assert messages.put_back_count == 1
+    assert messages.prepend_count == 1
     assert browser.clicked_points == []
 
 

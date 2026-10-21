@@ -3,10 +3,8 @@ from dataclasses import FrozenInstanceError, replace
 import pytest
 from pydantic import JsonValue
 
-from majsoulrpa.screens.room._decode import (
-    RoomStateDecodeError,
-    decode_room_state,
-)
+from majsoulrpa.screens.errors import MessageDecodeError
+from majsoulrpa.screens.room._decode import decode_room_state
 from majsoulrpa.screens.room.state import (
     RoomPlayer,
     RoomState,
@@ -65,6 +63,59 @@ def test_decode_waiting_room_state() -> None:
     assert state.available_slots == 1
     with pytest.raises(FrozenInstanceError):
         state.ai_count = 2  # ty: ignore[invalid-assignment]
+
+
+def test_snapshot_is_detached_from_input_and_players_are_frozen() -> None:
+    room = _room()
+    state = decode_room_state(room, version=1, self_account_id=100002)
+    for field in ("persons", "ready_list", "robots"):
+        value = room[field]
+        assert isinstance(value, list)
+        value.clear()
+
+    assert len(state.players) == 2
+    assert state.self_is_ready is True
+    assert state.ai_count == 1
+    with pytest.raises(FrozenInstanceError):
+        state.players[0].is_host = False  # ty: ignore[invalid-assignment]
+
+
+def test_replaced_snapshot_rederives_roles_and_preserves_previous() -> None:
+    previous = decode_room_state(_room(), version=1, self_account_id=100002)
+    host, guest = previous.players
+
+    current = replace(
+        previous,
+        version=2,
+        players=(
+            replace(host, is_host=False, is_ready=True),
+            replace(guest, is_host=True, is_ready=False),
+        ),
+    )
+
+    assert current.self_is_host is True
+    assert current.self_is_ready is False
+    assert current.all_guests_ready is True
+    assert previous.self_is_host is False
+    assert previous.self_is_ready is True
+    assert previous.players[0].is_host is True
+    assert previous.players[0].is_ready is False
+
+
+@pytest.mark.parametrize("capacity", [1, 3, 4])
+def test_full_room_has_no_available_slots(capacity: int) -> None:
+    state = RoomState(
+        version=1,
+        status=RoomStatus.WAITING,
+        room_id=12345,
+        max_player_count=capacity,
+        players=(RoomPlayer(100001, "host", is_host=True, is_ready=False),),
+        ai_count=capacity - 1,
+        self_account_id=100001,
+    )
+
+    assert state.participant_count == capacity
+    assert state.available_slots == 0
 
 
 def test_all_guests_ready_is_false_when_any_guest_is_not_ready() -> None:
@@ -151,7 +202,7 @@ def test_decode_rejects_invalid_room_numbers(
     room = _room()
     room[field_name] = value
 
-    with pytest.raises(RoomStateDecodeError):
+    with pytest.raises(MessageDecodeError):
         decode_room_state(room, version=1, self_account_id=100002)
 
 
@@ -159,8 +210,62 @@ def test_decode_rejects_non_list_robots() -> None:
     room = _room()
     room["robots"] = None
 
-    with pytest.raises(RoomStateDecodeError):
+    with pytest.raises(MessageDecodeError):
         decode_room_state(room, version=1, self_account_id=100002)
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "room_id",
+        "owner_id",
+        "max_player_count",
+        "robots",
+        "ready_list",
+        "persons",
+    ],
+)
+def test_decode_rejects_missing_required_field(field: str) -> None:
+    room = _room()
+    del room[field]
+
+    with pytest.raises(MessageDecodeError):
+        decode_room_state(room, version=1, self_account_id=100002)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("ready_list", None),
+        ("ready_list", [True]),
+        ("ready_list", [1.5]),
+        ("ready_list", ["synthetic-private-value"]),
+        ("ready_list", [0]),
+        ("ready_list", [-1]),
+        ("persons", ["synthetic-private-value"]),
+    ],
+    ids=[
+        "not-list",
+        "boolean",
+        "float",
+        "string",
+        "zero",
+        "negative",
+        "not-object",
+    ],
+)
+def test_decode_rejects_invalid_list_without_exposing_values(
+    field: str,
+    value: JsonValue,
+) -> None:
+    room = _room()
+    room[field] = value
+
+    with pytest.raises(MessageDecodeError) as caught:
+        decode_room_state(room, version=1, self_account_id=100002)
+
+    assert field in str(caught.value)
+    assert "synthetic-private-value" not in str(caught.value)
 
 
 @pytest.mark.parametrize(
@@ -180,12 +285,12 @@ def test_decode_rejects_duplicate_or_missing_owner(
     room = _room()
     room["persons"] = persons
 
-    with pytest.raises(RoomStateDecodeError):
+    with pytest.raises(MessageDecodeError):
         decode_room_state(room, version=1, self_account_id=100002)
 
 
 def test_decode_rejects_self_account_id_outside_room() -> None:
-    with pytest.raises(RoomStateDecodeError):
+    with pytest.raises(MessageDecodeError):
         decode_room_state(_room(), version=1, self_account_id=999999)
 
 
@@ -193,7 +298,7 @@ def test_decode_rejects_ready_account_id_outside_room() -> None:
     room = _room()
     room["ready_list"] = [999999]
 
-    with pytest.raises(RoomStateDecodeError):
+    with pytest.raises(MessageDecodeError):
         decode_room_state(room, version=1, self_account_id=100002)
 
 
@@ -202,7 +307,7 @@ def test_decode_rejects_participant_count_over_capacity() -> None:
     room["max_player_count"] = 3
     room["robots"] = [{}, {}]
 
-    with pytest.raises(RoomStateDecodeError):
+    with pytest.raises(MessageDecodeError):
         decode_room_state(room, version=1, self_account_id=100002)
 
 
@@ -228,7 +333,7 @@ def test_terminal_state_keeps_last_room_information(
     assert terminal.self_account_id == waiting.self_account_id
 
 
-@pytest.mark.parametrize("max_player_count", [2, True, 1.0])
+@pytest.mark.parametrize("max_player_count", [0, 2, 5])
 def test_room_state_rejects_invalid_max_player_count(
     max_player_count: int,
 ) -> None:
@@ -244,3 +349,63 @@ def test_room_state_rejects_invalid_max_player_count(
             ai_count=0,
             self_account_id=100001,
         )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("version", 0),
+        ("room_id", 0),
+        ("self_account_id", 0),
+        ("self_account_id", 999999),
+        ("ai_count", -1),
+        ("ai_count", 3),
+    ],
+    ids=[
+        "nonpositive-version",
+        "nonpositive-room-id",
+        "nonpositive-self-id",
+        "missing-self",
+        "negative-ai-count",
+        "over-capacity",
+    ],
+)
+def test_room_state_rejects_invalid_numbers(field: str, value: int) -> None:
+    state = decode_room_state(_room(), version=1, self_account_id=100002)
+    expected = {
+        "version": "version must be positive",
+        "room_id": "Room ID must be positive",
+        "self_account_id": (
+            "Self account ID must be positive"
+            if value == 0
+            else "Self account ID must identify a room player"
+        ),
+        "ai_count": (
+            "AI count must not be negative"
+            if value < 0
+            else "participants must not exceed the maximum"
+        ),
+    }[field]
+
+    with pytest.raises(ValueError, match=expected):
+        replace(state, **{field: value})
+
+
+@pytest.mark.parametrize("case", ["duplicate-id", "no-host", "multiple-hosts"])
+def test_room_state_rejects_invalid_player_membership(case: str) -> None:
+    state = decode_room_state(_room(), version=1, self_account_id=100002)
+    host, guest = state.players
+    if case == "duplicate-id":
+        players = (host, guest, replace(guest, name="duplicate"))
+    elif case == "no-host":
+        players = (replace(host, is_host=False), guest)
+    else:
+        players = (host, replace(guest, is_host=True))
+
+    expected = (
+        "account IDs must be unique"
+        if case == "duplicate-id"
+        else "exactly one host player"
+    )
+    with pytest.raises(ValueError, match=expected):
+        replace(state, players=players)

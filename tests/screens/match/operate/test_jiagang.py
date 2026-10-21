@@ -31,31 +31,7 @@ from tests.screens.match._support import (
     _live_new_round_action,
     _live_peng_action,
 )
-
-
-class _MessagesByClickBrowser(BrowserControllerSpy):
-    def __init__(
-        self,
-        screenshot: bytes,
-        messages: SnifferMessageQueue,
-        *messages_by_click: tuple[DecodedSnifferMessage, ...],
-    ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._messages_by_click = list(messages_by_click)
-
-    async def click(
-        self,
-        x: float,
-        y: float,
-        *,
-        warp: bool = False,
-    ) -> None:
-        await super().click(x, y, warp=warp)
-        if not self._messages_by_click:
-            return
-        for message in self._messages_by_click.pop(0):
-            self._messages.enqueue(message)
+from tests.screens.match.operate._support import _MessagesByClickBrowser
 
 
 def _jiagang_message_sequence(
@@ -199,6 +175,7 @@ def test_operate_selects_only_jiagang_candidate(
                 added=added,
             ),
         ),
+        allow_extra_clicks=True,
     )
     screen = _screen(browser, messages)
     sleep_delays: list[float] = []
@@ -250,6 +227,7 @@ def test_operate_selects_requested_jiagang_from_two_candidates(
                 added=added_tiles[selected_index],
             ),
         ),
+        allow_extra_clicks=True,
     )
     screen = _screen(browser, messages)
     sleep_delays: list[float] = []
@@ -336,6 +314,7 @@ def test_operate_rejects_jiagang_event_for_different_candidate(
                 added=added_tiles[1],
             ),
         ),
+        allow_extra_clicks=True,
     )
     screen = _screen(browser, messages)
 

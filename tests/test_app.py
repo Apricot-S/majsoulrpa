@@ -8,11 +8,20 @@ import majsoulrpa.client.runtime as runtime_module
 from majsoulrpa import RPAApp
 from majsoulrpa.client.runtime import Cleanup, RPARuntime
 from majsoulrpa.config import AppConfig
-from majsoulrpa.screens import Screen, ScreenDetectionSpec
+from majsoulrpa.screens import Screen, ScreenContext, ScreenDetectionSpec
 from majsoulrpa.screens.errors import ScreenDetectionTimeoutError
 from majsoulrpa.types import Callback
+from tests.screens._support import BrowserControllerSpy
+from tests.sniffer.fakes import EMPTY_SNIFFER_MESSAGES
 
 SYNTHETIC_PNG = b"\x89PNG\r\n\x1a\n"
+
+
+def _screen_context() -> ScreenContext:
+    return ScreenContext(
+        BrowserControllerSpy(SYNTHETIC_PNG),
+        EMPTY_SNIFFER_MESSAGES,
+    )
 
 
 class LoginScreen(Screen):
@@ -234,7 +243,7 @@ def test_rpa_app_preserves_registration_order() -> None:
 
 
 def test_rpa_app_run_dispatches_registered_screen() -> None:
-    detector = SequenceScreenDetector(LoginScreen(), None)
+    detector = SequenceScreenDetector(LoginScreen(_screen_context()), None)
     app = RPAApp(runtime_factory=RuntimeFactorySpy(detector))
 
     @app.on(LoginScreen)
@@ -247,7 +256,7 @@ def test_rpa_app_run_dispatches_registered_screen() -> None:
 
 
 def test_rpa_app_run_uses_falsey_runtime_factory() -> None:
-    detector = SequenceScreenDetector(LoginScreen(), None)
+    detector = SequenceScreenDetector(LoginScreen(_screen_context()), None)
     factory = FalseyRuntimeFactory(detector)
     app = RPAApp(runtime_factory=factory)
 
@@ -261,7 +270,9 @@ def test_rpa_app_run_uses_falsey_runtime_factory() -> None:
 
 
 def test_rpa_app_run_ignores_unregistered_screen() -> None:
-    detector = SequenceScreenDetector(UnknownScreen(), LoginScreen(), None)
+    detector = SequenceScreenDetector(
+        UnknownScreen(_screen_context()), LoginScreen(_screen_context()), None
+    )
     app = RPAApp(runtime_factory=RuntimeFactorySpy(detector))
 
     @app.on(LoginScreen)
@@ -274,7 +285,7 @@ def test_rpa_app_run_ignores_unregistered_screen() -> None:
 
 
 def test_rpa_app_run_returns_callback_data() -> None:
-    detector = SequenceScreenDetector(LoginScreen(), None)
+    detector = SequenceScreenDetector(LoginScreen(_screen_context()), None)
     app = RPAApp(runtime_factory=RuntimeFactorySpy(detector))
 
     @app.on(LoginScreen)
@@ -287,7 +298,7 @@ def test_rpa_app_run_returns_callback_data() -> None:
 
 
 def test_rpa_app_run_does_not_represent_data() -> None:
-    detector = SequenceScreenDetector(LoginScreen(), None)
+    detector = SequenceScreenDetector(LoginScreen(_screen_context()), None)
     app = RPAApp(runtime_factory=RuntimeFactorySpy(detector))
     data_in = UnrepresentableData()
 
@@ -306,7 +317,9 @@ def test_rpa_app_run_does_not_represent_data() -> None:
 def test_rpa_app_run_retries_screen_detection_until_screen_is_found(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    detector = SequenceScreenDetector(None, None, LoginScreen())
+    detector = SequenceScreenDetector(
+        None, None, LoginScreen(_screen_context())
+    )
     app = RPAApp(runtime_factory=RuntimeFactorySpy(detector))
     sleeps: list[float] = []
 
@@ -353,7 +366,7 @@ def test_rpa_app_run_cleans_up_when_detection_timeout_expires() -> None:
 
 
 def test_rpa_app_run_propagates_callback_exception() -> None:
-    detector = SequenceScreenDetector(LoginScreen())
+    detector = SequenceScreenDetector(LoginScreen(_screen_context()))
     app = RPAApp(runtime_factory=RuntimeFactorySpy(detector))
 
     @app.on(LoginScreen)
@@ -367,7 +380,7 @@ def test_rpa_app_run_propagates_callback_exception() -> None:
 
 def test_rpa_app_run_cleans_up_when_callback_fails() -> None:
     cleanup = CleanupSpy()
-    detector = SequenceScreenDetector(LoginScreen())
+    detector = SequenceScreenDetector(LoginScreen(_screen_context()))
     app = RPAApp(runtime_factory=RuntimeFactorySpy(detector, cleanup))
 
     @app.on(LoginScreen)
@@ -386,7 +399,7 @@ def test_rpa_app_run_preserves_callback_and_cleanup_failures() -> None:
         msg = "cleanup failed"
         raise ValueError(msg)
 
-    detector = SequenceScreenDetector(LoginScreen())
+    detector = SequenceScreenDetector(LoginScreen(_screen_context()))
     app = RPAApp(runtime_factory=RuntimeFactorySpy(detector, fail_cleanup))
 
     @app.on(LoginScreen)
@@ -415,7 +428,7 @@ def test_rpa_app_run_raises_detection_timeout() -> None:
 
 def test_rpa_app_run_cleans_up_when_callback_is_cancelled() -> None:
     cleanup = CleanupSpy()
-    detector = SequenceScreenDetector(LoginScreen())
+    detector = SequenceScreenDetector(LoginScreen(_screen_context()))
     app = RPAApp(runtime_factory=RuntimeFactorySpy(detector, cleanup))
 
     @app.on(LoginScreen)
@@ -433,7 +446,7 @@ def test_rpa_app_run_preserves_cancellation_and_cleanup_failure() -> None:
         msg = "cleanup failed"
         raise RuntimeError(msg)
 
-    detector = SequenceScreenDetector(LoginScreen())
+    detector = SequenceScreenDetector(LoginScreen(_screen_context()))
     app = RPAApp(runtime_factory=RuntimeFactorySpy(detector, fail_cleanup))
 
     @app.on(LoginScreen)
@@ -562,7 +575,7 @@ def test_rpa_runtime_cancels_background_service_after_normal_stop() -> None:
 
     runtime = RPARuntime(
         {LoginScreen: _return_data},
-        SequenceScreenDetector(LoginScreen()),
+        SequenceScreenDetector(LoginScreen(_screen_context())),
         should_stop=lambda: True,
         background_service=run_until_cancelled,
     )
@@ -583,7 +596,7 @@ def test_rpa_runtime_reports_background_cancellation_failure() -> None:
 
     runtime = RPARuntime(
         {LoginScreen: _return_data},
-        SequenceScreenDetector(LoginScreen()),
+        SequenceScreenDetector(LoginScreen(_screen_context())),
         should_stop=lambda: True,
         background_service=fail_when_cancelled,
     )
@@ -680,7 +693,7 @@ def test_rpa_runtime_rejects_background_service_normal_exit() -> None:
 
 def test_rpa_runtime_waits_for_background_ready_before_main_loop() -> None:
     ready = asyncio.Event()
-    detector = SequenceScreenDetector(LoginScreen())
+    detector = SequenceScreenDetector(LoginScreen(_screen_context()))
 
     async def background() -> None:
         assert detector.detected_count == 0
@@ -727,7 +740,9 @@ def test_rpa_runtime_uses_falsey_stop_predicate() -> None:
 
     runtime = RPARuntime(
         {LoginScreen: _return_data, UnknownScreen: fail_if_dispatched},
-        SequenceScreenDetector(LoginScreen(), UnknownScreen()),
+        SequenceScreenDetector(
+            LoginScreen(_screen_context()), UnknownScreen(_screen_context())
+        ),
         should_stop=should_stop,
     )
 

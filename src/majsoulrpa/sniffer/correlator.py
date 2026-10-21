@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 from dataclasses import dataclass
 
 from majsoulrpa.sniffer.envelope import (
@@ -15,7 +15,7 @@ class ObservedEnvelope:
     connection_id: str
     direction: Direction
     frame_sequence: int
-    observed_at: datetime.datetime
+    observed_at: dt.datetime
     envelope: LiqiEnvelope
 
 

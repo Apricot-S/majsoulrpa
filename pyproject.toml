@@ -1,6 +1,6 @@
 [project]
 name = "majsoulrpa"
-version = "0.1.0.dev7"
+version = "0.1.0.dev8"
 description = "A Robotic Process Automation (RPA) framework for Mahjong Soul (雀魂)"
 authors = [
     { name = "Apricot S." },
@@ -46,7 +46,7 @@ majsoulrpa-browser = "majsoulrpa.cli:main"
 Repository = "https://github.com/Apricot-S/majsoulrpa.git"
 
 [build-system]
-requires = ["uv_build>=0.11.26,<0.13.0"]
+requires = ["uv_build>=0.11.26,<0.14.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
@@ -58,14 +58,15 @@ dev = [
     { include-group = "docs" },
 ]
 lint = [
-    "ruff>=0.16.0,<0.17",
+    "ruff>=0.17.1,<0.18",
 ]
 test = [
     "pytest>=9.1.1,<10",
 ]
 typing = [
-    "ty>=0.0.85",
+    "ty>=0.0.89",
     "types-boto3[s3]>=1.43.46,<2",
+    "types-protobuf>=7.35.1.20260906,<8",
 ]
 docs = [
     "sphinx>=9.1.0",

@@ -185,19 +185,46 @@
 
 ## `screens/` 共通
 
-- [ ] `screens/__init__.py`: 標準 Screen と共通例外の public export が設計資料と一致することを確認する。
-- [ ] `screens/errors.py`: 例外階層、`TimeoutError` / `ValueError` との多重継承、screenshot 保持・保存時の情報漏洩を確認する。
-- [ ] `screens/base.py`: `ScreenContext` の依存、検出 contract、stale guard、API log、Sniffer helper の責務集中を確認する。
-- [ ] `screens/login.py`: 認証 sequence、request-scoped HTTP wait、stale 化の時点、email/code/token 非漏洩を確認する。
-- [ ] `screens/home.py`: 前処理 loop と各高レベル遷移を区別し、巨大な条件分岐・重複 template 操作・message 先読みを確認する。
+- [x] `screens/_json_fields.py`: 外部JSONのscalar/list/object取得をRoom/Matchで共有する。取得キーのnameを診断にも使い、field wrapperを削除する。入力値を出さず、必須fieldとoptional objectの欠落規則を維持する。内部MessageDecodeErrorへdecode失敗を統一し、正値/人数/seat等は各画面に残す。
+- [x] `screens/errors.py`: 内部MessageDecodeError(ValueError)を共通定義し、_decode_errors.pyは削除する。公開exportには追加しない。Screen側で画像付き不整合例外へ変換し、対象外種別・状態遷移・browser/cancellationは統合しない。
+
+- [x] `screens/__init__.py`: 共通基底・context・検出spec・共通例外のみのexportを維持する。標準Screenは各moduleからimportする設計を明記し、公開API設計の古いimport例を修正した。export一覧と具体Screenの非読込は既存package testで確認する。
+- [x] `screens/errors.py`: 例外階層と組込み例外との多重継承を維持する。画像は属性だけに保持し、明示保存まで書き出さず、str・repr・args・生成ファイル名へ含めない。mkdir/write失敗はそのまま伝播する。created_atはaware datetimeを生成時にUTCへ正規化し、環境依存のファイル名になるnaive/offset未定義日時をValueErrorで拒否する。互換性の変更は公開API設計へ記録した。message/screenshotは主要入力、created_atは任意の時刻指定としてキーワード専用を維持し、Noneは実行時clockの利用を表す。
+- [x] `screens/base.py`: 依存はbrowser操作・message source・account参照・停止要求に限定し、runtimeや具体queueへ逆依存しない。検出spec、stale guard、API log、region/template/Sniffer helperは共通Screen拡張点として維持し、行数だけを理由に分割しない。追加の実装修正は不要と判断した。
+  - [x] reload成功後だけstaleになり、失敗/cancellationは伝播してactiveを維持する。API logはScreen/API名だけを記録し、finallyで深度を戻す。既存関連88テストとsynthetic browserで失敗/cancellation後のログ深度復元を確認した。
+  - [x] Screenと派生Screen・ScreenshotScreenDetectorのcontextは必須にする。未指定の利用はテストのみで、実runtimeは常に渡し、後から配線する経路もなかったためNoneと未設定チェックを削除する。テストはfake contextを注入し、検出Screenで同じcontextを使って操作することを確認する。rng=Noneはstatefulな既定乱数源への委譲なので維持する。account state・停止callable・検出predicateのstatelessな既定値は共有できる。region/value/template等の主要入力は位置指定、warp/clear/message/復元optionは操作policyや同型値の識別のためキーワード指定を維持する。
+  - [x] 先頭への復元を明示するためsourceの差し戻しAPIをprepend/prepend_manyに改名し、protected helperと復元option・全呼び出し・fake・設計資料を揃える。旧名は維持せず、独自sourceの移行方法をSniffer設計へ記録する。名前だけの新規テストは追加しない。
+  - [x] 単一prependも先頭復元へ統一し、複数messageの復元はprotectedな一括helperへ委譲する。Home/Matchの複数復元ループを移行し、通知の内部順序とstep整列を維持する。末尾追加の旧契約からの移行はSniffer設計へ記録した。
+  - [x] 名前待機helperは一括差し戻しで読み取った列を未読列の前へ戻し、差し戻し済み未読messageがあっても順序を維持する。標準queueは全件の予算確認後に追加し、上限違反で部分追加しない。独自sourceにprepend_manyの実装が必要となる影響はSniffer設計へ記録した。
+  - [x] Sniffer名前待機helperの差し戻し失敗は意図的に最初の例外で打ち切る。後続messageだけを戻すと欠落した列をqueueに残すため、復旧せず例外を伝播してRPAを終了する。
+  - [x] `goto_log()`は空文字・ASCII英数字と`-`/`_`以外を遷移前にscreenshot付き不正引数例外で拒否し、入力値を例外・通常ログへ含めない。基本・視点指定・匿名化形式に対して構造や実在は検証しない。URLのpercent-encodeは維持し、通常のIDのURLは変えない。以前受理した不正文字の拒否は公開API設計へ記録した。
+  - [x] `ScreenContext.request_stop`はstatelessな無処理関数を直接デフォルトにし、falsey callableを置き換えずawaitする。停止処理の失敗・cancellationは元の例外を伝播する。明示的な`None`指定の廃止は公開API設計へ記録した。
+  - [x] `ScreenContext`のbrowser/sourceは役割が異なる主要依存として位置指定を維持する。request_stop・viewport幅/高さ・rng・account_stateは設定/注入点であり、特に同型の幅と高さを取り違えないためキーワード専用にする。第3引数以降の位置指定を廃止する影響と移行方法を公開API設計へ記録した。
+- [x] `screens/login.py`: メール送信の再入力間隔・認証コード入力順・ASCII6桁検証・メンテナンス判定・720p同意領域を維持する。HTTP待機はbrowser側のrequest-scoped操作へ委譲し、raw tokenはScreenへ持ち込まない。遷移完了後だけstale化し、正常ログはAPI名だけにする。追加の実装修正は不要と判断した。
+  - [x] メール検証のValidationErrorを処理し終えてから診断画像を取得する。診断失敗/cancellationの例外contextに検証入力が残る問題を修正し、traceback・通常ログの非漏洩と元の診断例外の伝播をsynthetic emailで確認した。
+- [x] `screens/home.py`: 前処理は告知/報酬の画像判定と既処理検出を維持し、高レベル遷移は画面操作・操作別失敗理由・stale化を区別する。共通のresponse走査とerror.code抽出だけを共有し、状態遷移やtemplate操作は無理に統合しない。入力型は型チェックを信頼する。追加の実装修正は不要と判断した。
+  - [x] 入室と大会入場の目的Req/Res走査を共通化する。関連51テストで後続messageを残す停止位置・不整合例外・入室成功時のmessage引き渡しを維持する。選択messageのログ方針は操作ごとに明示し、公開APIは変更しない。
+  - [x] 入室と大会入場のresponse error.code抽出・外部JSON構造検証だけをprivate helperへ共通化する。操作別Enumへの変換と未知codeのログは分離したまま維持し、既存51テストで成功・不正構造・拒否・画面復旧等の振る舞いを確認した。公開APIと例外messageは変更しない。
+  - [x] 月間チケットのjade検出期限は自身のasyncio.timeoutがexpiredの場合だけ検出エラーへ変換する。browser由来のTimeoutErrorを誤変換せず元の例外を伝播し、診断画像の再取得も行わないことを回帰テストした。
+  - [x] `enter_tournament()`のIDもASCII数字6桁へ限定する。Unicode数字を画面操作前に拒否し、active維持と入力値の例外/log非表示を回帰テストする。regexの表記だけを固定するテストは削除した。
+  - [x] `join_room()`のID検証をASCII数字5桁へ限定する。Unicode数字を受理して画面操作へ進んでいた問題を修正し、画面操作前の拒否・active維持・入力値の例外/log非表示を回帰テストする。regexの表記だけを固定するテストは削除し、APIの振る舞いで確認する。
 
 ### `screens/room/`
 
-- [ ] `screens/room/__init__.py`: state・error・Screen の export と lazy import の必要性を確認する。
-- [ ] `screens/room/state.py`: frozen snapshot、derived host state、active / terminal status の表現を確認する。
-- [ ] `screens/room/_decode.py`: synthetic mapping の strict decode、field error、正値・重複・人数制約の分担を確認する。
-- [ ] `screens/room/store.py`: instance-local state、snapshot/update/terminal 遷移、message 履歴を保持しないことを確認する。
-- [ ] `screens/room/errors.py`: operation と reason Enum、未知 server code、例外 message の個人情報非表示を確認する。
+- [x] `screens/room/__init__.py`: state/errorの通常exportとRoomScreenのlazy exportを維持する。具体Screenを読むまで画像照合を読み込まない価値があり、一覧と遅延importは既存package testで確認する。新しいwrapperは追加しない。
+- [x] `screens/room/state.py`: frozen snapshot、derived host state、active / terminal status の表現を確認する。
+  - [x] 最終照合を完了した。playerの変更禁止、入力listの変更からの独立、host/ready変更後の派生値と旧snapshot保持、1/3/4人の満員境界を追加確認した。terminalは最後の部屋情報を維持する既存表現を採用し、docstringへ明記した。追加の構造変更は不要と判断した。
+  - [x] 最大人数のPython引数型再検証と対応する型違反テストを除去し、値域検証へ整理した。直接構築での正値・人数・self所属・重複ID・host人数の制約を追加テストし、外部decodeでのboolean拒否と既存のimmutable/derived/terminalテストを維持した。
+- [x] `screens/room/_decode.py`: synthetic mapping の strict decode、field error、正値・重複・人数制約の分担を確認する。
+  - [x] ready_listの整数列・personsのobject列の型検証を共通JSON helperへ統合した。正値・ready所属はdecode、重複player ID・人数・host/self所属はRoomStateへ維持する。必須field欠落、boolean/float/string・非正値・非object要素の拒否と診断への入力値非漏洩を追加テストし、現行設計との照合を完了した。
+- [x] `screens/room/store.py`: instance-local state、snapshot/update/terminal 遷移、message 履歴を保持しないことを確認する。
+  - [x] 実装・設計・関連テストの最終照合を完了した。storeが保持するのはinstance-localな最新snapshotのみで、message履歴・response・waiterは保持しない。初期化・同一/変更snapshot・別room拒否・terminal遷移/再初期化拒否と更新の原子性を確認し、現在の確認範囲で追加の実装変更は不要と判断した。
+  - [x] ready通知の整数・boolean検証を共通JSON helperへ揃え、正値・所属検証はRoom側に維持した。不正入力時のsnapshot保持、設定・解除、再受信時のidentity/version維持、terminal後の古いready通知の無視を回帰テストで確認した。
+  - [x] player updateの不正要素を読み飛ばす予備走査を削除し、decode済みplayerへ既存readyを引き継ぐ順序へ整理した。不正入力時のsnapshot保持、残存者・新規参加者のready、同一更新時のidentity/version維持を回帰テストで確認した。
+  - [x] createRoom / joinRoom / fetchRoomの完全snapshotにもOUTBOUND requestを要求し、leaveRoomと方向検証を共通化した。成功・失敗responseと初期化前・active・terminalの組合せで、不整合の拒否とsnapshot identityの保持を確認した。
+  - [x] プレイヤー更新と同様、対局開始/kick通知もINBOUNDだけを受理する。方向不整合を状態更新前に拒否し、初期化前/active/terminalのsnapshotを変更しないことをsynthetic messageで確認した。
+- [x] `screens/room/errors.py`: operation と reason Enum、未知 server code、例外 message の個人情報非表示を確認する。
+  - [x] 既存の例外階層とEnumを維持し、属性での分岐方法をdocstringへ明記した。全理由・全操作で属性保持、上位例外による捕捉、str/reprへのscreenshot内容・未知codeの非漏洩を確認した。server messageを取り込まない既存実装を維持し、設計資料の未使用ROOM_INACTIVEとRoom専用stale派生の記述を現行仕様へ揃えた。
 - [ ] `screens/room/screen.py`: source drain、操作 lock、Req/Res と notice の相関、terminal 後 stale、画面消失待機を確認する。
 
 ### `screens/match/` の基盤
@@ -205,7 +232,7 @@
 - [ ] `screens/match/__init__.py`: public state/event/operation 型の export、lazy export の要否、union の網羅性を確認する。
 - [ ] `screens/match/types.py`: `Seat` / `Tile` の型と runtime validator が全入口で一貫して使われることを確認する。
 - [ ] `screens/match/_common.py`: tile 正規化・並び順・鳴き条件の共通化が domain invariant に限られることを確認する。
-- [ ] `screens/match/_decode.py`: JSON field helper が strict で、欠落や型不正を default 値へ変換しないことを確認する。
+- [x] `screens/match/_decode.py`: field wrapperだけのmoduleは削除し、event/operationで共通JSON helperを直接使う。取得キーのnameを診断にも使い、欠落や型不正を既定値へ変換しない。
 - [ ] `screens/match/_metadata.py`: human / robot / seat / rank decode と match metadata の不変条件を確認する。
 - [ ] `screens/match/_action.py`: live / restore adapter、deobfuscation、API 名と action 名の対応、未知 action の失敗を確認する。
 - [ ] `screens/match/state.py`: immutable snapshot、四麻・三麻、round state、event 列、version の不変条件を確認する。
@@ -303,8 +330,8 @@ constructor の runtime invariant、live / restore 双方から同じ object が
   - [x] capacity / max_payload_bytesはint型注釈を前提にboolと0以下を拒否する。Trueを上限1として受理していた箇所を修正し、既存の入力検証テストへboolean・負数を追加した。
   - [x] get / get_nowaitとも差し戻し順を優先し、未読・新着messageの到着順も保持することを確認した。既存の差し戻しテスト2件を混在ケースへ統合し、実装は維持した。
   - [x] getの空待機中とenqueue直後・再開前のキャンセルを確認した。CancelledErrorを伝播し、未読messageとbyte上限を保持し、取り出し後は容量を再利用できる。実装は維持した。
-  - [x] Req/Resは両payloadの合計byteで単体上限を判定することをenqueue / put_backで確認した。Noticeとの混在、getによる容量解放、put_backによる再計上も確認し、実装は維持した。
-  - [x] enqueue / put_backに保持したmessageが両経路の件数・byte上限へ算入されることを確認した。overflow後も既存messageを保持し、取り出し後に容量を再利用できることを既存テストの統合・拡張で確認した。実装は維持した。
+  - [x] Req/Resは両payloadの合計byteで単体上限を判定することをenqueue / prependで確認した。Noticeとの混在、getによる容量解放、prependによる再計上も確認し、実装は維持した。
+  - [x] enqueue / prependに保持したmessageが両経路の件数・byte上限へ算入されることを確認した。overflow後も既存messageを保持し、取り出し後に容量を再利用できることを既存テストの統合・拡張で確認した。実装は維持した。
 - [x] `sniffer/worker.py`: capture -> envelope -> correlation -> publication の順序と、stop 時 pending request の失敗を確認する。
   - [x] connection closeは対象のpendingだけを解放し、他connectionの同番号ReqResは対応できる。再closeと閉じた側の遅延Response拒否も既存テストへ統合し、実装は維持した。
   - [x] Request保留中のcapture待機をrunのキャンセルで中断し、続くstopが未完了を報告・解放することを確認した。再stopの成功とpublish未呼び出しも既存の停止テストへ統合し、実装は維持した。

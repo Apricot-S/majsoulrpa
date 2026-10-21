@@ -144,7 +144,10 @@ def test_home_before_callback_retries_and_clicks_jade_for_month_ticket(
     assert queue.get_nowait() is None
 
 
-def test_month_ticket_check_puts_back_all_messages() -> None:
+@pytest.mark.parametrize("initial_source", ["enqueue", "prepend_many"])
+def test_month_ticket_check_puts_back_all_messages(
+    initial_source: str,
+) -> None:
     jade = _synthetic_template_screenshot(
         template_path=JADE_TEMPLATE_PATH,
         settings_path=JADE_SETTINGS_PATH,
@@ -152,7 +155,14 @@ def test_month_ticket_check_puts_back_all_messages() -> None:
     queue = _message_queue(
         ".lq.Unrelated",
         ".lq.Lobby.payMonthTicket",
+        ".lq.AfterMonthTicket",
     )
+    if initial_source == "prepend_many":
+        queued = [queue.get_nowait() for _ in range(3)]
+        assert all(message is not None for message in queued)
+        queue.prepend_many(
+            [message for message in queued if message is not None]
+        )
     screen = HomeScreen(
         context=ScreenContext(
             browser=BrowserControllerSpy(jade),
@@ -169,6 +179,39 @@ def test_month_ticket_check_puts_back_all_messages() -> None:
     assert second is not None
     assert first.raw.name == ".lq.Unrelated"
     assert second.raw.name == ".lq.Lobby.payMonthTicket"
+    third = queue.get_nowait()
+    assert third is not None
+    assert third.raw.name == ".lq.AfterMonthTicket"
+
+
+def test_month_ticket_propagates_browser_timeout() -> None:
+    failure = TimeoutError("synthetic browser timeout")
+
+    class TimingOutBrowser(BrowserControllerSpy):
+        requests = 0
+
+        async def screenshot(self) -> bytes:
+            self.requests += 1
+            if self.requests == 1:
+                raise failure
+            return await super().screenshot()
+
+    browser = TimingOutBrowser(_synthetic_blank_screenshot())
+    queue = _message_queue(".lq.Lobby.payMonthTicket")
+    screen = HomeScreen(ScreenContext(browser=browser, sniffer_messages=queue))
+
+    with pytest.raises(
+        TimeoutError, match="synthetic browser timeout"
+    ) as caught:
+        asyncio.run(screen._process_month_ticket())
+
+    assert caught.value is failure
+    assert browser.requests == 1
+    assert browser.clicked_points == []
+    assert not screen._stale
+    message = queue.get_nowait()
+    assert message is not None
+    assert message.raw.name == ".lq.Lobby.payMonthTicket"
 
 
 def test_home_before_callback_raises_if_jade_is_not_found_in_time(
@@ -463,8 +506,8 @@ def test_home_screen_raises_when_mail_close_is_detected_twice(
 @pytest.mark.parametrize(
     ("rewards_first", "expected_sleeps"),
     [
-        (True, [1.0, 2.0, 0.5, 1.0]),
-        (False, [1.0, 1.0, 2.0, 0.5]),
+        (True, [1.0, 3.0, 0.5, 1.0]),
+        (False, [1.0, 1.0, 3.0, 0.5]),
     ],
 )
 def test_home_screen_processes_rewards_and_close_in_either_order(
@@ -540,6 +583,6 @@ def test_home_screen_raises_when_rewards_confirm_is_missing(
         asyncio.run(screen.before_callback())
 
     assert len(browser.clicked_points) == 1
-    assert sleeps == [1.0, 2.0]
+    assert sleeps == [1.0, 3.0]
     assert browser.screenshot_count == 2
     assert exc_info.value.screenshot == missing_confirm_screenshot

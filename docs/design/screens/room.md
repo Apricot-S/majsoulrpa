@@ -260,11 +260,11 @@ runtime error にする。
 初期 snapshot を RoomScreen へ引き渡すため、`HomeScreen.create_room()` / `join_room()` は成功した
 `createRoom` / `joinRoom` の完全な decoded Req/Res を source に残す。現行 `join_room()` は成功
 message を消費するため、RoomScreen 実装時に response dict だけでなく元の decoded message を
-保持し、成功確認後に 1 回だけ `put_back()` する。失敗 response は RoomScreen へ渡さない。
+保持し、成功確認後に 1 回だけ `prepend()` する。失敗 response は RoomScreen へ渡さない。
 
 対局終了後に同じ友人戦へ戻る場合、新しい `RoomScreen` は `.lq.Lobby.fetchRoom` response の完全
 snapshot から instance-local store を初期化する。`MatchScreen` がこの message を画面遷移の確認中に
-先読みした場合は、次の Screen に属する decoded message として 1 回だけ `put_back()` する。
+先読みした場合は、次の Screen に属する decoded message として 1 回だけ `prepend()` する。
 `fetchRoom` は対局から Room への再入場 evidence であり、Room 内の reload recovery や active 中の
 callback 早期 return を補完する evidence として扱わない。
 
@@ -311,7 +311,10 @@ protocol / design を更新する。
 
 click 前に source を drain し、同じ Screen の操作を並行実行しないため、click 後に得た同名
 Req/Res を今回の操作へ対応付けられる。response や notice が待機開始より先に到着しても
-bounded queue に残るため取り逃がさない。Req/Res の request direction、API 名、既知 request
+bounded queue に残るため取り逃がさない。完全snapshotの `createRoom` / `joinRoom` / `fetchRoom` と
+退出の `leaveRoom` は、responseの成功・失敗やstoreの状態によらず、状態更新前にrequestが
+`OUTBOUND` であることを検証する。方向不整合では現在のsnapshotを変更しない。
+Req/Res の request direction、API 名、既知 request
 field も確認する。必要な response または notice の片方が来ない場合は成功扱いにせず待機を
 続け、呼び出し側の timeout または cancellation に委ねる。矛盾した notice を観測した場合は
 message 不整合として失敗させる。
@@ -350,6 +353,9 @@ slot を占める人間または AI の account ID を保持する。現時点�
 ホスト交代との race で古い権限を使って click しない。
 
 空 payload の `NotifyRoomKickOut` は受信した client 自身の kick として `KICKED` にする。
+プレイヤー更新・ready・対局開始・kickのRoom通知はすべて `INBOUND` を必要とする。
+`OUTBOUND` の通知は初期化前・active・terminalのいずれでも状態変更前に不整合として拒否する。
+従来の対局開始/kickでの方向確認漏れを修正し、通常のサーバー通知による遷移は維持する。
 待機中の Room API は terminal state を検知して呼び出し側の timeout より先に失敗する。
 外部ホストが対局を開始した場合も `NotifyRoomGameStart` で `MATCH_STARTED` にし、その後の
 Room 操作を禁止する。
@@ -382,7 +388,6 @@ class RoomOperationNotAllowedReason(StrEnum):
     ROOM_FULL = "room_full"
     ROOM_NOT_FULL = "room_not_full"
     GUEST_NOT_READY = "guest_not_ready"
-    ROOM_INACTIVE = "room_inactive"
 
 
 class RoomOperationNotAllowedError(ScreenInvalidOperationError):
@@ -411,7 +416,7 @@ class RoomOperationRejectedError(ScreenError):
 | 未知 code | 上記例外 + `UNRECOGNIZED_ERROR_CODE`。数値 code は属性に保持 |
 | response / notice が到着しない | API 内では待機を継続。呼び出し側の timeout / cancellation に委ねる |
 | message field の欠落・型不正・矛盾 | `ScreenInconsistentMessageError` |
-| kick 済み、対局開始済み、退出済み | `ScreenStaleError` の Room 用派生 |
+| kick 済み、対局開始済み、退出済み | `ScreenStaleError` |
 | template / 操作対象が見つからない | `ScreenDetectionError` |
 | browser / Sniffer / decode / stream gap | 元の infrastructure error を変換せず伝播 |
 | cancellation | cleanup 後にそのまま伝播 |

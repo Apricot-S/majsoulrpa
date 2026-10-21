@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -20,7 +20,7 @@ class RawNotice:
     direction: Direction
     name: str
     payload: bytes
-    observed_at: datetime.datetime
+    observed_at: dt.datetime
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,8 +29,8 @@ class RawRequestResponse:
     name: str
     request: bytes
     response: bytes
-    request_observed_at: datetime.datetime
-    response_observed_at: datetime.datetime
+    request_observed_at: dt.datetime
+    response_observed_at: dt.datetime
 
 
 type RawSnifferMessage = RawNotice | RawRequestResponse

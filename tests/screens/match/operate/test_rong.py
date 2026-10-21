@@ -9,7 +9,6 @@ from majsoulrpa.screens.match import HuleEvent, MatchScreen, RongOperation
 from majsoulrpa.sniffer.events import DecodedSnifferMessage
 from majsoulrpa.sniffer.message_queue import SnifferMessageQueue
 from tests.screens._support import (
-    BrowserControllerSpy,
     ScreenContext,
     _message_queue,
 )
@@ -20,18 +19,19 @@ from tests.screens.match._support import (
     _live_hule_action,
     _live_new_round_action,
 )
+from tests.screens.match.operate._support import (
+    _MessagesOnClickBrowser as _BaseMessagesOnClickBrowser,
+)
 
 
-class _MessagesOnClickBrowser(BrowserControllerSpy):
+class _MessagesOnClickBrowser(_BaseMessagesOnClickBrowser):
     def __init__(
         self,
         screenshot: bytes,
         messages: SnifferMessageQueue,
         *messages_on_click: DecodedSnifferMessage,
     ) -> None:
-        super().__init__(screenshot)
-        self._messages = messages
-        self._messages_on_click = messages_on_click
+        super().__init__(screenshot, messages, *messages_on_click)
         self.click_warps: list[bool] = []
 
     async def click(
@@ -43,8 +43,6 @@ class _MessagesOnClickBrowser(BrowserControllerSpy):
     ) -> None:
         self.click_warps.append(warp)
         await super().click(x, y, warp=warp)
-        for message in self._messages_on_click:
-            self._messages.enqueue(message)
 
 
 @pytest.mark.parametrize(

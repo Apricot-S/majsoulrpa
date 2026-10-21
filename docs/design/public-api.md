@@ -27,7 +27,8 @@ callback から複数処理を呼び出す形にします。
 ```python
 from majsoulrpa import RPAApp
 from majsoulrpa.config import AppConfig
-from majsoulrpa.screens import HomeScreen, LoginScreen
+from majsoulrpa.screens.home import HomeScreen
+from majsoulrpa.screens.login import LoginScreen
 
 
 app = RPAApp()
@@ -127,6 +128,18 @@ browser host を起動する CLI では、client からの接続先として `--
 
 ## Presentation / Screen
 
+`majsoulrpa.screens` は `Screen`、`ScreenContext`、`ScreenDetectionSpec` と
+共通 Screen 例外だけを export する。標準 Screen は `screens.login`、`screens.home`、
+`screens.room`、`screens.match` から import する。共通 API の import 時に具体的な
+Screen や画像照合の optional dependency を読み込まないため、この境界を維持する。
+
+`Screen(context)` と標準の派生Screen、および
+`ScreenshotScreenDetector(screenshot, context)` は `ScreenContext` を必須入力とする。
+Screenは生成時から必要な依存を持ち、contextを後から設定する未配線状態は提供しない。
+以前のcontext省略・`None`指定はサポートしない。直接生成する利用者と独自detectorは
+contextを渡す必要があるが、標準controller runtimeは以前から必ず渡している。
+検出条件の参照はclass methodで行うため、contextなしのScreen instanceは不要である。
+
 公開名は `Presentation` より短い `Screen` とします。画面の検出条件と、その画面で
 安全に実行できる操作を同じ class で表現します。
 
@@ -158,6 +171,54 @@ class Screen:
 詳細は [テンプレート照合設計メモ](screens/template-matching.md) を参照します。
 
 ## 操作 API
+
+Homeの月間チケット処理は、jade検出の内部5秒期限が満了した場合だけ
+screenshot付き `ScreenDetectionError` にする。browser処理自体の `TimeoutError` は
+変換せず伝播する。従来の一律な期限エラーへの変換を修正し、失敗の原因を区別する。
+
+`HomeScreen.enter_tournament(tournament_id)` の大会IDはASCII数字6桁の文字列とする。
+Unicode数字は画面操作前に screenshot 付き `ScreenInvalidArgumentError` で拒否し、
+Screenはactiveのまま維持する。入力値は例外message・通常ログへ含めず、数字の自動変換は
+行わない。従来の `\d` によるUnicode数字の受理を廃止するが、ASCII数字6桁のIDと
+大会入場処理は変わらない。
+
+`HomeScreen.join_room(room_id)` の部屋IDはASCII数字5桁の文字列とする。
+全角・Arabic-Indic数字などのUnicode数字は、画面操作前に screenshot 付き
+`ScreenInvalidArgumentError` で拒否し、Screenはactiveのまま維持する。入力値は
+例外message・通常ログへ含めず、自動的な数字の変換は行わない。従来の `\d` による
+Unicode数字の受理を廃止するが、ASCII数字5桁のIDと入室処理は変わらない。
+
+`Screen.goto_log(log_id)` は、空文字またはASCII英数字・`-`・`_` 以外を含むIDを
+遷移前に screenshot 付き `ScreenInvalidArgumentError` で拒否する。例外messageや
+通常ログに入力値を含めない。基本形式・視点指定・匿名化形式を扱うため、桁数、
+ハイフン位置、日付、UUID、suffixの構造やIDの実在は検証せず、匿名化解除もしない。
+受理したID全体を単一の `paipu` query parameter の値として percent-encode してから
+雀魂の牌譜URLへ移動する。既存のASCII英数字・`-`・`_` からなるIDのURLは変わらない。
+従来受理した空文字・特殊文字を含む入力は、入力ミスを早期に示すため拒否する。
+
+共通例外の `ScreenError` は screenshot bytes を属性に保持し、`str` / `repr` /
+`args` へ画像を含めない。画像は `save_screenshot(path)` の明示呼び出しでだけ保存する。
+保存時の I/O 失敗は伝播する。保存画像には個人情報が含まれ得るため、コミットせず、
+調査後に削除する。
+
+`created_at` は省略時（`None` 指定を含む）に現在の UTC 時刻を取得する。
+指定時は UTC offset が定義された timezone-aware な datetime に限定し、生成時に
+UTC へ正規化する。timezone なし・offset 未定義の日時は `ValueError` にする。
+従来は実行環境のローカル時刻として扱われていたが、生成ファイル名が環境により
+変わるため拒否する。明示的な日時を渡す利用者は timezone を付ける必要がある。
+既存の aware datetime、例外階層、画像内容、明示ファイルパスの保存動作は維持する。
+
+`ScreenContext` の `request_stop` は引数なしの async callable を受け取り、
+`Screen.stop_rpa()` から await する。callable の真偽値は評価せず、停止処理の
+例外と cancellation はそのまま伝播する。省略時は stateless な無処理の関数を使う。
+従来の明示的な `request_stop=None` はサポートせず、既定動作には引数を省略する。
+リポジトリ内に明示的な `None` 指定はなく、通常の runtime 配線への影響はない。
+
+`ScreenContext(browser, sniffer_messages, *, request_stop=..., viewport_width=...,
+viewport_height=..., rng=..., account_state=...)` の主要依存2つは位置指定も許可する。
+設定・注入用引数は名前で役割を識別し、同じ整数型の幅と高さなどの取り違えを防ぐため、
+キーワード専用とする。従来の第3引数以降の位置指定は `TypeError` になるので、
+各引数名を付ける必要がある。リポジトリ内の既存呼び出しはキーワード指定を使用している。
 
 操作 API は、その画面で意味があるものだけに限定します。
 

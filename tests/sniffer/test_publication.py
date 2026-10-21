@@ -1,6 +1,6 @@
 import base64
 import dataclasses
-import datetime
+import datetime as dt
 import json
 import uuid
 
@@ -27,8 +27,8 @@ from majsoulrpa.sniffer.publication import (
 )
 
 STREAM_ID = uuid.UUID("12345678-1234-5678-1234-567812345678")
-REQUEST_AT = datetime.datetime(2026, 1, 2, 3, 4, tzinfo=datetime.UTC)
-RESPONSE_AT = datetime.datetime(2026, 1, 2, 3, 5, tzinfo=datetime.UTC)
+REQUEST_AT = dt.datetime(2026, 1, 2, 3, 4, tzinfo=dt.UTC)
+RESPONSE_AT = dt.datetime(2026, 1, 2, 3, 5, tzinfo=dt.UTC)
 
 
 def _encoded(payload: bytes) -> str:
@@ -380,7 +380,7 @@ def test_exchange_accepts_frame_gap_and_clock_rollback() -> None:
         response=dataclasses.replace(
             message.response,
             frame_sequence=25,
-            observed_at=REQUEST_AT - datetime.timedelta(seconds=1),
+            observed_at=REQUEST_AT - dt.timedelta(seconds=1),
         ),
     )
     publication = make_publication(

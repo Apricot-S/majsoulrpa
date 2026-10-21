@@ -1,12 +1,11 @@
 import base64
-import datetime
+import datetime as dt
 import uuid
 
 import pytest
 from google.protobuf.descriptor_pb2 import (
-    # These classes are generated dynamically by protobuf.
-    FieldDescriptorProto,  # ty: ignore[unresolved-import]
-    FileDescriptorProto,  # ty: ignore[unresolved-import]
+    FieldDescriptorProto,
+    FileDescriptorProto,
 )
 from google.protobuf.descriptor_pool import DescriptorPool
 from google.protobuf.message import DecodeError
@@ -35,7 +34,7 @@ from majsoulrpa.sniffer.publication import (
 )
 
 STREAM_ID = uuid.UUID("12345678-1234-5678-1234-567812345678")
-OBSERVED_AT = datetime.datetime(2026, 1, 2, 3, 4, tzinfo=datetime.UTC)
+OBSERVED_AT = dt.datetime(2026, 1, 2, 3, 4, tzinfo=dt.UTC)
 
 
 def _encoded(payload: bytes) -> str:
@@ -161,9 +160,9 @@ def test_decoder_uses_injected_descriptor_without_sharing_api_map(
         output_type=".synthetic.Response",
     )
     standard = SnifferMessageDecoder()
-    # Protobuf selects the pool implementation dynamically.
-    pool = DescriptorPool()  # ty: ignore[possibly-missing-implicit-call]
-    custom = SnifferMessageDecoder(pool.Add(schema))
+    pool = DescriptorPool()
+    pool.Add(schema)
+    custom = SnifferMessageDecoder(pool.FindFileByName(schema.name))
     if kind == "notice":
         publication = _notice_publication(
             api_name=".synthetic.Notice", body=b""

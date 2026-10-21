@@ -4,13 +4,13 @@ from typing import Self, final
 
 from pydantic import JsonValue
 
-from majsoulrpa.screens.match._decode import (
-    _get_bool,
-    _get_dict_list,
-    _get_int,
-    _get_int_list,
-    _get_str,
-    _get_str_list,
+from majsoulrpa.screens._json_fields import (
+    get_bool,
+    get_dict_list,
+    get_int,
+    get_int_list,
+    get_str,
+    get_str_list,
 )
 from majsoulrpa.screens.match.event._base import _MatchEventBase
 from majsoulrpa.screens.match.event._constants import MAX_DORA_INDICATORS
@@ -41,8 +41,8 @@ class HuleFan:
     @classmethod
     def from_dict(cls, data: Mapping[str, JsonValue]) -> Self:
         return cls(
-            value=_get_int(data, "FanInfo.val"),
-            id=_get_int(data, "FanInfo.id"),
+            value=get_int(data, "val"),
+            id=get_int(data, "id"),
         )
 
 
@@ -96,40 +96,36 @@ class Hule:
     def from_dict(cls, data: Mapping[str, JsonValue]) -> Self:
         return cls(
             hand=tuple(
-                validate_tile(tile)
-                for tile in _get_str_list(data, "HuleInfo.hand")
+                validate_tile(tile) for tile in get_str_list(data, "hand")
             ),
-            ming=tuple(_get_str_list(data, "HuleInfo.ming")),
-            hu_tile=validate_tile(_get_str(data, "HuleInfo.hu_tile")),
-            seat=validate_seat(_get_int(data, "HuleInfo.seat")),
-            zimo=_get_bool(data, "HuleInfo.zimo"),
-            qinjia=_get_bool(data, "HuleInfo.qinjia"),
-            liqi=_get_bool(data, "HuleInfo.liqi"),
+            ming=tuple(get_str_list(data, "ming")),
+            hu_tile=validate_tile(get_str(data, "hu_tile")),
+            seat=validate_seat(get_int(data, "seat")),
+            zimo=get_bool(data, "zimo"),
+            qinjia=get_bool(data, "qinjia"),
+            liqi=get_bool(data, "liqi"),
             dora_indicators=tuple(
-                validate_tile(tile)
-                for tile in _get_str_list(data, "HuleInfo.doras")
+                validate_tile(tile) for tile in get_str_list(data, "doras")
             ),
             li_dora_indicators=tuple(
-                validate_tile(tile)
-                for tile in _get_str_list(data, "HuleInfo.li_doras")
+                validate_tile(tile) for tile in get_str_list(data, "li_doras")
             ),
-            yiman=_get_bool(data, "HuleInfo.yiman"),
-            count=_get_int(data, "HuleInfo.count"),
+            yiman=get_bool(data, "yiman"),
+            count=get_int(data, "count"),
             fans=tuple(
-                HuleFan.from_dict(fan)
-                for fan in _get_dict_list(data, "HuleInfo.fans")
+                HuleFan.from_dict(fan) for fan in get_dict_list(data, "fans")
             ),
-            fu=_get_int(data, "HuleInfo.fu"),
-            point_rong=_get_int(data, "HuleInfo.point_rong"),
-            point_zimo_qin=_get_int(data, "HuleInfo.point_zimo_qin"),
-            point_zimo_xian=_get_int(data, "HuleInfo.point_zimo_xian"),
-            title_id=_get_int(data, "HuleInfo.title_id"),
-            point_sum=_get_int(data, "HuleInfo.point_sum"),
-            dadian=_get_int(data, "HuleInfo.dadian"),
-            baopai_seat=_decode_baopai_seat(_get_int(data, "HuleInfo.baopai")),
+            fu=get_int(data, "fu"),
+            point_rong=get_int(data, "point_rong"),
+            point_zimo_qin=get_int(data, "point_zimo_qin"),
+            point_zimo_xian=get_int(data, "point_zimo_xian"),
+            title_id=get_int(data, "title_id"),
+            point_sum=get_int(data, "point_sum"),
+            dadian=get_int(data, "dadian"),
+            baopai_seat=_decode_baopai_seat(get_int(data, "baopai")),
             baopai_seats=tuple(
                 validate_seat(seat)
-                for seat in _get_int_list(data, "HuleInfo.baopai_seats")
+                for seat in get_int_list(data, "baopai_seats")
             ),
         )
 
@@ -166,15 +162,12 @@ class HuleEvent(_MatchEventBase):
         return cls(
             action_step=action_step,
             hules=tuple(
-                Hule.from_dict(hule)
-                for hule in _get_dict_list(data, "ActionHule.hules")
+                Hule.from_dict(hule) for hule in get_dict_list(data, "hules")
             ),
-            old_scores=tuple(_get_int_list(data, "ActionHule.old_scores")),
-            delta_scores=tuple(_get_int_list(data, "ActionHule.delta_scores")),
-            scores=tuple(_get_int_list(data, "ActionHule.scores")),
-            baopai_seat=_decode_baopai_seat(
-                _get_int(data, "ActionHule.baopai")
-            ),
+            old_scores=tuple(get_int_list(data, "old_scores")),
+            delta_scores=tuple(get_int_list(data, "delta_scores")),
+            scores=tuple(get_int_list(data, "scores")),
+            baopai_seat=_decode_baopai_seat(get_int(data, "baopai")),
         )
 
 

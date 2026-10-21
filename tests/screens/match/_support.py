@@ -1,5 +1,5 @@
 import base64
-import datetime
+import datetime as dt
 
 from majsoulrpa.assets.protocol import liqi_pb2
 from majsoulrpa.sniffer.events import (
@@ -10,7 +10,7 @@ from majsoulrpa.sniffer.events import (
     RawRequestResponse,
 )
 
-OBSERVED_AT = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
+OBSERVED_AT = dt.datetime(2026, 1, 2, tzinfo=dt.UTC)
 SELF_ACCOUNT_ID = 100001
 
 

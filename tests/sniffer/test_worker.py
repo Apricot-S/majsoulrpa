@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+import datetime as dt
 from collections.abc import Sequence
 
 import pytest
@@ -22,7 +22,7 @@ from majsoulrpa.sniffer.playwright import (
 )
 from majsoulrpa.sniffer.worker import SnifferWorker
 
-OBSERVED_AT = datetime.datetime(2026, 1, 2, 3, 4, tzinfo=datetime.UTC)
+OBSERVED_AT = dt.datetime(2026, 1, 2, 3, 4, tzinfo=dt.UTC)
 
 
 class FakeCapture:

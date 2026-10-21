@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 
 import pytest
 from pydantic import JsonValue
@@ -21,7 +21,7 @@ def _request_response(
     name: str,
     response: dict[str, JsonValue],
 ) -> DecodedRequestResponse:
-    observed_at = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
+    observed_at = dt.datetime(2026, 1, 2, tzinfo=dt.UTC)
     return DecodedRequestResponse(
         raw=RawRequestResponse(
             request_direction=Direction.OUTBOUND,
@@ -68,7 +68,7 @@ def test_session_extracts_owner_id_from_created_room() -> None:
 
 def test_session_ignores_messages_without_usable_account_id() -> None:
     state = SessionState()
-    observed_at = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
+    observed_at = dt.datetime(2026, 1, 2, tzinfo=dt.UTC)
     notice = DecodedNotice(
         raw=RawNotice(
             direction=Direction.INBOUND,

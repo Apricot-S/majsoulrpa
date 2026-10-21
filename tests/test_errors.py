@@ -1,16 +1,141 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone, tzinfo
 from pathlib import Path
 
+import pytest
+
+import majsoulrpa.screens.errors as screen_errors
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
     ScreenDetectionTimeoutError,
     ScreenError,
+    ScreenInconsistentMessageError,
     ScreenInvalidArgumentError,
     ScreenInvalidOperationError,
     ScreenNotImplementedOperationError,
     ScreenStaleError,
     ScreenUnexpectedStateError,
 )
+
+
+class UndefinedOffset(tzinfo):
+    def utcoffset(self, _dt: datetime | None) -> None:
+        return None
+
+    def dst(self, _dt: datetime | None) -> None:
+        return None
+
+    def tzname(self, _dt: datetime | None) -> None:
+        return None
+
+
+class TestScreenshotTimestamp:
+    @pytest.mark.parametrize(
+        "created_at",
+        [
+            datetime(2026, 7, 8, 1, 2, 3),  # noqa: DTZ001 -- invalid input
+            datetime(2026, 7, 8, 1, 2, 3, tzinfo=UndefinedOffset()),
+        ],
+        ids=["missing-timezone", "undefined-offset"],
+    )
+    def test_rejects_ambiguous_creation_time(
+        self, created_at: datetime
+    ) -> None:
+        with pytest.raises(ValueError, match=r"created_at.*timezone-aware"):
+            ScreenError(
+                "synthetic failure", b"synthetic-image", created_at=created_at
+            )
+
+    def test_uses_utc_filename_for_offset_creation_time(
+        self, tmp_path: Path
+    ) -> None:
+        error = ScreenError(
+            "synthetic failure",
+            b"synthetic-image",
+            created_at=datetime(
+                2026,
+                7,
+                8,
+                1,
+                2,
+                3,
+                tzinfo=timezone(timedelta(hours=9)),
+            ),
+        )
+
+        saved_path = error.save_screenshot(tmp_path)
+
+        assert saved_path == tmp_path / "20260707T160203Z-ScreenError.png"
+        assert saved_path.read_bytes() == b"synthetic-image"
+
+    def test_default_creation_time_uses_utc_clock(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(
+            screen_errors,
+            "utc_now",
+            lambda: datetime(2026, 7, 8, 1, 2, 3, tzinfo=UTC),
+        )
+        error = ScreenError("synthetic failure", b"synthetic-image")
+
+        saved_path = error.save_screenshot(tmp_path)
+
+        assert saved_path.name == "20260708T010203Z-ScreenError.png"
+
+
+def test_screen_error_only_saves_screenshot_explicitly(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    screenshot = b"synthetic-private-image"
+
+    def unexpected_write(*_args: object, **_kwargs: object) -> None:
+        pytest.fail("Screenshot must only be written by an explicit save.")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "write_bytes", unexpected_write)
+        error = ScreenError("synthetic failure", screenshot)
+        assert "synthetic-private-image" not in str(error)
+        assert "synthetic-private-image" not in repr(error)
+
+    assert error.screenshot is screenshot
+    assert error.args == ("synthetic failure",)
+    assert list(tmp_path.iterdir()) == []
+
+    saved_path = error.save_screenshot(tmp_path)
+
+    assert "synthetic-private-image" not in saved_path.name
+    assert saved_path.read_bytes() == screenshot
+
+
+@pytest.mark.parametrize("operation", ["mkdir", "write_bytes"])
+def test_screen_error_propagates_screenshot_save_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    operation: str,
+) -> None:
+    failure = OSError("synthetic storage failure")
+    error = ScreenError("synthetic failure", b"synthetic-image")
+
+    def fail(*_args: object, **_kwargs: object) -> None:
+        raise failure
+
+    monkeypatch.setattr(Path, operation, fail)
+
+    with pytest.raises(OSError, match="synthetic storage failure") as caught:
+        error.save_screenshot(tmp_path / "failure.png")
+
+    assert caught.value is failure
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_inconsistent_message_error_is_screen_error() -> None:
+    error = ScreenInconsistentMessageError(
+        "synthetic inconsistency", b"synthetic-image"
+    )
+
+    assert isinstance(error, ScreenError)
 
 
 def test_screen_detection_error_exposes_screenshot() -> None:

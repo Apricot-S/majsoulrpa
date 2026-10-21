@@ -4,10 +4,7 @@ from typing import Self, final
 
 from pydantic import JsonValue
 
-from majsoulrpa.screens.match._decode import (
-    _get_bool,
-    _get_int,
-)
+from majsoulrpa.screens._json_fields import get_bool, get_int
 from majsoulrpa.screens.match.types import Seat, validate_seat
 
 
@@ -27,8 +24,8 @@ class LiqiSuccess:
     @classmethod
     def from_dict(cls, data: Mapping[str, JsonValue]) -> Self:
         return cls(
-            seat=validate_seat(_get_int(data, "LiQiSuccess.seat")),
-            score=_get_int(data, "LiQiSuccess.score"),
-            liqibang=_get_int(data, "LiQiSuccess.liqibang"),
-            failed=_get_bool(data, "LiQiSuccess.failed"),
+            seat=validate_seat(get_int(data, "seat")),
+            score=get_int(data, "score"),
+            liqibang=get_int(data, "liqibang"),
+            failed=get_bool(data, "failed"),
         )

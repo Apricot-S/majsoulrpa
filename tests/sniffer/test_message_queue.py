@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+import datetime as dt
 
 import pytest
 
@@ -23,15 +23,7 @@ def _notice(name: str, second: int) -> DecodedNotice:
             direction=Direction.INBOUND,
             name=name,
             payload=f"synthetic-{second}".encode(),
-            observed_at=datetime.datetime(
-                2026,
-                1,
-                2,
-                3,
-                4,
-                second,
-                tzinfo=datetime.UTC,
-            ),
+            observed_at=dt.datetime(2026, 1, 2, 3, 4, second, tzinfo=dt.UTC),
         ),
         message={},
     )
@@ -45,7 +37,7 @@ def _queue(*, capacity: int = 3) -> SnifferMessageQueue:
 
 
 def _exchange() -> DecodedRequestResponse:
-    observed_at = datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC)
+    observed_at = dt.datetime(2026, 1, 2, tzinfo=dt.UTC)
     return DecodedRequestResponse(
         raw=RawRequestResponse(
             request_direction=Direction.OUTBOUND,
@@ -60,22 +52,22 @@ def _exchange() -> DecodedRequestResponse:
     )
 
 
-@pytest.mark.parametrize("insertion", ["enqueue", "put_back"])
+@pytest.mark.parametrize("insertion", ["enqueue", "prepend"])
 def test_exchange_byte_limit_counts_both_payloads(insertion: str) -> None:
     message = _exchange()
     queue = SnifferMessageQueue(capacity=3, max_payload_bytes=7)
-    insert = queue.enqueue if insertion == "enqueue" else queue.put_back
+    insert = queue.enqueue if insertion == "enqueue" else queue.prepend
     with pytest.raises(SnifferMessageTooLargeError):
         insert(message)
     assert queue.get_nowait() is None
 
     queue = SnifferMessageQueue(capacity=3, max_payload_bytes=8)
-    insert = queue.enqueue if insertion == "enqueue" else queue.put_back
+    insert = queue.enqueue if insertion == "enqueue" else queue.prepend
     insert(message)
     assert queue.get_nowait() is message
 
 
-def test_mixed_payload_budget_is_released_and_restored_on_put_back() -> None:
+def test_mixed_payload_budget_is_released_and_restored_on_prepend() -> None:
     async def exercise() -> None:
         notice = _notice(".lq.SyntheticNotice", 1)
         exchange = _exchange()
@@ -89,7 +81,7 @@ def test_mixed_payload_budget_is_released_and_restored_on_put_back() -> None:
 
         assert await queue.get() is notice
         assert await queue.get() is exchange
-        queue.put_back(exchange)
+        queue.prepend(exchange)
         queue.enqueue(notice)
         with pytest.raises(SnifferMessageQueueOverflowError):
             queue.enqueue(exchange)
@@ -98,6 +90,74 @@ def test_mixed_payload_budget_is_released_and_restored_on_put_back() -> None:
         assert queue.get_nowait() is None
 
     asyncio.run(exercise())
+
+
+@pytest.mark.parametrize("retrieval", ["get", "get_nowait"])
+def test_batch_prepend_prepends_in_original_order(retrieval: str) -> None:
+    async def exercise() -> None:
+        first = _notice(".lq.First", 1)
+        second = _notice(".lq.Second", 2)
+        remaining = _notice(".lq.Remaining", 3)
+        new = _notice(".lq.New", 4)
+        queue = _queue(capacity=4)
+        queue.prepend(remaining)
+        queue.enqueue(new)
+
+        queue.prepend_many([first, second])
+
+        for expected in (first, second, remaining, new):
+            actual = (
+                await queue.get() if retrieval == "get" else queue.get_nowait()
+            )
+            assert actual is expected
+        queue.prepend_many([first, second, remaining, new])
+        assert queue.get_nowait() is first
+
+    asyncio.run(exercise())
+
+
+@pytest.mark.parametrize(
+    ("capacity", "max_bytes", "oversized"),
+    [(2, 1024, False), (4, 22, False), (4, 22, True)],
+    ids=["count-budget", "total-byte-budget", "individual-byte-budget"],
+)
+def test_failed_batch_prepend_preserves_queue_and_budget(
+    capacity: int,
+    max_bytes: int,
+    *,
+    oversized: bool,
+) -> None:
+    first = _notice(".lq.First", 1)
+    second = _notice(".lq.Second", 2)
+    queue = SnifferMessageQueue(capacity=capacity, max_payload_bytes=max_bytes)
+    queue.prepend(first)
+    queue.enqueue(second)
+    candidate = _notice(".lq.Candidate", 3)
+    if oversized:
+        candidate = DecodedNotice(
+            raw=RawNotice(
+                direction=Direction.INBOUND,
+                name=".lq.TooLarge",
+                payload=b"x" * 23,
+                observed_at=first.raw.observed_at,
+            ),
+            message={},
+        )
+    error_type = (
+        SnifferMessageTooLargeError
+        if oversized
+        else SnifferMessageQueueOverflowError
+    )
+
+    with pytest.raises(error_type):
+        queue.prepend_many([first, candidate])
+
+    assert queue.get_nowait() is first
+    assert queue.get_nowait() is second
+    assert queue.get_nowait() is None
+    queue.prepend_many([first, second])
+    assert queue.get_nowait() is first
+    assert queue.get_nowait() is second
 
 
 def test_queue_retains_all_messages_in_arrival_order() -> None:
@@ -165,7 +225,7 @@ def test_cancelled_get_preserves_message_and_byte_budget(timing: str) -> None:
 
 
 @pytest.mark.parametrize("retrieval", ["get", "get_nowait"])
-def test_put_back_order_precedes_unread_and_new_messages(
+def test_batch_prepend_precedes_unread_and_new_messages(
     retrieval: str,
 ) -> None:
     async def exercise() -> None:
@@ -180,9 +240,8 @@ def test_put_back_order_precedes_unread_and_new_messages(
 
         assert await queue.get() is first
         assert await queue.get() is second
-        queue.put_back(first)
         queue.enqueue(fourth)
-        queue.put_back(second)
+        queue.prepend_many([first, second])
 
         for expected in (first, second, third, fourth):
             actual = (
@@ -194,12 +253,27 @@ def test_put_back_order_precedes_unread_and_new_messages(
     asyncio.run(exercise())
 
 
+def test_single_prepend_restores_before_existing_prepend_messages() -> None:
+    first = _notice(".lq.First", 1)
+    second = _notice(".lq.Second", 2)
+    third = _notice(".lq.Third", 3)
+    queue = _queue()
+    queue.prepend_many([first, second, third])
+    assert queue.get_nowait() is first
+
+    queue.prepend(first)
+
+    assert queue.get_nowait() is first
+    assert queue.get_nowait() is second
+    assert queue.get_nowait() is third
+
+
 @pytest.mark.parametrize(
     ("capacity", "max_payload_bytes"),
     [(1, 1024), (3, len(b"synthetic-1"))],
     ids=["count-limit", "byte-limit"],
 )
-@pytest.mark.parametrize("insertion", ["enqueue", "put_back"])
+@pytest.mark.parametrize("insertion", ["enqueue", "prepend"])
 def test_overflow_preserves_messages_and_reusable_capacity(
     capacity: int,
     max_payload_bytes: int,
@@ -209,7 +283,7 @@ def test_overflow_preserves_messages_and_reusable_capacity(
         capacity=capacity,
         max_payload_bytes=max_payload_bytes,
     )
-    insert = queue.enqueue if insertion == "enqueue" else queue.put_back
+    insert = queue.enqueue if insertion == "enqueue" else queue.prepend
     first = _notice(".lq.First", 1)
     second = _notice(".lq.Second", 2)
     insert(first)
@@ -217,7 +291,7 @@ def test_overflow_preserves_messages_and_reusable_capacity(
     with pytest.raises(SnifferMessageQueueOverflowError):
         queue.enqueue(second)
     with pytest.raises(SnifferMessageQueueOverflowError):
-        queue.put_back(second)
+        queue.prepend(second)
 
     assert queue.get_nowait() is first
     assert queue.get_nowait() is None

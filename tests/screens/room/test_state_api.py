@@ -1,6 +1,7 @@
 import asyncio
-import datetime
+import datetime as dt
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from inspect import Parameter, signature
 
@@ -18,8 +19,8 @@ from majsoulrpa.screens import (
     ScreenInvalidArgumentError,
     ScreenStaleError,
 )
+from majsoulrpa.screens.errors import MessageDecodeError
 from majsoulrpa.screens.room import RoomScreen, RoomStatus
-from majsoulrpa.screens.room._decode import RoomStateDecodeError
 from majsoulrpa.sniffer.events import (
     DecodedNotice,
     DecodedSnifferMessage,
@@ -53,8 +54,11 @@ class _WaitingMessageSource:
     def get_nowait(self) -> None:
         return None
 
-    def put_back(self, message: DecodedSnifferMessage) -> None:
+    def prepend(self, message: DecodedSnifferMessage) -> None:
         _ = message
+
+    def prepend_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        _ = messages
 
 
 class _FailingMessageSource:
@@ -65,8 +69,11 @@ class _FailingMessageSource:
     def get_nowait(self) -> None:
         return None
 
-    def put_back(self, message: DecodedSnifferMessage) -> None:
+    def prepend(self, message: DecodedSnifferMessage) -> None:
         _ = message
+
+    def prepend_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        _ = messages
 
 
 class _TimeoutFailingMessageSource:
@@ -77,8 +84,11 @@ class _TimeoutFailingMessageSource:
     def get_nowait(self) -> None:
         return None
 
-    def put_back(self, message: DecodedSnifferMessage) -> None:
+    def prepend(self, message: DecodedSnifferMessage) -> None:
         _ = message
+
+    def prepend_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        _ = messages
 
 
 class _QueuedThenWaitingMessageSource:
@@ -100,8 +110,11 @@ class _QueuedThenWaitingMessageSource:
         self._queued = None
         return message
 
-    def put_back(self, message: DecodedSnifferMessage) -> None:
+    def prepend(self, message: DecodedSnifferMessage) -> None:
         _ = message
+
+    def prepend_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        _ = messages
 
 
 class _UpdateThenBlockingMessageSource:
@@ -128,8 +141,11 @@ class _UpdateThenBlockingMessageSource:
         self._queued = None
         return message
 
-    def put_back(self, message: DecodedSnifferMessage) -> None:
+    def prepend(self, message: DecodedSnifferMessage) -> None:
         _ = message
+
+    def prepend_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        _ = messages
 
 
 def _room(*, room_id: int = 12345) -> dict[str, JsonValue]:
@@ -156,12 +172,7 @@ def _notice(
             direction=Direction.INBOUND,
             name=name,
             payload=b"synthetic-notice",
-            observed_at=datetime.datetime(
-                2026,
-                1,
-                2,
-                tzinfo=datetime.UTC,
-            ),
+            observed_at=dt.datetime(2026, 1, 2, tzinfo=dt.UTC),
         ),
         message={} if message is None else message,
     )
@@ -278,7 +289,7 @@ def test_room_state_update_error_logs_message_before_inconsistent_error(
         asyncio.run(screen.get_state())
 
     assert exc_info.value.screenshot == screenshot
-    assert isinstance(exc_info.value.__cause__, RoomStateDecodeError)
+    assert isinstance(exc_info.value.__cause__, MessageDecodeError)
     messages_logged = [
         record.getMessage()
         for record in caplog.records
@@ -416,7 +427,7 @@ def test_malformed_initial_snapshot_becomes_inconsistent_message_error() -> (
         asyncio.run(screen.before_callback())
 
     assert exc_info.value.screenshot == screenshot
-    assert isinstance(exc_info.value.__cause__, RoomStateDecodeError)
+    assert isinstance(exc_info.value.__cause__, MessageDecodeError)
 
 
 def test_before_callback_does_not_convert_sniffer_source_failure() -> None:

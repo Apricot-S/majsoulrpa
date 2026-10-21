@@ -1,5 +1,75 @@
 # 初回テストリスト
 
+## RoomState最終確認
+
+- [x] RoomPlayerも変更不可で、入力mappingの変更が取得済みsnapshotへ波及しない
+- [x] host交代とready変更で派生値を再導出し、以前のsnapshotは変わらない
+- [x] 最大人数1/3/4と満員境界でparticipant_countとavailable_slotsが一致する
+
+## Room操作例外
+
+- [x] 事前条件違反は理由Enumと操作属性を保持し、ScreenInvalidOperationErrorとして捕捉できる
+- [x] server拒否は全操作で未知codeを属性に保持し、ScreenErrorとして捕捉できる
+- [x] 両例外のstr/reprはscreenshot内容を含めず、未知codeは表示せず属性で取得する
+- [x] 設計資料のinactive分類を現行のScreenStaleErrorへ揃える
+
+## Room decodeの共通field検証
+
+- [x] 必須field欠落を既定値へ変換せず拒否する
+- [x] ready_listの型・要素型・非正値とpersonsの非object要素を拒否し、診断へ入力値を含めない
+- [x] 型検証を共通helperへ統合し、Room固有の正値・所属・重複・人数制約を維持する
+
+## RoomStateの不変条件と型検証境界
+
+- [x] version・room ID・self IDの非正値、負のAI数、人数超過を直接構築でも拒否する
+- [x] self不在・重複account ID・host不在/複数を拒否する
+- [x] 最大人数は1/3/4の値域を検証し、Python引数の型再検証は除去する。外部decodeのboolean拒否は維持する
+
+## Room ready通知の更新
+
+- [x] account_id / readyの欠落・型不正、非正値、未知プレイヤーを拒否しsnapshotを保持する
+- [x] ready設定・解除は対象だけを更新し、元snapshotを保持する。同じ通知の再受信ではversionを増やさない
+- [x] terminal後は不正な本文でも古いready通知を無視する
+
+## Roomプレイヤー更新のdecodeとready引継ぎ
+
+- [x] 不正player_list・account_id・nickname・owner・robots・人数を拒否してsnapshotを保持する
+- [x] 残ったプレイヤーのreadyを引き継ぎ、新規参加者は未readyにする。元snapshotは変更しない
+- [x] 同一更新ではsnapshot identityとversionを維持する
+- [x] 退出者のready除去とterminal後の更新無視は既存テストで維持する
+
+## Room完全snapshotのrequest方向
+
+- [x] createRoom / joinRoom / fetchRoom / leaveRoomのINBOUND requestを、成功・失敗responseとも状態更新前に拒否する
+- [x] 初期化前・active・terminalで拒否後のsnapshot identityとversionを維持する
+- [x] 正常なOUTBOUND requestの初期化・更新・退出は既存テストで維持する
+
+## メッセージdecode例外の命名と配置
+
+- [x] 既存のfield・Room・MatchテストでMessageDecodeErrorとScreen境界のcauseを確認する
+- [x] 入力値を診断へ含めず、既存の例外分類を維持する
+
+## 共通JSON field取得
+
+- [x] field取得・Room/Matchのdecode整合性違反はMessageDecodeErrorへ統一し、Screenでscreenshot付き不整合例外へ変換する
+- [x] 画面別field wrapperを削除し、取得と診断に同じnameを使い、labelを削除する
+- [x] 対象外の対局種別・Room状態遷移・browser失敗・cancellationの分類を維持する
+
+- [x] 正しいscalar/list/objectをidentityを保って返す
+- [x] 必須field欠落・null・型不正とinteger内のboolを拒否し、入力値を例外へ含めない
+- [x] optional objectだけは欠落/nullをNoneとして扱い、不正値は拒否する
+- [x] Room正値/人数/readyとMatchのdomain規則は各画面に残し、decode失敗は共通MessageDecodeErrorに統一する
+
+## operate テスト補助の共通化
+
+- [x] screenshot 時の message 投入を共通化し、1 回だけ投入する既存動作を維持する
+- [x] click ごとの message 投入を共通化し、予定を使い切った後の操作別動作を維持する
+- [x] dapai の click 時刻記録を派生クラスで維持する
+
+- [x] click 後の message 投入を共通化し、既存の operate テストを維持する
+- [x] dapai の固定 screenshot と rong / zimohu の warp 記録を維持する
+- [x] prepend 回数の記録を共通化し、各テストの payload 上限を維持する
+
 このテストリストは、実装開始前に用意する最初のリストです。
 実装中に見つかった項目は追加します。TDD では、この中から 1 つだけ選んで
 テストを書き、そのテストを通す最小実装を行います。
@@ -74,16 +144,26 @@
 - [x] Screen から browser reload を利用者向け API として実行できる
 - [x] reload が正常完了したら現在の Screen instance を stale にする
 - [x] Screen から指定した牌譜 ID の URL へ移動できる
+- [x] goto_logは空文字・ASCII英数字とハイフン/underscore以外を拒否し、遷移せず、例外・ログに入力値を含めない
+- [x] goto_logは基本形式・視点指定・匿名化形式のsynthetic IDを受け入れ、桁数や構造は制限しない
 - [x] Screen から RPAApp の実行ループ停止を利用者向け API として要求できる
 - [x] Screen から browser host の終了を利用者向け API として要求できる
 - [x] Screen 検出エラーに screenshot bytes を添付できる
 - [x] Screen 検出エラーの screenshot を file path または directory path へ保存できる
+- [x] ScreenErrorはtzinfo欠落・UTC offset未定義のcreated_atを生成時にValueErrorで拒否する
+- [x] ScreenErrorは異なるUTC offsetのcreated_atからUTCの保存ファイル名を作る
+- [x] ScreenErrorのcreated_at省略時はUTC clockから保存ファイル名を作る
+- [x] ScreenErrorのstr・repr・argsと生成ファイル名にscreenshot bytesを含めず、明示保存まで画像を書き出さない
+- [x] ScreenErrorの画像保存失敗を元の例外のまま伝播する
 - [x] Screen 検出 timeout エラーは `TimeoutError` としても捕捉できる
 - [x] Screen API の不正引数は `ScreenInvalidArgumentError` として表す
 - [x] Screen API の不正引数エラーは `ValueError` としても捕捉できる
 - [x] ScreenContext から stop 要求を出せる
+- [x] ScreenContextはfalseyな停止callableも保持してawaitする
+- [x] ScreenContextの停止callableを省略すると無処理で完了する
+- [x] ScreenContextの停止callableの失敗・cancellationをそのまま伝播する
 - [x] 検出された Screen に ScreenContext を注入できる
-- [x] ScreenContext 未設定の Screen 操作は例外になる
+- [x] Screenと検出器は必須contextを受け取り、検出されたScreenで同じcontextを使って操作できる
 - [x] `Screen` の高レベル API 呼び出しを Screen 名と API 名だけで info log に出す
 - [x] `LoginScreen` で追加された高レベル API 呼び出しを info log に出す
 - [x] 高レベル API の引数、戻り値、user data を log に出さない
@@ -142,7 +222,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `get()` は次の message が来るまで待機して消費する
 - [x] `get_nowait()` は未読 message がなければ `None` を返す
 - [x] 差し戻した message は通常の未読 message より先に取得する
-- [x] 複数の差し戻しは差し戻した順序を保つ
+- [x] 一括差し戻しは列の内部順序を維持して未読列の前へ戻す
+- [x] 単一prependは既存の差し戻し列より前へ戻し、再読取と再差し戻しでも元の位置を維持する
+- [x] Homeの月間チケット走査は差し戻し済みの後続messageが残っても元の順序を維持する
+- [x] MatchのUI待機は保留通知と進行messageをまとめて未読列の前へ戻し、通知とstep整列の内部順序を維持する
 - [x] 件数上限を越えた message を黙って破棄しない
 - [x] raw payload bytes 合計の上限超過を黙って破棄しない
 - [x] 単一 message が byte 上限を越える場合は明示的に拒否する
@@ -163,6 +246,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] PNG screenshot decode が必要な場合は synthetic PNG のみでテストする
 
 ## Phase 6: Login API ひとつ目
+
+- [x] 不正メールの検証後に診断screenshotが失敗/cancelされても、元の診断例外を伝播し、検証入力を例外context・traceback・通常ログへ残さない
 
 最初に実装する高レベル API は、実装直前に 1 つ選びます。
 まず `LoginScreen.enter_email_address()` には入らず、画面到達判定のための
@@ -355,7 +440,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ## Phase 6.8: HomeScreen 友人戦の部屋参加
 
-- [x] room ID の形式を `re.compile(r"\d{5}")` の完全一致で判定する
+- [x] room ID はASCII数字5桁の完全一致で判定し、全角・Arabic-Indic数字を画面操作前に拒否する
 - [x] 形式が一致する room ID は暫定 no-op で `None` を返す
 - [x] 形式が一致しない room ID は screenshot 付き不正引数エラーにする
 - [x] `HomeScreen.join_room()` を高レベル API のログ記録と stale 保護の対象にする
@@ -374,6 +459,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] response に `error` がなければ成功を info log に出して stale にする
 - [x] 成功時の info log に room ID を含めない
 - [x] joinRoom response の `error` 抽出と構造確認を private helper に分離する
+- [x] Homeのresponse error.code抽出を共通化し、入室/大会入場の成功・不正構造・未知codeの既存失敗モデルを維持する
+- [x] Homeの目的Req/Res走査を共通化し、後続message保持・入室成功messageのidentity・操作別ログ・欠落/notice誤受信の例外を維持する
 - [x] `error` が dict でないか `code` がなければ message 不整合エラーにする
 - [x] joinRoom の既知 error code を `JoinRoomFailureReason` へ変換する
 - [x] 未対応 error code を framework 側の `UNRECOGNIZED_ERROR_CODE` へ変換する
@@ -389,7 +476,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 ## Phase 6.9: HomeScreen 大会ロビー参加
 
 - [x] `EnterTournamentFailureReason` が既知コードと framework fallback を表す
-- [x] tournament ID の形式を `re.compile(r"\d{6}")` の完全一致で判定する
+- [x] tournament IDはASCII数字6桁に限定し、全角・Arabic-Indic数字を画面操作前に拒否する
 - [x] 形式が一致しない tournament ID は screenshot 付き不正引数エラーにする
 - [x] `HomeScreen.enter_tournament()` を高レベル API のログ記録と stale 保護の対象にする
 - [x] 形式が一致する tournament ID では `tournament-match` をクリックする
@@ -436,6 +523,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] terminal state でも最後に確定した room 情報を保持する
 
 ### Room state store / SnifferMessageSource
+
+- [x] Roomの対局開始/kick通知もINBOUNDだけ受理し、OUTBOUNDでは初期/active/terminal状態を変更せず不整合例外を伝播する
 
 - [x] 成功した `.lq.Lobby.createRoom` response から host の初期 snapshot を作る
 - [x] 成功した `.lq.Lobby.joinRoom` response から guest の初期 snapshot を作る
@@ -781,9 +870,9 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] Liqi は入力の進行を示すmessageを受信するまで同じ牌領域のclickを繰り返す
 - [x] Dapai の再試行中に既知common messageをlog・処理してclickを継続する
 - [x] Liqi の再試行中に既知common messageをlog・処理してclickを継続する
-- [x] Dapai の再試行で先読みした inputOperation / ActionPrototype を1回だけput_backする
-- [x] Liqi の再試行で先読みした inputOperation / ActionPrototype を1回だけput_backする
-- [x] Dapai の再試行でinputChiPengGangを終了条件にした場合も、messageを1回だけput_backする
+- [x] Dapai の再試行で先読みした inputOperation / ActionPrototype を1回だけprependする
+- [x] Liqi の再試行で先読みした inputOperation / ActionPrototype を1回だけprependする
+- [x] Dapai の再試行でinputChiPengGangを終了条件にした場合も、messageを1回だけprependする
 - [ ] Dapai / Liqi の再試行中に未知messageを捨てたり成功扱いしたりしない
 
 ### MatchScreen 立直操作 API
@@ -792,7 +881,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 立直ボタンがまだ描画されていない場合は、呼び出し側 timeout まで検出を再試行する
 - [x] 立直ボタンをクリックしてから候補表示を0.4秒待ち、`LiqiOperation` の tile / moqie に対応する牌領域をクリックする
 - [x] 牌クリックは Dapai と同じ入力進行messageの待機・再試行処理を使う
-- [x] 立直ボタン後の候補表示待ち中に `ActionPrototype` を先読みした場合は、牌領域をクリックせず1回だけput_backする
+- [x] 立直ボタン後の候補表示待ち中に `ActionPrototype` を先読みした場合は、牌領域をクリックせず1回だけprependする
 - [x] `operate()` は指定した自家の通常立直またはダブル立直の `DapaiEvent` までmessageをreduceし、更新後のMatchStateを返す
 - [x] 自家の `DapaiEvent` の tile / moqie が指定と異なる場合や、立直宣言を伴わない場合は不整合にする
 - [x] 上位actionを確認できない立直ボタン検出失敗を成功扱いしない
@@ -806,7 +895,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] チーボタンと組合せを選択した後、手牌のスライド完了を1.5秒待ってからAPIを返す
 - [x] `operate()` は指定した自家の `ChiEvent` までmessageをreduceし、更新後のMatchStateを返す
 - [x] 自家の `ChiEvent` が指定した from_seat / tile / consumed と異なる場合は不整合にする
-- [x] チーボタン待機中に上位の `ActionChiPengGang` を先読みした場合は1回だけput_backする
+- [x] チーボタン待機中に上位の `ActionChiPengGang` を先読みした場合は1回だけprependする
 - [x] 別playerの `PengEvent` にpreemptされた場合はoperation失敗にせず、更新後のMatchStateを返す
 - [x] 他家だけの `HuleEvent` が先に成立した場合はチー操作をpreemptする
 - [x] 複数候補の表示待ち中に上位actionを受信した場合は、組合せ領域をクリックせず通常pipelineへ戻す
@@ -821,7 +910,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] ポンボタンと組合せを選択した後、手牌のスライド完了を1.5秒待ってからAPIを返す
 - [x] `operate()` は指定した自家の `PengEvent` までmessageをreduceし、更新後のMatchStateを返す
 - [x] 自家の `PengEvent` が指定した from_seat / tile / consumed と異なる場合は不整合にする
-- [ ] ポンボタン待機中に上位の `ActionHule` を先読みした場合は1回だけput_backする
+- [ ] ポンボタン待機中に上位の `ActionHule` を先読みした場合は1回だけprependする
 - [x] 他家だけの `HuleEvent` が先に成立した場合はポン操作をpreemptする
 - [ ] 複数候補の表示待ち中に上位actionを受信した場合は、組合せ領域をクリックせず通常pipelineへ戻す
 - [x] 上位actionを確認できないポンボタン検出失敗を成功扱いしない
@@ -834,7 +923,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 槓ボタンをクリックした後、手牌のスライド完了を1.5秒待ってからAPIを返す
 - [x] `operate()` は指定した自家の `DaminggangEvent` までmessageをreduceし、更新後のMatchStateを返す
 - [x] 自家の `DaminggangEvent` が指定した from_seat / tile / consumed と異なる場合は不整合にする
-- [x] 槓ボタン待機中に `ActionPrototype` を先読みした場合は1回だけput_backし、ボタンをクリックしない
+- [x] 槓ボタン待機中に `ActionPrototype` を先読みした場合は1回だけprependし、ボタンをクリックしない
 - [x] 上位actionを確認できない槓ボタン検出失敗を成功扱いしない
 - [x] 他家のロンが先に成立した場合は大明槓操作をpreemptする
 - [x] 自家を含む `HuleEvent` はチー・ポン・大明槓操作のpreemptとして扱わない
@@ -850,7 +939,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] `operate()` は指定した自家の `AngangEvent` までmessageをreduceし、更新後のMatchStateを返す
 - [x] 赤なし対局の黒5四枚は、赤あり表現へ正規化された `AngangEvent` と牌種で照合する
 - [x] 自家の `AngangEvent` が指定した consumed と異なる場合は不整合にする
-- [x] 槓ボタンまたは複数候補の表示待ち中に `ActionPrototype` を先読みした場合は1回だけput_backし、次の領域をクリックしない
+- [x] 槓ボタンまたは複数候補の表示待ち中に `ActionPrototype` を先読みした場合は1回だけprependし、次の領域をクリックしない
 - [x] 上位actionを確認できない槓ボタン検出失敗を成功扱いしない
 
 ### MatchScreen 加槓操作 API
@@ -863,7 +952,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 槓ボタンまたは組合せをクリックした後、手牌のスライド完了を1.5秒待ってからAPIを返す
 - [x] `operate()` は指定した自家の `JiagangEvent` までmessageをreduceし、更新後のMatchStateを返す
 - [x] 自家の `JiagangEvent` が指定した added と異なる場合は不整合にする
-- [x] 槓ボタンまたは複数候補の表示待ち中に `ActionPrototype` を先読みした場合は1回だけput_backし、次の領域をクリックしない
+- [x] 槓ボタンまたは複数候補の表示待ち中に `ActionPrototype` を先読みした場合は1回だけprependし、次の領域をクリックしない
 - [x] 上位actionを確認できない槓ボタン検出失敗を成功扱いしない
 
 ### MatchScreen 北抜き操作 API
@@ -873,7 +962,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 北抜きボタンをクリックした後、手牌のスライド完了を1.5秒待ってから API を返す
 - [x] `operate()` は自家の `BabeiEvent` まで message を reduce し、更新後の `MatchState` を返す
 - [x] `BabeiEvent.moqie` は雀魂の自動選択に任せ、`BabeiOperation` との照合条件にしない
-- [x] 北抜きボタン待機中に `ActionPrototype` を先読みした場合は1回だけ put_back し、ボタンをクリックしない
+- [x] 北抜きボタン待機中に `ActionPrototype` を先読みした場合は1回だけ prepend し、ボタンをクリックしない
 - [x] 上位 action を確認できない北抜きボタン検出失敗を成功扱いしない
 
 ### MatchScreen 流局操作 API
@@ -883,7 +972,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] 流局ボタンのクリック後に手牌スライド待機を追加しない
 - [x] `operate()` は自家の九種九牌 `LiujuEvent` まで message を reduce し、更新後の `MatchState` を返す
 - [x] 九種九牌以外の `LiujuEvent` を `LiujuOperation` の完了として扱わない
-- [x] 流局ボタン待機中に `ActionPrototype` を先読みした場合は1回だけ put_back し、ボタンをクリックしない
+- [x] 流局ボタン待機中に `ActionPrototype` を先読みした場合は1回だけ prepend し、ボタンをクリックしない
 - [x] 上位 action を確認できない流局ボタン検出失敗を成功扱いしない
 
 ### MatchScreen 自摸和操作 API
@@ -924,7 +1013,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] スキップbuttonは検出後に1回だけclickし、推定座標を連打しない
 - [x] チーの選択・スキップ中に別playerのポン・大明槓・ロンが成立してもoperation失敗にしない
 - [x] ポン・大明槓の選択・スキップ中に別playerのロンが成立してもoperation失敗にしない
-- [x] 上位actionの ActionChiPengGang / ActionHule を先読みした場合は1回だけput_backして通常pipelineで処理する
+- [x] 上位actionの ActionChiPengGang / ActionHule を先読みした場合は1回だけprependして通常pipelineで処理する
 - [x] 上位actionを確認できないbutton検出失敗を黙ってスキップ成功にしない
 - [x] ロンのスキップはダブロン・トリロンでも自家の選択まで待たれ、別playerのActionHuleによるpreempt成功扱いをしない
 - [x] publicなスキップ表現は field のない `SkipOperation` とし、他の候補と同じ `operate()` APIへ渡す
@@ -1153,7 +1242,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] host / guest / tournament の実通信ログから fresh entry marker と順序を確認する
 - [ ] marker が reload / 途中復帰では fresh evidence として現れないことを確認する
 - [ ] 各 entry 経路で bootstrap 中に現れる state 非関連 API 名だけを allowlist として固定する
-- [ ] Room / tournament が消費した marker を Screen 遷移直前に一度だけ put_back する
+- [ ] Room / tournament が消費した marker を Screen 遷移直前に一度だけ prepend する
 - [ ] direct / put-back marker、authGame、live ActionNewRound で同じ fresh state を初期化できる
 - [ ] Login / reload からは recovery entry evidence、authGame、syncGame replay で初期化できる
 - [ ] authGame と action source の到着順に依存しない
@@ -1186,7 +1275,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] Login を挟む復帰も同じ recovery bootstrap から新しい MatchScreen を復元する
 - [ ] reload 後の再検出、bootstrap、timeout、cancellation 失敗を成功扱いにしない
 - [ ] callback が active 中に source を読まない場合の queue overflow を隠さない
-- [ ] 友人戦の対局終了後に先読みした `.lq.Lobby.fetchRoom` response を 1 回だけ put_back し、
+- [ ] 友人戦の対局終了後に先読みした `.lq.Lobby.fetchRoom` response を 1 回だけ prepend し、
       新しい `RoomScreen` が完全 snapshot として消費できる
 - [ ] 自動テストでは synthetic decoded message と synthetic nested protobuf だけを使う
 
@@ -1332,6 +1421,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 
 ### Client decode / hook
 
+- [x] synthetic descriptor を pool に登録後、名前で取得して注入し、types-protobuf 導入時も ty と Notice / service method の既存テストが通る。
+
 - [x] 接続失敗は元の例外を伝播し、readyを通知せず受信・decode・observer・queueへ進まずsubscriberを停止する。
 - [x] 実decoder・queueを使うReqRes配送でRequest / Responseの本文・raw bytes・観測時刻を取り違えず、observerとqueueへ同一eventを渡す。
 - [x] 実decoder・queueを使ったruntime経路でsynthetic Notice本文をdecodeし、raw bytes・観測情報を保持した同一eventをobserver→queueへ渡す。
@@ -1344,8 +1435,8 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] queueのcapacity / max_payload_bytesはint型注釈を前提にboolと0以下を拒否する。
 - [x] get / get_nowaitとも複数の差し戻しを優先し、その順序と未読・新着messageの到着順を保持する。
 - [x] queue.getの空待機中 / enqueue直後のキャンセルは伝播し、messageとbyte容量を消費しない。キャンセル後も受信・容量解放を継続できる。
-- [x] queueはReq/Resの両payloadの合計byteを計上する。単体上限ちょうどを受理し1 byte超過を拒否、Noticeとの混在とget / put_back後も正しく加算・解放する。
-- [x] queueの件数 / byte上限はenqueue・put_back共通で適用し、overflow時に既存messageと容量を保持する。取り出し後は容量を再利用できる。
+- [x] queueはReq/Resの両payloadの合計byteを計上する。単体上限ちょうどを受理し1 byte超過を拒否、Noticeとの混在とget / prepend後も正しく加算・解放する。
+- [x] queueの件数 / byte上限はenqueue・prepend共通で適用し、overflow時に既存messageと容量を保持する。取り出し後は容量を再利用できる。
 - [x] 注入したsynthetic descriptorのNotice / service methodを指定型でdecodeし、標準decoderとのAPI対応表を共有しない。
 - [x] decoderはNotice / RequestのAPI名不一致と、Notice / Request / Response欄に別種別の有効envelopeが入った場合をPublicationEnvelopeMismatchErrorで拒否する。
 - [x] Notice / Request / Responseの不正本文は原因のDecodeErrorを保持してLiqiBodyDecodeErrorにし、有効な空本文は既定値へdecodeする。
@@ -1373,6 +1464,10 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [x] Screen helperは複数のAPI名のいずれかが来るまで待機できる
 - [x] Screen helperは読んだmessageの破棄と全差し戻しを選択できる
 - [x] 差し戻す場合は対象messageを含めて元の順序を保つ
+- [x] 実queueに差し戻し済み未読messageがある場合も、名前待機helperの正常終了後に読み取った列を元の位置へ戻す
+- [x] batch差し戻しは内部順序を維持して未読列の前へ追加し、get/get_nowaitの双方で取得できる
+- [x] batch差し戻しの件数・byte上限・単一payload上限の失敗はqueueとbyte計数を変更せず伝播する
+- [x] 名前待機helperはbatch差し戻しの上限失敗を握りつぶさず、残った未読列を変更しない
 - [x] 待機のcancellationでも退避中messageを差し戻す
 - [x] 空のAPI名集合を拒否する
 - [x] Screen共通helperがdecode済みmessageをraw payload bytes抜きでログ用に整形する
@@ -1405,6 +1500,7 @@ Screen 検出と Screen 操作で同じ controller を使えるようにする�
 - [ ] 対象messageがあればjade templateを最大5秒間繰り返し検出する
 - [x] jadeを検出したらクリックして0.5秒待機する
 - [x] 5秒以内にjadeを検出できなければscreenshot付き検出エラーにする
+- [x] 月間チケットの5秒期限だけを検出エラーへ変換し、browser側のTimeoutErrorは元の例外を伝播する
 - [ ] 告知・報酬クリックとHome画面確認が完了した後にqueueをすべて読み捨てる
 - [x] 自動テストではsynthetic messageとsynthetic screenshotだけを使う
 

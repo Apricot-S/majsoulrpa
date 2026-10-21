@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+import datetime as dt
 import uuid
 from collections.abc import Callable
 from contextlib import suppress
@@ -27,14 +27,14 @@ class CapturedFrame:
     connection_id: str
     frame_sequence: int
     direction: Direction
-    observed_at: datetime.datetime
+    observed_at: dt.datetime
     payload: bytes
 
 
 @dataclass(frozen=True, slots=True)
 class CapturedConnectionClosed:
     connection_id: str
-    observed_at: datetime.datetime
+    observed_at: dt.datetime
 
 
 type CaptureEvent = CapturedFrame | CapturedConnectionClosed

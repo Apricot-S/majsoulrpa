@@ -36,6 +36,7 @@ from majsoulrpa.screens.base import (
     _screen_api,
 )
 from majsoulrpa.screens.errors import (
+    MessageDecodeError,
     ScreenInconsistentMessageError,
     ScreenInvalidArgumentError,
     ScreenInvalidOperationError,
@@ -44,14 +45,12 @@ from majsoulrpa.screens.errors import (
 )
 from majsoulrpa.screens.match._action import (
     ACTION_PROTOTYPE_NAME,
-    MatchActionDecodeError,
     decode_live_action,
 )
 from majsoulrpa.screens.match._common import normalize_tile_kind
 from majsoulrpa.screens.match._metadata import (
     AUTH_GAME_NAME,
     MatchMetadata,
-    MatchMetadataDecodeError,
     MatchMetadataUnsupportedError,
     decode_match_metadata,
 )
@@ -100,7 +99,7 @@ from majsoulrpa.sniffer.events import (
 )
 
 if TYPE_CHECKING:
-    import datetime
+    import datetime as dt
 
 MATCH_INITIALIZATION_TIMEOUT_SECONDS = 5.0
 DEALER_FIRST_DISCARD_DELAY_SECONDS = 2.0
@@ -263,7 +262,7 @@ class MatchScreen(Screen):
         settings_path=MATCH_RESULT_CONFIRM_SETTINGS_PATH,
     )
 
-    def __init__(self, context: ScreenContext | None = None) -> None:
+    def __init__(self, context: ScreenContext) -> None:
         super().__init__(context=context)
         self._metadata: MatchMetadata | None = None
         self._start_match_event: StartMatchEvent | None = None
@@ -271,7 +270,7 @@ class MatchScreen(Screen):
         self._new_round_operation_specification: (
             _OperationCandidatesSpecification | None
         ) = None
-        self._operation_candidates_observed_at: datetime.datetime | None = None
+        self._operation_candidates_observed_at: dt.datetime | None = None
         self._state_store = MatchStateStore()
         self._game_end_notified = False
 
@@ -289,7 +288,7 @@ class MatchScreen(Screen):
                 await self._initialize()
         except MatchMetadataUnsupportedError as error:
             await self._raise_unsupported_match(cause=error)
-        except (MatchActionDecodeError, MatchMetadataDecodeError) as error:
+        except MessageDecodeError as error:
             await self._raise_inconsistent_message(
                 "Match state initialization failed.",
                 cause=error,
@@ -359,8 +358,10 @@ class MatchScreen(Screen):
                         ),
                     )
             finally:
-                for notification in deferred_game_end_notifications:
-                    self._put_back_sniffer_message(notification)
+                if deferred_game_end_notifications:
+                    self._prepend_sniffer_messages(
+                        deferred_game_end_notifications
+                    )
             return await self._wait_for_round_transition()
 
         while True:
@@ -468,12 +469,12 @@ class MatchScreen(Screen):
         inconsistent_message: str,
     ) -> None:
         try:
-            if await self._put_back_reordered_live_actions(message):
+            if await self._prepend_reordered_live_actions(message):
                 return
             self._apply_match_message(message)
         except MatchMetadataUnsupportedError as error:
             await self._raise_unsupported_match(cause=error)
-        except (MatchActionDecodeError, MatchMetadataDecodeError) as error:
+        except MessageDecodeError as error:
             await self._raise_inconsistent_message(
                 inconsistent_message,
                 cause=error,
@@ -499,7 +500,7 @@ class MatchScreen(Screen):
 
         if not isinstance(message, DecodedNotice):
             msg = "ActionPrototype must be a Notice."
-            raise MatchActionDecodeError(msg)
+            raise MessageDecodeError(msg)
         event, operation, decoded_message = decode_live_action(message)
         _logger.info(_format_sniffer_message_for_log(decoded_message))
         if self._state_store.state is None:
@@ -532,15 +533,15 @@ class MatchScreen(Screen):
     def _apply_auth_game(self, message: DecodedSnifferMessage) -> None:
         if not isinstance(message, DecodedRequestResponse):
             msg = "authGame must be a request/response."
-            raise MatchMetadataDecodeError(msg)
+            raise MessageDecodeError(msg)
         self_account_id = self.context.account_id
         if self_account_id is None:
             msg = "Match metadata requires a self account ID."
-            raise MatchMetadataDecodeError(msg)
+            raise MessageDecodeError(msg)
         metadata = decode_match_metadata(message, self_account_id)
         if self._metadata is not None and self._metadata != metadata:
             msg = "authGame metadata must not change during initialization."
-            raise MatchMetadataDecodeError(msg)
+            raise MessageDecodeError(msg)
         self._metadata = metadata
 
     def _apply_initialization_event(
@@ -552,25 +553,25 @@ class MatchScreen(Screen):
             case StartMatchEvent():
                 if operation is not None:
                     msg = "ActionMJStart must not contain operations."
-                    raise MatchActionDecodeError(msg)
+                    raise MessageDecodeError(msg)
                 if self._start_match_event is not None:
                     msg = "ActionMJStart must not be repeated."
-                    raise MatchActionDecodeError(msg)
+                    raise MessageDecodeError(msg)
                 if self._new_round_event is not None:
                     msg = "ActionMJStart must precede ActionNewRound."
-                    raise MatchActionDecodeError(msg)
+                    raise MessageDecodeError(msg)
                 self._start_match_event = event
             case NewRoundEvent():
                 if self._new_round_event is not None:
                     msg = "ActionNewRound must not be repeated."
-                    raise MatchActionDecodeError(msg)
+                    raise MessageDecodeError(msg)
                 expected_step = 1 if self._start_match_event is not None else 0
                 if event.action_step != expected_step:
                     msg = (
                         "ActionNewRound must be step "
                         f"{expected_step} during match initialization."
                     )
-                    raise MatchActionDecodeError(msg)
+                    raise MessageDecodeError(msg)
                 self._new_round_event = event
                 self._new_round_operation_specification = operation
             case (
@@ -587,7 +588,7 @@ class MatchScreen(Screen):
                 | HuleEvent()
             ):
                 msg = f"{type(event).__name__} must follow ActionNewRound."
-                raise MatchActionDecodeError(msg)
+                raise MessageDecodeError(msg)
             case _ as unreachable:
                 assert_never(unreachable)
 
@@ -605,7 +606,7 @@ class MatchScreen(Screen):
             )
         except ValueError as error:
             msg = "Initial match state is inconsistent."
-            raise MatchMetadataDecodeError(msg) from error
+            raise MessageDecodeError(msg) from error
 
     def _apply_active_event(
         self,
@@ -614,13 +615,13 @@ class MatchScreen(Screen):
     ) -> None:
         if isinstance(event, StartMatchEvent):
             msg = "A match initialization action must not be repeated."
-            raise MatchActionDecodeError(msg)
+            raise MessageDecodeError(msg)
 
         try:
             self._state_store.apply_event(event, operation)
         except ValueError as error:
             msg = f"{type(event).__name__} is inconsistent with match state."
-            raise MatchActionDecodeError(msg) from error
+            raise MessageDecodeError(msg) from error
 
     async def _operate_dapai(
         self,
@@ -719,7 +720,7 @@ class MatchScreen(Screen):
                     break
 
                 if message.raw.name in _DAPAI_CLICK_PROGRESS_MESSAGE_NAMES:
-                    self._put_back_sniffer_message(message)
+                    self._prepend_sniffer_message(message)
                     return
 
                 await self._apply_match_message_with_screen_errors(
@@ -802,7 +803,7 @@ class MatchScreen(Screen):
             # A higher-priority action can remove the candidate UI
             # while it is opening. Recheck the queue before clicking a
             # position that may already belong to a different screen.
-            if await self._put_back_pending_action_while_waiting_for_ui():
+            if await self._prepend_pending_action_while_waiting_for_ui():
                 return
             await self.click_region(selection_region)
         await asyncio.sleep(HAND_SLIDE_DELAY_SECONDS)
@@ -937,7 +938,7 @@ class MatchScreen(Screen):
         # Another player's winning action can remove the candidate UI
         # during its opening animation, so do not click a stale
         # position.
-        if await self._put_back_pending_action_while_waiting_for_ui():
+        if await self._prepend_pending_action_while_waiting_for_ui():
             return
 
         if len(operations) == _MAX_ANGANG_JIAGANG_CANDIDATE_COUNT:
@@ -967,7 +968,7 @@ class MatchScreen(Screen):
         # arrives.
         # Wait until it can be clicked or the opportunity disappears.
         while True:
-            if await self._put_back_pending_action_while_waiting_for_ui():
+            if await self._prepend_pending_action_while_waiting_for_ui():
                 return
             if await self.click_template_if_present(self.LIQI_BUTTON_TEMPLATE):
                 break
@@ -978,7 +979,7 @@ class MatchScreen(Screen):
         await asyncio.sleep(OPERATION_OPTION_DISPLAY_DELAY_SECONDS)
         # The opportunity can disappear while discard candidates are
         # opening. Check authoritative messages before clicking a tile.
-        if await self._put_back_pending_action_while_waiting_for_ui():
+        if await self._prepend_pending_action_while_waiting_for_ui():
             return
 
         is_dealer_first_discard = (
@@ -1137,7 +1138,7 @@ class MatchScreen(Screen):
             while True:
                 message = await self._get_sniffer_message()
                 if message.raw.name in _NO_CALL_SKIP_COMPLETION_MESSAGE_NAMES:
-                    self._put_back_sniffer_message(message)
+                    self._prepend_sniffer_message(message)
                     return
                 await self._apply_match_message_with_screen_errors(
                     message,
@@ -1153,7 +1154,7 @@ class MatchScreen(Screen):
     async def _click_skip_button_or_detect_progress(self) -> None:
         while True:
             observed_message_names: set[str] = set()
-            if await self._put_back_pending_action_while_waiting_for_ui(
+            if await self._prepend_pending_action_while_waiting_for_ui(
                 observed_message_names=observed_message_names
             ):
                 return
@@ -1178,7 +1179,7 @@ class MatchScreen(Screen):
         # event is verified later by the normal operation pipeline.
         while True:
             observed_message_names: set[str] = set()
-            if await self._put_back_pending_action_while_waiting_for_ui(
+            if await self._prepend_pending_action_while_waiting_for_ui(
                 observed_message_names=observed_message_names
             ):
                 return False
@@ -1191,7 +1192,7 @@ class MatchScreen(Screen):
                 OPERATION_BUTTON_DETECTION_RETRY_INTERVAL_SECONDS
             )
 
-    async def _put_back_pending_action_while_waiting_for_ui(
+    async def _prepend_pending_action_while_waiting_for_ui(
         self,
         *,
         additional_progress_message_names: frozenset[str] = frozenset(),
@@ -1231,10 +1232,12 @@ class MatchScreen(Screen):
                 or message.raw.name in additional_progress_message_names
             ):
                 if deferred_game_end_notifications is not None:
-                    for notification in deferred_game_end_notifications:
-                        self._put_back_sniffer_message(notification)
+                    self._prepend_sniffer_messages(
+                        [*deferred_game_end_notifications, message],
+                    )
                     deferred_game_end_notifications.clear()
-                self._put_back_sniffer_message(message)
+                else:
+                    self._prepend_sniffer_message(message)
                 return True
             await self._apply_match_message_with_screen_errors(
                 message,
@@ -1322,7 +1325,7 @@ class MatchScreen(Screen):
         while True:
             if await self.click_template_if_present(template):
                 return True
-            if await self._put_back_pending_action_while_waiting_for_ui(
+            if await self._prepend_pending_action_while_waiting_for_ui(
                 deferred_game_end_notifications=(
                     deferred_game_end_notifications
                 ),
@@ -1373,7 +1376,7 @@ class MatchScreen(Screen):
         self,
         observed_message_names: set[str],
     ) -> bool:
-        return await self._put_back_pending_action_while_waiting_for_ui(
+        return await self._prepend_pending_action_while_waiting_for_ui(
             additional_progress_message_names=_MATCH_EXIT_MESSAGE_NAMES,
             observed_message_names=observed_message_names,
         )
@@ -1389,12 +1392,12 @@ class MatchScreen(Screen):
         return True
 
     async def _consume_pending_activity_reward(self) -> bool:
-        messages_to_put_back: list[DecodedSnifferMessage] = []
+        messages_to_prepend: list[DecodedSnifferMessage] = []
         activity_reward_observed = False
         try:
             while (message := self._get_sniffer_message_nowait()) is not None:
                 if message.raw.name != _ACTIVITY_REWARD_NOTIFICATION_NAME:
-                    messages_to_put_back.append(message)
+                    messages_to_prepend.append(message)
                     continue
                 await self._apply_match_message_with_screen_errors(
                     message,
@@ -1407,8 +1410,8 @@ class MatchScreen(Screen):
             # Only the reward notification requires Match-owned UI work.
             # Preserve every other message for the next Screen in its
             # original order.
-            for message in messages_to_put_back:
-                self._put_back_sniffer_message(message)
+            if messages_to_prepend:
+                self._prepend_sniffer_messages(messages_to_prepend)
         return activity_reward_observed
 
     async def _advance_event_reward_presentation(self) -> None:
@@ -1452,7 +1455,7 @@ class MatchScreen(Screen):
         self._mark_stale()
         return None
 
-    async def _put_back_reordered_live_actions(
+    async def _prepend_reordered_live_actions(
         self,
         message: DecodedSnifferMessage,
     ) -> bool:
@@ -1501,8 +1504,12 @@ class MatchScreen(Screen):
                     )
                 max_step = max(buffered_messages)
                 if len(buffered_messages) == max_step - expected_step + 1:
-                    for step in range(expected_step, max_step + 1):
-                        self._put_back_sniffer_message(buffered_messages[step])
+                    self._prepend_sniffer_messages(
+                        [
+                            buffered_messages[step]
+                            for step in range(expected_step, max_step + 1)
+                        ]
+                    )
                     return True
 
             next_message = await self._get_sniffer_message()

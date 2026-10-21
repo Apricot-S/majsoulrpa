@@ -4,13 +4,13 @@ from typing import Self, final
 
 from pydantic import JsonValue
 
-from majsoulrpa.screens.match._common import validate_same_tile_kind
-from majsoulrpa.screens.match._decode import (
-    _get_int,
-    _get_int_list,
-    _get_optional_dict,
-    _get_str_list,
+from majsoulrpa.screens._json_fields import (
+    get_int,
+    get_int_list,
+    get_optional_dict,
+    get_str_list,
 )
+from majsoulrpa.screens.match._common import validate_same_tile_kind
 from majsoulrpa.screens.match.event._base import _MatchEventBase
 from majsoulrpa.screens.match.event._constants import PENG_TILE_COUNT
 from majsoulrpa.screens.match.event.liqi_success import LiqiSuccess
@@ -44,12 +44,12 @@ class PengEvent(_MatchEventBase):
         action_step: int,
         data: Mapping[str, JsonValue],
     ) -> Self:
-        if _get_int(data, "ActionChiPengGang.type") != 1:
+        if get_int(data, "type") != 1:
             msg = "ActionChiPengGang.type must identify peng."
             raise ValueError(msg)
-        seat = validate_seat(_get_int(data, "ActionChiPengGang.seat"))
-        tile_values = _get_str_list(data, "ActionChiPengGang.tiles")
-        from_values = _get_int_list(data, "ActionChiPengGang.froms")
+        seat = validate_seat(get_int(data, "seat"))
+        tile_values = get_str_list(data, "tiles")
+        from_values = get_int_list(data, "froms")
         if (
             len(tile_values) != PENG_TILE_COUNT
             or len(from_values) != PENG_TILE_COUNT
@@ -59,7 +59,7 @@ class PengEvent(_MatchEventBase):
         if from_values[:2] != [seat, seat]:
             msg = "The first two peng tiles must come from the calling player."
             raise ValueError(msg)
-        liqi = _get_optional_dict(data, "ActionChiPengGang.liqi")
+        liqi = get_optional_dict(data, "liqi")
         return cls(
             action_step=action_step,
             seat=seat,

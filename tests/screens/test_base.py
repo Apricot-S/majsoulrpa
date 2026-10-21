@@ -1,7 +1,7 @@
 import asyncio
-import datetime
+import datetime as dt
 import logging
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from random import Random
 from typing import Any, override
@@ -24,6 +24,7 @@ from majsoulrpa.screens.base import TemplateMatchResult
 from majsoulrpa.screens.errors import (
     ScreenDetectionError,
     ScreenDetectionTimeoutError,
+    ScreenInvalidArgumentError,
     ScreenStaleError,
 )
 from majsoulrpa.sniffer.events import (
@@ -33,6 +34,10 @@ from majsoulrpa.sniffer.events import (
     Direction,
     RawNotice,
     RawRequestResponse,
+)
+from majsoulrpa.sniffer.message_queue import (
+    SnifferMessageQueue,
+    SnifferMessageQueueOverflowError,
 )
 from majsoulrpa.types import Callback
 from tests.sniffer.fakes import EMPTY_SNIFFER_MESSAGES
@@ -67,18 +72,18 @@ class LoginScreen(Screen):
         assert message is None or isinstance(message, DecodedNotice)
         return message
 
-    def put_back_sniffer_message(self, message: DecodedNotice) -> None:
-        self._put_back_sniffer_message(message)
+    def prepend_sniffer_message(self, message: DecodedNotice) -> None:
+        self._prepend_sniffer_message(message)
 
     async def wait_for_sniffer_message(
         self,
         names: set[str],
         *,
-        put_back_messages: bool = False,
+        prepend_messages: bool = False,
     ) -> DecodedNotice:
         message = await self._wait_for_sniffer_message(
             names,
-            put_back_messages=put_back_messages,
+            prepend_messages=prepend_messages,
         )
         assert isinstance(message, DecodedNotice)
         return message
@@ -187,7 +192,7 @@ class TemplateMatchResultSpy:
 class SnifferMessageSourceSpy:
     def __init__(self, *messages: DecodedSnifferMessage) -> None:
         self.messages = list(messages)
-        self.put_back_messages: list[DecodedSnifferMessage] = []
+        self.prepend_messages: list[DecodedSnifferMessage] = []
 
     async def get(self) -> DecodedSnifferMessage:
         if not self.messages:
@@ -202,8 +207,11 @@ class SnifferMessageSourceSpy:
             return None
         return self.messages.pop(0)
 
-    def put_back(self, message: DecodedSnifferMessage) -> None:
-        self.put_back_messages.append(message)
+    def prepend(self, message: DecodedSnifferMessage) -> None:
+        self.prepend_messages.insert(0, message)
+
+    def prepend_many(self, messages: Sequence[DecodedSnifferMessage]) -> None:
+        self.prepend_messages[0:0] = messages
 
 
 def _notice(name: str) -> DecodedNotice:
@@ -212,7 +220,7 @@ def _notice(name: str) -> DecodedNotice:
             direction=Direction.INBOUND,
             name=name,
             payload=b"synthetic",
-            observed_at=datetime.datetime(2026, 1, 2, tzinfo=datetime.UTC),
+            observed_at=dt.datetime(2026, 1, 2, tzinfo=dt.UTC),
         ),
         message={},
     )
@@ -224,12 +232,7 @@ def test_screen_formats_decoded_notice_without_raw_payload_bytes() -> None:
             direction=Direction.INBOUND,
             name=".lq.Test.notice",
             payload=b"raw-notice-payload",
-            observed_at=datetime.datetime(
-                2026,
-                1,
-                2,
-                tzinfo=datetime.UTC,
-            ),
+            observed_at=dt.datetime(2026, 1, 2, tzinfo=dt.UTC),
         ),
         message={"nested": {"value": 1}},
     )
@@ -252,23 +255,23 @@ def test_screen_formats_decoded_exchange_without_raw_payload_bytes() -> None:
             name=".lq.Test.exchange",
             request=b"raw-request-payload",
             response=b"raw-response-payload",
-            request_observed_at=datetime.datetime(
+            request_observed_at=dt.datetime(
                 2026,
                 1,
                 2,
                 3,
                 4,
                 5,
-                tzinfo=datetime.UTC,
+                tzinfo=dt.UTC,
             ),
-            response_observed_at=datetime.datetime(
+            response_observed_at=dt.datetime(
                 2026,
                 1,
                 2,
                 3,
                 4,
                 6,
-                tzinfo=datetime.UTC,
+                tzinfo=dt.UTC,
             ),
         ),
         request={"requestValue": "synthetic"},
@@ -318,7 +321,10 @@ def test_screen_detector_detects_screen_from_fake_screenshot() -> None:
     async def screenshot() -> bytes:
         return login_screenshot
 
-    detector = ScreenshotScreenDetector(screenshot)
+    detector = ScreenshotScreenDetector(
+        screenshot,
+        ScreenContext(browser=BrowserControllerSpy()),
+    )
 
     screen = asyncio.run(detector.detect((FakeLoginScreen,)))
 
@@ -344,20 +350,16 @@ def test_screen_detector_injects_context_into_detected_screen() -> None:
     async def screenshot() -> bytes:
         return login_screenshot
 
-    context = ScreenContext(browser=BrowserControllerSpy())
+    browser = BrowserControllerSpy()
+    context = ScreenContext(browser=browser)
     detector = ScreenshotScreenDetector(screenshot, context=context)
 
     screen = asyncio.run(detector.detect((FakeLoginScreen,)))
 
     assert isinstance(screen, FakeLoginScreen)
     assert screen.context is context
-
-
-def test_screen_context_is_required_before_screen_operation() -> None:
-    screen = LoginScreen()
-
-    with pytest.raises(RuntimeError, match="ScreenContext"):
-        _ = screen.context
+    assert asyncio.run(screen.screenshot()) == browser.screenshot_bytes
+    assert browser.events == ["screenshot"]
 
 
 def test_screen_context_requires_sniffer_message_source() -> None:
@@ -405,9 +407,9 @@ def test_screen_gets_and_puts_back_messages_through_context() -> None:
     assert screen.get_sniffer_message_nowait() is second
     assert screen.get_sniffer_message_nowait() is None
 
-    screen.put_back_sniffer_message(first)
+    screen.prepend_sniffer_message(first)
 
-    assert source.put_back_messages == [first]
+    assert source.prepend_messages == [first]
 
 
 def test_screen_waits_for_any_selected_message_and_discards_others() -> None:
@@ -426,10 +428,10 @@ def test_screen_waits_for_any_selected_message_and_discards_others() -> None:
     )
 
     assert actual is expected
-    assert source.put_back_messages == []
+    assert source.prepend_messages == []
 
 
-def test_screen_can_put_back_all_read_messages_in_original_order() -> None:
+def test_screen_can_prepend_all_read_messages_in_original_order() -> None:
     first = _notice(".lq.UnrelatedFirst")
     second = _notice(".lq.UnrelatedSecond")
     expected = _notice(".lq.Target")
@@ -444,12 +446,86 @@ def test_screen_can_put_back_all_read_messages_in_original_order() -> None:
     actual = asyncio.run(
         screen.wait_for_sniffer_message(
             {".lq.Target"},
-            put_back_messages=True,
+            prepend_messages=True,
         ),
     )
 
     assert actual is expected
-    assert source.put_back_messages == [first, second, expected]
+    assert source.prepend_messages == [first, second, expected]
+
+
+def test_screen_restores_prefix_before_existing_prepend_messages() -> None:
+    first = _notice(".lq.First")
+    second = _notice(".lq.Second")
+    remaining = _notice(".lq.Remaining")
+    new = _notice(".lq.New")
+    source = SnifferMessageQueue(capacity=4, max_payload_bytes=1024)
+    source.prepend_many([first, second, remaining])
+    source.enqueue(new)
+    screen = LoginScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(),
+            sniffer_messages=source,
+        )
+    )
+
+    actual = asyncio.run(
+        screen.wait_for_sniffer_message(
+            {second.raw.name},
+            prepend_messages=True,
+        )
+    )
+
+    assert actual is second
+    assert (
+        asyncio.run(
+            screen.wait_for_sniffer_message(
+                {first.raw.name},
+                prepend_messages=True,
+            )
+        )
+        is first
+    )
+    assert [source.get_nowait() for _ in range(4)] == [
+        first,
+        second,
+        remaining,
+        new,
+    ]
+
+
+def test_screen_propagates_batch_restoration_overflow() -> None:
+    first = _notice(".lq.First")
+    remaining = _notice(".lq.Remaining")
+    new = _notice(".lq.New")
+
+    class ArrivingMessageQueue(SnifferMessageQueue):
+        @override
+        async def get(self) -> DecodedSnifferMessage:
+            message = await super().get()
+            self.enqueue(new)
+            return message
+
+    source = ArrivingMessageQueue(capacity=2, max_payload_bytes=1024)
+    source.prepend_many([first, remaining])
+    screen = LoginScreen(
+        context=ScreenContext(
+            browser=BrowserControllerSpy(),
+            sniffer_messages=source,
+        )
+    )
+
+    with pytest.raises(SnifferMessageQueueOverflowError):
+        asyncio.run(
+            screen.wait_for_sniffer_message(
+                {first.raw.name},
+                prepend_messages=True,
+            )
+        )
+
+    assert source.get_nowait() is remaining
+    assert source.get_nowait() is new
+    assert source.get_nowait() is None
 
 
 def test_screen_restores_unmatched_messages_when_wait_is_cancelled() -> None:
@@ -465,7 +541,7 @@ def test_screen_restores_unmatched_messages_when_wait_is_cancelled() -> None:
         task = asyncio.create_task(
             screen.wait_for_sniffer_message(
                 {".lq.Target"},
-                put_back_messages=True,
+                prepend_messages=True,
             ),
         )
         await asyncio.sleep(0)
@@ -473,7 +549,7 @@ def test_screen_restores_unmatched_messages_when_wait_is_cancelled() -> None:
         with pytest.raises(asyncio.CancelledError):
             await task
 
-        assert source.put_back_messages == [unrelated]
+        assert source.prepend_messages == [unrelated]
 
     asyncio.run(exercise())
 
@@ -556,7 +632,9 @@ def test_false_screen_detection_does_not_call_callback() -> None:
         _ = config
         return RPARuntime(
             callbacks,
-            ScreenshotScreenDetector(screenshot),
+            ScreenshotScreenDetector(
+                screenshot, ScreenContext(browser=BrowserControllerSpy())
+            ),
             should_stop=lambda: True,
         )
 
@@ -601,7 +679,9 @@ def test_screen_detection_exception_is_not_hidden() -> None:
         _ = config
         return RPARuntime(
             callbacks,
-            ScreenshotScreenDetector(screenshot),
+            ScreenshotScreenDetector(
+                screenshot, ScreenContext(browser=BrowserControllerSpy())
+            ),
             should_stop=lambda: True,
         )
 
@@ -657,7 +737,9 @@ def test_multiple_matching_screens_use_registration_order() -> None:
         _ = config
         return RPARuntime(
             callbacks,
-            ScreenshotScreenDetector(screenshot),
+            ScreenshotScreenDetector(
+                screenshot, ScreenContext(browser=BrowserControllerSpy())
+            ),
             should_stop=lambda: True,
         )
 
@@ -954,6 +1036,57 @@ def test_screen_context_requests_stop() -> None:
     assert requested is True
 
 
+def test_screen_context_awaits_falsey_stop_requester() -> None:
+    class StopRequesterSpy:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def __bool__(self) -> bool:
+            return False
+
+        async def __call__(self) -> None:
+            self.calls += 1
+
+    requester = StopRequesterSpy()
+    context = ScreenContext(
+        browser=BrowserControllerSpy(), request_stop=requester
+    )
+
+    asyncio.run(context.request_stop())
+
+    assert requester.calls == 1
+
+
+def test_screen_context_default_stop_request_is_noop() -> None:
+    browser = BrowserControllerSpy()
+    context = ScreenContext(browser=browser)
+
+    asyncio.run(context.request_stop())
+
+    assert browser.events == []
+
+
+@pytest.mark.parametrize(
+    "error",
+    [RuntimeError("synthetic stop failure"), asyncio.CancelledError()],
+    ids=["failure", "cancellation"],
+)
+def test_screen_context_propagates_stop_request_error(
+    error: BaseException,
+) -> None:
+    async def request_stop() -> None:
+        raise error
+
+    context = ScreenContext(
+        browser=BrowserControllerSpy(), request_stop=request_stop
+    )
+
+    with pytest.raises(type(error)) as caught:
+        asyncio.run(context.request_stop())
+
+    assert caught.value is error
+
+
 def test_screen_can_request_rpa_stop() -> None:
     requested = False
 
@@ -1076,16 +1209,78 @@ def test_screen_becomes_stale_after_reload() -> None:
     assert browser.events == ["reload", "screenshot"]
 
 
-def test_screen_can_go_to_log_url() -> None:
+@pytest.mark.parametrize(
+    "log_id",
+    [
+        "synthetic-log-id",
+        "260101-00000000-0000-0000-0000-000000000000",
+        "260101-00000000-0000-0000-0000-000000000000_a123456789",
+        "abcdef-ghijklmn-opqr-stuv-wxyz-abcdefghijkl_a123456789_2",
+        "X",
+    ],
+    ids=[
+        "synthetic",
+        "basic",
+        "viewpoint",
+        "obfuscated",
+        "no-structure-check",
+    ],
+)
+def test_screen_can_go_to_log_url(log_id: str) -> None:
     browser = BrowserControllerSpy()
     screen = LoginScreen(context=ScreenContext(browser=browser))
 
-    asyncio.run(screen.goto_log("synthetic-log-id"))
+    asyncio.run(screen.goto_log(log_id))
 
     assert browser.visited_urls == [
-        "https://game.mahjongsoul.com/?paipu=synthetic-log-id",
+        f"https://game.mahjongsoul.com/?paipu={log_id}",
     ]
     assert browser.events == ["goto_url"]
+
+
+@pytest.mark.parametrize(
+    "log_id",
+    [
+        "",
+        "synthetic&other=value",
+        "synthetic#fragment",
+        "synthetic space",
+        "synthetic+value",
+        "synthetic%20value",
+        "synthetic/part",
+        "synthetic日本語",
+    ],
+    ids=[
+        "empty",
+        "query",
+        "fragment",
+        "space",
+        "plus",
+        "percent",
+        "slash",
+        "non-ascii",
+    ],
+)
+def test_screen_rejects_invalid_log_id_without_navigation_or_disclosure(
+    log_id: str,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    browser = BrowserControllerSpy()
+    screen = LoginScreen(context=ScreenContext(browser=browser))
+
+    with (
+        caplog.at_level(logging.INFO, logger="majsoulrpa.screens.api"),
+        pytest.raises(ScreenInvalidArgumentError, match="Log ID") as caught,
+    ):
+        asyncio.run(screen.goto_log(log_id))
+
+    assert browser.visited_urls == []
+    assert caught.value.screenshot == browser.screenshot_bytes
+    assert browser.events == ["screenshot"]
+    if log_id:
+        assert log_id not in str(caught.value)
+        assert log_id not in repr(caught.value)
+        assert log_id not in caplog.text
 
 
 def test_runtime_calls_screen_before_callback() -> None:
@@ -1120,7 +1315,9 @@ def test_runtime_calls_screen_before_callback() -> None:
         _ = config
         return RPARuntime(
             callbacks,
-            ScreenshotScreenDetector(screenshot),
+            ScreenshotScreenDetector(
+                screenshot, ScreenContext(browser=BrowserControllerSpy())
+            ),
             should_stop=lambda: True,
         )
 

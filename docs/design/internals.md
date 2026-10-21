@@ -52,6 +52,25 @@ MajsoulRPA は、過剰な抽象化や定型的な「クリーンアーキテク
 終了処理で失敗した場合も、失敗を見えない形にしません。複数の失敗が起きる
 可能性がある箇所では、どの失敗を主例外として扱うかをテストで固定します。
 
+## JSON fieldの取得境界
+
+Room/Matchで共通する外部JSONのscalar・object・list取得は
+`screens/_json_fields.py` に置く。取得キーの `name` を診断にも使い、入力値を保持・表示
+しない `MessageDecodeError`（`ValueError` の派生）を送出する。整数にbooleanを流用せず、
+必須fieldの欠落/nullは拒否する。optional objectだけは欠落/nullを許容する。
+各呼び出しは実キーだけを指定し、診断用の `label` は持たない。画面の文脈はScreen境界の
+例外とcauseで示し、field helperはキーと期待する型を示す。
+
+field・Room・Match metadata/actionのdecode整合性違反は内部の `MessageDecodeError` に
+統一する。`screens/errors.py` に置き、`ScreenError` を継承せず、公開exportには追加しない。
+旧画面別decode例外と、それらへの変換wrapperは削除し、aliasを残さない。
+Screenは共通decode例外をscreenshot付き `ScreenInconsistentMessageError` に変換する。
+Room状態遷移と対象外のMatch種別は既存の専用例外を維持する。Match actionのモデル構築で
+発生する `TypeError` / `ValueError` は共通decode例外へ変換するが、既に共通例外なら
+そのまま伝播する。browser失敗やcancellationをdecode例外へ変換しない。
+Roomの正値・人数・ready整合性とMatchのseat・牌・対局種別は共通helperへ移さない。
+公開のScreen例外とwire schemaは変えず、Python APIの引数型の再検証も追加しない。
+
 ## Presentation 検出
 
 Presentation 検出は、画面状態を「できるだけ決定的に」扱います。
@@ -142,7 +161,7 @@ immutable snapshot を返し、network request や click は行わない。状�
 API は別の高レベル API として 1 つずつ追加する。
 
 Room / tournament が確定済みの fresh entry marker を消費した場合は、Screen 遷移直前に decoded
-message 自体を一度だけ `put_back()` する。`ScreenContext` に Match entry hint は追加しない。
+message 自体を一度だけ `prepend()` する。`ScreenContext` に Match entry hint は追加しない。
 
 Match 中も generic `Screen.reload()` を使う。reload 後は current instance を stale にし、callback
 利用者が user data を return して runtime の Screen 検出へ戻す。cookie により直接 Match へ戻る

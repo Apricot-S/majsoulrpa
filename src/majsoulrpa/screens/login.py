@@ -100,7 +100,7 @@ class LoginScreen(Screen):
         settings_path=MAINTENANCE_OK_SETTINGS_PATH,
     )
 
-    def __init__(self, context: ScreenContext | None = None) -> None:
+    def __init__(self, context: ScreenContext) -> None:
         super().__init__(context=context)
         self._email_address_entered_at: float | None = None
 
@@ -153,9 +153,16 @@ class LoginScreen(Screen):
         try:
             EMAIL_ADDRESS_ADAPTER.validate_python(email_address)
         except ValidationError:
+            valid_email = False
+        else:
+            valid_email = True
+
+        if not valid_email:
+            # Run diagnostic I/O after validation handling.
+            # Browser failures must not retain validation input.
             msg = "Email address is invalid."
             screenshot = await self.screenshot()
-            raise ScreenInvalidArgumentError(msg, screenshot) from None
+            raise ScreenInvalidArgumentError(msg, screenshot)
 
         await self.fill_region(
             self.EMAIL_ADDRESS_REGION,

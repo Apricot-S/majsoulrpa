@@ -4,12 +4,12 @@ from typing import Self, final
 
 from pydantic import JsonValue
 
-from majsoulrpa.screens.match._decode import (
-    _get_bool,
-    _get_dict_list,
-    _get_int,
-    _get_int_list,
-    _get_str_list,
+from majsoulrpa.screens._json_fields import (
+    get_bool,
+    get_dict_list,
+    get_int,
+    get_int_list,
+    get_str_list,
 )
 from majsoulrpa.screens.match.event._base import _MatchEventBase
 from majsoulrpa.screens.match.event._constants import MAX_DORA_INDICATORS
@@ -30,10 +30,9 @@ class NoTilePlayer:
     @classmethod
     def from_dict(cls, data: Mapping[str, JsonValue]) -> Self:
         return cls(
-            tingpai=_get_bool(data, "NoTilePlayerInfo.tingpai"),
+            tingpai=get_bool(data, "tingpai"),
             hand=tuple(
-                validate_tile(tile)
-                for tile in _get_str_list(data, "NoTilePlayerInfo.hand")
+                validate_tile(tile) for tile in get_str_list(data, "hand")
             ),
         )
 
@@ -59,27 +58,19 @@ class NoTileScore:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, JsonValue]) -> Self:
-        score = _get_int(data, "NoTileScoreInfo.score")
+        score = get_int(data, "score")
         return cls(
             seat=(
-                validate_seat(_get_int(data, "NoTileScoreInfo.seat"))
-                if score != 0
-                else None
+                validate_seat(get_int(data, "seat")) if score != 0 else None
             ),
-            old_scores=tuple(
-                _get_int_list(data, "NoTileScoreInfo.old_scores")
-            ),
-            delta_scores=tuple(
-                _get_int_list(data, "NoTileScoreInfo.delta_scores")
-            ),
+            old_scores=tuple(get_int_list(data, "old_scores")),
+            delta_scores=tuple(get_int_list(data, "delta_scores")),
             hand=tuple(
-                validate_tile(tile)
-                for tile in _get_str_list(data, "NoTileScoreInfo.hand")
+                validate_tile(tile) for tile in get_str_list(data, "hand")
             ),
-            ming=tuple(_get_str_list(data, "NoTileScoreInfo.ming")),
+            ming=tuple(get_str_list(data, "ming")),
             dora_indicators=tuple(
-                validate_tile(tile)
-                for tile in _get_str_list(data, "NoTileScoreInfo.doras")
+                validate_tile(tile) for tile in get_str_list(data, "doras")
             ),
             score=score,
         )
@@ -124,14 +115,14 @@ class NoTileEvent(_MatchEventBase):
     ) -> Self:
         return cls(
             action_step=action_step,
-            liujumanguan=_get_bool(data, "ActionNoTile.liujumanguan"),
+            liujumanguan=get_bool(data, "liujumanguan"),
             players=tuple(
                 NoTilePlayer.from_dict(player)
-                for player in _get_dict_list(data, "ActionNoTile.players")
+                for player in get_dict_list(data, "players")
             ),
             scores=tuple(
                 NoTileScore.from_dict(score)
-                for score in _get_dict_list(data, "ActionNoTile.scores")
+                for score in get_dict_list(data, "scores")
             ),
-            game_end=_get_bool(data, "ActionNoTile.gameend"),
+            game_end=get_bool(data, "gameend"),
         )
