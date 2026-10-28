@@ -416,9 +416,13 @@ def test_enter_tournament_rejects_inconsistent_error(
     with pytest.raises(
         ScreenInconsistentMessageError,
         match=message,
-    ):
+    ) as caught:
         asyncio.run(screen.enter_tournament("123456"))
 
+    if response == {"error": {}}:
+        assert caught.value.__cause__ is None
+    else:
+        assert caught.value.__cause__ is not None
     assert not screen._stale
 
 

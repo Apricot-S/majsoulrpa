@@ -365,6 +365,10 @@ def test_join_room_rejects_inconsistent_error(
         asyncio.run(screen.join_room("12345"))
 
     assert exc_info.value.screenshot == screenshot
+    if response == {"error": {}}:
+        assert exc_info.value.__cause__ is None
+    else:
+        assert exc_info.value.__cause__ is not None
     assert not screen._stale
 
 

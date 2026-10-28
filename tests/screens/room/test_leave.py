@@ -19,6 +19,7 @@ from majsoulrpa.screens import (
     ScreenInconsistentMessageError,
     ScreenStaleError,
 )
+from majsoulrpa.screens.errors import MessageDecodeError
 from majsoulrpa.screens.room import (
     RoomOperation,
     RoomOperationFailureReason,
@@ -189,7 +190,14 @@ def test_leave_server_rejection_keeps_screen_active(
 
 @pytest.mark.parametrize(
     "error",
-    [None, {}, {"code": True}, {"code": "invalid"}],
+    [
+        None,
+        {},
+        {"code": True},
+        {"code": "invalid"},
+        {"code": 1.5},
+        {"code": None},
+    ],
 )
 def test_leave_rejects_malformed_server_error(error: JsonValue) -> None:
     messages = _OperationMessageSource(
@@ -209,9 +217,13 @@ def test_leave_rejects_malformed_server_error(error: JsonValue) -> None:
     )
     asyncio.run(screen.before_callback())
 
-    with pytest.raises(ScreenInconsistentMessageError):
+    with pytest.raises(ScreenInconsistentMessageError) as caught:
         asyncio.run(screen.leave())
 
+    assert caught.value.screenshot == screenshot
+    assert isinstance(caught.value.__cause__, MessageDecodeError)
+    assert "invalid" not in str(caught.value)
+    assert "invalid" not in str(caught.value.__cause__)
     assert asyncio.run(screen.get_state()).status is RoomStatus.WAITING
 
 

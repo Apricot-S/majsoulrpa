@@ -1,5 +1,38 @@
 # 初回テストリスト
 
+## Room AI追加の過去response除外
+
+- [x] 操作前の古い成功responseをdrainした後、AI追加通知だけでは成功しない
+- [x] 次の受信待機をEventで確認してキャンセルし、追加済みAIのsnapshotとactive状態を維持する
+
+## RoomScreen初期化フラグの削除
+
+- [x] フラグ専用のhook前API拒否テストを削除し、hookの初期化成功・失敗・キャンセルは既存テストで維持する
+- [x] フラグ・検証helper・全呼び出しを除去し、snapshot未取得は_get_room_stateで検出する
+- [x] runtimeがhook完了後だけcallbackを実行する既存経路とRoom全APIを回帰確認する
+
+## Room対局開始後の画面消失待機の失敗
+
+- [x] guestが開始通知を受けた後、画面消失確認のscreenshot失敗・キャンセルを元の例外で伝播する
+- [x] 失敗後もMATCH_STARTEDのsnapshotを保持し、同じinstanceの次のAPIをstaleとして拒否する
+- [x] 状態待機ループの初期化再検証を除去し、入口での検証は維持する
+
+## Home操作拒否の共通JSON helper統合
+
+- [x] joinRoom・大会検索の不正error/codeは従来のScreen例外を維持し、helperが送出したdecode原因を保持する。code欠落は原因例外を生成せず直接拒否する
+- [x] Homeのobject/整数検証をRoomと同じget_dict/get_intへ統合し、error欠落の成功・既知/未知code分類を維持する
+
+## Room操作拒否のdecode境界
+
+- [x] 不正error object・欠落code・boolean/string/float/nullのcodeを拒否し、decode原因を保持する
+- [x] Screen例外とcauseへ入力値を含めず、screenshotとWAITING状態を維持する
+- [x] 正常な未知整数codeの拒否・属性保持は既存の全操作テストで維持する
+
+## RoomScreen terminal検出時のscreenshot失敗
+
+- [x] add_aiの操作前drainでkickを検出した場合、screenshot取得失敗をそのまま伝播しclickしない
+- [x] screenshot失敗後もterminalと確定したinstanceをstaleに保ち、次のAPIを拒否する
+
 ## RoomState最終確認
 
 - [x] RoomPlayerも変更不可で、入力mappingの変更が取得済みsnapshotへ波及しない
