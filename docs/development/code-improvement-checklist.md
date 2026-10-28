@@ -225,7 +225,8 @@
   - [x] プレイヤー更新と同様、対局開始/kick通知もINBOUNDだけを受理する。方向不整合を状態更新前に拒否し、初期化前/active/terminalのsnapshotを変更しないことをsynthetic messageで確認した。
 - [x] `screens/room/errors.py`: operation と reason Enum、未知 server code、例外 message の個人情報非表示を確認する。
   - [x] 既存の例外階層とEnumを維持し、属性での分岐方法をdocstringへ明記した。全理由・全操作で属性保持、上位例外による捕捉、str/reprへのscreenshot内容・未知codeの非漏洩を確認した。server messageを取り込まない既存実装を維持し、設計資料の未使用ROOM_INACTIVEとRoom専用stale派生の記述を現行仕様へ揃えた。
-- [ ] `screens/room/screen.py`: source drain、操作 lock、Req/Res と notice の相関、terminal 後 stale、画面消失待機を確認する。
+- [ ] `screens/room/screen.py`: source drain、逐次操作と事前条件検証、Req/Res と notice の相関、terminal 後 stale、画面消失待機を確認する。
+  - [x] 設計資料に残っていた操作lockとrace完全防止の記述を修正した。現行の並行呼び出し非対応・操作前drainと条件検証・検証後のresponse/notice確認を明記し、チェック項目も同方式へ揃えた。既存の最新権限・過去response除外・通知先着・kick中断テストと照合した。実装変更は不要と判断した。
   - [x] guestのjoinRoom→開始通知→画面消失確認でscreenshot取得失敗・キャンセルが起きる経路を追加テストした。元の例外伝播、MATCH_STARTED/version保持、clickなし、以後のAPI拒否を確認し、既存finallyを維持した。wait_for_state_changeのループ内で重複する初期化検証だけを除去し、入口の検証は維持した。
   - [x] 操作拒否responseのerror object/code検証を共通JSON helperへ揃え、ScreenInconsistentMessageErrorのcauseへMessageDecodeErrorを保持する。不正object・欠落code・boolean/string/float/nullの拒否、入力値非漏洩、screenshotとWAITING状態の保持をleaveの既存テストへ統合した。正常な未知codeの処理は維持する。
   - [x] runtimeがbefore_callback完了後だけcallbackを実行するため、重複する初期化フラグ・検証helper・全呼び出しを削除した。hook前のAPI拒否だけを固定していた5ケースも削除した。snapshot未取得は_get_room_stateで検出し、hookの成功・失敗・キャンセルとRoom全APIの既存テストを維持する。

@@ -351,8 +351,11 @@ slot を占める人間または AI の account ID を保持する。現時点�
 ホスト権限を `RoomScreen` instance の bool として cache しない。各 `RoomState` の
 `owner_id` から `RoomPlayer.is_host` と `self_is_host` を再導出する。
 `NotifyRoomPlayerUpdate` でホストが変われば、同じ callback 中でも次の `get_state()` または
-`wait_for_state_change()` から新しい権限が見える。操作 lock 取得後にも再検証するため、
-ホスト交代との race で古い権限を使って click しない。
+`wait_for_state_change()` から新しい権限が見える。各操作は `_prepare_room_operation()` で
+蓄積済みmessageをdrainし、最新snapshotのactive状態と操作ごとの権限・人数・ready条件を
+検証してからclickする。同じinstanceのAPI並行呼び出しはサポートせず、操作lockは持たない。
+この事前検証はserver側の状態変更やclickとatomicではない。検証後のホスト交代などは、
+後続のresponse・noticeで確認し、server拒否やterminalを成功として扱わない。
 
 空 payload の `NotifyRoomKickOut` は受信した client 自身の kick として `KICKED` にする。
 プレイヤー更新・ready・対局開始・kickのRoom通知はすべて `INBOUND` を必要とする。
