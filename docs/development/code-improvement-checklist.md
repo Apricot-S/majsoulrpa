@@ -226,6 +226,8 @@
 - [x] `screens/room/errors.py`: operation と reason Enum、未知 server code、例外 message の個人情報非表示を確認する。
   - [x] 既存の例外階層とEnumを維持し、属性での分岐方法をdocstringへ明記した。全理由・全操作で属性保持、上位例外による捕捉、str/reprへのscreenshot内容・未知codeの非漏洩を確認した。server messageを取り込まない既存実装を維持し、設計資料の未使用ROOM_INACTIVEとRoom専用stale派生の記述を現行仕様へ揃えた。
 - [ ] `screens/room/screen.py`: source drain、逐次操作と事前条件検証、Req/Res と notice の相関、terminal 後 stale、画面消失待機を確認する。
+  - [x] 実装・設計・関連テストの最終照合を完了した。初期化・操作前drain、権限/人数/ready検証、response方向/ready要求値、responseと通知の先着順、過去response除外、terminal/kick、画面消失待機、例外/cancellation伝播を確認した。現在の確認範囲で追加の実装変更は不要と判断した。
+  - [ ] 実ゲーム確認: guestのcallback中にkick通知を受け、その通知がsourceに到着した後のadd_aiがclickせずScreenStaleErrorとなり、以後のAPIもstaleで拒否されること。screenshot取得失敗の注入は自動テストで確認済み。実通信・画像の保存は不要。
   - [x] add_aiの操作前に古い成功responseをqueueへ置き、click後のAI追加通知だけでは完了せず次のresponseを待つことをEvent同期で確認した。キャンセル後もAI数とactive状態を保持する。過去responseを今回の成功に流用しない既存実装を維持した。
   - [x] 設計資料に残っていた操作lockとrace完全防止の記述を修正した。現行の並行呼び出し非対応・操作前drainと条件検証・検証後のresponse/notice確認を明記し、チェック項目も同方式へ揃えた。既存の最新権限・過去response除外・通知先着・kick中断テストと照合した。実装変更は不要と判断した。
   - [x] guestのjoinRoom→開始通知→画面消失確認でscreenshot取得失敗・キャンセルが起きる経路を追加テストした。元の例外伝播、MATCH_STARTED/version保持、clickなし、以後のAPI拒否を確認し、既存finallyを維持した。wait_for_state_changeのループ内で重複する初期化検証だけを除去し、入口の検証は維持した。
