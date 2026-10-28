@@ -56,6 +56,7 @@ from majsoulrpa.assets.templates.tournament import (
 )
 from majsoulrpa.presentation import Region
 from majsoulrpa.presentation.template import load_png_template_matcher
+from majsoulrpa.screens._json_fields import get_dict, get_int
 from majsoulrpa.screens.base import (
     Screen,
     ScreenDetectionSpec,
@@ -64,6 +65,7 @@ from majsoulrpa.screens.base import (
     _screen_api,
 )
 from majsoulrpa.screens.errors import (
+    MessageDecodeError,
     ScreenDetectionError,
     ScreenInconsistentMessageError,
     ScreenInvalidArgumentError,
@@ -481,17 +483,24 @@ class HomeScreen(Screen):
         if "error" not in response:
             return None
 
-        error = response["error"]
-        if not isinstance(error, dict) or "code" not in error:
+        try:
+            error = get_dict(response, "error")
+        except MessageDecodeError as cause:
+            msg = f"{api_name} error must be a dict containing code."
+            screenshot = await self.screenshot()
+            raise ScreenInconsistentMessageError(msg, screenshot) from cause
+
+        if "code" not in error:
             msg = f"{api_name} error must be a dict containing code."
             screenshot = await self.screenshot()
             raise ScreenInconsistentMessageError(msg, screenshot)
 
-        code = error["code"]
-        if isinstance(code, bool) or not isinstance(code, int):
+        try:
+            code = get_int(error, "code")
+        except MessageDecodeError as cause:
             msg = f"{api_name} error code must be an integer."
             screenshot = await self.screenshot()
-            raise ScreenInconsistentMessageError(msg, screenshot)
+            raise ScreenInconsistentMessageError(msg, screenshot) from cause
 
         return code
 

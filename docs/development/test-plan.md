@@ -1,5 +1,10 @@
 # 初回テストリスト
 
+## Home操作拒否の共通JSON helper統合
+
+- [x] joinRoom・大会検索の不正error/codeは従来のScreen例外を維持し、helperが送出したdecode原因を保持する。code欠落は原因例外を生成せず直接拒否する
+- [x] Homeのobject/整数検証をRoomと同じget_dict/get_intへ統合し、error欠落の成功・既知/未知code分類を維持する
+
 ## Room操作拒否のdecode境界
 
 - [x] 不正error object・欠落code・boolean/string/float/nullのcodeを拒否し、decode原因を保持する
