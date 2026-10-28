@@ -226,6 +226,7 @@
 - [x] `screens/room/errors.py`: operation と reason Enum、未知 server code、例外 message の個人情報非表示を確認する。
   - [x] 既存の例外階層とEnumを維持し、属性での分岐方法をdocstringへ明記した。全理由・全操作で属性保持、上位例外による捕捉、str/reprへのscreenshot内容・未知codeの非漏洩を確認した。server messageを取り込まない既存実装を維持し、設計資料の未使用ROOM_INACTIVEとRoom専用stale派生の記述を現行仕様へ揃えた。
 - [ ] `screens/room/screen.py`: source drain、操作 lock、Req/Res と notice の相関、terminal 後 stale、画面消失待機を確認する。
+  - [x] 操作拒否responseのerror object/code検証を共通JSON helperへ揃え、ScreenInconsistentMessageErrorのcauseへMessageDecodeErrorを保持する。不正object・欠落code・boolean/string/float/nullの拒否、入力値非漏洩、screenshotとWAITING状態の保持をleaveの既存テストへ統合した。正常な未知codeの処理は維持する。
   - [x] 初期化フラグだけを確認する_ensure_room_state_initializedを同期関数へ変更し、8箇所の不要なawaitを除去した。snapshotがqueueにあってもbefore_callback前のget_state・4操作が未初期化エラーとなりclickしないことを追加テストで固定した。公開動作は維持する。
   - [x] terminal検出時にscreenshot取得が失敗してもstale確定を失わないよう、_ensure_waiting_stateの順序を修正した。add_aiの操作前drainでkickを検出する回帰テストで、元の取得失敗の伝播・click/受信待機なし・以後のAPI拒否を確認した。実ゲーム確認待ち。
 

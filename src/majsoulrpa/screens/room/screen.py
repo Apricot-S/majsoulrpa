@@ -17,6 +17,7 @@ from majsoulrpa.assets.templates.room import (
     START_TEMPLATE_PATH,
 )
 from majsoulrpa.presentation.template import load_png_template_matcher
+from majsoulrpa.screens._json_fields import get_dict, get_int
 from majsoulrpa.screens.base import (
     TEMPLATE_DETECTION_RETRY_INTERVAL_SECONDS,
     Screen,
@@ -359,18 +360,13 @@ class RoomScreen(Screen):
         message: DecodedRequestResponse,
         operation: RoomOperation,
     ) -> NoReturn:
-        error = message.response["error"]
         operation_name = message.raw.name.rsplit(".", maxsplit=1)[-1]
-        if not isinstance(error, dict) or "code" not in error:
+        try:
+            code = get_int(get_dict(message.response, "error"), "code")
+        except MessageDecodeError as error:
             screenshot = await self.context.browser.screenshot()
-            msg = f"{operation_name} error must be a dict containing code."
-            raise ScreenInconsistentMessageError(msg, screenshot)
-
-        code = error["code"]
-        if isinstance(code, bool) or not isinstance(code, int):
-            screenshot = await self.context.browser.screenshot()
-            msg = f"{operation_name} error code must be an integer."
-            raise ScreenInconsistentMessageError(msg, screenshot)
+            msg = f"{operation_name} error response is inconsistent."
+            raise ScreenInconsistentMessageError(msg, screenshot) from error
 
         _logger.warning(
             "Unrecognized %s error code: %d.",

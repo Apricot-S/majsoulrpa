@@ -1,5 +1,11 @@
 # 初回テストリスト
 
+## Room操作拒否のdecode境界
+
+- [x] 不正error object・欠落code・boolean/string/float/nullのcodeを拒否し、decode原因を保持する
+- [x] Screen例外とcauseへ入力値を含めず、screenshotとWAITING状態を維持する
+- [x] 正常な未知整数codeの拒否・属性保持は既存の全操作テストで維持する
+
 ## RoomScreen初期化検証の同期化
 
 - [x] snapshotがqueueにあってもbefore_callback前の状態取得・操作は未初期化エラーとなりclickしない
