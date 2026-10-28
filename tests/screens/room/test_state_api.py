@@ -585,6 +585,48 @@ def test_wait_for_state_change_returns_terminal_snapshot_once(
     assert exc_info.value.screenshot == screenshot
 
 
+@pytest.mark.parametrize(
+    "failure",
+    [RuntimeError("synthetic screenshot failure"), asyncio.CancelledError()],
+    ids=["screenshot-failure", "cancellation"],
+)
+def test_match_start_wait_failure_preserves_terminal_state_and_stales_screen(
+    monkeypatch: pytest.MonkeyPatch,
+    failure: BaseException,
+) -> None:
+    messages = _QueuedThenWaitingMessageSource(
+        _request_response(".lq.Lobby.joinRoom", {"room": _room()}),
+        _notice(".lq.NotifyRoomGameStart"),
+    )
+    browser = BrowserControllerSpy(_synthetic_blank_screenshot())
+    screen = RoomScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=messages,
+            account_state=_AccountState(100002),
+        ),
+    )
+    asyncio.run(screen.before_callback())
+    previous = asyncio.run(screen.get_state())
+
+    async def fail_screenshot() -> bytes:
+        raise failure
+
+    with monkeypatch.context() as patch:
+        patch.setattr(browser, "screenshot", fail_screenshot)
+        with pytest.raises(type(failure)) as caught:
+            asyncio.run(screen.wait_for_state_change(previous))
+
+    assert caught.value is failure
+    current = screen._room_state_store.state
+    assert current is not None
+    assert current.status is RoomStatus.MATCH_STARTED
+    assert current.version == previous.version + 1
+    assert browser.clicked_points == []
+    with pytest.raises(ScreenStaleError):
+        asyncio.run(screen.get_state())
+
+
 def test_wait_for_state_change_returns_after_room_screen_disappears(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

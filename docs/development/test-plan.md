@@ -1,5 +1,11 @@
 # 初回テストリスト
 
+## Room対局開始後の画面消失待機の失敗
+
+- [x] guestが開始通知を受けた後、画面消失確認のscreenshot失敗・キャンセルを元の例外で伝播する
+- [x] 失敗後もMATCH_STARTEDのsnapshotを保持し、同じinstanceの次のAPIをstaleとして拒否する
+- [x] 状態待機ループの初期化再検証を除去し、入口での検証は維持する
+
 ## Home操作拒否の共通JSON helper統合
 
 - [x] joinRoom・大会検索の不正error/codeは従来のScreen例外を維持し、helperが送出したdecode原因を保持する。code欠落は原因例外を生成せず直接拒否する

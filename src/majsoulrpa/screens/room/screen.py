@@ -162,7 +162,6 @@ class RoomScreen(Screen):
 
             message = await self._get_sniffer_message()
             await self._apply_room_message(message, self_account_id)
-            self._ensure_room_state_initialized()
 
     @_screen_api
     @_requires_active
