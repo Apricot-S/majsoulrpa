@@ -130,6 +130,58 @@ def test_add_ai_keeps_terminal_screen_stale_when_screenshot_fails(
         asyncio.run(screen.get_state())
 
 
+def test_add_ai_does_not_complete_with_historical_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages = _OperationMessageSource(
+        queued=(_request_response(".lq.Lobby.createRoom", {"room": _room()}),),
+        waiting=(_player_update(),),
+    )
+    browser = BrowserControllerSpy(
+        _synthetic_template_screenshot(
+            template_path=ADD_AI_TEMPLATE_PATH,
+            settings_path=ADD_AI_SETTINGS_PATHS[0],
+        ),
+    )
+    screen = RoomScreen(
+        context=ScreenContext(
+            browser=browser,
+            sniffer_messages=messages,
+            account_state=_AccountState(100001),
+        ),
+    )
+    asyncio.run(screen.before_callback())
+    messages.enqueue(_request_response(".lq.Lobby.addRoomRobot", {}))
+    original_get = messages.get
+
+    async def exercise() -> None:
+        waiting_for_response = asyncio.Event()
+
+        async def get() -> DecodedSnifferMessage:
+            if messages.get_count == 1:
+                waiting_for_response.set()
+            return await original_get()
+
+        monkeypatch.setattr(messages, "get", get)
+        task = asyncio.create_task(screen.add_ai())
+        try:
+            async with asyncio.timeout(1):
+                await waiting_for_response.wait()
+            assert not task.done()
+        finally:
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+
+        state = await screen.get_state()
+        assert state.ai_count == 1
+        assert state.status is RoomStatus.WAITING
+
+    asyncio.run(exercise())
+    assert len(browser.clicked_points) == 1
+    assert messages.get_count == 2
+
+
 def test_add_ai_accepts_player_update_before_response() -> None:
     messages = _OperationMessageSource(
         queued=(_request_response(".lq.Lobby.createRoom", {"room": _room()}),),

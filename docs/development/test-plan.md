@@ -1,5 +1,10 @@
 # 初回テストリスト
 
+## Room AI追加の過去response除外
+
+- [x] 操作前の古い成功responseをdrainした後、AI追加通知だけでは成功しない
+- [x] 次の受信待機をEventで確認してキャンセルし、追加済みAIのsnapshotとactive状態を維持する
+
 ## RoomScreen初期化フラグの削除
 
 - [x] フラグ専用のhook前API拒否テストを削除し、hookの初期化成功・失敗・キャンセルは既存テストで維持する
