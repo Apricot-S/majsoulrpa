@@ -1,5 +1,11 @@
 # 初回テストリスト
 
+## RoomScreen初期化フラグの削除
+
+- [x] フラグ専用のhook前API拒否テストを削除し、hookの初期化成功・失敗・キャンセルは既存テストで維持する
+- [x] フラグ・検証helper・全呼び出しを除去し、snapshot未取得は_get_room_stateで検出する
+- [x] runtimeがhook完了後だけcallbackを実行する既存経路とRoom全APIを回帰確認する
+
 ## Room対局開始後の画面消失待機の失敗
 
 - [x] guestが開始通知を受けた後、画面消失確認のscreenshot失敗・キャンセルを元の例外で伝播する
@@ -16,11 +22,6 @@
 - [x] 不正error object・欠落code・boolean/string/float/nullのcodeを拒否し、decode原因を保持する
 - [x] Screen例外とcauseへ入力値を含めず、screenshotとWAITING状態を維持する
 - [x] 正常な未知整数codeの拒否・属性保持は既存の全操作テストで維持する
-
-## RoomScreen初期化検証の同期化
-
-- [x] snapshotがqueueにあってもbefore_callback前の状態取得・操作は未初期化エラーとなりclickしない
-- [x] 初期化フラグだけを確認するhelperを同期関数にし、既存の初期化・更新・待機・操作を維持する
 
 ## RoomScreen terminal検出時のscreenshot失敗
 

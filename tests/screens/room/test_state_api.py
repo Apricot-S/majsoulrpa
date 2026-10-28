@@ -201,32 +201,6 @@ def _host_change_notice() -> DecodedNotice:
     )
 
 
-@pytest.mark.parametrize(
-    "api", ["get_state", "leave", "add_ai", "set_ready", "start_match"]
-)
-def test_room_api_requires_callback_initialization_even_with_snapshot(
-    api: str,
-) -> None:
-    browser = BrowserControllerSpy(b"synthetic-screenshot")
-    messages = _message_queue(
-        _request_response(".lq.Lobby.createRoom", {"room": _room()}),
-    )
-    screen = RoomScreen(
-        context=ScreenContext(
-            browser=browser,
-            sniffer_messages=messages,
-            account_state=_AccountState(100001),
-        ),
-    )
-
-    with pytest.raises(
-        RuntimeError, match="RoomScreen has not been initialized"
-    ):
-        asyncio.run(getattr(screen, api)())
-
-    assert browser.clicked_points == []
-
-
 def test_before_callback_drains_accumulated_room_messages_in_order() -> None:
     messages = _message_queue(
         _request_response(".lq.Lobby.joinRoom", {"room": _room()}),
