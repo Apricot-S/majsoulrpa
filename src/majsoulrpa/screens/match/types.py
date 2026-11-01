@@ -19,7 +19,7 @@ def validate_seat(value: int) -> Seat:
 
 def validate_tile(value: str) -> Tile:
     if len(value) != _TILE_LENGTH:
-        msg = f"Invalid tile: {value!r}."
+        msg = "Invalid tile: expected a two-character tile code."
         raise ValueError(msg)
     number = value[0]
     suit = value[1]
@@ -27,5 +27,5 @@ def validate_tile(value: str) -> Tile:
         return Tile(value)
     if suit == "z" and number in "1234567":
         return Tile(value)
-    msg = f"Invalid tile: {value!r}."
+    msg = "Invalid tile: expected a suited tile (0-9) or honor (1-7)."
     raise ValueError(msg)

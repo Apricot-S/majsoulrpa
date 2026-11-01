@@ -237,18 +237,30 @@
 
 ### `screens/match/` の基盤
 
-- [ ] `screens/match/__init__.py`: public state/event/operation 型の export、lazy export の要否、union の網羅性を確認する。
-- [ ] `screens/match/types.py`: `Seat` / `Tile` の型と runtime validator が全入口で一貫して使われることを確認する。
-- [ ] `screens/match/_common.py`: tile 正規化・並び順・鳴き条件の共通化が domain invariant に限られることを確認する。
+- [x] `screens/match/__init__.py`: public state/event/operation 型の export、lazy export の要否、union の網羅性を確認する。
+  - 値型は定義元と同一objectを通常exportし、`MatchScreen`だけを遅延importする現状を維持する。新規processで値型import時に画像依存・Screen・protocol生成物を読み込まないことと、Screenのlazy cacheをテストした。event / operation / Fuluのunionは現在のconcrete variantを明示列挙しており、内部specificationはexportしない。
+- [x] `screens/match/types.py`: `Seat` / `Tile` の型と runtime validator が全入口で一貫して使われることを確認する。
+  - 外部入力はJSON helperで型を確認してから共通validatorへ渡す。内部での直接`Tile()`構築は定数または検証済み牌からの赤五変換に限られるため維持する。不正牌の例外には入力値を表示せず、形式だけを示すよう変更し、live / restoreのcause chainもテストした。値域・戻り値・例外型は維持する。
+- [x] `screens/match/_common.py`: tile 正規化・並び順・鳴き条件の共通化が domain invariant に限られることを確認する。
+  - 赤五の同種判定・牌順・順子・上家判定だけを共有する現状を維持する。state・I/O・lifecycle・失敗変換を持たず、event / materializer / reducerの既存テストで異なる牌・人数・鳴き条件を確認する。追加の層やwrapperは作らない。
 - [x] `screens/match/_decode.py`: field wrapperだけのmoduleは削除し、event/operationで共通JSON helperを直接使う。取得キーのnameを診断にも使い、欠落や型不正を既定値へ変換しない。
-- [ ] `screens/match/_metadata.py`: human / robot / seat / rank decode と match metadata の不変条件を確認する。
-- [ ] `screens/match/_action.py`: live / restore adapter、deobfuscation、API 名と action 名の対応、未知 action の失敗を確認する。
+- [x] `screens/match/_metadata.py`: human / robot / seat / rank decode と match metadata の不変条件を確認する。
+  - session accountをhuman listへ必須化し、通常robots・VS_AI補完のどちらでも自分をCPUにしない。空のhuman nicknameは初心段位でもdecode時に拒否し、`is_cpu`の誤分類を防ぐ。正常な三麻・四麻・大会のsynthetic metadata、既存CPU経路、参加者・rank不整合、Screenでのscreenshot/cause保持をテストした。大会wire形式と特殊mode識別の未確認事項は既存test-planに残し、今回のsynthetic確認を実通信確認の代用にしない。
+- [x] `screens/match/_action.py`: live / restore adapter、deobfuscation、API 名と action 名の対応、未知 action の失敗を確認する。
+  - encoding差はadapter内で解消し、同じevent decoderへ渡す現状を維持する。未知action・不正base64/protobuf・event fieldの失敗を成功へ変換しない。必須fieldの欠落/null、liveのAPI名・direction、不正牌のcause非表示を追加テストし、既存のlive/restore同値性と未知protobuf field許容を回帰確認した。
 - [ ] `screens/match/state.py`: immutable snapshot、四麻・三麻、round state、event 列、version の不変条件を確認する。
 - [ ] `screens/match/store.py`: live と restore の同一 reducer、atomic restore、step reorder、rollback 禁止、状態更新の責務境界を確認する。
 - [ ] `screens/match/screen.py`: bootstrap、fresh/recovery 判定、message buffering、callback lifecycle、画面操作が一つの責務へ混在していないか確認する。
 
 `screen.py` と `store.py` は大きいが、行数だけでは分割しない。分割する場合は、独立した不変条件、
 異なる lifecycle、または単独でテストする価値のある境界を先に示す。
+
+今回確認した基盤5ファイルには便宜的な`None`デフォルトがなく、mutable stateも所有しない。
+validator / decoder / sort keyの主要入力は位置指定、`is_preceding_seat`の基準seatと人数、
+actionのencoding policy、participant索引の診断用kindは意味を識別するためキーワード専用を維持する。
+metadataのfrozen DTOと共有CPU rankはimmutableであり、通常のlog / 例外へmetadataを出力しない。
+wire schema・生成物・画像資産への変更はない。`state.py` / `store.py` / `screen.py`および
+concrete event / operationの全観点レビューは後続として未完了のまま残す。
 
 ### `screens/match/event/`
 

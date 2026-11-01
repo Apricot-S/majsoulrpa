@@ -31,3 +31,13 @@ def test_validate_tile_returns_tile(value: str) -> None:
 def test_validate_tile_rejects_invalid_value(value: str) -> None:
     with pytest.raises(ValueError, match="Invalid tile"):
         validate_tile(value)
+
+
+@pytest.mark.parametrize("value", ["synthetic-private-value", "Q!"])
+def test_invalid_tile_diagnostic_does_not_include_input(value: str) -> None:
+    with pytest.raises(ValueError, match="Invalid tile") as exc_info:
+        validate_tile(value)
+
+    assert value not in str(exc_info.value)
+    assert value not in repr(exc_info.value)
+    assert value not in repr(exc_info.value.args)

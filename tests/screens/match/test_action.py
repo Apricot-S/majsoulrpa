@@ -1,4 +1,7 @@
 import base64
+import traceback
+from dataclasses import replace
+from functools import partial
 
 import pytest
 from pydantic import JsonValue
@@ -31,6 +34,7 @@ from majsoulrpa.screens.match.operation._specification import (
     _ChiOperationSpecification,
     _DaminggangOperationSpecification,
 )
+from majsoulrpa.sniffer.events import Direction
 from tests.screens.match._support import _live_action
 
 
@@ -546,5 +550,73 @@ def test_live_and_restore_action_jiagang_decode_to_same_event() -> None:
 def test_restore_action_rejects_invalid_action(
     action: dict[str, JsonValue],
 ) -> None:
+    with pytest.raises(MessageDecodeError):
+        decode_restore_action(action)
+
+
+@pytest.mark.parametrize("live", [False, True], ids=["restore", "live"])
+@pytest.mark.parametrize("tile", ["synthetic-private-value", "Q!"])
+def test_action_invalid_tile_does_not_expose_input_in_exception_chain(
+    tile: str, *, live: bool
+) -> None:
+    data = liqi_pb2.ActionDiscardTile(seat=0, tile=tile).SerializeToString()
+
+    decode = (
+        partial(
+            decode_live_action,
+            _live_action(step=1, name="ActionDiscardTile", data=data),
+        )
+        if live
+        else partial(
+            decode_restore_action,
+            {
+                "step": 1,
+                "name": "ActionDiscardTile",
+                "data": base64.b64encode(data).decode(),
+            },
+        )
+    )
+    with pytest.raises(MessageDecodeError) as exc_info:
+        decode()
+
+    assert isinstance(exc_info.value.__cause__, ValueError)
+    diagnostic = "".join(traceback.format_exception_only(exc_info.value))
+    cause = exc_info.value.__cause__
+    while cause is not None:
+        diagnostic += str(cause) + repr(cause) + repr(cause.args)
+        cause = cause.__cause__
+    assert tile not in diagnostic
+
+
+@pytest.mark.parametrize(
+    "invalid_api", [False, True], ids=["direction", "api-name"]
+)
+def test_live_action_rejects_wrong_envelope(*, invalid_api: bool) -> None:
+    message = _live_action()
+    raw = (
+        replace(message.raw, name=".lq.Unknown")
+        if invalid_api
+        else replace(message.raw, direction=Direction.OUTBOUND)
+    )
+
+    with pytest.raises(MessageDecodeError):
+        decode_live_action(replace(message, raw=raw))
+
+
+@pytest.mark.parametrize("field", ["step", "name", "data"])
+@pytest.mark.parametrize("missing", [False, True], ids=["null", "missing"])
+def test_restore_action_requires_typed_fields(
+    field: str, *, missing: bool
+) -> None:
+    action: dict[str, JsonValue] = {
+        "step": 0,
+        "name": "ActionMJStart",
+        "data": "",
+    }
+    if missing:
+        del action[field]
+    else:
+        action[field] = None
+
     with pytest.raises(MessageDecodeError):
         decode_restore_action(action)

@@ -1,5 +1,31 @@
 # 初回テストリスト
 
+## Match基盤のコード改善
+
+### 牌validatorの診断
+
+- [x] 不正な牌はValueErrorで拒否し、長さ不正・2文字の形式不正ともstr / repr / argsへ入力値を含めない
+- [x] live / restore actionの不正な牌も、例外chainへ入力値を含めずMessageDecodeErrorにする
+
+### authGame metadataの参加者分類
+
+- [x] session accountはplayersに含まれる人間でなければ拒否し、robotsやVS_AI補完で自分をCPUにしない
+- [x] playersの空nicknameは初心段位でも拒否し、CPUへ誤分類しない
+- [x] 正常な四麻・三麻・大会・通常CPU・VS_AIのseatと段位を維持する
+- [x] participantの重複・不足・余剰・非正値、rank不正はMessageDecodeErrorとして入力値を表示せず拒否する
+- [x] Screen境界ではscreenshot付き不整合例外に変換し、元のdecode原因を保持する
+
+### 公開型とaction adapter
+
+- [x] 値型のimportはScreen・画像依存・protocol生成物を読み込まず、MatchScreenだけを遅延importする
+- [x] 公開state / event / operationのexportは定義元と同一objectで、内部specificationを公開しない
+- [x] live actionのAPI名・direction不正と、必須field欠落・型不正・未知actionを拒否する
+- [x] live / restoreのevent同値性と未知protobuf fieldの既存契約を維持する
+
+テストは牌validator、metadata、公開import、action adapterのmoduleに分ける。正常CPU・VS_AIは
+既存のScreen初期化テストで維持し、今回の正常metadataテストは人数・origin・段位保持を確認する。
+追加caseは入力境界・参加者分類・異なる失敗経路を表すため維持し、仮実装だけの三角測量テストはない。
+
 ## Room AI追加の過去response除外
 
 - [x] 操作前の古い成功responseをdrainした後、AI追加通知だけでは成功しない

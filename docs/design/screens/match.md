@@ -1329,6 +1329,12 @@ response の `seat_list` は 3 または 4 seat とし、session account ID が�
 しなければならない。通常の友人戦では `robots` が CPU metadata を含み、metadata decoder は
 `players` と `robots` をそれぞれ wire `account_id` で索引して seat を決める。
 
+session accountは`seat_list`だけでなく`players`にも存在しなければならず、CPU seatとして
+初期化しない。humanの`nickname`は空文字列を拒否する。空名は公開stateでCPUの識別に使うため、
+初心段位が一致していてもhumanをCPUへ読み替えない。従来受理していたこの2種類の矛盾は
+`MessageDecodeError`として拒否し、Screen境界でscreenshot付き`ScreenInconsistentMessageError`にする。
+正常なhuman / CPU metadataと公開stateのfieldは変更しない。
+
 VS_AI では `players` が session account 1 人だけで `robots` が空になる。`seat_list` から human ID を
 除いたすべての participant ID が、重複なく `ready_id_list` と完全一致する場合に限り、それらを
 metadata の省略された CPU として扱う。CPU は wire の participant ID、空の name、画面表示に合わせた
@@ -1641,7 +1647,7 @@ decode、Sniffer transport、stream gap は元の infrastructure error を伝播
 - `screens/match/_action.py`: live unmask、restore adapter、nested decode、event decoder registry
 - `screens/match/store.py`: metadata、step、round reducer、temporary replay と atomic commit
 - `screens/match/screen.py`: message classifier、初期化期限、Screen error への変換、`get_state()`
-- `screens/match/__init__.py`: `MatchScreen`、public state、event、operation 型を通常 export
+- `screens/match/__init__.py`: public state、event、operation型を通常exportし、画像依存とprotocol生成物を値型importから隔離するため`MatchScreen`だけを遅延export
 
 decode / transition の pure error は `ValueError` 派生の内部型とし、`screen.py` の境界で screenshot 付き
 `ScreenInconsistentMessageError` または `ScreenUnexpectedStateError` へ変換する。Sniffer transport、

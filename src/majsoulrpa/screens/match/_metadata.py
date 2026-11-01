@@ -93,6 +93,9 @@ def decode_match_metadata(
     robot_values = get_dict_list(message.response, "robots")
     humans_by_id = _index_participants(player_values, kind="player")
     robots_by_id = _index_participants(robot_values, kind="robot")
+    if self_account_id not in humans_by_id:
+        msg = "authGame current account must be a human player."
+        raise MessageDecodeError(msg)
     if set(humans_by_id) & set(robots_by_id):
         msg = "authGame human and robot IDs must not overlap."
         raise MessageDecodeError(msg)
@@ -147,10 +150,14 @@ def _decode_human_player(
     account_id: int,
     seat: Seat,
 ) -> MatchPlayer:
+    name = get_str(value, "nickname")
+    if not name:
+        msg = "authGame human nickname must not be empty."
+        raise MessageDecodeError(msg)
     return MatchPlayer(
         seat=seat,
         account_id=account_id,
-        name=get_str(value, "nickname"),
+        name=name,
         level4=_decode_rank(get_dict(value, "level")),
         level3=_decode_rank(get_dict(value, "level3")),
     )

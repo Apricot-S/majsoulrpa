@@ -303,6 +303,10 @@ current `RoundState` は final frozen dataclass の明示的 union で表す局�
 `MatchEvent` に `type` discriminator は設けない。利用者は `DapaiEvent`、`ZimoEvent` などの具体 class
 に対する `match` で型を絞り込み、各 case を terminal にした後の `assert_never(event)` で未対応
 variant を型検査エラーにできる。
+
+`validate_tile()`は不正な牌文字列を`ValueError`で拒否する。例外messageには入力値を含めず、
+期待する牌形式だけを示す。従来の入力値付きmessageは変更するが、受理する牌、戻り値と例外型は
+維持する。Match action decode経由の失敗でも、cause chainに入力値を含めない。
 最初の event 列には `StartMatchEvent` も保持し、機械学習 AI は match の BOS として利用できる。
 
 `TournamentLobbyScreen` 候補:
